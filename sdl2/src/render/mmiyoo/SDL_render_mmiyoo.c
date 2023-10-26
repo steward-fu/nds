@@ -57,6 +57,7 @@ struct _NDS_TEXTURE {
 
 extern NDS nds;
 extern MMIYOO_EventInfo MMiyooEventInfo;
+
 static struct _NDS_TEXTURE ntex[MAX_TEXTURE] = {0};
 
 static int update_texture(void *chk, void *new, const void *pixels, int pitch)
@@ -134,6 +135,8 @@ static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
         SDL_free(mmiyoo_texture);
         return SDL_OutOfMemory();
     }
+
+    mmiyoo_texture->data = SDL_calloc(1, mmiyoo_texture->size);
     texture->driverdata = mmiyoo_texture;
     update_texture(NULL, texture, NULL, 0);
     GFX_ClearPixels();
@@ -142,6 +145,10 @@ static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
 
 static int MMIYOO_LockTexture(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *rect, void **pixels, int *pitch)
 {
+    MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
+
+    *pixels = mmiyoo_texture->data;
+    *pitch = mmiyoo_texture->pitch;
     return 0;
 }
 
@@ -153,6 +160,33 @@ static int MMIYOO_UpdateTexture(SDL_Renderer *renderer, SDL_Texture *texture, co
 
 static void MMIYOO_UnlockTexture(SDL_Renderer *renderer, SDL_Texture *texture)
 {
+    static int prev_mode = 0;
+    static int need_restore = 0;
+
+    SDL_Rect rect = {0};
+    MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
+
+    if ((texture->w == 512) && (texture->h == 384)) {
+        nds.hres_mode = 1;
+        if ((nds.dis_mode != NDS_DIS_MODE_HRES0) && (nds.dis_mode != NDS_DIS_MODE_HRES1)) {
+            prev_mode = nds.dis_mode;
+            need_restore = 1;
+            nds.dis_mode = NDS_DIS_MODE_HRES0;
+        }
+    }
+    else if ((texture->w == 256) && (texture->h == 192)) {
+        nds.hres_mode = 0;
+        if (need_restore) {
+            need_restore = 0;
+            nds.dis_mode = prev_mode;
+        }
+    }
+
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = texture->w;
+    rect.h = texture->h;
+    MMIYOO_UpdateTexture(renderer, texture, &rect, mmiyoo_texture->data, mmiyoo_texture->pitch);
 }
 
 static void MMIYOO_SetTextureScaleMode(SDL_Renderer *renderer, SDL_Texture *texture, SDL_ScaleMode scaleMode)
@@ -196,8 +230,11 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     static int cur_volume = 0;
     static int cur_dis_mode = NDS_DIS_MODE_VH_C0;
     static int cur_theme_sel = 0;
+    static int cur_alpha = 0;
     static int need_reload_bg = 0;
 
+    int alpha = 0;
+    int rotate = E_MI_GFX_ROTATE_180;
     int pitch = 0;
     int need_pen = 0;
     int need_update = 1;
@@ -207,6 +244,10 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     pitch = get_pitch(texture);
     pixels = get_pixels(texture);
 
+    if ((pitch == 0) || (pixels == NULL)) {
+        return 0;
+    }
+
     if ((srcrect->w == 32) && (srcrect->h == 32)) {
         return 0;
     }
@@ -214,6 +255,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     if ((cur_w != srcrect->w) || 
         (cur_dis_mode != nds.dis_mode) ||
         (cur_theme_sel != nds.theme.sel) || 
+        (cur_alpha != nds.alpha.val) ||
         (cur_volume != nds.volume))
     {
         if (cur_volume != nds.volume) {
@@ -231,11 +273,17 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
             show_digit_val = nds.theme.sel;
             show_digit_num = 2;
         }
+        else if (cur_alpha != nds.alpha.val) {
+            show_digit_cnt = 50;
+            show_digit_val = nds.alpha.val;
+            show_digit_num = 1;
+        }
 
         cur_w = srcrect->w;
         cur_dis_mode = nds.dis_mode;
         cur_theme_sel = nds.theme.sel;
         cur_volume = nds.volume;
+        cur_alpha = nds.alpha.val;
         need_reload_bg = 5;
     }
 
@@ -273,6 +321,21 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
         dst.w = 640;
         dst.h = 480;
     }
+    else if ((srcrect->w == 512) && (srcrect->h == 384)) {
+        if (nds.dis_mode == NDS_DIS_MODE_HRES0) {
+            dst.x = 64;
+            dst.y = 48;
+            dst.w = 512;
+            dst.h = 384;
+        }
+        else {
+            dst.x = 0;
+            dst.y = 0;
+            dst.w = 640;
+            dst.h = 480;
+            need_reload_bg = 0;
+        }
+    }
     else if ((dstrect->w == 320.0) && (dstrect->h == 240.0)) {
         // single screen
         need_pen = 1;
@@ -293,6 +356,13 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
         int screen0 = (dstrect->x + dstrect->y) ? 0 : 1;
         int screen1 = (dstrect->x + dstrect->y) ? 1 : 0;
         
+        if (nds.pen.pos == 0) {
+            need_pen = screen0 ? 1 : 0;
+        }
+        else {
+            need_pen = screen1 ? 1 : 0;
+        }
+        
         // vertial
         // x:0.0, y:0.0,   w:160.0, h:120.0
         // x:0.0, y:120.0, w:160.0, h:120.0
@@ -307,13 +377,9 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
                 dst.y = 0;
                 dst.w = 640;
                 dst.h = 480;
-                need_pen = 1;
             }
             else {
-                dst.x = 0;
-                dst.y = 480 - 120;
-                dst.w = 160;
-                dst.h = 120;
+                alpha = 1;
             }
             break;
         case NDS_DIS_MODE_VH_T1:
@@ -322,42 +388,9 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
                 dst.y = 0;
                 dst.w = 640;
                 dst.h = 480;
-                need_pen = 1;
             }
             else {
-                dst.x = 0;
-                dst.y = 480 - 192;
-                dst.w = 256;
-                dst.h = 192;
-            }
-            break;
-        case NDS_DIS_MODE_VH_T2:
-            if (screen0) {
-                dst.x = 0;
-                dst.y = 0;
-                dst.w = 640;
-                dst.h = 480;
-                need_pen = 1;
-            }
-            else {
-                int cc = 0;
-                SDL_Rect src = {0};
-
-                dst.x = 0;
-                dst.y = 480;
-                dst.w = 256;
-                dst.h = 1;
-
-                src.x = 0;
-                src.y = 0;
-                src.w = 256;
-                src.h = 1;
-                for (cc=0; cc<192; cc+= 2) {
-                    GFX_CopyPixels(pixels, src, dst, pitch);
-                    dst.y-= 2;
-                    pixels+= (pitch * 2);
-                }
-                need_update = 0;
+                alpha = 1;
             }
             break;
         case NDS_DIS_MODE_S0:
@@ -369,6 +402,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
                 need_pen = 1;
             }
             else {
+                need_pen = 0;
                 need_update = 0;
             }
             break;
@@ -381,6 +415,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
                 need_pen = 1;
             }
             else {
+                need_pen = 0;
                 need_update = 0;
             }
             break;
@@ -389,56 +424,55 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
             dst.y = screen0 ? 48 : 48 + 192;
             dst.w = 256;
             dst.h = 192;
-            need_pen = screen1 ? 1 : 0;
             break;
         case NDS_DIS_MODE_V1:
             dst.x = (640 - 320) / 2;
             dst.y = screen0 ? 0 : 240;
             dst.w = 320;
             dst.h = 240;
-            need_pen = screen1 ? 1 : 0;
             break;
         case NDS_DIS_MODE_H0:
             dst.x = screen0 ? 64 : 64 + 256;
             dst.y = (480 - 192) / 2;
             dst.w = 256;
             dst.h = 192;
-            need_pen = screen1 ? 1 : 0;
             break;
         case NDS_DIS_MODE_H1:
             dst.x = screen0 ? 0 : 320;
             dst.y = (480 - 240) / 2;
             dst.w = 320;
             dst.h = 240;
-            need_pen = screen1 ? 1 : 0;
             break;
         case NDS_DIS_MODE_VH_S0:
             dst.x = screen1 ? 160 : 0;
             dst.y = screen1 ? 120 : 0;
             dst.w = screen1 ? 480 : 160;
             dst.h = screen1 ? 360 : 120;
-            need_pen = screen1 ? 1 : 0;
             break;
         case NDS_DIS_MODE_VH_S1:
             dst.x = screen1 ? 256 : 0;
             dst.y = screen1 ? 192 : 0;
             dst.w = screen1 ? (640 - 256) : 256;
             dst.h = screen1 ? (480 - 192) : 192;
-            need_pen = screen1 ? 1 : 0;
             break;
         case NDS_DIS_MODE_VH_C0:
             dst.x = screen0 ? (640 - 256) / 2 : (640 - 384) / 2;
             dst.y = screen0 ? 0 : 192;
             dst.w = screen0 ? 256 : 384;
             dst.h = screen0 ? 192 : 288;
-            need_pen = screen1 ? 1 : 0;
             break;
         case NDS_DIS_MODE_VH_C1:
             dst.x = screen0 ? 0 : 256;
             dst.y = screen0 ? (480 - 192) / 2 : (480 - 288) / 2;
             dst.w = screen0 ? 256 : 384;
             dst.h = screen0 ? 192 : 288;
-            need_pen = screen1 ? 1 : 0;
+            break;
+        case NDS_DIS_MODE_HH0:
+            dst.x = screen0 ? 0 : 320;
+            dst.y = 26;
+            dst.w = 427;
+            dst.h = 320;
+            rotate = E_MI_GFX_ROTATE_90;
             break;
         }
     }
@@ -457,7 +491,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
             reload_bg(nds.dis_mode);
         }
             
-        GFX_CopyPixels(pixels, *srcrect, dst, pitch);
+        GFX_CopyPixels(pixels, *srcrect, dst, pitch, alpha, rotate);
           
         if (show_digit_cnt > 0) {
             draw_digit(show_digit_val, show_digit_num);
@@ -491,7 +525,16 @@ static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
 
 static void MMIYOO_DestroyTexture(SDL_Renderer *renderer, SDL_Texture *texture)
 {
-    update_texture(texture, NULL, NULL, 0);
+    MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
+
+    if (mmiyoo_texture) {
+        update_texture(texture, NULL, NULL, 0);
+        if (mmiyoo_texture->data) {
+            SDL_free(mmiyoo_texture->data);
+        }
+        SDL_free(mmiyoo_texture);
+        texture->driverdata = NULL;
+    }
 }
 
 static void MMIYOO_DestroyRenderer(SDL_Renderer *renderer)

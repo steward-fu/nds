@@ -42,12 +42,16 @@
 #define MYKEY_SELECT    12
 #define MYKEY_START     13
 #define MYKEY_MENU      14
-#define MYKEY_POWER     15
-#define MYKEY_VOLUP     16
-#define MYKEY_VOLDOWN   17
+#define MYKEY_QSAVE     15
+#define MYKEY_QLOAD     16
+#define MYKEY_FF        17
+#define MYKEY_EXIT      18
+#define MYKEY_POWER     19
+#define MYKEY_VOLUP     20
+#define MYKEY_VOLDOWN   21
 
 // ignore POWER, VOL-, VOL+ keys
-#define MYKEY_LAST_BITS 14
+#define MYKEY_LAST_BITS 18
 
 #define MMIYOO_KEYPAD_MODE 0
 #define MMIYOO_MOUSE_MODE  1
