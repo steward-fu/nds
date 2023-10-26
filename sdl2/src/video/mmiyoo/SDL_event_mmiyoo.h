@@ -27,39 +27,38 @@
 #include "../../SDL_internal.h"
 #include "SDL_event_mmiyoo.h"
 
-#define MYKEY_UP        0
-#define MYKEY_DOWN      1
-#define MYKEY_LEFT      2
-#define MYKEY_RIGHT     3
-#define MYKEY_A         4
-#define MYKEY_B         5
-#define MYKEY_X         6
-#define MYKEY_Y         7
-#define MYKEY_L1        8
-#define MYKEY_R1        9
-#define MYKEY_L2        10
-#define MYKEY_R2        11
-#define MYKEY_SELECT    12
-#define MYKEY_START     13
-#define MYKEY_MENU      14
-#define MYKEY_QSAVE     15
-#define MYKEY_QLOAD     16
-#define MYKEY_FF        17
-#define MYKEY_EXIT      18
-#define MYKEY_POWER     19
-#define MYKEY_VOLUP     20
-#define MYKEY_VOLDOWN   21
+#define MYKEY_UP            0
+#define MYKEY_DOWN          1
+#define MYKEY_LEFT          2
+#define MYKEY_RIGHT         3
+#define MYKEY_A             4
+#define MYKEY_B             5
+#define MYKEY_X             6
+#define MYKEY_Y             7
+#define MYKEY_L1            8
+#define MYKEY_R1            9
+#define MYKEY_L2            10
+#define MYKEY_R2            11
+#define MYKEY_SELECT        12
+#define MYKEY_START         13
+#define MYKEY_MENU          14
+#define MYKEY_QSAVE         15
+#define MYKEY_QLOAD         16
+#define MYKEY_FF            17
+#define MYKEY_EXIT          18
+#define MYKEY_POWER         19
+#define MYKEY_VOLUP         20
+#define MYKEY_VOLDOWN       21
 
-// ignore POWER, VOL-, VOL+ keys
-#define MYKEY_LAST_BITS 18
+#define MYKEY_LAST_BITS     18 // ignore POWER, VOL-, VOL+ keys
 
 #define MMIYOO_KEYPAD_MODE 0
 #define MMIYOO_MOUSE_MODE  1
 
-typedef struct _MMIYOO_EventInfo{
+typedef struct _MMIYOO_EventInfo {
     struct _keypad{
         uint32_t bitmaps;
-    }keypad;
+    } keypad;
 
     struct _mouse{
         int x;
@@ -68,10 +67,10 @@ typedef struct _MMIYOO_EventInfo{
         int miny;
         int maxx;
         int maxy;
-    }mouse;
+    } mouse;
 
     int mode;
-}MMIYOO_EventInfo;
+} MMIYOO_EventInfo;
 
 extern void MMIYOO_EventInit(void);
 extern void MMIYOO_EventDeinit(void);

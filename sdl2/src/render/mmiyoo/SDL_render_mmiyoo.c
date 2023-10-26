@@ -139,7 +139,7 @@ static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
     mmiyoo_texture->data = SDL_calloc(1, mmiyoo_texture->size);
     texture->driverdata = mmiyoo_texture;
     update_texture(NULL, texture, NULL, 0);
-    GFX_ClearPixels();
+    GFX_Clear();
     return 0;
 }
 
@@ -223,14 +223,15 @@ static int MMIYOO_QueueFillRects(SDL_Renderer *renderer, SDL_RenderCommand *cmd,
 
 static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_FRect *dstrect)
 {
-    static int show_digit_cnt = 0;
-    static int show_digit_val = 0;
-    static int show_digit_num = 0;
+    const int RELOAD_BG_COUNT = 5;
+
+    static char show_info_buf[255] = {0};
+    static int show_info_cnt = 0;
     static int cur_w = 0;
     static int cur_volume = 0;
-    static int cur_dis_mode = NDS_DIS_MODE_VH_C0;
+    static int cur_dis_mode = 0;
+    static int cur_touchpad = 0;
     static int cur_theme_sel = 0;
-    static int cur_alpha = 0;
     static int need_reload_bg = 0;
 
     int alpha = 0;
@@ -240,6 +241,11 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     int need_update = 1;
     const void *pixels = NULL;
     SDL_Rect dst = {dstrect->x, dstrect->y, dstrect->w, dstrect->h};
+
+    if (nds.menu.enable) {
+        need_reload_bg = RELOAD_BG_COUNT;
+        return 0;
+    }
 
     pitch = get_pitch(texture);
     pixels = get_pixels(texture);
@@ -252,59 +258,41 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
         return 0;
     }
 
-    if ((cur_w != srcrect->w) || 
+    if ((cur_w != srcrect->w) ||
+        (cur_touchpad != nds.pen.pos) ||
         (cur_dis_mode != nds.dis_mode) ||
-        (cur_theme_sel != nds.theme.sel) || 
-        (cur_alpha != nds.alpha.val) ||
+        (cur_theme_sel != nds.theme.sel) ||
         (cur_volume != nds.volume))
     {
         if (cur_volume != nds.volume) {
-            show_digit_cnt = 50;
-            show_digit_val = nds.volume;
-            show_digit_num = 2;
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " Volume %d ", nds.volume);
         }
-        else if (cur_dis_mode != nds.dis_mode) {
-            show_digit_cnt = 50;
-            show_digit_val = nds.dis_mode;
-            show_digit_num = 2;
+        else if (cur_touchpad != nds.pen.pos) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " Touchpad %d ", nds.pen.pos);
         }
         else if (cur_theme_sel != nds.theme.sel) {
-            show_digit_cnt = 50;
-            show_digit_val = nds.theme.sel;
-            show_digit_num = 2;
-        }
-        else if (cur_alpha != nds.alpha.val) {
-            show_digit_cnt = 50;
-            show_digit_val = nds.alpha.val;
-            show_digit_num = 1;
+            show_info_cnt = 50;
+            if ((nds.theme.max > 0) && (nds.theme.sel < nds.theme.max)) {
+                sprintf(show_info_buf, " Wallpaper %d ", nds.theme.sel);
+            }
+            else {
+                sprintf(show_info_buf, " Wallpaper Disabled ");
+            }
         }
 
         cur_w = srcrect->w;
-        cur_dis_mode = nds.dis_mode;
         cur_theme_sel = nds.theme.sel;
         cur_volume = nds.volume;
-        cur_alpha = nds.alpha.val;
-        need_reload_bg = 5;
+        cur_dis_mode = nds.dis_mode;
+        cur_touchpad = nds.pen.pos;
+        need_reload_bg = RELOAD_BG_COUNT;
     }
 
-    if (nds.oc.inc || nds.oc.dec) {
-        show_digit_cnt = 50;
-        show_digit_num = 4;
-
-        if (nds.oc.inc) {
-            show_digit_val = cpuclock_inc();
-            nds.oc.inc = 0;
-        }
-
-        if (nds.oc.dec) {
-            show_digit_val = cpuclock_dec();
-            nds.oc.dec = 0;
-        }
-    }
-
-    if (show_digit_cnt == 0) {
-        need_reload_bg = 5;
-        show_digit_cnt = -1;
+    if (show_info_cnt == 0) {
+        need_reload_bg = RELOAD_BG_COUNT;
+        show_info_cnt = -1;
     }
         
     if (nds.defer_update_bg > 0) {
@@ -312,7 +300,25 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     }
     else if (nds.defer_update_bg == 0) {
         nds.defer_update_bg = -1;
-        need_reload_bg = 5;
+        need_reload_bg = RELOAD_BG_COUNT;
+    }
+
+    if (nds.state) {
+        if (nds.state & NDS_STATE_QSAVE) {
+            show_info_cnt = 50;
+            strcpy(show_info_buf, " Quick Save ");
+            nds.state&= ~NDS_STATE_QSAVE;
+        }
+        else if (nds.state & NDS_STATE_QLOAD) {
+            show_info_cnt = 50;
+            strcpy(show_info_buf, " Quick Load ");
+            nds.state&= ~NDS_STATE_QLOAD;
+        }
+        else if (nds.state & NDS_STATE_FF) {
+            show_info_cnt = 50;
+            strcpy(show_info_buf, " Fast Forward ");
+            nds.state&= ~NDS_STATE_FF;
+        }
     }
     
     if ((srcrect->w == 800) && (srcrect->h == 480)) {
@@ -327,12 +333,14 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
             dst.y = 48;
             dst.w = 512;
             dst.h = 384;
+            need_pen = 1;
         }
         else {
             dst.x = 0;
             dst.y = 0;
             dst.w = 640;
             dst.h = 480;
+            need_pen = 1;
             need_reload_bg = 0;
         }
     }
@@ -377,9 +385,11 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
                 dst.y = 0;
                 dst.w = 640;
                 dst.h = 480;
+                need_pen = 1;
             }
             else {
                 alpha = 1;
+                need_pen = 0;
             }
             break;
         case NDS_DIS_MODE_VH_T1:
@@ -388,13 +398,15 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
                 dst.y = 0;
                 dst.w = 640;
                 dst.h = 480;
+                need_pen = 1;
             }
             else {
                 alpha = 1;
+                need_pen = 0;
             }
             break;
         case NDS_DIS_MODE_S0:
-            if (screen0) {
+            if (screen1) {
                 dst.x = (640 - (256 * 2)) / 2;
                 dst.y = (480 - (192 * 2)) / 2;
                 dst.w = 256 * 2;
@@ -407,7 +419,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
             }
             break;
         case NDS_DIS_MODE_S1:
-            if (screen0) {
+            if (screen1) {
                 dst.x = 0;
                 dst.y = 0;
                 dst.w = 640;
@@ -481,29 +493,29 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     MMiyooEventInfo.mouse.miny = dstrect->y;
     MMiyooEventInfo.mouse.maxx = MMiyooEventInfo.mouse.minx + dstrect->w;
     MMiyooEventInfo.mouse.maxy = MMiyooEventInfo.mouse.miny + dstrect->h;
+
     if ((MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) && need_pen) {
-        draw_pen(pixels, srcrect->w);
+        draw_pen(pixels, srcrect->w, pitch);
     }
 
     if (need_update > 0) {
         if (need_reload_bg > 0) {
             need_reload_bg-= 1;
-            reload_bg(nds.dis_mode);
+            reload_bg();
         }
             
-        GFX_CopyPixels(pixels, *srcrect, dst, pitch, alpha, rotate);
+        GFX_Copy(pixels, *srcrect, dst, pitch, alpha, rotate);
           
-        if (show_digit_cnt > 0) {
-            draw_digit(show_digit_val, show_digit_num);
-            show_digit_cnt-= 1;
+        if (show_info_cnt > 0) {
+            draw_info(NULL, 0, show_info_buf, FB_W - get_font_width(show_info_buf, 0), 0, 0xe0e000, 0x000000);
+            show_info_cnt-= 1;
         }
     }
     return 0;
 }
 
 static int MMIYOO_QueueCopyEx(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture,
-                              const SDL_Rect *srcrect, const SDL_FRect *dstrect,
-                              const double angle, const SDL_FPoint *center, const SDL_RendererFlip flip)
+    const SDL_Rect *srcrect, const SDL_FRect *dstrect, const double angle, const SDL_FPoint *center, const SDL_RendererFlip flip)
 {
     return 0;
 }
@@ -520,7 +532,9 @@ static int MMIYOO_RenderReadPixels(SDL_Renderer *renderer, const SDL_Rect *rect,
 
 static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
 {
-    GFX_Flip();
+    if (nds.menu.enable == 0) {
+        GFX_Flip();
+    }
 }
 
 static void MMIYOO_DestroyTexture(SDL_Renderer *renderer, SDL_Texture *texture)

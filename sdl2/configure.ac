@@ -2391,7 +2391,7 @@ CheckMMiyooVideo()
         SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lasound -ljson-c"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -lasound -ljson-c"
         SUMMARY_video="${SUMMARY_video} mmiyoo"
     fi
 }

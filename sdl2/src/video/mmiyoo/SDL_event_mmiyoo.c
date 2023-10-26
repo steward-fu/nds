@@ -53,7 +53,7 @@ static uint32_t pre_keypad_bitmaps = 0;
 int volume_inc(void);
 int volume_dec(void);
 
-void check_mouse_pos(void)
+static void check_mouse_pos(void)
 {
     if (MMiyooEventInfo.mouse.y < MMiyooEventInfo.mouse.miny) {
         MMiyooEventInfo.mouse.y = MMiyooEventInfo.mouse.miny;
@@ -67,6 +67,23 @@ void check_mouse_pos(void)
     if (MMiyooEventInfo.mouse.x >= MMiyooEventInfo.mouse.maxx) {
         MMiyooEventInfo.mouse.x = MMiyooEventInfo.mouse.maxx;
     }
+}
+
+static int get_move_interval(int type)
+{
+    float move = 0.0;
+
+    if (nds.dis_mode == NDS_DIS_MODE_HH0) {
+        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? nds.pen.yv : nds.pen.xv);
+    }
+    else {
+        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? nds.pen.xv : nds.pen.yv);
+    }
+
+    if (move <= 0.0) {
+        move = 1.0;
+    }
+    return (int)(1.0 * move);
 }
 
 int EventUpdate(void *data)
@@ -124,50 +141,48 @@ int EventUpdate(void *data)
                         }
                     }
 
-                    hotkey = MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_SELECT);
-                    
-                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_R1))) {
-                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_FF);
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_R1);
+                    if (nds.menu.enable == 0) {
+                        hotkey = MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_SELECT);
+                    }
+                    else {
+                        hotkey = 0;
                     }
                     
-                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_R2))) {
-                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_QSAVE);
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_R2);
-                    }
-                    
-                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L1))) {
-                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_EXIT);
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L1);
-                    }
-                    
-                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L2))) {
-                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_QLOAD);
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L2);
-                    }
-                    else if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L2)) {
-                        MMiyooEventInfo.mode = (MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L2);
-                    }
-                    
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_START))){
-                        if (nds.hres_mode == 0) {
-                            nds.dis_mode+= 1;
-                            if (nds.dis_mode > NDS_DIS_MODE_LAST) {
-                                nds.dis_mode = 0;
-                            }
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_UP))) {
+                        if (MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) {
+                            nds.pen.pos = 1;
                         }
-                        else {
-                            nds.dis_mode = nds.dis_mode == NDS_DIS_MODE_HRES0 ? NDS_DIS_MODE_HRES1 : NDS_DIS_MODE_HRES0;
-                        }
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_START);
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_UP);
                     }
                     
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_Y))){
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_DOWN))) {
+                        if (MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) {
+                            nds.pen.pos = 0;
+                        }
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_DOWN);
+                    }
+                    
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_A))) {
+                        if ((MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
+                            uint32_t tmp = nds.alt_mode;
+                            nds.alt_mode = nds.dis_mode;
+                            nds.dis_mode = tmp;
+                        }
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_A);
+                    }
+                    
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_Y))) {
                         if (MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) {
-                            nds.theme.sel+= 1;
-                            if (nds.theme.sel > nds.theme.max) {
-                                nds.theme.sel = 0;
+                            if ((nds.overlay.sel >= nds.overlay.max) && 
+                                (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
+                                (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
+                                (nds.dis_mode != NDS_DIS_MODE_S1) &&
+                                (nds.dis_mode != NDS_DIS_MODE_HRES1))
+                            {
+                                nds.theme.sel+= 1;
+                                if (nds.theme.sel > nds.theme.max) {
+                                    nds.theme.sel = 0;
+                                }
                             }
                         }
                         else {
@@ -179,59 +194,42 @@ int EventUpdate(void *data)
                         }
                         MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_Y);
                     }
-                    
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_X))){
-                        nds.oc.inc = 1;
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_X);
+
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_START))) {
+                        if (nds.menu.enable == 0) {
+                            nds.menu.enable = 1;
+
+                            usleep(100000);
+                            handle_menu(-1);
+
+                            hotkey = 0;
+                            pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps = 0;
+                        }
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_START);
                     }
 
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_B))){
-                        nds.oc.dec = 1;
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_B);
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_R1))) {
+                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_FF);
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_R1);
                     }
-                    
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_UP))){
-                        if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-                            if (nds.alpha.val < 9) {
-                                nds.alpha.val+= 1;
-                            }
-                        }
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_UP);
+
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_R2))) {
+                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_QSAVE);
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_R2);
                     }
-                    
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_DOWN))){
-                        if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-                            if (nds.alpha.val > 0) {
-                                nds.alpha.val-= 1;
-                            }
-                        }
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_DOWN);
+
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L1))) {
+                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_EXIT);
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L1);
                     }
-                    
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_RIGHT))){
-                        if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-                            if (nds.alpha.pos > 0) {
-                                nds.alpha.pos-= 1;
-                            }
-                        }
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_RIGHT);
+
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L2))) {
+                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_QLOAD);
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L2);
                     }
-                    
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_LEFT))){
-                        if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-                            if (nds.alpha.pos < 3) {
-                                nds.alpha.pos+= 1;
-                            }
-                        }
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_LEFT);
-                    }
-                    
-                    if(hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_A))){
-                        if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-                            nds.alpha.border+= 1;
-                            nds.alpha.border%= NDS_BORDER_MAX;
-                        }
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_A);
+                    else if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L2)) {
+                        MMiyooEventInfo.mode = (MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L2);
                     }
                 }
             
@@ -301,47 +299,163 @@ void MMIYOO_EventDeinit(void)
     }
 }
 
-int get_move_interval(int type)
-{
-    float move = 0.0;
-    
-    if (nds.dis_mode == NDS_DIS_MODE_HH0) {
-        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? nds.pen.yv : nds.pen.xv);
-    }
-    else {
-        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? nds.pen.xv : nds.pen.yv);
-    }
-
-    if (move <= 0.0) {
-        move = 1.0;
-    }
-    return (int)(1.0 * move);
-}
-
 void MMIYOO_PumpEvents(_THIS)
 {
     const SDL_Scancode code[]={
         SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
         SDLK_SPACE, SDLK_LCTRL, SDLK_LSHIFT, SDLK_LALT,
         SDLK_e, SDLK_t, SDLK_TAB, SDLK_BACKSPACE,
-        SDLK_RCTRL, SDLK_RETURN, SDLK_HOME, SDLK_0, SDLK_1, SDLK_2, SDLK_3
+        SDLK_RCTRL, SDLK_RETURN, SDLK_HOME, SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_HOME, SDLK_BACKSPACE
     };
 
     SDL_SemWait(event_sem);
-    if (MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) {
-        if (pre_keypad_bitmaps != MMiyooEventInfo.keypad.bitmaps) {
-            int cc = 0;
-            uint32_t v0 = pre_keypad_bitmaps;
-            uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
+    if (nds.menu.enable) {
+        int cc = 0;
+        uint32_t v0 = pre_keypad_bitmaps;
+        uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
 
-            for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
-                if ((v0 & 1) != (v1 & 1)) {
-                    SDL_SendKeyboardKey((v1 & 1) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+        for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
+            if ((v0 & 1) != (v1 & 1)) {
+                if ((v1 & 1) == 0) {
+                    handle_menu(cc);
                 }
-                v0>>= 1;
-                v1>>= 1;
+            }
+            v0>>= 1;
+            v1>>= 1;
+        }
+        pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
+    }
+    else {
+        if (MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) {
+            if (pre_keypad_bitmaps != MMiyooEventInfo.keypad.bitmaps) {
+                int cc = 0;
+                uint32_t v0 = pre_keypad_bitmaps;
+                uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
+
+                for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
+                    if ((v0 & 1) != (v1 & 1)) {
+                        SDL_SendKeyboardKey((v1 & 1) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                    }
+                    v0>>= 1;
+                    v1>>= 1;
+                }
+
+                if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
+                    nds.state|= NDS_STATE_QSAVE;
+                    MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_QSAVE);
+                }
+                if (pre_keypad_bitmaps & (1 << MYKEY_QLOAD)) {
+                    nds.state|= NDS_STATE_QLOAD;
+                    MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_QLOAD);
+                }
+                if (pre_keypad_bitmaps & (1 << MYKEY_FF)) {
+                    nds.state|= NDS_STATE_FF;
+                    MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_FF);
+                }
+                if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
+                    MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_EXIT);
+                }
+                pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
+            }
+        }
+        else {
+            int updated = 0;
+            
+            if (pre_keypad_bitmaps != MMiyooEventInfo.keypad.bitmaps) {
+                uint32_t cc = 0;
+                uint32_t v0 = pre_keypad_bitmaps;
+                uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
+
+                if ((v0 & (1 << MYKEY_A)) != (v1 & (1 << MYKEY_A))) {
+                    SDL_SendMouseButton(MMiyooVideoInfo.window, 0, (v1 & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+                }
+                
+                for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
+                    if ((cc == MYKEY_FF) || (cc == MYKEY_QSAVE) || (cc == MYKEY_QLOAD) || (cc == MYKEY_EXIT) || (cc == MYKEY_R2)) {
+                        if ((v0 & 1) != (v1 & 1)) {
+                            SDL_SendKeyboardKey((v1 & 1) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                        }
+                    }
+                    v0>>= 1;
+                    v1>>= 1;
+                }
             }
 
+            if (nds.dis_mode == NDS_DIS_MODE_HH0) {
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_UP)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.x+= get_move_interval(1);
+                }
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_DOWN)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.x-= get_move_interval(1);
+                }
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_LEFT)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.y-= get_move_interval(0);
+                }
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_RIGHT)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.y+= get_move_interval(0);
+                }
+            }
+            else {
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_UP)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.y-= get_move_interval(1);
+                }
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_DOWN)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.y+= get_move_interval(1);
+                }
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_LEFT)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.x-= get_move_interval(0);
+                }
+                if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_RIGHT)) {
+                    updated = 1;
+                    MMiyooEventInfo.mouse.x+= get_move_interval(0);
+                }
+            }
+            check_mouse_pos();
+
+            if(updated){
+                int addx = 0, addy = 0;
+
+                if ((MMiyooEventInfo.mouse.minx == 0) && (MMiyooEventInfo.mouse.miny == 120)) {
+                    addx = 80;
+                }
+                if ((MMiyooEventInfo.mouse.minx == 160) && (MMiyooEventInfo.mouse.miny == 0)) {
+                    addy = 60;
+                }
+
+                switch (nds.dis_mode) {
+                case NDS_DIS_MODE_VH_T0:
+                case NDS_DIS_MODE_VH_T1:
+                case NDS_DIS_MODE_S0:
+                case NDS_DIS_MODE_S1:
+                    addy = -120;
+                    break;
+                }
+
+                if (nds.pen.pos == 0) {
+                    switch (nds.dis_mode) {
+                    case NDS_DIS_MODE_V0:
+                    case NDS_DIS_MODE_V1:
+                    case NDS_DIS_MODE_H0:
+                    case NDS_DIS_MODE_H1:
+                    case NDS_DIS_MODE_VH_S0:
+                    case NDS_DIS_MODE_VH_S1:
+                    case NDS_DIS_MODE_VH_C0:
+                    case NDS_DIS_MODE_VH_C1:
+                    case NDS_DIS_MODE_HH0:
+                        addy = -120;
+                        break;
+                    }
+                }
+                SDL_SendMouseMotion(MMiyooVideoInfo.window, 0, 0, MMiyooEventInfo.mouse.x + addx, MMiyooEventInfo.mouse.y + addy);
+            }
+            
             if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
                 MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_QSAVE);
             }
@@ -356,119 +470,6 @@ void MMIYOO_PumpEvents(_THIS)
             }
             pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
         }
-    }
-    else {
-        int updated = 0;
-        
-        if (pre_keypad_bitmaps != MMiyooEventInfo.keypad.bitmaps) {
-            uint32_t cc = 0;
-            uint32_t v0 = pre_keypad_bitmaps;
-            uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
-
-            if ((v0 & (1 << MYKEY_A)) != (v1 & (1 << MYKEY_A))) {
-                SDL_SendMouseButton(MMiyooVideoInfo.window, 0, (v1 & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
-            }
-            
-            for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
-                if ((cc == MYKEY_FF) || (cc == MYKEY_QSAVE) || (cc == MYKEY_QLOAD) || (cc == MYKEY_EXIT) || (cc == MYKEY_R2)) {
-                    if ((v0 & 1) != (v1 & 1)) {
-                        SDL_SendKeyboardKey((v1 & 1) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
-                    }
-                }
-                v0>>= 1;
-                v1>>= 1;
-            }
-        }
-
-        if (nds.dis_mode == NDS_DIS_MODE_HH0) {
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_UP)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.x+= get_move_interval(1);
-            }
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_DOWN)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.x-= get_move_interval(1);
-            }
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_LEFT)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.y-= get_move_interval(0);
-            }
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_RIGHT)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.y+= get_move_interval(0);
-            }
-        }
-        else {
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_UP)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.y-= get_move_interval(1);
-            }
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_DOWN)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.y+= get_move_interval(1);
-            }
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_LEFT)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.x-= get_move_interval(0);
-            }
-            if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_RIGHT)) {
-                updated = 1;
-                MMiyooEventInfo.mouse.x+= get_move_interval(0);
-            }
-        }
-        check_mouse_pos();
-
-        if(updated){
-            int addx = 0, addy = 0;
-
-            if ((MMiyooEventInfo.mouse.minx == 0) && (MMiyooEventInfo.mouse.miny == 120)) {
-                addx = 80;
-            }
-            if ((MMiyooEventInfo.mouse.minx == 160) && (MMiyooEventInfo.mouse.miny == 0)) {
-                addy = 60;
-            }
-    
-            switch (nds.dis_mode) {
-            case NDS_DIS_MODE_S0:
-            case NDS_DIS_MODE_S1:
-            case NDS_DIS_MODE_HRES0:
-                addy = -120;
-                break;
-            }
-
-            if (nds.pen.pos == 0) {
-                switch (nds.dis_mode) {
-                case NDS_DIS_MODE_VH_T0:
-                case NDS_DIS_MODE_VH_T1:
-                case NDS_DIS_MODE_V0:
-                case NDS_DIS_MODE_V1:
-                case NDS_DIS_MODE_H0:
-                case NDS_DIS_MODE_H1:
-                case NDS_DIS_MODE_VH_S0:
-                case NDS_DIS_MODE_VH_S1:
-                case NDS_DIS_MODE_VH_C0:
-                case NDS_DIS_MODE_VH_C1:
-                case NDS_DIS_MODE_HH0:
-                    addy = -120;
-                    break;
-                }
-            }
-            SDL_SendMouseMotion(MMiyooVideoInfo.window, 0, 0, MMiyooEventInfo.mouse.x + addx, MMiyooEventInfo.mouse.y + addy);
-        }
-        
-        if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
-            MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_QSAVE);
-        }
-        if (pre_keypad_bitmaps & (1 << MYKEY_QLOAD)) {
-            MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_QLOAD);
-        }
-        if (pre_keypad_bitmaps & (1 << MYKEY_FF)) {
-            MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_FF);
-        }
-        if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
-            MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_EXIT);
-        }
-        pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
     }
     SDL_SemPost(event_sem);
 }
