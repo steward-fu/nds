@@ -94,12 +94,22 @@ int EventUpdate(void *data)
     const uint32_t R1 = 20;
     const uint32_t R2 = 14;
 
+    const uint32_t UP = 103;
+    const uint32_t DOWN = 108;
+    const uint32_t LEFT = 105;
+    const uint32_t RIGHT = 106;
+
     struct input_event ev = {0};
     uint32_t bit = 0, hotkey = 0;
     uint32_t l1 = L1;
     uint32_t l2 = L2;
     uint32_t r1 = R1;
     uint32_t r2 = R2;
+
+    uint32_t up = UP;
+    uint32_t down = DOWN;
+    uint32_t left = LEFT;
+    uint32_t right = RIGHT;
 
     if (nds.swap_l1l2) {
         l1 = L2;
@@ -115,6 +125,21 @@ int EventUpdate(void *data)
 
     while (running) {
         SDL_SemWait(event_sem);
+
+        if (nds.dpad_90d) {
+            right = UP;
+            left = DOWN;
+            up = LEFT;
+            down = RIGHT;
+            //printf("Rotate DPAD 90 degree\n");
+        }
+        else {
+            up = UP;
+            down = DOWN;
+            left = LEFT;
+            right = RIGHT;
+        }
+
         if (event_fd > 0) {
             if (read(event_fd, &ev, sizeof(struct input_event))) {
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
@@ -124,12 +149,13 @@ int EventUpdate(void *data)
                     if (ev.code == l2) { bit = (1 << MYKEY_L2); }
                     if (ev.code == r1) { bit = (1 << MYKEY_R1); }
                     if (ev.code == r2) { bit = (1 << MYKEY_R2); }
+                    
+                    if (ev.code == up) { bit = (1 << MYKEY_UP); }
+                    if (ev.code == down) { bit = (1 << MYKEY_DOWN); }
+                    if (ev.code == left) { bit = (1 << MYKEY_LEFT); }
+                    if (ev.code == right) { bit = (1 << MYKEY_RIGHT); }
 
                     switch (ev.code) {
-                    case 103: bit = (1 << MYKEY_UP);     break;
-                    case 108: bit = (1 << MYKEY_DOWN);   break;
-                    case 105: bit = (1 << MYKEY_LEFT);   break;
-                    case 106: bit = (1 << MYKEY_RIGHT);  break;
                     case 57:  bit = (1 << MYKEY_A);      break;
                     case 29:  bit = (1 << MYKEY_B);      break;
                     case 42:  bit = (1 << MYKEY_X);      break;
@@ -259,6 +285,11 @@ int EventUpdate(void *data)
                     else if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L2)) {
                         MMiyooEventInfo.mode = (MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
                         MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L2);
+
+                        if (MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) {
+                            MMiyooEventInfo.mouse.x = (MMiyooEventInfo.mouse.maxx - MMiyooEventInfo.mouse.minx) / 2;
+                            MMiyooEventInfo.mouse.y = 120 + (MMiyooEventInfo.mouse.maxy - MMiyooEventInfo.mouse.miny) / 2;
+                        }
                     }
                 }
             
@@ -284,8 +315,8 @@ void MMIYOO_EventInit(void)
     MMiyooEventInfo.mouse.miny = 0;
     MMiyooEventInfo.mouse.maxx = 256;
     MMiyooEventInfo.mouse.maxy = 192;
-    MMiyooEventInfo.mouse.x = 50;
-    MMiyooEventInfo.mouse.y = 190;
+    MMiyooEventInfo.mouse.x = (MMiyooEventInfo.mouse.maxx - MMiyooEventInfo.mouse.minx) / 2;
+    MMiyooEventInfo.mouse.y = 120 + (MMiyooEventInfo.mouse.maxy - MMiyooEventInfo.mouse.miny) / 2;
     MMiyooEventInfo.mode = MMIYOO_KEYPAD_MODE;
 
 #if defined(MMIYOO)

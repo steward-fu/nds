@@ -64,6 +64,11 @@
 #define OVERLAY_PATH                "resources/overlay"
 #define MENU_BG_FILE                "resources/menu/bg.png"
 #define MENU_CURSOR_FILE            "resources/menu/cursor.png"
+#define DRASTIC_MENU_BG_FILE        "resources/menu/drastic_bg.png"
+#define DRASTIC_MENU_YES_FILE       "resources/menu/drastic_yes.png"
+#define DRASTIC_MENU_NO_FILE        "resources/menu/drastic_no.png"
+#define DRASTIC_MENU_CURSOR_FILE    "resources/menu/drastic_cursor.png"
+#define TRANSLATE_PATH              "resources/translate"
 #define MMIYOO_DRIVER_NAME          "mmiyoo"
 #define BASE_REG_RIU_PA             0x1f000000
 #define BASE_REG_MPLL_PA            (BASE_REG_RIU_PA + 0x103000 * 2)
@@ -73,8 +78,7 @@
 #define PEN_RT                      2
 #define PEN_RB                      3
 #define FONT_PATH                   "resources/font/font.ttf"
-#define SFONT_SIZE                  16
-#define BFONT_SIZE                  28
+#define FONT_SIZE                   24
 
 #define NDS_DIS_MODE_VH_T0          0
 #define NDS_DIS_MODE_VH_T1          1
@@ -118,6 +122,33 @@
 #define JSON_NDS_ALT_MODE           "alt"
 #define JSON_NDS_SWAP_L1L2          "swap_l1l2"
 #define JSON_NDS_SWAP_R1R2          "swap_r1r2"
+#define JSON_NDS_CUST_MENU          "cust_menu"
+#define JSON_NDS_LANG               "lang"
+#define JSON_NDS_DPAD_90D           "dpad_90d"
+#define JSON_NDS_MENU_C0            "menu_c0"
+#define JSON_NDS_MENU_C1            "menu_c1"
+#define JSON_NDS_MENU_C2            "menu_c2"
+
+#define GFX_ACTION_NONE             0
+#define GFX_ACTION_FLIP             1
+#define GFX_ACTION_COPY0            2
+#define GFX_ACTION_COPY1            3
+
+#define RELOAD_BG_COUNT             5
+#define MAX_QUEUE                   2
+
+#define NDS_LANG_EN                 0
+
+#define MAX_LANG_LINE               128
+#define MAX_MENU_LINE               128
+
+#define NDS_DRASTIC_MENU_MAIN           1
+#define NDS_DRASTIC_MENU_OPTION         2
+#define NDS_DRASTIC_MENU_CONTROLLER     3
+#define NDS_DRASTIC_MENU_CONTROLLER2    4
+#define NDS_DRASTIC_MENU_FIRMWARE       5
+#define NDS_DRASTIC_MENU_CHEAT          6
+#define NDS_DRASTIC_MENU_ROM            7
 
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
@@ -140,28 +171,48 @@ typedef struct _GFX {
         } src, dst, overlay;
         MI_GFX_Opt_t opt;
     } hw;
+
+    int action;
+    struct _THREAD {
+        void *pixels;
+        SDL_Rect srt;
+        SDL_FRect drt;
+        SDL_Texture *texture;
+    } thread[MAX_QUEUE];
 } GFX;
 
 typedef struct _NDS {
+    int lang;
     int mincpu;
     int maxcpu;
     int volume;
     int dis_mode;
     int alt_mode;
     int hres_mode;
+    int cust_menu;
     int swap_l1l2;
     int swap_r1r2;
+    int dpad_90d;
     int defer_update_bg;
     char cfg_path[MAX_PATH];
 
-    TTF_Font *sfont;
-    TTF_Font *bfont;
+    TTF_Font *font;
     uint32_t state;
 
     struct _MENU {
         int enable;
         SDL_Surface *bg;
         SDL_Surface *cursor;
+        struct _DRASTIC {
+            SDL_Surface *bg;
+            SDL_Surface *main;
+            SDL_Surface *yes;
+            SDL_Surface *no;
+            SDL_Surface *cursor;
+        } drastic;
+        uint32_t c0;
+        uint32_t c1;
+        uint32_t c2;
     } menu;
 
     struct _ALPHA {
@@ -198,21 +249,42 @@ typedef struct _NDS {
     } pen;
 } NDS;
 
+typedef struct _CUST_MENU_SUB {
+    int x;
+    int y;
+    int cheat;
+    int enable;
+    uint32_t fg;
+    uint32_t bg;
+    char msg[128];
+} CUST_MENU_SUB;
+
+typedef struct _CUST_MENU {
+    int cnt;
+    CUST_MENU_SUB item[MAX_MENU_LINE];
+} CUST_MENU;
+
+void neon_memcpy(void *dest, const void *src, size_t n);
+
 void GFX_Clear(void);
 void GFX_Flip(void);
 int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate);
 
 int draw_pen(const void *pixels, int width, int pitch);
-int draw_info(SDL_Surface *dst, int is_big, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor);
+int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor);
 
-int get_font_width(const char *info, int is_big);
-int get_font_height(const char *info, int is_big);
+int get_font_width(const char *info);
+int get_font_height(const char *info);
 
 int reload_bg(void);
 int reload_pen(void);
 int reload_overlay(void);
 
 int handle_menu(int key);
+int process_drastic_menu(void);
+int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcrect, const SDL_FRect *dstrect);
+const void* get_pixels(void *chk);
+const char *to_lang(const char *p);
 
 #endif
 
