@@ -31,7 +31,7 @@ static uint8_t *pcm_buf = NULL;
 static uint8_t *pcm_dummy = NULL;
 static struct json_object *jfile = NULL;
 
-#define JSON_FILE           "/appconfigs/system.json"
+#define JSON_APP_FILE       "/appconfigs/system.json"
 #define JSON_VOL_KEY        "vol"
 #define PERIOD              2048
 #define FREQ                44100
@@ -49,6 +49,8 @@ typedef struct {
 
 static pthread_t thread;
 static queue_t queue = {0};
+static int audio_feed = 768;
+static int audio_delay = 1000;
 
 #define MAX_VOLUME          20
 #define MIN_RAW_VALUE       -60
@@ -138,6 +140,22 @@ int volume_dec(void)
         set_volume(cur_volume);
     }
     return cur_volume;
+}
+
+void update_audio_settings(int feed, int delay)
+{
+    audio_feed = feed;
+    audio_delay = delay;
+    printf("audio_feed: %d\n", audio_feed);
+    printf("audio_delay: %d\n", audio_delay);
+
+    if ((audio_feed < 0) || (audio_delay < 0)) {
+        audio_feed = pcm_buf_len;
+        audio_delay = ((stSetAttr.u32PtNumPerFrm * 1000) / stSetAttr.eSamplerate - 10) * 1000;
+        printf("Invalid audio settings !\n");
+        printf("Reset audio_feed as %d\n", audio_feed);
+        printf("Reset audio_delay as %d\n", audio_delay);
+    }
 }
 
 static void queue_init(queue_t *q, size_t s)
@@ -238,10 +256,12 @@ static void *audio_handler(void *threadid)
 {
     MI_S32 s32RetSendStatus = 0;
     MI_AUDIO_Frame_t aoTestFrame;
-    int r = 0, len = pcm_buf_len, use_dummy = 0;
+    int r = 0, len = pcm_buf_len, use_dummy = 0, feed = 0, delay = 0;
 
     while (pcm_ready) {
         use_dummy = 1;
+        feed = pcm_buf_len;
+        delay = ((stSetAttr.u32PtNumPerFrm * 1000) / stSetAttr.eSamplerate - 10) * 1000;
         r = queue_get(&queue, pcm_buf, len);
         if (r > 0) {
             len-= r;
@@ -250,16 +270,30 @@ static void *audio_handler(void *threadid)
                 len = pcm_buf_len;
             }
         }
-        
-        aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
-        aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
-        aoTestFrame.u32Len = pcm_buf_len;
-        aoTestFrame.apVirAddr[0] = use_dummy ? pcm_dummy : pcm_buf;
-        aoTestFrame.apVirAddr[1] = NULL;
-        do {
-            s32RetSendStatus = MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
-            usleep(((stSetAttr.u32PtNumPerFrm * 1000) / stSetAttr.eSamplerate - 10) * 1000);
-        } while(s32RetSendStatus == MI_AO_ERR_NOBUF);
+
+        if (use_dummy) {
+            // stSetAttr.u32PtNumPerFrm >= 441
+            // (((8192 * 1000) / 44100) - 10) * 1000 = 175.759us
+            // usleep(((stSetAttr.u32PtNumPerFrm * 1000) / stSetAttr.eSamplerate - 10) * 1000);
+
+            feed = audio_feed;
+            delay = audio_delay;
+        }
+
+        if (feed > 0) {
+            aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
+            aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
+            aoTestFrame.u32Len = feed;
+            aoTestFrame.apVirAddr[0] = use_dummy ? pcm_dummy : pcm_buf;
+            aoTestFrame.apVirAddr[1] = NULL;
+            do {
+                s32RetSendStatus = MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
+                usleep(delay);
+            } while(s32RetSendStatus == MI_AO_ERR_NOBUF);
+        }
+        else {
+            usleep(delay);
+        }
     }
     pthread_exit(NULL);
 }
@@ -371,14 +405,14 @@ int snd_pcm_start(snd_pcm_t *pcm)
     }
     memset(pcm_dummy, 0, pcm_buf_len);
 
-    jfile = json_object_from_file(JSON_FILE);
+    jfile = json_object_from_file(JSON_APP_FILE);
     if (jfile != NULL) {
         struct json_object *volume = NULL;
 
         json_object_object_get_ex(jfile, JSON_VOL_KEY, &volume);
         cur_volume = json_object_get_int(volume);
         //json_object_object_add(jfile, JSON_VOL_KEY, json_object_new_int(2));
-        //json_object_to_file(JSON_FILE, jfile);
+        //json_object_to_file(JSON_APP_FILE, jfile);
         json_object_put(jfile);
     }
 
@@ -419,7 +453,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stAoChn0OutputPort0.u32ChnId = AoChn;
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
-
+    
     pcm_ready = 1;
     set_volume(cur_volume);
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);
