@@ -116,6 +116,8 @@
 #define JSON_NDS_MIN_CPU            "mincpu"
 #define JSON_NDS_OVERLAY            "overlay"
 #define JSON_NDS_ALT_MODE           "alt"
+#define JSON_NDS_SWAP_L1L2          "swap_l1l2"
+#define JSON_NDS_SWAP_R1R2          "swap_r1r2"
 
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
@@ -147,6 +149,8 @@ typedef struct _NDS {
     int dis_mode;
     int alt_mode;
     int hres_mode;
+    int swap_l1l2;
+    int swap_r1r2;
     int defer_update_bg;
     char cfg_path[MAX_PATH];
 

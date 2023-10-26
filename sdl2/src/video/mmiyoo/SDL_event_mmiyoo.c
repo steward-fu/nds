@@ -42,6 +42,7 @@ MMIYOO_EventInfo MMiyooEventInfo = {0};
 
 extern NDS nds;
 extern MMIYOO_VideoInfo MMiyooVideoInfo;
+extern int down_scale;
 
 static int running = 0;
 static int event_fd = -1;
@@ -88,8 +89,29 @@ static int get_move_interval(int type)
 
 int EventUpdate(void *data)
 {
+    const uint32_t L1 = 18;
+    const uint32_t L2 = 15;
+    const uint32_t R1 = 20;
+    const uint32_t R2 = 14;
+
     struct input_event ev = {0};
     uint32_t bit = 0, hotkey = 0;
+    uint32_t l1 = L1;
+    uint32_t l2 = L2;
+    uint32_t r1 = R1;
+    uint32_t r2 = R2;
+
+    if (nds.swap_l1l2) {
+        l1 = L2;
+        l2 = L1;
+        printf("Swap L1 and L2 keys\n");
+    }
+
+    if (nds.swap_r1r2) {
+        r1 = R2;
+        r2 = R1;
+        printf("Swap R1 and R2 keys\n");
+    }
 
     while (running) {
         SDL_SemWait(event_sem);
@@ -97,6 +119,12 @@ int EventUpdate(void *data)
             if (read(event_fd, &ev, sizeof(struct input_event))) {
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
                     //printf("%s, code:%d\n", __func__, ev.code);
+
+                    if (ev.code == l1) { bit = (1 << MYKEY_L1); }
+                    if (ev.code == l2) { bit = (1 << MYKEY_L2); }
+                    if (ev.code == r1) { bit = (1 << MYKEY_R1); }
+                    if (ev.code == r2) { bit = (1 << MYKEY_R2); }
+
                     switch (ev.code) {
                     case 103: bit = (1 << MYKEY_UP);     break;
                     case 108: bit = (1 << MYKEY_DOWN);   break;
@@ -109,10 +137,6 @@ int EventUpdate(void *data)
                     case 28:  bit = (1 << MYKEY_START);  break;
                     case 97:  bit = (1 << MYKEY_SELECT); break;
                     case 1:   bit = (1 << MYKEY_MENU);   break;
-                    case 18:  bit = (1 << MYKEY_L1);     break;
-                    case 15:  bit = (1 << MYKEY_L2);     break;
-                    case 20:  bit = (1 << MYKEY_R1);     break;
-                    case 14:  bit = (1 << MYKEY_R2);     break;
                     case 116: bit = (1 << MYKEY_POWER);  break;
                     case 115: bit = (1 << MYKEY_VOLUP);
                         if (is_stock_system && (ev.value == 0)) {
@@ -169,6 +193,11 @@ int EventUpdate(void *data)
                             nds.dis_mode = tmp;
                         }
                         MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_A);
+                    }
+                    
+                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_B))) {
+                        down_scale = down_scale ? 0 : 1;
+                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_B);
                     }
                     
                     if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_Y))) {
@@ -432,8 +461,8 @@ void MMIYOO_PumpEvents(_THIS)
                 switch (nds.dis_mode) {
                 case NDS_DIS_MODE_VH_T0:
                 case NDS_DIS_MODE_VH_T1:
-                case NDS_DIS_MODE_S0:
-                case NDS_DIS_MODE_S1:
+                //case NDS_DIS_MODE_S0:
+                //case NDS_DIS_MODE_S1:
                     addy = -120;
                     break;
                 }

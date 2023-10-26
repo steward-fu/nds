@@ -61,6 +61,8 @@
 NDS nds = {0};
 MMIYOO_VideoInfo MMiyooVideoInfo={0};
 
+int down_scale = 1;
+
 static GFX gfx = {0};
 static SDL_Surface *cvt = NULL;
 
@@ -204,6 +206,18 @@ static int read_config(void)
             printf("Invalid nds.overlay.sel(%d), reset as 0\n", nds.overlay.sel);
             nds.overlay.sel = 0;
         }
+    }
+
+    json_object_object_get_ex(jfile, JSON_NDS_SWAP_L1L2, &jval);
+    if (jval) {
+        nds.swap_l1l2 = json_object_get_int(jval) ? 1 : 0;
+        printf("[json] nds.swap_l1l2: %d\n", nds.swap_l1l2);
+    }
+
+    json_object_object_get_ex(jfile, JSON_NDS_SWAP_R1R2, &jval);
+    if (jval) {
+        nds.swap_r1r2 = json_object_get_int(jval) ? 1 : 0;
+        printf("[json] nds.swap_r1r2: %d\n", nds.swap_r1r2);
     }
 
     reload_pen();
@@ -633,8 +647,8 @@ int draw_pen(const void *pixels, int width, int pitch)
     switch (nds.dis_mode) {
     case NDS_DIS_MODE_VH_T0:
     case NDS_DIS_MODE_VH_T1:
-    case NDS_DIS_MODE_S0:
-    case NDS_DIS_MODE_S1:
+    //case NDS_DIS_MODE_S0:
+    //case NDS_DIS_MODE_S1:
         sub = sh;
         break;
     }
@@ -866,6 +880,57 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             dstrect.y = 0;
             break;
         }
+    }
+
+    if ((copy_it) && (down_scale)) {
+        do {
+            if (nds.hres_mode != 0) {
+                break;
+            }
+
+            if ((srcrect.w != 256) || (srcrect.h != 192)) {
+                break;
+            }
+
+            asm volatile (
+                "1:  mov r8, %2             ;"
+                "    add r9, %1, %3         ;"
+                "2:  vldmia %0!, {q8-q11}   ;"
+                "    vdup.32 d31, d23[1]    ;"
+                "    vdup.32 d30, d23[0]    ;"
+                "    vdup.32 d29, d22[1]    ;"
+                "    vdup.32 d28, d22[0]    ;"
+                "    vdup.32 d27, d21[1]    ;"
+                "    vdup.32 d26, d21[0]    ;"
+                "    vdup.32 d25, d20[1]    ;"
+                "    vdup.32 d24, d20[0]    ;"
+                "    vdup.32 d23, d19[1]    ;"
+                "    vdup.32 d22, d19[0]    ;"
+                "    vdup.32 d21, d18[1]    ;"
+                "    vdup.32 d20, d18[0]    ;"
+                "    vdup.32 d19, d17[1]    ;"
+                "    vdup.32 d18, d17[0]    ;"
+                "    vdup.32 d17, d16[1]    ;"
+                "    vdup.32 d16, d16[0]    ;"
+                "    vstmia %1!, {q8-q15}   ;"
+                "    vstmia r9!, {q8-q15}   ;"
+                "    subs r8, #1            ;"
+                "    bne 2b                 ;"
+                "    add %1, %1, %3         ;"
+                "    subs %4, #1            ;"
+                "    bne 1b                 ;"
+                :
+                : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(16), "r"(512 * 4), "r"(192)
+                : "r8", "r9", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
+            );
+
+            copy_it = 0;
+            srcrect.x = 0;
+            srcrect.y = 0;
+            srcrect.w = 512;
+            srcrect.h = 384;
+            pitch = srcrect.w * 4;
+        } while(0);
     }
 
     if (copy_it) {
@@ -1349,8 +1414,8 @@ int MMIYOO_VideoInit(_THIS)
     SDL_AddVideoDisplay(&display, SDL_FALSE);
     
     GFX_Init();
-    MMIYOO_EventInit();
     read_config();
+    MMIYOO_EventInit();
     return 0;
 }
 
