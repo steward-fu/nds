@@ -14,6 +14,12 @@
    - [Mode 10 - 384x288, 256x192](#mode-10)
    - [Mode 11 - 384x288, 256x192](#mode-11)
    - [Mode 12 - 427x320, 427x320](#mode-12)
+ - [Display Modes (High Resolution)](#display-modes-high-resolution)
+   - [Mode 0 - 512x384](#mode-0)
+   - [Mode 1 - 640x480](#mode-1)
+ - [Video Filters](#video-filters)
+   - [Pixel](#pixel) 
+   - [Blur](#blur)
 
 ## Introduction
 This repository hosts all of resources, which include SDL2 and ALSA source code, needed for NDS emulator on Miyoo Mini (Plus) handheld. The NDS emulator we used is DraStic emulator (close-source) that obtained from RetroPie package and the ELF binary is in ARM32 format, not AArch64. The DraStic version is v2.5.0.4 and sha1 is ae9c215bdea88359cbcb3c259ce0d60a1f59986c. In this porting, I focusd on SDL2 and ALSA libraries and heavily customized for DraStic emulator on Miyoo Mini (Plus) handheld. Therefore, there are some hooking points used in this emulator. To make sure it works as expected, please use the correct DraStic emulator. It is welcome to file any suggestion or issue to this GitHub but I must say that I cannot make sure whether it can be fixed. Since this porting is heavily customized, it is not recommended for generic use-case on Miyoo Mini (Plus) handheld.
@@ -93,6 +99,28 @@ Screen Resolution: 427x320, 427x320
 Background Image: bg_hh0.png
 | ![image](images/dis_12.png) |
 |-|
+
+## Display Modes (High Resolution)
+### Mode 0
+Screen Resolution: 512x384  
+Background Image: bg_hres0.png
+| ![image](images/hres_0.png) |
+|-|
+
+### Mode 1
+Screen Resolution: 640x480
+| ![image](images/hres_1.png) |
+|-|
+
+## Video Filters
+### Pixel
+| ![image](images/filter_pixel.png) |
+|-|
+
+### Blur
+| ![image](images/filter_blur.png) |
+|-|
+
 
 ## How to prepare the build environment on Debian 10 x64
 ```
