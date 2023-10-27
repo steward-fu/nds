@@ -897,6 +897,14 @@ void my_savestate_chk1(void)
     );
 }
 
+void my_signal(int sig)
+{
+    quit _func = (quit)QUIT;
+
+    printf(PREFIX"Oops sigterm !\n");
+    _func((void*)NDS_SYSTEM);
+}
+
 static void patch_it(void)
 {
     uint32_t val = 0;
@@ -2459,6 +2467,8 @@ int MMIYOO_VideoInit(_THIS)
 {
     SDL_DisplayMode mode={0};
     SDL_VideoDisplay display={0};
+
+    signal(SIGTERM, my_signal);
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;

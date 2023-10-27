@@ -160,6 +160,7 @@
 #define LOAD_STATE_INDEX    0x08095ce4
 #define SAVE_STATE_INDEX    0x08095c10
 #define SCREEN_COPY16       0x080a59d8
+#define QUIT                0x08006444
 
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
@@ -302,6 +303,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
 const void* get_pixels(void *chk);
 const char *to_lang(const char *p);
 
+typedef void (*quit)(void *system);
 typedef void (*screen_copy16)(uint16_t *dest, uint32_t screen_number);
 typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
 typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);

@@ -1,2 +1,2 @@
-#define SDL_REVISION "ssh://git@github.com/steward-fu/sdl@f15c1e9743d1e7f4cee87b2d289c0ec6aa503113"
+#define SDL_REVISION "ssh://git@github.com/steward-fu/sdl@3783e9d7aa1c1702ae9715c684897eee3082c3b2"
 #define SDL_REVISION_NUMBER 0
