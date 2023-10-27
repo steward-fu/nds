@@ -128,7 +128,6 @@ static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
         mmiyoo_texture->bits = 32;
         break;
     default:
-        printf("%s, invalid format %d\n", __func__, mmiyoo_texture->format);
         return -1;
     }
 
@@ -596,13 +595,15 @@ static int MMIYOO_RenderReadPixels(SDL_Renderer *renderer, const SDL_Rect *rect,
 
 static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
 {
-    static int need_loadstate = 15;
-    load_state_index _func = (load_state_index)LOAD_STATE_INDEX;
+    if (nds.auto_state > 0) {
+        static int need_loadstate = 15;
+        load_state_index _func = (load_state_index)LOAD_STATE_INDEX;
 
-    if (need_loadstate > 0) {
-        need_loadstate-= 1;
-        if (need_loadstate == 0) {
-            _func((void*)NDS_SYSTEM, 0, 0, 0, 0);
+        if (need_loadstate > 0) {
+            need_loadstate-= 1;
+            if (need_loadstate == 0) {
+                _func((void*)NDS_SYSTEM, nds.auto_slot, 0, 0, 0);
+            }
         }
     }
 

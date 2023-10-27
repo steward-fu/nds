@@ -81,12 +81,6 @@ static void MMIYOO_VideoQuit(_THIS);
 static CUST_MENU drastic_menu = {0};
 static char *translate[MAX_LANG_LINE] = {0};
 
-void sigterm(int signum)
-{
-    MMIYOO_VideoQuit(NULL);
-    printf("Oops ! sigterm caught!\n");
-}
-
 static int get_current_menu_layer(void)
 {
     int cc = 0;
@@ -1011,16 +1005,16 @@ static int read_config(void)
 
     jfile = json_object_from_file(nds.cfg_path);
     if (jfile == NULL) {
-        printf("Failed to read settings from json file (%s)\n", nds.cfg_path);
+        printf(PREFIX"failed to read settings from json file (%s)\n", nds.cfg_path);
         return -1;
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_PEN_SEL, &jval);
     if (jval) {
         nds.pen.sel = json_object_get_int(jval);
-        printf("[json] nds.pen.sel: %d\n", nds.pen.sel);
+        printf(PREFIX"[json] nds.pen.sel: %d\n", nds.pen.sel);
         if (nds.pen.sel >= nds.pen.max) {
-            printf("Invalid nds.pen.sel(%d), reset as 0\n", nds.pen.sel);
+            printf(PREFIX"invalid nds.pen.sel(%d), reset as 0\n", nds.pen.sel);
             nds.pen.sel = 0;
         }
     }
@@ -1028,15 +1022,15 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_PEN_POS, &jval);
     if (jval) {
         nds.pen.pos = json_object_get_int(jval) == 0 ? 0 : 1;
-        printf("[json] nds.pen.pos: %d\n", nds.pen.pos);
+        printf(PREFIX"[json] nds.pen.pos: %d\n", nds.pen.pos);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_THEME_SEL, &jval);
     if (jval) {
         nds.theme.sel = json_object_get_int(jval);
-        printf("[json] nds.theme.sel: %d\n", nds.theme.sel);
+        printf(PREFIX"[json] nds.theme.sel: %d\n", nds.theme.sel);
         if (nds.theme.sel > nds.theme.max) {
-            printf("Invalid nds.theme.sel(%d), reset as 0\n", nds.theme.sel);
+            printf(PREFIX"invalid nds.theme.sel(%d), reset as 0\n", nds.theme.sel);
             nds.theme.sel = 0;
         }
     }
@@ -1044,9 +1038,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_DIS_MODE, &jval);
     if (jval) {
         nds.dis_mode = json_object_get_int(jval);
-        printf("[json] nds.dis_mode: %d\n", nds.dis_mode);
+        printf(PREFIX"[json] nds.dis_mode: %d\n", nds.dis_mode);
         if (nds.dis_mode > NDS_DIS_MODE_LAST) {
-            printf("Invalid nds.dis_mode(%d), reset as 0\n", nds.dis_mode);
+            printf(PREFIX"invalid nds.dis_mode(%d), reset as 0\n", nds.dis_mode);
             nds.dis_mode = 0;
         }
     }
@@ -1054,9 +1048,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_ALT_MODE, &jval);
     if (jval) {
         nds.alt_mode = json_object_get_int(jval);
-        printf("[json] nds.alt_mode: %d\n", nds.alt_mode);
+        printf(PREFIX"[json] nds.alt_mode: %d\n", nds.alt_mode);
         if (nds.alt_mode > NDS_DIS_MODE_LAST) {
-            printf("Invalid nds.alt_mode(%d), reset as 0\n", nds.alt_mode);
+            printf(PREFIX"invalid nds.alt_mode(%d), reset as 0\n", nds.alt_mode);
             nds.alt_mode = 0;
         }
     }
@@ -1064,9 +1058,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_PEN_XV, &jval);
     if (jval) {
         nds.pen.xv = json_object_get_int(jval);
-        printf("[json] nds.xv: %d\n", nds.pen.xv);
+        printf(PREFIX"[json] nds.xv: %d\n", nds.pen.xv);
         if (nds.pen.xv <= 0) {
-            printf("Invalid nds.pen.xv(%d), reset as 10000\n", nds.pen.xv);
+            printf(PREFIX"invalid nds.pen.xv(%d), reset as 10000\n", nds.pen.xv);
             nds.pen.xv = 10000;
         }
     }
@@ -1074,9 +1068,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_PEN_YV, &jval);
     if (jval) {
         nds.pen.yv = json_object_get_int(jval);
-        printf("[json] nds.yv: %d\n", nds.pen.yv);
+        printf(PREFIX"[json] nds.yv: %d\n", nds.pen.yv);
         if (nds.pen.yv <= 0) {
-            printf("Invalid nds.pen.yv(%d), reset as 12000\n", nds.pen.yv);
+            printf(PREFIX"invalid nds.pen.yv(%d), reset as 12000\n", nds.pen.yv);
             nds.pen.yv = 12000;
         }
     }
@@ -1084,9 +1078,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_ALPHA_VALUE, &jval);
     if (jval) {
         nds.alpha.val = json_object_get_int(jval);
-        printf("[json] nds.alpha.val: %d\n", nds.alpha.val);
+        printf(PREFIX"[json] nds.alpha.val: %d\n", nds.alpha.val);
         if ((nds.alpha.val < 0) || (nds.alpha.val > NDS_ALPHA_MAX)) {
-            printf("Invalid nds.alpha.val(%d), reset as 0\n", nds.alpha.val);
+            printf(PREFIX"invalid nds.alpha.val(%d), reset as 0\n", nds.alpha.val);
             nds.alpha.val = 0;
         }
     }
@@ -1094,9 +1088,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_ALPHA_POSITION, &jval);
     if (jval) {
         nds.alpha.pos = json_object_get_int(jval);
-        printf("[json] nds.alpha.pos: %d\n", nds.alpha.pos);
+        printf(PREFIX"[json] nds.alpha.pos: %d\n", nds.alpha.pos);
         if ((nds.alpha.pos < 0) || (nds.alpha.pos >= 4)) {
-            printf("Invalid nds.alpha.pos(%d), reset as 0\n", nds.alpha.pos);
+            printf(PREFIX"invalid nds.alpha.pos(%d), reset as 0\n", nds.alpha.pos);
             nds.alpha.pos = 0;
         }
     }
@@ -1105,15 +1099,15 @@ static int read_config(void)
     if (jval) {
         nds.alpha.border = json_object_get_int(jval);
         nds.alpha.border%= NDS_BORDER_MAX;
-        printf("[json] nds.alpha.border: %d\n", nds.alpha.border);
+        printf(PREFIX"[json] nds.alpha.border: %d\n", nds.alpha.border);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_MAX_CPU, &jval);
     if (jval) {
         nds.maxcpu = json_object_get_int(jval);
-        printf("[json] nds.maxcpu: %d\n", nds.maxcpu);
+        printf(PREFIX"[json] nds.maxcpu: %d\n", nds.maxcpu);
         if (nds.maxcpu < 0) {
-            printf("Invalid nds.maxcpu(%d), reset as 1600\n", nds.maxcpu);
+            printf(PREFIX"invalid nds.maxcpu(%d), reset as 1600\n", nds.maxcpu);
             nds.maxcpu = 1600;
         }
     }
@@ -1121,9 +1115,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_MIN_CPU, &jval);
     if (jval) {
         nds.mincpu = json_object_get_int(jval);
-        printf("[json] nds.mincpu: %d\n", nds.mincpu);
+        printf(PREFIX"[json] nds.mincpu: %d\n", nds.mincpu);
         if (nds.mincpu < 0) {
-            printf("Invalid nds.mincpu(%d), reset as 500\n", nds.mincpu);
+            printf(PREFIX"invalid nds.mincpu(%d), reset as 500\n", nds.mincpu);
             nds.mincpu = 500;
         }
     }
@@ -1131,9 +1125,9 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_OVERLAY, &jval);
     if (jval) {
         nds.overlay.sel = json_object_get_int(jval);
-        printf("[json] nds.overlay.sel: %d\n", nds.overlay.sel);
+        printf(PREFIX"[json] nds.overlay.sel: %d\n", nds.overlay.sel);
         if (nds.overlay.sel < 0) {
-            printf("Invalid nds.overlay.sel(%d), reset as 0\n", nds.overlay.sel);
+            printf(PREFIX"invalid nds.overlay.sel(%d), reset as 0\n", nds.overlay.sel);
             nds.overlay.sel = 0;
         }
     }
@@ -1141,25 +1135,25 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_SWAP_L1L2, &jval);
     if (jval) {
         nds.swap_l1l2 = json_object_get_int(jval) ? 1 : 0;
-        printf("[json] nds.swap_l1l2: %d\n", nds.swap_l1l2);
+        printf(PREFIX"[json] nds.swap_l1l2: %d\n", nds.swap_l1l2);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_SWAP_R1R2, &jval);
     if (jval) {
         nds.swap_r1r2 = json_object_get_int(jval) ? 1 : 0;
-        printf("[json] nds.swap_r1r2: %d\n", nds.swap_r1r2);
+        printf(PREFIX"[json] nds.swap_r1r2: %d\n", nds.swap_r1r2);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_DPAD_90D, &jval);
     if (jval) {
         nds.dpad_90d = json_object_get_int(jval) ? 1 : 0;
-        printf("[json] nds.dpad_90d: %d\n", nds.dpad_90d);
+        printf(PREFIX"[json] nds.dpad_90d: %d\n", nds.dpad_90d);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_CUST_MENU, &jval);
     if (jval) {
         nds.cust_menu = json_object_get_int(jval) ? 1 : 0;
-        printf("[json] nds.cust_menu: %d\n", nds.cust_menu);
+        printf(PREFIX"[json] nds.cust_menu: %d\n", nds.cust_menu);
     }
 
     nds.menu.c0 = 0xffffff;
@@ -1167,7 +1161,7 @@ static int read_config(void)
     if (jval) {
         const char *p = json_object_get_string(jval);
         nds.menu.c0 = strtol(p, NULL, 16);
-        printf("[json] nds.menu.c0: 0x%x\n", nds.menu.c0);
+        printf(PREFIX"[json] nds.menu.c0: 0x%x\n", nds.menu.c0);
     }
 
     nds.menu.c1 = 0x000000;
@@ -1175,7 +1169,7 @@ static int read_config(void)
     if (jval) {
         const char *p = json_object_get_string(jval);
         nds.menu.c1 = strtol(p, NULL, 16);
-        printf("[json] nds.menu.c1: 0x%x\n", nds.menu.c1);
+        printf(PREFIX"[json] nds.menu.c1: 0x%x\n", nds.menu.c1);
     }
 
     nds.menu.c2 = 0x289a35;
@@ -1183,14 +1177,28 @@ static int read_config(void)
     if (jval) {
         const char *p = json_object_get_string(jval);
         nds.menu.c2 = strtol(p, NULL, 16);
-        printf("[json] nds.menu.c2: 0x%x\n", nds.menu.c2);
+        printf(PREFIX"[json] nds.menu.c2: 0x%x\n", nds.menu.c2);
+    }
+
+    nds.auto_state = 1;
+    json_object_object_get_ex(jfile, JSON_NDS_AUTO_STATE, &jval);
+    if (jval) {
+        nds.auto_state = json_object_get_int(jval) ? 1 : 0;
+        printf(PREFIX"[json] nds.auto_state: %d\n", nds.auto_state);
+    }
+
+    nds.auto_slot = 1;
+    json_object_object_get_ex(jfile, JSON_NDS_AUTO_SLOT, &jval);
+    if (jval) {
+        nds.auto_slot = json_object_get_int(jval);
+        printf(PREFIX"[json] nds.auto_slot: %d\n", nds.auto_slot);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_LANG, &jval);
     if (jval) {
         const char *lang = json_object_get_string(jval);
 
-        printf("[json] nds.lang: %s\n", lang);
+        printf(PREFIX"[json] nds.lang: %s\n", lang);
         if (strcasecmp(lang, "en") == 0) {
             nds.lang = NDS_LANG_EN;
         }
@@ -1230,6 +1238,8 @@ static int read_config(void)
     reload_pen();
     reload_overlay();
     json_object_put(jfile);
+
+    snd_nds_reload_config();
     return 0;
 }
 
@@ -1239,7 +1249,7 @@ static int write_config(void)
 
     jfile = json_object_from_file(nds.cfg_path);
     if (jfile == NULL) {
-        printf("Failed to write settings to json file (%s)\n", nds.cfg_path);
+        printf(PREFIX"failed to write settings to json file (%s)\n", nds.cfg_path);
         return -1;
     }
 
@@ -1255,7 +1265,7 @@ static int write_config(void)
 
     json_object_to_file_ext(nds.cfg_path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
-    printf("Writing settings to json file !\n");
+    printf(PREFIX"writing settings to json file done !\n");
     return 0;
 }
 
@@ -1288,7 +1298,7 @@ static int get_cpuclock(void)
         if (lpf_value && post_div) {
             rate = (divsrc / lpf_value * 2 / post_div * 16);
         }
-        printf("Current cpuclock=%u (lpf=%u, post_div=%u)\n", rate, lpf_value, post_div);
+        printf(PREFIX"current cpuclock=%u (lpf=%u, post_div=%u)\n", rate, lpf_value, post_div);
         munmap(pll_map, PLL_SIZE);
     }
     close(fd_mem);
@@ -1325,7 +1335,7 @@ static int set_cpuclock(uint32_t newclock)
 
     pll_map = mmap(0, PLL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_mem, BASE_REG_MPLL_PA);
     if (pll_map) {
-        printf("Set cpuclock %dMHz\n", newclock);
+        printf(PREFIX"set cpuclock %dMHz\n", newclock);
 
         newclock*= 1000;
         sprintf(clockstr, "%d", newclock);
@@ -1571,47 +1581,47 @@ void GFX_Init(void)
     }
 
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
-    printf("Surface for convert: %p\n", cvt);
+    printf(PREFIX"surface for convert: %p\n", cvt);
 
     nds.pen.sel = 0;
     nds.pen.max = get_pen_count();
-    printf("How many pen:%d\n", nds.pen.max);
+    printf(PREFIX"how many pen:%d\n", nds.pen.max);
 
     nds.theme.sel = 0;
     nds.theme.max = get_theme_count();
-    printf("How many theme:%d\n", nds.theme.max);
+    printf(PREFIX"how many theme:%d\n", nds.theme.max);
 
     nds.overlay.sel = nds.overlay.max = get_overlay_count();
-    printf("How many overlay:%d\n", nds.overlay.max);
+    printf(PREFIX"how many overlay:%d\n", nds.overlay.max);
 
     t = IMG_Load(MENU_BG_FILE);
     if (t) {
         nds.menu.bg = SDL_ConvertSurface(t, cvt->format, 0);
-        printf("Menu bg: %p\n", nds.menu.bg);
+        printf(PREFIX"menu bg: %p\n", nds.menu.bg);
         SDL_FreeSurface(t);
     }
     nds.menu.cursor = IMG_Load(MENU_CURSOR_FILE);
-    printf("Menu cursor: %p\n", nds.menu.cursor);
+    printf(PREFIX"menu cursor: %p\n", nds.menu.cursor);
 
     t = IMG_Load(DRASTIC_MENU_BG_FILE);
     if (t) {
         nds.menu.drastic.bg = SDL_ConvertSurface(t, cvt->format, 0);
-        printf("DraStic menu bg: %p\n", nds.menu.drastic.bg);
+        printf(PREFIX"drastic menu bg: %p\n", nds.menu.drastic.bg);
         SDL_FreeSurface(t);
     }
     nds.menu.drastic.cursor = IMG_Load(DRASTIC_MENU_CURSOR_FILE);
     if (nds.menu.drastic.cursor) {
-        printf("DraStic menu cursor: %p\n", nds.menu.drastic.cursor);
+        printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
     }
     
     nds.menu.drastic.yes = IMG_Load(DRASTIC_MENU_YES_FILE);
     if (nds.menu.drastic.yes) {
-        printf("DraStic menu yes: %p\n", nds.menu.drastic.yes);
+        printf(PREFIX"drastic menu yes: %p\n", nds.menu.drastic.yes);
     }
     
     nds.menu.drastic.no = IMG_Load(DRASTIC_MENU_NO_FILE);
     if (nds.menu.drastic.no) {
-        printf("DraStic menu no: %p\n", nds.menu.drastic.no);
+        printf(PREFIX"drastic menu no: %p\n", nds.menu.drastic.no);
     }
     
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
@@ -1627,7 +1637,7 @@ void GFX_Init(void)
 
     TTF_Init();
     nds.font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
-    printf("nds.font: %p\n", nds.font);
+    printf(PREFIX"nds.font: %p\n", nds.font);
 
     is_running = 1;
     gfx.action = GFX_ACTION_NONE;
@@ -2195,7 +2205,7 @@ int reload_pen(void)
 
         nds.pen.type = PEN_LB;
         if (get_file_path(nds.pen.path, nds.pen.sel, buf, 1) == 0) {
-            printf("Pen (%s)\n", buf);
+            printf(PREFIX"pen (%s)\n", buf);
             t = IMG_Load(buf);
             if (t) {
                 nds.pen.img = SDL_ConvertSurface(t, cvt->format, 0);
@@ -2213,10 +2223,10 @@ int reload_pen(void)
                 else {
                     nds.pen.type = PEN_LB;
                 }
-                printf("Pen type %d\n", nds.pen.type);
+                printf(PREFIX"pen type %d\n", nds.pen.type);
             }
             else {
-                printf("Failed to load pen (%s)\n", buf);
+                printf(PREFIX"failed to load pen (%s)\n", buf);
             }
         }
     }
@@ -2289,14 +2299,14 @@ int reload_bg(void)
                         break;
                     }
                     
-                    printf("Wallpaper (%s)\n", buf);
+                    printf(PREFIX"wallpaper (%s)\n", buf);
                     t = IMG_Load(buf);
                     if (t) {
                         SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
                         SDL_FreeSurface(t);
                     }
                     else {
-                        printf("Failed to load wallpaper (%s)\n", buf);
+                        printf(PREFIX"failed to load wallpaper (%s)\n", buf);
                     }
                     GFX_Copy(nds.theme.img->pixels, srt, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
                 }
@@ -2341,7 +2351,7 @@ int reload_overlay(void)
             SDL_FillRect(nds.overlay.img, &nds.overlay.img->clip_rect, SDL_MapRGB(nds.overlay.img->format, 0x00, 0x00, 0x00));
 
             if (get_file_path(nds.overlay.path, nds.overlay.sel, buf, 1) == 0) {
-                printf("Overlay (%s)\n", buf);
+                printf(PREFIX"overlay (%s)\n", buf);
                 t = IMG_Load(buf);
                 if (t) {
                     SDL_BlitSurface(t, NULL, nds.overlay.img, NULL);
@@ -2360,7 +2370,7 @@ int reload_overlay(void)
                     MI_SYS_FlushInvCache(gfx.overlay.virAddr, FB_W * FB_H * FB_BPP);
                 }
                 else {
-                    printf("Failed to load overlay (%s)\n", buf);
+                    printf(PREFIX"failed to load overlay (%s)\n", buf);
                 }
             }
         }
@@ -2386,7 +2396,7 @@ int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
 {
     SDL_SetMouseFocus(window);
     MMiyooVideoInfo.window = window;
-    printf("%s, w:%d, h:%d\n", __func__, window->w, window->h);
+    printf(PREFIX"width: %d, height: %d\n", window->w, window->h);
     //glUpdateBufferSettings(fb_flip, &fb_idx, fb_vaddr);
     return 0;
 }
@@ -2528,14 +2538,6 @@ int MMIYOO_VideoInit(_THIS)
     if (nds.cust_menu) {
         patch_it();
     }
-
-    {
-        struct sigaction action;
-
-        memset(&action, 0, sizeof(action));
-        action.sa_handler = sigterm;
-        sigaction(SIGTERM, &action, NULL);
-    }
     return 0;
 }
 
@@ -2548,11 +2550,11 @@ void MMIYOO_VideoQuit(_THIS)
 {
     int cc = 0;
 
-    printf("Wait for savestate complete\n");
+    printf(PREFIX"wait for savestate complete\n");
     while (savestate_busy) {
         usleep(1000000);
     }
-    printf("Wait for savestate done\n");
+    printf(PREFIX"wait for savestate done\n");
     system("sync");
 
     if (nds.cust_menu) {

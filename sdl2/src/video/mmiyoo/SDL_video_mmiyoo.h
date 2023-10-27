@@ -53,6 +53,7 @@
     #define MAX_PATH 255
 #endif
 
+#define PREFIX                      "[SDL] "
 #define FB_W                        640
 #define FB_H                        480
 #define FB_BPP                      4
@@ -128,6 +129,8 @@
 #define JSON_NDS_MENU_C0            "menu_c0"
 #define JSON_NDS_MENU_C1            "menu_c1"
 #define JSON_NDS_MENU_C2            "menu_c2"
+#define JSON_NDS_AUTO_STATE         "auto_state"
+#define JSON_NDS_AUTO_SLOT          "auto_slot"
 
 #define GFX_ACTION_NONE             0
 #define GFX_ACTION_FLIP             1
@@ -201,6 +204,8 @@ typedef struct _NDS {
     int swap_l1l2;
     int swap_r1r2;
     int dpad_90d;
+    int auto_slot;
+    int auto_state;
     int defer_update_bg;
     char cfg_path[MAX_PATH];
 
@@ -273,6 +278,8 @@ typedef struct _CUST_MENU {
     CUST_MENU_SUB item[MAX_MENU_LINE];
 } CUST_MENU;
 
+int snd_nds_savestate(int slot);
+void snd_nds_reload_config(void);
 void neon_memcpy(void *dest, const void *src, size_t n);
 
 void GFX_Clear(void);

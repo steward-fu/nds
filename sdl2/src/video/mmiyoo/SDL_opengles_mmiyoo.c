@@ -81,7 +81,7 @@ SDL_GLContext glCreateContext(_THIS, SDL_Window *window)
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglInitialize(display, &majorVersion, &minorVersion);
     eglGetConfigs(display, NULL, 0, &numConfigs);
-    printf("sdl2 eglGetConfigs %d\n", numConfigs);
+    printf(PREFIX"sdl2 eglGetConfigs %d\n", numConfigs);
     
     cfgs = SDL_malloc(numConfigs * sizeof(EGLConfig));
     if(cfgs == NULL) {
@@ -111,27 +111,27 @@ SDL_GLContext glCreateContext(_THIS, SDL_Window *window)
         }
 
         config = cfgs[i];
-        printf("sdl2 set config %d\n", i);
+        printf(PREFIX"sdl2 set config %d\n", i);
         break;
     }
     SDL_free(cfgs);
 
-    printf("sdl2 eglCreateContext\n");
+    printf(PREFIX"sdl2 eglCreateContext\n");
     context = eglCreateContext(display, config, EGL_NO_CONTEXT, (EGLint *)&egl_ctx_attr);
     if(context == EGL_NO_CONTEXT) {
         return NULL;
     }
 
-    printf("sdl2 eglCreateWindowSurface\n");
+    printf(PREFIX"sdl2 eglCreateWindowSurface\n");
     surface = eglCreateWindowSurface(display, config, 0, (EGLint*)&egl_surf_attr);
     if(surface == EGL_NO_SURFACE) {
         return NULL;
     }
 
-    printf("sdl2 eglMakeCurrent\n");
+    printf(PREFIX"sdl2 eglMakeCurrent\n");
     eglMakeCurrent(display, surface, surface, context);
     
-    printf("sdl2 %s, %p %p %p\n", __func__, ppFunc, pfb_idx, pfb_vaddr);
+    printf(PREFIX"sdl2 %s, %p %p %p\n", __func__, ppFunc, pfb_idx, pfb_vaddr);
     eglUpdateBufferSettings(display, surface, ppFunc, pfb_idx, pfb_vaddr);
     return context;
 }

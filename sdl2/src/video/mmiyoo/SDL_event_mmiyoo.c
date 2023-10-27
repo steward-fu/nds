@@ -114,13 +114,13 @@ int EventUpdate(void *data)
     if (nds.swap_l1l2) {
         l1 = L2;
         l2 = L1;
-        printf("Swap L1 and L2 keys\n");
+        printf(PREFIX"swap L1 and L2 keys\n");
     }
 
     if (nds.swap_r1r2) {
         r1 = R2;
         r2 = R1;
-        printf("Swap R1 and R2 keys\n");
+        printf(PREFIX"swap R1 and R2 keys\n");
     }
 
     while (running) {
@@ -318,12 +318,10 @@ void MMIYOO_EventInit(void)
     MMiyooEventInfo.mouse.y = 120 + (MMiyooEventInfo.mouse.maxy - MMiyooEventInfo.mouse.miny) / 2;
     MMiyooEventInfo.mode = MMIYOO_KEYPAD_MODE;
 
-#if defined(MMIYOO)
     event_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if(event_fd < 0){
-        printf("failed to open /dev/input/event0\n");
+        printf(PREFIX"failed to open /dev/input/event0\n");
     }
-#endif
 
     if((event_sem =  SDL_CreateSemaphore(1)) == NULL) {
         SDL_SetError("Can't create input semaphore");
@@ -343,7 +341,7 @@ void MMIYOO_EventInit(void)
     }
     else {
         is_stock_system = 1;
-        printf("Run on stock system\n");
+        printf(PREFIX"run on stock system\n");
     }
 }
 
