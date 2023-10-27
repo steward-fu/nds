@@ -596,6 +596,16 @@ static int MMIYOO_RenderReadPixels(SDL_Renderer *renderer, const SDL_Rect *rect,
 
 static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
 {
+    static int need_loadstate = 15;
+    load_state_index _func = (load_state_index)LOAD_STATE_INDEX;
+
+    if (need_loadstate > 0) {
+        need_loadstate-= 1;
+        if (need_loadstate == 0) {
+            _func((void*)NDS_SYSTEM, 0, 0, 0, 0);
+        }
+    }
+
     if (nds.menu.enable == 0) {
         if (threading_mode > 0) {
             gfx.action = GFX_ACTION_FLIP;

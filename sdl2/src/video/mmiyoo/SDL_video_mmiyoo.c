@@ -58,15 +58,13 @@
 
 #include "hex_pen.h"
 
-#define PRINT_STRING 0x080a5398
-
 NDS nds = {0};
 GFX gfx = {0};
 MMIYOO_VideoInfo MMiyooVideoInfo={0};
 
-int down_scale = 1;
-
 int show_fps = 0;
+int down_scale = 1;
+int savestate_busy = 0;
 SDL_Surface *fps_info = NULL;
 
 static pthread_t thread;
@@ -881,14 +879,65 @@ void my_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
     }
 }
 
+void my_savestate_chk0(void)
+{
+    asm volatile (
+        "mov r1, %0                 \n"
+        "mov r2, #1                 \n"
+        "str r2, [r1]               \n"
+        "add sp, sp, #(0x20 + 0)    \n"
+        "ldr pc, [sp], #4           \n"
+        ::"r"(&savestate_busy):
+    );
+}
+
+void my_savestate_chk1(void)
+{
+    asm volatile (
+        "mov r1, %0                 \n"
+        "mov r2, #0                 \n"
+        "str r2, [r1]               \n"
+        "add sp, sp, #(0x18 + 0)    \n"
+        "ldr pc, [sp], #4           \n"
+        ::"r"(&savestate_busy):
+    );
+}
+
 static void patch_it(void)
 {
+    uint32_t val = 0;
+    volatile uint8_t *base = NULL;
     size_t page_size = sysconf(_SC_PAGESIZE);
-    uint32_t val = (uint32_t)my_print_string;
-    volatile uint8_t *base = (uint8_t*)PRINT_STRING;
 
     #define ALIGN_ADDR(addr) ((void*)((size_t)(addr) & ~(page_size - 1)))
-    mprotect(ALIGN_ADDR(PRINT_STRING), page_size, PROT_READ | PROT_WRITE);
+
+    val = (uint32_t)my_print_string;
+    base = (uint8_t*)PRINT_STRING;
+    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
+    base[0] = 0x04;
+    base[1] = 0xf0;
+    base[2] = 0x1f;
+    base[3] = 0xe5;
+    base[4] = val >> 0;
+    base[5] = val >> 8;
+    base[6] = val >> 16;
+    base[7] = val >> 24;
+
+    val = (uint32_t)my_savestate_chk0;
+    base = (uint8_t*)SAVESTATE_CHK0;
+    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
+    base[0] = 0x04;
+    base[1] = 0xf0;
+    base[2] = 0x1f;
+    base[3] = 0xe5;
+    base[4] = val >> 0;
+    base[5] = val >> 8;
+    base[6] = val >> 16;
+    base[7] = val >> 24;
+
+    val = (uint32_t)my_savestate_chk1;
+    base = (uint8_t*)SAVESTATE_CHK1;
+    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
     base[0] = 0x04;
     base[1] = 0xf0;
     base[2] = 0x1f;
@@ -901,13 +950,24 @@ static void patch_it(void)
 
 static void unpatch_it(void)
 {
+    volatile uint32_t *base = NULL;
     size_t page_size = sysconf(_SC_PAGESIZE);
-    volatile uint32_t *dump = (uint32_t*)PRINT_STRING;
-
     #define ALIGN_ADDR(addr) ((void*)((size_t)(addr) & ~(page_size - 1)))
-    mprotect(ALIGN_ADDR(PRINT_STRING), page_size, PROT_READ | PROT_WRITE);
-    dump[0] = 0xe16d42f4;
-    dump[1] = 0xe1a05001;
+
+    base = (uint32_t*)PRINT_STRING;
+    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
+    base[0] = 0xe16d42f4;
+    base[1] = 0xe1a05001;
+
+    base = (uint32_t*)SAVESTATE_CHK0;
+    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
+    base[0] = 0xe28dd020;
+    base[1] = 0xe49df004;
+
+    base = (uint32_t*)SAVESTATE_CHK1;
+    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
+    base[0] = 0xe28dd018;
+    base[1] = 0xe49df004;
 }
 
 static void strip_newline(char *p)
@@ -2487,6 +2547,13 @@ static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMo
 void MMIYOO_VideoQuit(_THIS)
 {
     int cc = 0;
+
+    printf("Wait for savestate complete\n");
+    while (savestate_busy) {
+        usleep(1000000);
+    }
+    printf("Wait for savestate done\n");
+    system("sync");
 
     if (nds.cust_menu) {
         unpatch_it();
