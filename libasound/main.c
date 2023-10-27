@@ -24,19 +24,31 @@ static MI_AUDIO_DEV AoDevId = 0;
 static MI_AUDIO_Attr_t stSetAttr = {0};
 static MI_AUDIO_Attr_t stGetAttr = {0};
 
+static int half_vol = 0;
+static int auto_slot = 0;
+static int auto_state = 1;
 static int cur_volume = 0;
 static int pcm_ready = 0;
 static int pcm_buf_len = 0;
 static uint8_t *pcm_buf = NULL;
 static struct json_object *jfile = NULL;
 
+#define PREFIX              "[SND] "
 #define JSON_APP_FILE       "/appconfigs/system.json"
+#define JSON_NDS_FILE       "resources/settings.json"
 #define JSON_VOL_KEY        "vol"
 #define PERIOD              2048
 #define FREQ                44100
 #define CHANNELS            2
 #define SAMPLES             8192
 #define QUEUE_SIZE          (2 * 1024 * 1024)
+#define JSON_NDS_AUTO_STATE "auto_state"
+#define JSON_NDS_AUTO_SLOT  "auto_slot"
+#define JSON_NDS_HALF_VOL   "half_vol"
+
+#define NDS_SYSTEM          0x083f4000
+#define SAVE_STATE_INDEX    0x08095c10
+#define SCREEN_COPY16       0x080a59d8
 
 typedef struct {
     int size;
@@ -57,6 +69,9 @@ static queue_t queue = {0};
 #define MI_AO_SETMUTE       0x4008690d
 
 void neon_memcpy(void *dest, const void *src, size_t n);
+typedef void (*screen_copy16)(uint16_t *dest, uint32_t screen_number);
+typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
+typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
 
 static int set_volume_raw(int value, int add)
 {
@@ -107,9 +122,10 @@ static int set_volume_raw(int value, int add)
 static int set_volume(int volume)
 {
     int volume_raw = 0;
+    int div = half_vol ? 2 : 1;
 
-    if (volume > 20) {
-        volume = 20;
+    if (volume > MAX_VOLUME) {
+        volume = MAX_VOLUME;
     }
     else if (volume < 0) {
         volume = 0;
@@ -119,7 +135,7 @@ static int set_volume(int volume)
         volume_raw = round(48 * log10(1 + volume));
     }
 
-    set_volume_raw(volume_raw, 0);
+    set_volume_raw(volume_raw / div, 0);
     return volume;
 }
 
@@ -139,6 +155,49 @@ int volume_dec(void)
         set_volume(cur_volume);
     }
     return cur_volume;
+}
+
+int snd_nds_savestate(int slot)
+{
+    screen_copy16 _func0 = (screen_copy16)SCREEN_COPY16;
+    save_state_index _func1 = (save_state_index)SAVE_STATE_INDEX;
+
+    void *d0 = malloc(0x18000);
+    void *d1 = malloc(0x18000);
+
+    if ((d0 != NULL) && (d1 != NULL)) {
+        _func0(d0, 0);
+        _func0(d1, 1);
+        _func1((void*)NDS_SYSTEM, slot, d0, d1);
+    }
+    if (d0 != NULL) {
+        free(d0);
+    }
+    if (d1 != NULL) {
+        free(d1);
+    }
+}
+
+void snd_nds_reload_config(void)
+{
+    jfile = json_object_from_file(JSON_NDS_FILE);
+    if (jfile != NULL) {
+        struct json_object *jval = NULL;
+
+        json_object_object_get_ex(jfile, JSON_NDS_AUTO_STATE, &jval);
+        auto_state = json_object_get_int(jval);
+        printf(PREFIX"[json] auto state: %d\n", auto_state);
+
+        json_object_object_get_ex(jfile, JSON_NDS_AUTO_SLOT, &jval);
+        auto_slot = json_object_get_int(jval);
+        printf(PREFIX"[json] auto slot: %d\n", auto_slot);
+
+        json_object_object_get_ex(jfile, JSON_NDS_HALF_VOL, &jval);
+        half_vol = json_object_get_int(jval) ? 1 : 0;
+        printf(PREFIX"[json] half vol: %d\n", half_vol);
+
+        json_object_put(jfile);
+    }
 }
 
 static void queue_init(queue_t *q, size_t s)
@@ -348,7 +407,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 {
     MI_S32 miret = 0;
     MI_SYS_ChnPort_t stAoChn0OutputPort0;
-    
+
     queue_init(&queue, (size_t)QUEUE_SIZE);
     if (queue.buffer == NULL) {
         return -1;
@@ -383,25 +442,25 @@ int snd_pcm_start(snd_pcm_t *pcm)
 
     miret = MI_AO_SetPubAttr(AoDevId, &stSetAttr);
     if(miret != MI_SUCCESS) {
-        printf("Failed to set PubAttr\n");
+        printf(PREFIX"failed to set PubAttr\n");
         return -1;
     }
 
     miret = MI_AO_GetPubAttr(AoDevId, &stGetAttr);
     if(miret != MI_SUCCESS) {
-        printf("Failed to get PubAttr\n");
+        printf(PREFIX"failed to get PubAttr\n");
         return -1;
     }
-    
+
     miret = MI_AO_Enable(AoDevId);
     if(miret != MI_SUCCESS) {
-        printf("Failed to enable AO\n");
+        printf(PREFIX"failed to enable AO\n");
         return -1;
     }
 
     miret = MI_AO_EnableChn(AoDevId, AoChn);
     if(miret != MI_SUCCESS) {
-        printf("Failed to enable Channel\n");
+        printf(PREFIX"failed to enable Channel\n");
         return -1;
     }
 
@@ -410,7 +469,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stAoChn0OutputPort0.u32ChnId = AoChn;
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
-    
+
     pcm_ready = 1;
     set_volume(cur_volume);
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);
@@ -420,6 +479,10 @@ int snd_pcm_start(snd_pcm_t *pcm)
 int snd_pcm_close(snd_pcm_t *pcm)
 {
     void *ret = NULL;
+
+    if (auto_state > 0) {
+        snd_nds_savestate(auto_slot);
+    }
 
     pcm_ready = 0;
     pthread_join(thread, &ret);
