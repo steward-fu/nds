@@ -51,6 +51,13 @@ static SDL_sem *event_sem = NULL;
 static SDL_Thread *thread = NULL;
 static uint32_t pre_keypad_bitmaps = 0;
 
+const SDL_Scancode code[]={
+    SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
+    SDLK_SPACE, SDLK_LCTRL, SDLK_LSHIFT, SDLK_LALT,
+    SDLK_e, SDLK_t, SDLK_TAB, SDLK_BACKSPACE,
+    SDLK_RCTRL, SDLK_RETURN, SDLK_HOME, SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_HOME, SDLK_BACKSPACE
+};
+
 int volume_inc(void);
 int volume_dec(void);
 
@@ -286,6 +293,14 @@ int EventUpdate(void *data)
                         MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L2);
 
                         if (MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) {
+                            int cc = 0;
+
+                            for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
+                                if (MMiyooEventInfo.keypad.bitmaps & 1) {
+                                    SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                                }
+                                MMiyooEventInfo.keypad.bitmaps>>= 1;
+                            }
                             MMiyooEventInfo.mouse.x = (MMiyooEventInfo.mouse.maxx - MMiyooEventInfo.mouse.minx) / 2;
                             MMiyooEventInfo.mouse.y = 120 + (MMiyooEventInfo.mouse.maxy - MMiyooEventInfo.mouse.miny) / 2;
                         }
@@ -358,13 +373,6 @@ void MMIYOO_EventDeinit(void)
 
 void MMIYOO_PumpEvents(_THIS)
 {
-    const SDL_Scancode code[]={
-        SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
-        SDLK_SPACE, SDLK_LCTRL, SDLK_LSHIFT, SDLK_LALT,
-        SDLK_e, SDLK_t, SDLK_TAB, SDLK_BACKSPACE,
-        SDLK_RCTRL, SDLK_RETURN, SDLK_HOME, SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_HOME, SDLK_BACKSPACE
-    };
-
     SDL_SemWait(event_sem);
     if (nds.menu.enable) {
         int cc = 0;
