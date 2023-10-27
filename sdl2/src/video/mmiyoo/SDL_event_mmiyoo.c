@@ -46,6 +46,7 @@ extern int down_scale;
 
 static int running = 0;
 static int event_fd = -1;
+static int lower_speed = 0;
 static int is_stock_system = 0;
 static SDL_sem *event_sem = NULL;
 static SDL_Thread *thread = NULL;
@@ -80,12 +81,19 @@ static void check_mouse_pos(void)
 static int get_move_interval(int type)
 {
     float move = 0.0;
+    long yv = nds.pen.yv;
+    long xv = nds.pen.xv;
+
+    if (lower_speed) {
+        yv*= 3;
+        xv*= 3;
+    }
 
     if (nds.dis_mode == NDS_DIS_MODE_HH0) {
-        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? nds.pen.yv : nds.pen.xv);
+        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? yv : xv);
     }
     else {
-        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? nds.pen.xv : nds.pen.yv);
+        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? xv : yv);
     }
 
     if (move <= 0.0) {
@@ -304,6 +312,7 @@ int EventUpdate(void *data)
                             MMiyooEventInfo.mouse.x = (MMiyooEventInfo.mouse.maxx - MMiyooEventInfo.mouse.minx) / 2;
                             MMiyooEventInfo.mouse.y = 120 + (MMiyooEventInfo.mouse.maxy - MMiyooEventInfo.mouse.miny) / 2;
                         }
+                        lower_speed = 0;
                     }
                 }
             
@@ -439,6 +448,11 @@ void MMIYOO_PumpEvents(_THIS)
                     if ((cc == MYKEY_FF) || (cc == MYKEY_QSAVE) || (cc == MYKEY_QLOAD) || (cc == MYKEY_EXIT) || (cc == MYKEY_R2)) {
                         if ((v0 & 1) != (v1 & 1)) {
                             SDL_SendKeyboardKey((v1 & 1) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                        }
+                    }
+                    if (cc == MYKEY_R1) {
+                        if ((v0 & 1) != (v1 & 1)) {
+                            lower_speed = (v1 & 1);
                         }
                     }
                     v0>>= 1;
