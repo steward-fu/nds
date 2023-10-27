@@ -126,12 +126,11 @@ int EventUpdate(void *data)
     while (running) {
         SDL_SemWait(event_sem);
 
-        if (nds.dpad_90d) {
+        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.dpad_90d) {
             right = UP;
             left = DOWN;
             up = LEFT;
             down = RIGHT;
-            //printf("Rotate DPAD 90 degree\n");
         }
         else {
             up = UP;
@@ -441,7 +440,7 @@ void MMIYOO_PumpEvents(_THIS)
                 }
             }
 
-            if (nds.dis_mode == NDS_DIS_MODE_HH0) {
+            if ((nds.dis_mode == NDS_DIS_MODE_HH0) && (nds.dpad_90d == 0)) {
                 if (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_UP)) {
                     updated = 1;
                     MMiyooEventInfo.mouse.x+= get_move_interval(1);

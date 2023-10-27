@@ -354,7 +354,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             nds.state&= ~NDS_STATE_FF;
         }
     }
-    
+
     if ((src.w == 800) && (src.h == 480)) {
         dst.x = 0;
         dst.y = 0;
@@ -567,6 +567,13 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             draw_info(NULL, show_info_buf, FB_W - get_font_width(show_info_buf), 0, 0xe0e000, 0x000000);
             show_info_cnt-= 1;
         }
+    }
+
+    if ((src.w == 800) && (src.h == 480)) {
+        nds.menu.drastic.enable = 1;
+    }
+    else {
+        nds.menu.drastic.enable = 0;
     }
     return 0;
 }

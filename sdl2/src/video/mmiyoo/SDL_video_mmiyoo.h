@@ -204,6 +204,7 @@ typedef struct _NDS {
         SDL_Surface *bg;
         SDL_Surface *cursor;
         struct _DRASTIC {
+            int enable;
             SDL_Surface *bg;
             SDL_Surface *main;
             SDL_Surface *yes;
