@@ -825,7 +825,7 @@ int process_drastic_menu(void)
     return 0;
 }
 
-void hook_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
+void my_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
     int w = 0, h = 0;
     SDL_Color col = {0};
@@ -881,10 +881,10 @@ void hook_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y
     }
 }
 
-static void hook_it(void)
+static void patch_it(void)
 {
     size_t page_size = sysconf(_SC_PAGESIZE);
-    uint32_t hook = (uint32_t)hook_print_string;
+    uint32_t val = (uint32_t)my_print_string;
     volatile uint8_t *base = (uint8_t*)PRINT_STRING;
 
     #define ALIGN_ADDR(addr) ((void*)((size_t)(addr) & ~(page_size - 1)))
@@ -893,13 +893,13 @@ static void hook_it(void)
     base[1] = 0xf0;
     base[2] = 0x1f;
     base[3] = 0xe5;
-    base[4] = hook >> 0;
-    base[5] = hook >> 8;
-    base[6] = hook >> 16;
-    base[7] = hook >> 24;
+    base[4] = val >> 0;
+    base[5] = val >> 8;
+    base[6] = val >> 16;
+    base[7] = val >> 24;
 }
 
-static void unhook_it(void)
+static void unpatch_it(void)
 {
     size_t page_size = sysconf(_SC_PAGESIZE);
     volatile uint32_t *dump = (uint32_t*)PRINT_STRING;
@@ -2466,7 +2466,7 @@ int MMIYOO_VideoInit(_THIS)
     MMIYOO_EventInit();
 
     if (nds.cust_menu) {
-        hook_it();
+        patch_it();
     }
 
     {
@@ -2489,7 +2489,7 @@ void MMIYOO_VideoQuit(_THIS)
     int cc = 0;
 
     if (nds.cust_menu) {
-        unhook_it();
+        unpatch_it();
     }
 
     write_config();
