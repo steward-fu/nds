@@ -899,10 +899,14 @@ void my_savestate_chk1(void)
 
 void my_signal(int sig)
 {
+    static int ran = 0;
     quit _func = (quit)QUIT;
 
-    printf(PREFIX"Oops sigterm !\n");
-    _func((void*)NDS_SYSTEM);
+    if (ran == 0) {
+        ran = 1;
+        printf(PREFIX"Oops sigterm !\n");
+        _func((void*)NDS_SYSTEM);
+    }
 }
 
 static void patch_it(void)
