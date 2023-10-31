@@ -1,0 +1,51 @@
+export MOD=mmiyoo
+export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
+export CC=${CROSS}gcc
+export AR=${CROSS}ar
+export AS=${CROSS}as
+export LD=${CROSS}ld
+export CXX=${CROSS}g++
+export HOST=arm-linux
+
+SDL2_CFG = --disable-joystick-virtual
+SDL2_CFG+= --disable-jack
+SDL2_CFG+= --disable-power
+SDL2_CFG+= --disable-sensor
+SDL2_CFG+= --disable-ime
+SDL2_CFG+= --disable-dbus
+SDL2_CFG+= --disable-fcitx
+SDL2_CFG+= --disable-hidapi
+SDL2_CFG+= --disable-libudev
+SDL2_CFG+= --disable-video-x11
+SDL2_CFG+= --disable-video-kmsdrm
+SDL2_CFG+= --disable-video-vulkan
+SDL2_CFG+= --disable-video-opengl
+SDL2_CFG+= --disable-video-opengles
+SDL2_CFG+= --disable-video-opengles2
+SDL2_CFG+= --disable-video-wayland
+SDL2_CFG+= --disable-video-dummy
+SDL2_CFG+= --disable-oss
+SDL2_CFG+= --disable-alsa
+SDL2_CFG+= --disable-sndio
+SDL2_CFG+= --disable-diskaudio
+SDL2_CFG+= --disable-pulseaudio
+SDL2_CFG+= --disable-dummyaudio
+
+.PHONY: all
+all:
+	make -C libasound
+	cp libasound/libasound.so.2 drastic/libs/libasound.so
+	cp libasound/libasound.so.2 drastic/libs/libasound.so.2
+	make -C sdl2
+	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/libs/libSDL2-2.0.so.0
+
+.PHONY: config
+config:
+	cd sdl2 && ./autogen.sh && ./configure ${SDL2_CFG} --host=${HOST}
+
+.PHONY: clean
+clean:
+	rm -rf drastic/libs/libasound.so*
+	rm -rf drastic/libs/libSDL2-2.0.so.0
+	make -C sdl2 distclean
+	make -C libasound clean
