@@ -46,8 +46,8 @@
 #include "SDL_framebuffer_mmiyoo.h"
 #include "SDL_opengles_mmiyoo.h"
 
-#include "../../audio/mmiyoo/mi_sys.h"
-#include "../../video/mmiyoo/mi_gfx.h"
+#include "mi_sys.h"
+#include "mi_gfx.h"
 
 #ifndef MAX_PATH
     #define MAX_PATH 255

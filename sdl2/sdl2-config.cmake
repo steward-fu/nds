@@ -21,7 +21,7 @@ if(NOT TARGET SDL2::SDL2)
   # (SDL2Config.cmake has the same behavior)
   string(REPLACE "-lSDL2main" "" SDL2_EXTRA_LINK_FLAGS ${SDL2_EXTRA_LINK_FLAGS})
   string(STRIP "${SDL2_EXTRA_LINK_FLAGS}" SDL2_EXTRA_LINK_FLAGS)
-  string(REPLACE "-lSDL2 " "" SDL2_EXTRA_LINK_FLAGS_STATIC " -lm -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -lasound -ljson-c -ldl -lpthread -lrt -Lmmiyoo/libs -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx ")
+  string(REPLACE "-lSDL2 " "" SDL2_EXTRA_LINK_FLAGS_STATIC " -lm -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -lasound -ljson-c -ldl -lpthread -lrt -L../mmiyoo/lib -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx ")
   string(STRIP "${SDL2_EXTRA_LINK_FLAGS_STATIC}" SDL2_EXTRA_LINK_FLAGS_STATIC)
 
 if(WIN32 AND NOT MSVC)
