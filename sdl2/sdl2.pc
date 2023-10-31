@@ -11,5 +11,5 @@ Version: 2.0.20
 Requires:
 Conflicts:
 Libs: -L${libdir}  -lSDL2 
-Libs.private:  -lm -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -lasound -ljson-c -ldl -lpthread -lrt -L../mmiyoo/lib -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx
+Libs.private:  -lm -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -lasound -ljson-c -L../libpatch -lpatch -ldl -lpthread -lrt -L../mmiyoo/lib -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx
 Cflags: -I${includedir}/SDL2  -D_REENTRANT

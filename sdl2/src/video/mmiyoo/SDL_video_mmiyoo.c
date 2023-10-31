@@ -817,7 +817,7 @@ int process_drastic_menu(void)
     return 0;
 }
 
-void my_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
+void patch_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
     int w = 0, h = 0;
     SDL_Color col = {0};
@@ -873,7 +873,7 @@ void my_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
     }
 }
 
-void my_savestate_chk0(void)
+void patch_savestate_pre(void)
 {
     asm volatile (
         "mov r1, %0                 \n"
@@ -885,7 +885,7 @@ void my_savestate_chk0(void)
     );
 }
 
-void my_savestate_chk1(void)
+void patch_savestate_post(void)
 {
     asm volatile (
         "mov r1, %0                 \n"
@@ -897,83 +897,15 @@ void my_savestate_chk1(void)
     );
 }
 
-void my_signal(int sig)
+void sigterm_handler(int sig)
 {
     static int ran = 0;
-    quit _func = (quit)QUIT;
 
     if (ran == 0) {
         ran = 1;
         printf(PREFIX"Oops sigterm !\n");
-        _func((void*)NDS_SYSTEM);
+        patch_quit();
     }
-}
-
-static void patch_it(void)
-{
-    uint32_t val = 0;
-    volatile uint8_t *base = NULL;
-    size_t page_size = sysconf(_SC_PAGESIZE);
-
-    #define ALIGN_ADDR(addr) ((void*)((size_t)(addr) & ~(page_size - 1)))
-
-    val = (uint32_t)my_print_string;
-    base = (uint8_t*)PRINT_STRING;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = val >> 0;
-    base[5] = val >> 8;
-    base[6] = val >> 16;
-    base[7] = val >> 24;
-
-    val = (uint32_t)my_savestate_chk0;
-    base = (uint8_t*)SAVESTATE_CHK0;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = val >> 0;
-    base[5] = val >> 8;
-    base[6] = val >> 16;
-    base[7] = val >> 24;
-
-    val = (uint32_t)my_savestate_chk1;
-    base = (uint8_t*)SAVESTATE_CHK1;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = val >> 0;
-    base[5] = val >> 8;
-    base[6] = val >> 16;
-    base[7] = val >> 24;
-}
-
-static void unpatch_it(void)
-{
-    volatile uint32_t *base = NULL;
-    size_t page_size = sysconf(_SC_PAGESIZE);
-    #define ALIGN_ADDR(addr) ((void*)((size_t)(addr) & ~(page_size - 1)))
-
-    base = (uint32_t*)PRINT_STRING;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0xe16d42f4;
-    base[1] = 0xe1a05001;
-
-    base = (uint32_t*)SAVESTATE_CHK0;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0xe28dd020;
-    base[1] = 0xe49df004;
-
-    base = (uint32_t*)SAVESTATE_CHK1;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0xe28dd018;
-    base[1] = 0xe49df004;
 }
 
 static void strip_newline(char *p)
@@ -2472,7 +2404,7 @@ int MMIYOO_VideoInit(_THIS)
     SDL_DisplayMode mode={0};
     SDL_VideoDisplay display={0};
 
-    signal(SIGTERM, my_signal);
+    signal(SIGTERM, sigterm_handler);
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
@@ -2550,7 +2482,7 @@ int MMIYOO_VideoInit(_THIS)
     MMIYOO_EventInit();
 
     if (nds.cust_menu) {
-        patch_it();
+        init_patch(sysconf(_SC_PAGESIZE), (uint32_t)patch_print_string, (uint32_t)patch_savestate_pre, (uint32_t)patch_savestate_post);
     }
     return 0;
 }
@@ -2572,7 +2504,7 @@ void MMIYOO_VideoQuit(_THIS)
     system("sync");
 
     if (nds.cust_menu) {
-        unpatch_it();
+        deinit_patch(sysconf(_SC_PAGESIZE));
     }
 
     write_config();

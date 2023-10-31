@@ -46,6 +46,7 @@
 #include "SDL_framebuffer_mmiyoo.h"
 #include "SDL_opengles_mmiyoo.h"
 
+#include "patch.h"
 #include "mi_sys.h"
 #include "mi_gfx.h"
 
@@ -152,15 +153,6 @@
 #define NDS_DRASTIC_MENU_FIRMWARE       5
 #define NDS_DRASTIC_MENU_CHEAT          6
 #define NDS_DRASTIC_MENU_ROM            7
-
-#define PRINT_STRING        0x080a5398
-#define SAVESTATE_CHK0      0x08095a80
-#define SAVESTATE_CHK1      0x08095154
-#define NDS_SYSTEM          0x083f4000
-#define LOAD_STATE_INDEX    0x08095ce4
-#define SAVE_STATE_INDEX    0x08095c10
-#define SCREEN_COPY16       0x080a59d8
-#define QUIT                0x08006444
 
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
@@ -302,11 +294,6 @@ int process_drastic_menu(void);
 int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcrect, const SDL_FRect *dstrect);
 const void* get_pixels(void *chk);
 const char *to_lang(const char *p);
-
-typedef void (*quit)(void *system);
-typedef void (*screen_copy16)(uint16_t *dest, uint32_t screen_number);
-typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
-typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
 
 #endif
 
