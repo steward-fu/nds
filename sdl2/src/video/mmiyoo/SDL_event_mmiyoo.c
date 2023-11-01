@@ -134,6 +134,7 @@ int EventUpdate(void *data)
 
     uint32_t bit = 0;
     uint32_t hotkey = 0;
+    uint32_t select = 0;
 
     uint32_t l1 = L1;
     uint32_t l2 = L2;
@@ -229,6 +230,7 @@ int EventUpdate(void *data)
                         }
                         else {
                             hotkey = MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_MENU);
+                            select = (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_SELECT)) ? 1 : 0;
                         }
                     }
                     else {
@@ -317,9 +319,17 @@ int EventUpdate(void *data)
                         MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_R2);
                     }
 
-                    if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L1))) {
-                        MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_EXIT);
-                        MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L1);
+                    if (is_stock_system) {
+                        if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L1))) {
+                            MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_EXIT);
+                            MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L1);
+                        }
+                    }
+                    else {
+                        if (select && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L1))) {
+                            MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_EXIT);
+                            MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L1);
+                        }
                     }
 
                     if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_L2))) {
@@ -461,6 +471,9 @@ void MMIYOO_PumpEvents(_THIS)
                 }
                 if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
                     MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_EXIT);
+                }
+                if (pre_keypad_bitmaps & (1 << MYKEY_MENU_ONION)) {
+                    MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_MENU_ONION);
                 }
                 pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
             }
