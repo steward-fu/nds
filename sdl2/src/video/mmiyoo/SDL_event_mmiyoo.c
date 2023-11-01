@@ -385,17 +385,16 @@ void MMIYOO_PumpEvents(_THIS)
     SDL_SemWait(event_sem);
     if (nds.menu.enable) {
         int cc = 0;
-        uint32_t v0 = pre_keypad_bitmaps;
-        uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
+        uint32_t bit = 0;
+        uint32_t changed = pre_keypad_bitmaps ^ MMiyooEventInfo.keypad.bitmaps;
 
         for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
-            if ((v0 & 1) != (v1 & 1)) {
-                if ((v1 & 1) == 0) {
+            bit = 1 << cc;
+            if (changed & bit) {
+                if ((MMiyooEventInfo.keypad.bitmaps & bit) == 0) {
                     handle_menu(cc);
                 }
             }
-            v0>>= 1;
-            v1>>= 1;
         }
         pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
     }
@@ -403,15 +402,14 @@ void MMIYOO_PumpEvents(_THIS)
         if (MMiyooEventInfo.mode == MMIYOO_KEYPAD_MODE) {
             if (pre_keypad_bitmaps != MMiyooEventInfo.keypad.bitmaps) {
                 int cc = 0;
-                uint32_t v0 = pre_keypad_bitmaps;
-                uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
+                uint32_t bit = 0;
+                uint32_t changed = pre_keypad_bitmaps ^ MMiyooEventInfo.keypad.bitmaps;
 
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
-                    if ((v0 & 1) != (v1 & 1)) {
-                        SDL_SendKeyboardKey((v1 & 1) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                    bit = 1 << cc;
+                    if (changed & bit) {
+                        SDL_SendKeyboardKey((MMiyooEventInfo.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                     }
-                    v0>>= 1;
-                    v1>>= 1;
                 }
 
                 if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
@@ -437,26 +435,25 @@ void MMIYOO_PumpEvents(_THIS)
             
             if (pre_keypad_bitmaps != MMiyooEventInfo.keypad.bitmaps) {
                 uint32_t cc = 0;
-                uint32_t v0 = pre_keypad_bitmaps;
-                uint32_t v1 = MMiyooEventInfo.keypad.bitmaps;
+                uint32_t bit = 0;
+                uint32_t changed = pre_keypad_bitmaps & MMiyooEventInfo.keypad.bitmaps;
 
-                if ((v0 & (1 << MYKEY_A)) != (v1 & (1 << MYKEY_A))) {
-                    SDL_SendMouseButton(MMiyooVideoInfo.window, 0, (v1 & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+                if (changed & (1 << MYKEY_A)) {
+                    SDL_SendMouseButton(MMiyooVideoInfo.window, 0, (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
                 }
                 
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
+                    bit = 1 << cc;
                     if ((cc == MYKEY_FF) || (cc == MYKEY_QSAVE) || (cc == MYKEY_QLOAD) || (cc == MYKEY_EXIT) || (cc == MYKEY_R2)) {
-                        if ((v0 & 1) != (v1 & 1)) {
-                            SDL_SendKeyboardKey((v1 & 1) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                        if (changed & bit) {
+                            SDL_SendKeyboardKey((MMiyooEventInfo.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                         }
                     }
                     if (cc == MYKEY_R1) {
-                        if ((v0 & 1) != (v1 & 1)) {
-                            lower_speed = (v1 & 1);
+                        if (changed & bit) {
+                            lower_speed = (MMiyooEventInfo.keypad.bitmaps & bit);
                         }
                     }
-                    v0>>= 1;
-                    v1>>= 1;
                 }
             }
 
