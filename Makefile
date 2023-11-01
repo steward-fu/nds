@@ -33,13 +33,12 @@ SDL2_CFG+= --disable-dummyaudio
 
 .PHONY: all
 all:
-	make -C libpatch
-	cp libpatch/libpatch.so drastic/libs/libpatch.so
-	make -C libasound
-	cp libasound/libasound.so.2 drastic/libs/libasound.so
-	cp libasound/libasound.so.2 drastic/libs/libasound.so.2
+	make -C detour
+	cp detour/libdtr.so drastic/libs/
+	make -C alsa
+	cp alsa/libasound.so.2 drastic/libs/
 	make -C sdl2
-	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/libs/libSDL2-2.0.so.0
+	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/libs/
 
 .PHONY: config
 config:
@@ -47,9 +46,9 @@ config:
 
 .PHONY: clean
 clean:
-	rm -rf drastic/libs/libpatch.so
-	rm -rf drastic/libs/libasound.so*
+	rm -rf drastic/libs/libdtr.so
+	rm -rf drastic/libs/libasound.so.2
 	rm -rf drastic/libs/libSDL2-2.0.so.0
+	make -C alsa clean
+	make -C detour clean
 	make -C sdl2 distclean
-	make -C libpatch clean
-	make -C libasound clean

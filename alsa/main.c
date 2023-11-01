@@ -15,7 +15,7 @@
 #include <alsa/timer.h>
 #include <alsa/pcm.h>
 
-#include "patch.h"
+#include "detour.h"
 #include "mi_ao.h"
 #include "mi_sys.h"
 #include "mi_common_datatype.h"
@@ -455,7 +455,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     void *ret = NULL;
 
     if (auto_state > 0) {
-        patch_savestate(auto_slot);
+        dtr_savestate(auto_slot);
     }
 
     pcm_ready = 0;

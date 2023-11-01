@@ -817,7 +817,7 @@ int process_drastic_menu(void)
     return 0;
 }
 
-void patch_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
+void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
     int w = 0, h = 0;
     SDL_Color col = {0};
@@ -873,7 +873,7 @@ void patch_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t 
     }
 }
 
-void patch_savestate_pre(void)
+void sdl_savestate_pre(void)
 {
     asm volatile (
         "mov r1, %0                 \n"
@@ -885,7 +885,7 @@ void patch_savestate_pre(void)
     );
 }
 
-void patch_savestate_post(void)
+void sdl_savestate_post(void)
 {
     asm volatile (
         "mov r1, %0                 \n"
@@ -904,7 +904,7 @@ void sigterm_handler(int sig)
     if (ran == 0) {
         ran = 1;
         printf(PREFIX"Oops sigterm !\n");
-        patch_quit();
+        dtr_quit();
     }
 }
 
@@ -2482,7 +2482,7 @@ int MMIYOO_VideoInit(_THIS)
     MMIYOO_EventInit();
 
     if (nds.cust_menu) {
-        init_patch(sysconf(_SC_PAGESIZE), (uint32_t)patch_print_string, (uint32_t)patch_savestate_pre, (uint32_t)patch_savestate_post);
+        detour_init(sysconf(_SC_PAGESIZE), (uint32_t)sdl_print_string, (uint32_t)sdl_savestate_pre, (uint32_t)sdl_savestate_post);
     }
     return 0;
 }
@@ -2504,7 +2504,7 @@ void MMIYOO_VideoQuit(_THIS)
     system("sync");
 
     if (nds.cust_menu) {
-        deinit_patch(sysconf(_SC_PAGESIZE));
+        detour_quit(sysconf(_SC_PAGESIZE));
     }
 
     write_config();

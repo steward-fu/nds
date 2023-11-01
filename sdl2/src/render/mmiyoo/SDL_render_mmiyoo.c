@@ -601,7 +601,7 @@ static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
         if (need_loadstate > 0) {
             need_loadstate-= 1;
             if (need_loadstate == 0) {
-                patch_loadstate(nds.auto_slot);
+                dtr_loadstate(nds.auto_slot);
             }
         }
     }

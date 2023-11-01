@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <sys/mman.h>
 
-#include "patch.h"
+#include "detour.h"
 
-int patch_savestate(int slot)
+int dtr_savestate(int slot)
 {
     screen_copy16 _func0 = (screen_copy16)FUN_SCREEN_COPY16;
     save_state_index _func1 = (save_state_index)FUN_SAVE_STATE_INDEX;
@@ -27,21 +27,21 @@ int patch_savestate(int slot)
     }
 }
 
-int patch_loadstate(int slot)
+int dtr_loadstate(int slot)
 {
     load_state_index _func = (load_state_index)FUN_LOAD_STATE_INDEX;
 
     _func((void*)VAR_SYSTEM, slot, 0, 0, 0);
 }
 
-int patch_quit(void)
+int dtr_quit(void)
 {
     quit _func = (quit)FUN_QUIT;
 
     _func((void*)VAR_SYSTEM);
 }
 
-void init_patch(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post)
+void detour_init(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post)
 {
     uint32_t val = 0;
     volatile uint8_t *base = NULL;
@@ -83,7 +83,7 @@ void init_patch(size_t page_size, uint32_t fun_print_string, uint32_t fun_savest
     base[7] = val >> 24;
 }
 
-void deinit_patch(size_t page_size)
+void detour_quit(size_t page_size)
 {
     volatile uint32_t *base = NULL;
 

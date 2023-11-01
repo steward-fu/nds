@@ -17,11 +17,11 @@
     typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
     typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
 
-    void init_patch(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post);
-    void deinit_patch(size_t page_size);
+    void detour_init(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post);
+    void detour_quit(size_t page_size);
 
-    int patch_quit(void);
-    int patch_savestate(int slot);
-    int patch_loadstate(int slot);
+    int dtr_quit(void);
+    int dtr_savestate(int slot);
+    int dtr_loadstate(int slot);
 
 #endif
