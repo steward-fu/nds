@@ -31,12 +31,22 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <linux/input.h>
+
 #include "../../events/SDL_events_c.h"
 #include "../../core/linux/SDL_evdev.h"
 #include "../../thread/SDL_systhread.h"
 
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
+
+#define L1      18
+#define L2      15
+#define R1      20
+#define R2      14
+#define UP      103
+#define DOWN    108
+#define LEFT    105
+#define RIGHT   106
 
 MMIYOO_EventInfo MMiyooEventInfo = {0};
 
@@ -53,10 +63,26 @@ static SDL_Thread *thread = NULL;
 static uint32_t pre_keypad_bitmaps = 0;
 
 const SDL_Scancode code[]={
-    SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
-    SDLK_SPACE, SDLK_LCTRL, SDLK_LSHIFT, SDLK_LALT,
-    SDLK_e, SDLK_t, SDLK_TAB, SDLK_BACKSPACE,
-    SDLK_RCTRL, SDLK_RETURN, SDLK_HOME, SDLK_0, SDLK_1, SDLK_2, SDLK_3, SDLK_HOME, SDLK_BACKSPACE
+    SDLK_UP,            // UP
+    SDLK_DOWN,          // DOWN
+    SDLK_LEFT,          // LEFT
+    SDLK_RIGHT,         // RIGHT
+    SDLK_SPACE,         // A
+    SDLK_LCTRL,         // B
+    SDLK_LSHIFT,        // X
+    SDLK_LALT,          // Y
+    SDLK_e,             // L1
+    SDLK_t,             // R1
+    SDLK_TAB,           // L2
+    SDLK_BACKSPACE,     // R2
+    SDLK_RCTRL,         // SELECT
+    SDLK_RETURN,        // START
+    SDLK_HOME,          // MENU
+    SDLK_0,             // QUICK SAVE
+    SDLK_1,             // QUICK LOAD
+    SDLK_2,             // FAST FORWARD
+    SDLK_3,             // EXIT
+    SDLK_HOME,          // MENU (Onion system)
 };
 
 int volume_inc(void);
@@ -104,18 +130,11 @@ static int get_move_interval(int type)
 
 int EventUpdate(void *data)
 {
-    const uint32_t L1 = 18;
-    const uint32_t L2 = 15;
-    const uint32_t R1 = 20;
-    const uint32_t R2 = 14;
-
-    const uint32_t UP = 103;
-    const uint32_t DOWN = 108;
-    const uint32_t LEFT = 105;
-    const uint32_t RIGHT = 106;
-
     struct input_event ev = {0};
-    uint32_t bit = 0, hotkey = 0;
+
+    uint32_t bit = 0;
+    uint32_t hotkey = 0;
+
     uint32_t l1 = L1;
     uint32_t l2 = L2;
     uint32_t r1 = R1;
@@ -159,15 +178,14 @@ int EventUpdate(void *data)
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
                     //printf("%s, code:%d\n", __func__, ev.code);
 
-                    if (ev.code == l1) { bit = (1 << MYKEY_L1); }
-                    if (ev.code == l2) { bit = (1 << MYKEY_L2); }
-                    if (ev.code == r1) { bit = (1 << MYKEY_R1); }
-                    if (ev.code == r2) { bit = (1 << MYKEY_R2); }
-                    
-                    if (ev.code == up) { bit = (1 << MYKEY_UP); }
-                    if (ev.code == down) { bit = (1 << MYKEY_DOWN); }
-                    if (ev.code == left) { bit = (1 << MYKEY_LEFT); }
-                    if (ev.code == right) { bit = (1 << MYKEY_RIGHT); }
+                    if (ev.code == l1)      { bit = (1 << MYKEY_L1);    }
+                    if (ev.code == l2)      { bit = (1 << MYKEY_L2);    }
+                    if (ev.code == r1)      { bit = (1 << MYKEY_R1);    }
+                    if (ev.code == r2)      { bit = (1 << MYKEY_R2);    }
+                    if (ev.code == up)      { bit = (1 << MYKEY_UP);    }
+                    if (ev.code == down)    { bit = (1 << MYKEY_DOWN);  }
+                    if (ev.code == left)    { bit = (1 << MYKEY_LEFT);  }
+                    if (ev.code == right)   { bit = (1 << MYKEY_RIGHT); }
 
                     switch (ev.code) {
                     case 57:  bit = (1 << MYKEY_A);      break;
@@ -206,7 +224,12 @@ int EventUpdate(void *data)
                     }
 
                     if (nds.menu.enable == 0) {
-                        hotkey = MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_SELECT);
+                        if (is_stock_system) {
+                            hotkey = MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_SELECT);
+                        }
+                        else {
+                            hotkey = MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_MENU);
+                        }
                     }
                     else {
                         hotkey = 0;
@@ -275,6 +298,13 @@ int EventUpdate(void *data)
                             pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps = 0;
                         }
                         MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_START);
+                    }
+
+                    if (is_stock_system == 0) {
+                        if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_SELECT))) {
+                            MMiyooEventInfo.keypad.bitmaps|= (1 << MYKEY_MENU_ONION);
+                            MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_SELECT);
+                        }
                     }
 
                     if (hotkey && (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_R1))) {
@@ -407,6 +437,11 @@ void MMIYOO_PumpEvents(_THIS)
 
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
+
+                    if ((is_stock_system == 0) && (cc == MYKEY_MENU)) {
+                        continue;
+                    }
+
                     if (changed & bit) {
                         SDL_SendKeyboardKey((MMiyooEventInfo.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                     }
