@@ -128,6 +128,18 @@ static int get_move_interval(int type)
     return (int)(1.0 * move);
 }
 
+static void release_all_keys(void)
+{
+    int cc = 0;
+
+    for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
+        if (MMiyooEventInfo.keypad.bitmaps & 1) {
+            SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+        }
+        MMiyooEventInfo.keypad.bitmaps>>= 1;
+    }
+}
+
 int EventUpdate(void *data)
 {
     struct input_event ev = {0};
@@ -341,14 +353,7 @@ int EventUpdate(void *data)
                         MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_L2);
 
                         if (MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) {
-                            int cc = 0;
-
-                            for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
-                                if (MMiyooEventInfo.keypad.bitmaps & 1) {
-                                    SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
-                                }
-                                MMiyooEventInfo.keypad.bitmaps>>= 1;
-                            }
+                            release_all_keys();
                             MMiyooEventInfo.mouse.x = (MMiyooEventInfo.mouse.maxx - MMiyooEventInfo.mouse.minx) / 2;
                             MMiyooEventInfo.mouse.y = 120 + (MMiyooEventInfo.mouse.maxy - MMiyooEventInfo.mouse.miny) / 2;
                         }
@@ -469,11 +474,11 @@ void MMIYOO_PumpEvents(_THIS)
                     nds.state|= NDS_STATE_FF;
                     MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_FF);
                 }
-                if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
-                    MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_EXIT);
-                }
                 if (pre_keypad_bitmaps & (1 << MYKEY_MENU_ONION)) {
                     MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_MENU_ONION);
+                }
+                if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
+                    release_all_keys();
                 }
                 pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
             }
@@ -590,7 +595,7 @@ void MMIYOO_PumpEvents(_THIS)
                 MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_FF);
             }
             if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
-                MMiyooEventInfo.keypad.bitmaps&= ~(1 << MYKEY_EXIT);
+                release_all_keys();
             }
             pre_keypad_bitmaps = MMiyooEventInfo.keypad.bitmaps;
         }
