@@ -27,6 +27,7 @@
  - [Build from Scratch](#build-from-scratch)
    - [How to prepare the build environment (Docker)](#how-to-prepare-the-build-environment-docker)
    - [How to build all libraries](#how-to-build-all-libraries)
+   - [How to pack the release build](#how-to-pack-the-release-build)
    - [How to delete the build environment (Docker)](#how-to-delete-the-build-environment-docker)
  - [Installation](#installation)
  - [Limitations](#limitations)
@@ -258,6 +259,12 @@ $ sudo docker build -t mmiyoo .
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
 $ make config
 $ make
+```
+
+### How to pack the release build
+```
+$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
+$ make rel
 ```
 
 ### How to delete the build environment (Docker)
