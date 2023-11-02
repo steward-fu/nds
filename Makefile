@@ -31,6 +31,8 @@ SDL2_CFG+= --disable-diskaudio
 SDL2_CFG+= --disable-pulseaudio
 SDL2_CFG+= --disable-dummyaudio
 
+REL_VER  = $(shell git rev-parse HEAD | cut -c 1-8)
+
 .PHONY: all
 all:
 	make -C detour
@@ -43,6 +45,10 @@ all:
 .PHONY: config
 config:
 	cd sdl2 && ./autogen.sh && ./configure ${SDL2_CFG} --host=${HOST}
+
+.PHONY: rel
+rel:
+	zip -r drastic_${REL_VER}.zip drastic
 
 .PHONY: clean
 clean:
