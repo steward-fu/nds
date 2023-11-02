@@ -24,10 +24,9 @@
      - [Blur](#blur)
    - [Refined Menu](#refined-menu)
    - [Hotkeys](#hotkeys)
- - [Building Source Code](#building-source-code)
+ - [Build from Scratch](#build-from-scratch)
    - [How to prepare the build environment (Docker)](#how-to-prepare-the-build-environment-docker)
-   - [How to build SDL2 library](#how-to-build-sdl2-library)
-   - [How to build ALSA library](#how-to-build-alsa-library)
+   - [How to build all libraries](#how-to-build-all-libraries)
    - [How to delete the build environment (Docker)](#how-to-delete-the-build-environment-docker)
  - [Installation](#installation)
  - [Limitations](#limitations)
@@ -248,46 +247,17 @@ Refined Cheat Menu
 
 &nbsp;
 
-## Building Source Code
+## Build from Scratch
 ### How to prepare the build environment (Docker)
 ```
 $ sudo docker build -t mmiyoo .
 ```
 
-### How to build SDL2 library
+### How to build all libraries
 ```
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-
-# export MOD=mmiyoo
-# export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
-# export CC=${CROSS}gcc
-# export AR=${CROSS}ar
-# export AS=${CROSS}as
-# export LD=${CROSS}ld
-# export CXX=${CROSS}g++
-# export HOST=arm-linux
-# export PATH=/opt/mmiyoo/bin/:$PATH
-
-# cd /nds_miyoo/sdl2
-# ./autogen.sh
-# ./configure --disable-joystick-virtual --disable-sensor --disable-power --disable-alsa \
-    --disable-diskaudio --disable-video-x11 --disable-video-wayland --disable-video-kmsdrm \
-    --disable-video-vulkan --disable-dbus --disable-ime --disable-fcitx --disable-hidapi \ 
-    --disable-pulseaudio --disable-sndio --disable-libudev --disable-jack --disable-video-opengl \
-    --disable-video-opengles --disable-video-opengles2 --disable-oss --disable-dummyaudio \
-    --disable-video-dummy --host=${HOST}
-
-# make -j4 V=99
-```
-
-### How to build ALSA library
-```
-$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-
-# export PATH=/opt/mmiyoo/bin/:$PATH
-
-# cd /nds_miyoo/libasound
-# make
+$ make config
+$ make
 ```
 
 ### How to delete the build environment (Docker)
