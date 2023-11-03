@@ -489,7 +489,7 @@ void MMIYOO_PumpEvents(_THIS)
             if (pre_keypad_bitmaps != MMiyooEventInfo.keypad.bitmaps) {
                 uint32_t cc = 0;
                 uint32_t bit = 0;
-                uint32_t changed = pre_keypad_bitmaps & MMiyooEventInfo.keypad.bitmaps;
+                uint32_t changed = pre_keypad_bitmaps ^ MMiyooEventInfo.keypad.bitmaps;
 
                 if (changed & (1 << MYKEY_A)) {
                     SDL_SendMouseButton(MMiyooVideoInfo.window, 0, (MMiyooEventInfo.keypad.bitmaps & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
