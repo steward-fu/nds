@@ -21,13 +21,11 @@ else
     killall audioserver.mod
 fi
 
-CUST_LOGO=1
+CUST_LOGO=0
 CUST_CPUCLOCK=1
 
 cd $mydir
 if [ "$CUST_LOGO" == "1" ]; then
-    echo "convert resources/logo/0.png to drastic_logo_0.raw"
-    echo "convert resources/logo/1.png to drastic_logo_1.raw"
     ./png2raw
 fi
 
@@ -39,16 +37,10 @@ echo 10 > /proc/sys/vm/swappiness
 cd $mydir
 
 if [ "$CUST_CPUCLOCK" == "1" ]; then
-    echo "set customized cpuspeed"
     ./cpuclock 1500
 fi
 
 ./drastic "$1"
 sync
-
-if [ "$CUST_CPUCLOCK" == "1" ]; then
-    echo "set customized cpuspeed"
-    ./cpuclock 1200
-fi
 
 echo $sv > /proc/sys/vm/swappiness
