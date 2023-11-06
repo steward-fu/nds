@@ -174,8 +174,6 @@ int EventUpdate(void *data)
 {
     struct input_event ev = {0};
 
-    uint32_t select = 0;
-
     uint32_t l1 = L1;
     uint32_t l2 = L2;
     uint32_t r1 = R1;
@@ -234,12 +232,7 @@ int EventUpdate(void *data)
                     case 42:  set_key(MYKEY_X, ev.value);      break;
                     case 56:  set_key(MYKEY_Y, ev.value);      break;
                     case 28:  set_key(MYKEY_START, ev.value);  break;
-                    case 97:
-                        set_key(MYKEY_SELECT, ev.value);
-                        if (is_stock_system == 0) {
-                            select = ev.value ? 1 : 0;
-                        }
-                        break;
+                    case 97:  set_key(MYKEY_SELECT, ev.value); break;
                     case 1:   set_key(MYKEY_MENU, ev.value);   break;
                     case 116: set_key(MYKEY_POWER, ev.value);  break;
                     case 115:
@@ -348,17 +341,9 @@ int EventUpdate(void *data)
                         set_key(MYKEY_R2, 0);
                     }
 
-                    if (is_stock_system) {
-                        if (hit_hotkey(MYKEY_L1)) {
-                            set_key(MYKEY_EXIT, 1);
-                            set_key(MYKEY_L1, 0);
-                        }
-                    }
-                    else {
-                        if (select && (evt.keypad.bitmaps & (1 << MYKEY_L1))) {
-                            set_key(MYKEY_EXIT, 1);
-                            set_key(MYKEY_L1, 0);
-                        }
+                    if (hit_hotkey(MYKEY_L1)) {
+                        set_key(MYKEY_EXIT, 1);
+                        set_key(MYKEY_L1, 0);
                     }
 
                     if (hit_hotkey(MYKEY_L2)) {
