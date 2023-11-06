@@ -48,7 +48,7 @@ config:
 
 .PHONY: rel
 rel:
-	mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates
+	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates
 	zip -r drastic_${REL_VER}.zip drastic
 
 .PHONY: clean
