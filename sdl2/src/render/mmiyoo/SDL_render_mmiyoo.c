@@ -57,7 +57,7 @@ struct _NDS_TEXTURE {
 
 extern GFX gfx;
 extern NDS nds;
-extern MMIYOO_EventInfo MMiyooEventInfo;
+extern MMIYOO_EventInfo evt;
 extern int show_fps;
 extern SDL_Surface *fps_info;
 
@@ -233,7 +233,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
         return 0;
     }
     
-    if ((MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) || (srcrect->w == 800)) {
+    if ((evt.mode == MMIYOO_MOUSE_MODE) || (srcrect->w == 800)) {
         threading_mode = 0;
         if (srcrect->w == 800) {
             usleep(100000);
@@ -537,11 +537,11 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         }
     }
 
-    MMiyooEventInfo.mouse.minx = dstrect->x;
-    MMiyooEventInfo.mouse.miny = dstrect->y;
-    MMiyooEventInfo.mouse.maxx = MMiyooEventInfo.mouse.minx + dstrect->w;
-    MMiyooEventInfo.mouse.maxy = MMiyooEventInfo.mouse.miny + dstrect->h;
-    if ((MMiyooEventInfo.mode == MMIYOO_MOUSE_MODE) && need_pen) {
+    evt.mouse.minx = dstrect->x;
+    evt.mouse.miny = dstrect->y;
+    evt.mouse.maxx = evt.mouse.minx + dstrect->w;
+    evt.mouse.maxy = evt.mouse.miny + dstrect->h;
+    if ((evt.mode == MMIYOO_MOUSE_MODE) && need_pen) {
         draw_pen(pixels, src.w, pitch);
     }
 

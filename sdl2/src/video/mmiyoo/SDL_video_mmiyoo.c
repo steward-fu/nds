@@ -60,7 +60,7 @@
 
 NDS nds = {0};
 GFX gfx = {0};
-MMIYOO_VideoInfo MMiyooVideoInfo={0};
+MMIYOO_VideoInfo vid={0};
 
 int show_fps = 0;
 int down_scale = 1;
@@ -72,7 +72,7 @@ static int is_running = 0;
 static SDL_Surface *cvt = NULL;
 
 extern int need_reload_bg;
-extern MMIYOO_EventInfo MMiyooEventInfo;
+extern MMIYOO_EventInfo evt;
 
 static int MMIYOO_VideoInit(_THIS);
 static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
@@ -1650,8 +1650,8 @@ int draw_pen(const void *pixels, int width, int pitch)
         scale = 2;
     }
 
-    x = ((MMiyooEventInfo.mouse.x - MMiyooEventInfo.mouse.minx) * sw) / (MMiyooEventInfo.mouse.maxx - MMiyooEventInfo.mouse.minx);
-    y = ((MMiyooEventInfo.mouse.y - MMiyooEventInfo.mouse.miny) * sh) / (MMiyooEventInfo.mouse.maxy - MMiyooEventInfo.mouse.miny);
+    x = ((evt.mouse.x - evt.mouse.minx) * sw) / (evt.mouse.maxx - evt.mouse.minx);
+    y = ((evt.mouse.y - evt.mouse.miny) * sh) / (evt.mouse.maxy - evt.mouse.miny);
 
     switch (nds.dis_mode) {
     case NDS_DIS_MODE_VH_T0:
@@ -2339,7 +2339,7 @@ static void MMIYOO_DeleteDevice(SDL_VideoDevice *device)
 int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
 {
     SDL_SetMouseFocus(window);
-    MMiyooVideoInfo.window = window;
+    vid.window = window;
     printf(PREFIX"width: %d, height: %d\n", window->w, window->h);
     //glUpdateBufferSettings(fb_flip, &fb_idx, fb_vaddr);
     return 0;
