@@ -39,14 +39,18 @@
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
 
-#define L1      18
-#define L2      15
-#define R1      20
-#define R2      14
 #define UP      103
 #define DOWN    108
 #define LEFT    105
 #define RIGHT   106
+#define A       57
+#define B       29
+#define X       42
+#define Y       56
+#define L1      18
+#define L2      15
+#define R1      20
+#define R2      14
 
 MMIYOO_EventInfo evt = {0};
 
@@ -179,6 +183,11 @@ int EventUpdate(void *data)
     uint32_t r1 = R1;
     uint32_t r2 = R2;
 
+    uint32_t a = A;
+    uint32_t b = B;
+    uint32_t x = X;
+    uint32_t y = Y;
+
     uint32_t up = UP;
     uint32_t down = DOWN;
     uint32_t left = LEFT;
@@ -199,38 +208,46 @@ int EventUpdate(void *data)
     while (running) {
         SDL_SemWait(event_sem);
 
-        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.dpad_90d) {
-            right = UP;
-            left = DOWN;
+        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.keys_90d) {
             up = LEFT;
             down = RIGHT;
+            left = DOWN;
+            right = UP;
+
+            a = X;
+            b = A;
+            x = Y;
+            y = B;
         }
         else {
             up = UP;
             down = DOWN;
             left = LEFT;
             right = RIGHT;
+
+            a = A;
+            b = B;
+            x = X;
+            y = Y;
         }
 
         if (event_fd > 0) {
             if (read(event_fd, &ev, sizeof(struct input_event))) {
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
-                    //printf("%s, code:%d\n", __func__, ev.code);
-
-                    if (ev.code == l1)      { set_key(MYKEY_L1, ev.value);    }
-                    if (ev.code == l2)      { set_key(MYKEY_L2, ev.value);    }
-                    if (ev.code == r1)      { set_key(MYKEY_R1, ev.value);    }
-                    if (ev.code == r2)      { set_key(MYKEY_R2, ev.value);    }
-                    if (ev.code == up)      { set_key(MYKEY_UP, ev.value);    }
-                    if (ev.code == down)    { set_key(MYKEY_DOWN, ev.value);  }
-                    if (ev.code == left)    { set_key(MYKEY_LEFT, ev.value);  }
+                    if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
+                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
+                    if (ev.code == r1)      { set_key(MYKEY_R1,    ev.value); }
+                    if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
+                    if (ev.code == up)      { set_key(MYKEY_UP,    ev.value); }
+                    if (ev.code == down)    { set_key(MYKEY_DOWN,  ev.value); }
+                    if (ev.code == left)    { set_key(MYKEY_LEFT,  ev.value); }
                     if (ev.code == right)   { set_key(MYKEY_RIGHT, ev.value); }
+                    if (ev.code == a)       { set_key(MYKEY_A,     ev.value); }
+                    if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
+                    if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
+                    if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
 
                     switch (ev.code) {
-                    case 57:  set_key(MYKEY_A, ev.value);      break;
-                    case 29:  set_key(MYKEY_B, ev.value);      break;
-                    case 42:  set_key(MYKEY_X, ev.value);      break;
-                    case 56:  set_key(MYKEY_Y, ev.value);      break;
                     case 28:  set_key(MYKEY_START, ev.value);  break;
                     case 97:  set_key(MYKEY_SELECT, ev.value); break;
                     case 1:   set_key(MYKEY_MENU, ev.value);   break;
@@ -496,7 +513,7 @@ void MMIYOO_PumpEvents(_THIS)
                 if (changed & (1 << MYKEY_A)) {
                     SDL_SendMouseButton(vid.window, 0, (evt.keypad.bitmaps & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
                 }
-                
+
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
                     if ((cc == MYKEY_FF) || (cc == MYKEY_QSAVE) || (cc == MYKEY_QLOAD) || (cc == MYKEY_EXIT) || (cc == MYKEY_R2)) {
@@ -512,7 +529,7 @@ void MMIYOO_PumpEvents(_THIS)
                 }
             }
 
-            if ((nds.dis_mode == NDS_DIS_MODE_HH0) && (nds.dpad_90d == 0)) {
+            if ((nds.dis_mode == NDS_DIS_MODE_HH0) && (nds.keys_90d == 0)) {
                 if (evt.keypad.bitmaps & (1 << MYKEY_UP)) {
                     updated = 1;
                     evt.mouse.x+= get_move_interval(1);

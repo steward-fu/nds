@@ -1088,10 +1088,10 @@ static int read_config(void)
         printf(PREFIX"[json] nds.swap_r1r2: %d\n", nds.swap_r1r2);
     }
 
-    json_object_object_get_ex(jfile, JSON_NDS_DPAD_90D, &jval);
+    json_object_object_get_ex(jfile, JSON_NDS_KEYS_90D, &jval);
     if (jval) {
-        nds.dpad_90d = json_object_get_int(jval) ? 1 : 0;
-        printf(PREFIX"[json] nds.dpad_90d: %d\n", nds.dpad_90d);
+        nds.keys_90d = json_object_get_int(jval) ? 1 : 0;
+        printf(PREFIX"[json] nds.keys_90d: %d\n", nds.keys_90d);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_CUST_MENU, &jval);
@@ -1205,7 +1205,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_ALPHA_BORDER, json_object_new_int(nds.alpha.border));
     json_object_object_add(jfile, JSON_NDS_OVERLAY, json_object_new_int(nds.overlay.sel));
     json_object_object_add(jfile, JSON_NDS_ALT_MODE, json_object_new_int(nds.alt_mode));
-    json_object_object_add(jfile, JSON_NDS_DPAD_90D, json_object_new_int(nds.dpad_90d));
+    json_object_object_add(jfile, JSON_NDS_KEYS_90D, json_object_new_int(nds.keys_90d));
 
     json_object_to_file_ext(nds.cfg_path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -2642,7 +2642,7 @@ int handle_menu(int key)
     const int MENU_DIS_BORDER = 4;
     const int MENU_DIS_POSITION = 5;
     const int MENU_ALT = 6;
-    const int MENU_DPAD = 7;
+    const int MENU_KEYS = 7;
     const int MENU_LAST = 7;
 
     char buf[MAX_PATH] = {0};
@@ -2717,8 +2717,8 @@ int handle_menu(int key)
                 nds.alt_mode-= 1;
             }
             break;
-        case MENU_DPAD:
-            nds.dpad_90d = 0;
+        case MENU_KEYS:
+            nds.keys_90d = 0;
             break;
         }
         break;
@@ -2770,8 +2770,8 @@ int handle_menu(int key)
                 nds.alt_mode+= 1;
             }
             break;
-        case MENU_DPAD:
-            nds.dpad_90d = 1;
+        case MENU_KEYS:
+            nds.keys_90d = 1;
             break;
         }
         break;
@@ -2911,7 +2911,7 @@ int handle_menu(int key)
     }
     draw_info(cvt, buf, SSX + (pre_w - get_font_width(buf)), SY + (h * (MENU_ALT + 1)), col1, 0);
 
-    if (cur_sel == MENU_DPAD) {
+    if (cur_sel == MENU_KEYS) {
         col0 = sel_col;
         col1 = val_col;
     }
@@ -2919,9 +2919,9 @@ int handle_menu(int key)
         col0 = unsel_col;
         col1 = unsel_col;
     }
-    draw_info(cvt, to_lang("DPAD"), SX, SY + (h * MENU_DPAD), col0, 0);
-    sprintf(buf, "%s", DPAD[nds.dpad_90d % 2]);
-    draw_info(cvt, buf, SSX, SY + (h * MENU_DPAD), col1, 0);
+    draw_info(cvt, to_lang("Keys"), SX, SY + (h * MENU_KEYS), col0, 0);
+    sprintf(buf, "%s", DPAD[nds.keys_90d % 2]);
+    draw_info(cvt, buf, SSX, SY + (h * MENU_KEYS), col1, 0);
 
     if ((cur_sel == MENU_OVERLAY) && (nds.overlay.sel < nds.overlay.max) && (nds.overlay.img)) {
         rt.x = 450;
