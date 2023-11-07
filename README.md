@@ -45,6 +45,8 @@ In DraStic emulator, it only supports 3 display modes, which are vertical, horiz
 | ------------- | ---------------------------------------------------------- |
 | Keypad Mode   | This is the default mode and it is so-called gamepad mode. |
 | Stylus Mode   | In this mode, the touch pen shows on either top or bottom screen. DPAD is used for moving touch pen and A button acts touch point. | 
+| Normal Resolution | By default, the display resolution is 256x192 pixels. If user doesn't turn on high resolution mode from DraStic's menu, it is the Normal Resolution. |
+| High Resolution   | Turn on "Change Options -> High-resolution 3D" and then the display resolution will be changed as 512x384 pixels. In this mode, only single screen is rendered. |
 
 &nbsp;
 
@@ -287,3 +289,5 @@ $ sudo docker image rm mmiyoo
 ## Q & A
 Q1: How to change the DraStic’s menu back to the original one ?  
 A1: Change the value of  cust_menu in resources/settings.json file to 0.  
+Q2: How to change from normal resolution to high resolution ?  
+A2: Turn on "Change Options -> High-resolution 3D" in DraStic's menu.
