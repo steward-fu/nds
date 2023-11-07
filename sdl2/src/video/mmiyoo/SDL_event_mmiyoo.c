@@ -368,15 +368,17 @@ int EventUpdate(void *data)
                         set_key(MYKEY_L2, 0);
                     }
                     else if (evt.keypad.bitmaps & (1 << MYKEY_L2)) {
-                        evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
-                        set_key(MYKEY_L2, 0);
+                        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+                            evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
+                            set_key(MYKEY_L2, 0);
 
-                        if (evt.mode == MMIYOO_MOUSE_MODE) {
-                            release_all_keys();
-                            evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
-                            evt.mouse.y = 120 + (evt.mouse.maxy - evt.mouse.miny) / 2;
+                            if (evt.mode == MMIYOO_MOUSE_MODE) {
+                                release_all_keys();
+                                evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
+                                evt.mouse.y = 120 + (evt.mouse.maxy - evt.mouse.miny) / 2;
+                            }
+                            lower_speed = 0;
                         }
-                        lower_speed = 0;
                     }
                 }
             
