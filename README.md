@@ -31,6 +31,7 @@
    - [How to delete the build environment (Docker)](#how-to-delete-the-build-environment-docker)
  - [Installation](#installation)
  - [Limitations](#limitations)
+ - [Special Thanks](#special-thanks)
  - [Q & A](#q--a)
 
 ## Introduction
@@ -41,12 +42,12 @@ In DraStic emulator, it only supports 3 display modes, which are vertical, horiz
 &nbsp;
 
 ## Terminology
-|  Term         | Description                                                |
-| ------------- | ---------------------------------------------------------- |
-| Keypad Mode   | This is the default mode and it is so-called gamepad mode. |
-| Stylus Mode   | In this mode, the touch pen shows on either top or bottom screen. DPAD is used for moving touch pen and A button acts touch point. | 
-| Normal Resolution | By default, the display resolution is 256x192 pixels. If user doesn't turn on high resolution mode from DraStic's menu, it is the Normal Resolution. |
-| High Resolution   | Turn on "Change Options -> High-resolution 3D" and then the display resolution will be changed as 512x384 pixels. In this mode, only single screen is rendered. |
+|  Term       | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| Keypad Mode | This is the default mode and it is so-called gamepad mode. |
+| Stylus Mode | It is touch mode. In this mode, the touch pen shows on either top or bottom screen. DPAD is used to move touch pen and A button acts touch point. | 
+| Normal Resolution | This is the default display mode and the display resolution is 256x192 pixels. If user doesn't turn on High-resolution mode in DraStic menu, it is the Normal Resolution. |
+| High Resolution   | Turn on "Change Options -> High-resolution 3D" in DraStic menu and then the display resolution will be changed to 512x384 pixels. In this mode, only single screen is rendered. |
 
 &nbsp;
 
@@ -208,45 +209,46 @@ Refined Cheat Menu
 &nbsp;
 
 ### Hotkeys
-|  Keys         | Functionality                    |
-| ------------- | -------------------------------- |
-| R2            | Swap screen                      |
-| L2            | Change Keypad mode / Stylus mode |
-|SELECT + R1    | Fast forward                     |
-|SELECT + R2    | Quick save state                 |
-|SELECT + L2    | Quick load state                 |
-|SELECT + L1    | Exit DraStic emulator            |
-|SELECT + START | Enter the customized menu        |
+|  Keys (Onion) | Keys (Stock)   | Functionality                    |
+| ------------- | -------------- | -------------------------------- |
+| R2            | R2             | Swap screen                      |
+| L2            | L2             | Change Keypad mode / Stylus mode |
+|MENU + R1      | SELECT + R1    | Fast forward                     |
+|MENU + R2      | SELECT + R2    | Quick save state                 |
+|MENU + L2      | SELECT + L2    | Quick load state                 |
+|MENU + L1      | SELECT + L1    | Exit DraStic emulator            |
+|MENU + START   | SELECT + START | Enter the customized menu        |
 
 &nbsp;
 
-**Only for customized menu**
-|  Keys         | Functionality                    |
-| ------------- | -------------------------------- |
-| UP / DOWN     | Select item                      |
-| LEFT / RIGHT  | Change setting                   |
-| B             | Apply changes and then exit      |
+**Customized menu only**
+|  Keys (Onion) | Keys (Stock)   | Functionality                    |
+| ------------- | -------------- | -------------------------------- |
+| UP / DOWN     | UP / DOWN      | Select item                      |
+| LEFT / RIGHT  | LEFT / RIGHT   | Change setting                   |
+| B             | B              | Apply changes and then exit      |
 
 &nbsp;
 
-**Only for Keypad mode**
-|  Keys      | Functionality                       |
-| ---------- | ----------------------------------- |
-| MENU       | Enter DraStic’s menu                |
-| SELECT + A | Alternate display mode              |
-| SELECT + B | Change video filter (blur or pixel) |
-| SELECT + Y | Change background image             |
+**Keypad mode only**
+|  Keys (Onion) | Keys (Stock)   | Functionality                       |
+| ------------- | -------------- | ----------------------------------- |
+| MENU + SELECT | MENU           | Enter DraStic’s menu                |
+| MENU + A      | SELECT + A     | Alternate display mode              |
+| MENU + B      | SELECT + B     | Change video filter (blur or pixel) |
+| MENU + Y      | SELECT + Y     | Change background image             |
 
 &nbsp;
 
-**Only for Stylus mode**
-|  Keys         | Functionality                   |
-| ------------- | ------------------------------- |
-| DPAD          | Move the stylus pen             |
-| A             | Touch screen                    |
-| SELECT + Y    | Change stylus pen               |
-| SELECT + UP   | Show the stylus pen on screen 1 |
-| SELECT + DOWN | Show the stylus pen on screen 0 |
+**Stylus mode only**
+|  Keys (Onion) | Keys (Stock)   | Functionality                   |
+| ------------- | -------------- | ------------------------------- |
+| DPAD          | DPAD           | Move the stylus pen             |
+| A             | A              | Touch screen                    |
+| R1            | R1             | Lower moving speed              |
+| MENU + Y      | SELECT + Y     | Change stylus pen               |
+| MENU + UP     | SELECT + UP    | Show the stylus pen on screen 1 |
+| MENU + DOWN   | SELECT + DOWN  | Show the stylus pen on screen 0 |
 
 &nbsp;
 
@@ -274,20 +276,151 @@ $ make rel
 $ sudo docker image rm mmiyoo
 ```
 
+&nbsp;
+
 ## Installation
 ```
 1. put drastic into Emu folder
 2. put ROMs into Roms/NDS folder
 ```
 
+&nbsp;
+
 ## Limitations
- - Screen orientation MUST be set as vertical on DraStic menu as the following image because all of display modes are handled by SDL2 library, not DraStic emulator  
+ - Screen orientation **MUST** be set as **vertical** in DraStic menu as the following image because all of display modes are handled by SDL2 library, not DraStic emulator  
 ![image](images/setting_0.png)  
 
 &nbsp;
 
+## Special Thanks
+```
+河馬
+背包胖熊
+Miyoo Mini 掌機 QQ 群 (742661857)
+Onion Development Team
+DraStic Development Team
+```
+
+&nbsp;
+
 ## Q & A
-Q1: How to change the DraStic’s menu back to the original one ?  
-A1: Change the value of  cust_menu in resources/settings.json file to 0.  
-Q2: How to change from normal resolution to high resolution ?  
-A2: Turn on "Change Options -> High-resolution 3D" in DraStic's menu.
+**Q1: How to change the DraStic menu back to the original one ?**
+```
+Change the "cust_menu" value in "resources/settings.json" file to 0.
+``` 
+
+&nbsp;
+
+**Q2: How to change the language to another one ?**
+```
+As the following steps:
+Step 1: add the new translation file in "resources/translate" folder, ex: resources/translate/jp
+Step 2: change the "lang" value in "resources/settings.json" file to match your language, ex: "lang":"jp"
+Step 3: update font.ttf file which supports your taregt language in "resources/font" folder
+```
+
+&nbsp;
+
+
+**Q3: How to rotate the keys (DPAD and 4 function keys) to 90 degree ?**
+```
+Go to the customized menu and then change "Keys" setting.
+```
+
+&nbsp;
+
+**Q4: How to customize the DraStic menu ?**
+```
+All images are put in "resources/menu" folder.
+The color can be changed in "resources/settings.json" file as the following:
+    "menu_c0":"0xffffff"    Text color when select
+    "menu_c1":"0x000000"    Text color when un-select
+    "menu_c2":"0x289a35"    Highlight color
+```
+
+&nbsp;
+
+**Q5: How to swap L1 and L2 keys ?**
+```
+Change the "swap_l1l2" value in "resources/settings.json" file.
+```
+
+&nbsp;
+
+**Q6: How to swap R1 and R2 keys ?**
+```
+Change the "swap_r1r2" value in "resources/settings.json" file.
+```
+
+&nbsp;
+
+**Q7: How to apply the overlay image ?**
+```
+Put image in "resources/overlay" folder.
+Go to the customized menu and then change the "OVERLAY" setting to apply the new setting.
+Please note that the wallpaper will be disabled when the "OVERLAY" setting is enabled.
+```
+
+&nbsp;
+
+**Q8: How to change the moving speed for stylus pen ?**
+```
+Change the "xv" and "yv" values in "resources/settings.json" file.  
+Speed (X axis) = (time_cur – time_init) / xv  
+Speed (Y axis) = (time_cur – time_init) / yv  
+```
+
+&nbsp;
+
+**Q9: How to change the initial CPU clock ?**
+```
+Change "./cpuclock 1500" to what you want. (1500 = 1500MHz = 1.5GHz)  
+For Miyoo Mini, the maximum CPU clock should be <= 1550MHz (experimental value)  
+For Miyoo Mini Plus, the maximum CPU clock should be <= 1850MHz (experimental value)  
+```
+
+&nbsp;
+
+**Q10: How to change the maximum/minimum CPU clock ?**
+```
+Change the "maxcpu"/"minpcu" value in "resources/settings.json" file.  
+```
+
+&nbsp;
+
+**Q11: How to use the customized wallpaper (so-called background or theme image) ?**
+```
+All wallpapers are put in "resources/bg" folder.
+```
+
+&nbsp;
+
+**Q12: How to use the customized stylus image ?**
+```
+All of stylus images are put in "resources/pen" folder.
+The touch point is set by checking suffix file name.
+For example, the file name of 1_lt.png means the touch point is at left-top (_lt).
+
+User can replace the old ones or create the new image for stylus pen.
+Here are all of supported positions:
+    xxx_lb.png: left-bottom
+    xxx_lt.png: left-top
+    xxx_rb.png: right-bottom
+    xxx_rt.png: right-top 
+```
+
+&nbsp;
+
+**Q13: How to use the customized logo in DraStic menu ?**
+```
+Replace the images in "resources/logo" folder.
+The resolution must be 400x150 pixels.
+```
+
+&nbsp;
+
+**Q14: How to enable high resolution 3D mode ?**
+```
+Turn on "Hight-resolution 3D" settings in DraStic menu.
+The display resolution will be changed as 512x384 pixels.
+```
