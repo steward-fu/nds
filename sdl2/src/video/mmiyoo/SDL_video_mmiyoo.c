@@ -200,7 +200,7 @@ static int draw_drastic_menu_main(void)
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
-            if (p->bg) {
+            if (p->bg && nds.menu.drastic.cursor) {
                 rt.x = x - 50;
                 rt.y = y - (nds.menu.drastic.cursor->h / 3);
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
@@ -299,7 +299,7 @@ static int draw_drastic_menu_option(void)
                 draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
 
-            if (p->bg) {
+            if (p->bg && nds.menu.drastic.cursor) {
                 rt.x = 10;
                 rt.y = y - (nds.menu.drastic.cursor->h / 3) - 2;
                 rt.w = 0;
@@ -564,7 +564,7 @@ static int draw_drastic_menu_firmware(void)
                 draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
 
-            if ((p->x == 92) && (p->bg)) {
+            if ((p->x == 92) && (p->bg) && nds.menu.drastic.cursor) {
                 rt.x = 10;
                 rt.y = y - (nds.menu.drastic.cursor->h / 3) - 2;
                 rt.w = 0;
@@ -668,7 +668,7 @@ static int draw_drastic_menu_cheat(void)
                 rt.h = 0;
                 SDL_BlitSurface((p->enable > 0 ) ? nds.menu.drastic.yes : nds.menu.drastic.no, NULL, nds.menu.drastic.main, &rt);
             }
-            if (p->bg) {
+            if (p->bg && nds.menu.drastic.cursor) {
                 rt.x = 10;
                 rt.y = y - (nds.menu.drastic.cursor->h / 3) - 2;
                 rt.w = 0;
@@ -3204,9 +3204,11 @@ int handle_menu(int key)
         }
     }
 
-    rt.x = SX - 60;
-    rt.y = SY + (h * cur_sel) - (nds.menu.cursor->h / 3) - 2;
-    SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
+    if (nds.menu.cursor) {
+        rt.x = SX - 60;
+        rt.y = SY + (h * cur_sel) - (nds.menu.cursor->h / 3) - 2;
+        SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
+    }
 
     GFX_Copy(cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
     GFX_Flip();
