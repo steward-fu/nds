@@ -121,15 +121,24 @@ static int get_current_menu_layer(void)
 static int draw_drastic_menu_main(void)
 {
     int cc = 0;
+    int div = 1;
+    int w = 30;
+    int h = 100;
     int draw = 0;
     int x = 0, y = 0;
     SDL_Rect rt = {0};
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
+#ifdef TRIMUI
+    div = 2;
+#endif
+
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        x = 150;
         draw = 0;
+        x = 150 / div;
+        w = 30 / div;
+        h = 100 / div;
         
         memset(buf, 0, sizeof(buf));
         p = &drastic_menu.item[cc];
@@ -137,71 +146,71 @@ static int draw_drastic_menu_main(void)
             draw = 1;
             sprintf(buf, "%s %s", to_lang("Version"), &p->msg[8]);
             x = FB_W - get_font_width(buf) - 10;
-            y = 10;
+            y = 10 / div;
         }
         else if (p->y == 280) {
             draw = 1;
-            y = 100 + (0 * 30);
+            y = h + (0 * w);
             strcpy(buf, to_lang("Change Options"));
         }
         else if (p->y == 288) {
             draw = 1;
-            y = 100 + (1 * 30);
+            y = h + (1 * w);
             strcpy(buf, to_lang("Configure Controls"));
         }
         else if (p->y == 296) {
             draw = 1;
-            y = 100 + (2 * 30);
+            y = h + (2 * w);
             strcpy(buf, to_lang("Configure Firmware"));
         }
         else if (p->y == 304) {
             draw = 1;
-            y = 100 + (3 * 30);
+            y = h + (3 * w);
             strcpy(buf, to_lang("Configure Cheats"));
         }
         else if (p->y == 320) {
             draw = 1;
-            y = 100 + (4 * 30);
+            y = h + (4 * w);
             sprintf(buf, "%s %s", to_lang("Load state"), &p->msg[13]);
         }
         else if (p->y == 328) {
             draw = 1;
-            y = 100 + (5 * 30);
+            y = h + (5 * w);
             sprintf(buf, "%s %s", to_lang("Save state"), &p->msg[13]);
         }
         else if (p->y == 344) {
             draw = 1;
-            y = 100 + (6 * 30);
+            y = h + (6 * w);
             strcpy(buf, to_lang("Load new game"));
         }
         else if (p->y == 352) {
             draw = 1;
-            y = 100 + (7 * 30);
+            y = h + (7 * w);
             strcpy(buf, to_lang("Restart game"));
         }
         else if (p->y == 368) {
             draw = 1;
-            y = 100 + (8 * 30);
+            y = h + (8 * w);
             strcpy(buf, to_lang("Return to game"));
         }
         else if (p->y == 384) {
             draw = 1;
-            y = 100 + (9 * 30);
+            y = h + (9 * w);
             strcpy(buf, to_lang("Exit DraStic"));
         }
 
         if (draw) {
             if (p->bg) {
-                rt.x = 5;
-                rt.y = y - 4;
-                rt.w = 630;
-                rt.h = 30;
+                rt.x = 5 / div;
+                rt.y = y - (3 / div);
+                rt.w = FB_W - (10 / div);
+                rt.h = w;
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             if (p->bg && nds.menu.drastic.cursor) {
-                rt.x = x - 50;
+                rt.x = x - (50 / div);
                 rt.y = y - (nds.menu.drastic.cursor->h / 3);
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
             }
@@ -240,14 +249,20 @@ static int draw_drastic_menu_option(void)
 {
     int w = 0;
     int y = 0;
+    int ww = 0;
     int s0 = 0;
     int s1 = 0;
     int cc = 0;
+    int div = 1;
     int cnt = 0;
     int cursor = 0;
     SDL_Rect rt = {0};
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
+
+#ifdef TRIMUI
+    div = 2;
+#endif
 
     cursor = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
@@ -270,17 +285,19 @@ static int draw_drastic_menu_option(void)
     }
 
     for (cc=0; cc<drastic_menu.cnt; cc++) {
+        ww = 30 / div;
+
         if ((cc >= s0) && (cc < s1)) {
-            y = 25 + (cnt * 30);
+            y = (25 / div) + (cnt * ww);
             memset(buf, 0, sizeof(buf));
             p = &drastic_menu.item[cc];
         
             cnt+= 1;            
             if (p->bg) {
-                rt.x = 5;
-                rt.y = y - 4;
-                rt.w = 630;
-                rt.h = 30;
+                rt.x = 5 / div;
+                rt.y = y - (3 / div);
+                rt.w = FB_W - (10 / div);
+                rt.h = ww;
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
             }
@@ -288,20 +305,20 @@ static int draw_drastic_menu_option(void)
             if (p->y <= 384) {
                 strcpy(buf, to_lang(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
-                draw_info(nds.menu.drastic.main, buf, FB_W - w - 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, FB_W - w - (20 / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
                 mark_double_spaces(p->msg);
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else {
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
 
             if (p->bg && nds.menu.drastic.cursor) {
-                rt.x = 10;
-                rt.y = y - (nds.menu.drastic.cursor->h / 3) - 2;
+                rt.x = 10 / div;
+                rt.y = y - (nds.menu.drastic.cursor->h / 3) - (2 / div);
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
@@ -314,13 +331,19 @@ static int draw_drastic_menu_option(void)
 static int draw_drastic_menu_controller(void)
 {
     int y = 0;
+    int w = 0;
     int cc = 0;
+    int div = 1;
     int cnt = 0;
     int cursor = 0;
     SDL_Rect rt = {0};
     int s0 = 0, s1 = 0;
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
+
+#ifdef TRIMUI
+    div = 2;
+#endif
 
     cursor = 0;
     for (cc=0; cc<drastic_menu.cnt;) {
@@ -354,6 +377,7 @@ static int draw_drastic_menu_controller(void)
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
+        w = 30 / div;
         p = &drastic_menu.item[cc];
 
         if ((p->y == 224) || (p->y == 232) || (p->y == 201)) {
@@ -362,35 +386,35 @@ static int draw_drastic_menu_controller(void)
 
         memset(buf, 0, sizeof(buf));
         if ((cnt >= s0) && (cnt < s1)) {
-            y = 25 + ((cnt - s0) * 30);
-            
+            y = (25 / div) + ((cnt - s0) * w);
+
             if ((p->y >= 240) && (p->y <= 376)) {
                 if (drastic_menu.item[cc + 1].bg || drastic_menu.item[cc + 2].bg) {
                     int sum = drastic_menu.item[cc + 1].bg + drastic_menu.item[cc + 2].bg;
                     uint32_t c = sum > 500 ? 0xff0000 : nds.menu.c2;
 
-                    rt.x = 5;
-                    rt.y = y - 4;
-                    rt.w = 630;
-                    rt.h = 30;
+                    rt.x = 5 / div;
+                    rt.y = y - (3 / div);
+                    rt.w = FB_W - (10 / div);
+                    rt.h = w;
                     SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff));
                 }
-                draw_info(nds.menu.drastic.main, p->msg, 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, p->msg, 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
                 if ((p->y >= 240) && (p->y <= 376)) {
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
                 }
             }
             else {
                 if (p->bg) {
-                    rt.x = 5;
-                    rt.y = y - 4;
-                    rt.w = 630;
-                    rt.h = 30;
+                    rt.x = 5 / div;
+                    rt.y = y - (3 / div);
+                    rt.w = FB_W - (10 / div);
+                    rt.h = w;
                     SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                         (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
                 }
-                draw_info(nds.menu.drastic.main, to_lang(p->msg), 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, to_lang(p->msg), 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
         }
 
@@ -405,13 +429,19 @@ static int draw_drastic_menu_controller(void)
 static int draw_drastic_menu_controller2(void)
 {
     int y = 0;
+    int w = 0;
     int cc = 0;
     int cnt = 0;
+    int div = 1;
     int cursor = 0;
     SDL_Rect rt = {0};
     int s0 = 0, s1 = 0;
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
+
+#ifdef TRIMUI
+    div = 2;
+#endif
 
     cursor = 0;
     for (cc=0; cc<drastic_menu.cnt;) {
@@ -445,6 +475,7 @@ static int draw_drastic_menu_controller2(void)
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
+        w = 30 / div;
         p = &drastic_menu.item[cc];
 
         if ((p->y == 224) || (p->y == 232) || (p->y == 201)) {
@@ -453,35 +484,35 @@ static int draw_drastic_menu_controller2(void)
 
         memset(buf, 0, sizeof(buf));
         if ((cnt >= s0) && (cnt < s1)) {
-            y = 25 + ((cnt - s0) * 30);
-            
+            y = (25 / div) + ((cnt - s0) * w);
+
             if ((p->y >= 240) && (p->y <= 384)) {
                 if (drastic_menu.item[cc + 1].bg || drastic_menu.item[cc + 2].bg) {
                     int sum = drastic_menu.item[cc + 1].bg + drastic_menu.item[cc + 2].bg;
                     uint32_t c = sum > 500 ? 0xff0000 : nds.menu.c2;
 
-                    rt.x = 5;
-                    rt.y = y - 4;
-                    rt.w = 630;
-                    rt.h = 30;
+                    rt.x = 5 / div;
+                    rt.y = y - (3 / div);
+                    rt.w = FB_W - (10 / div);
+                    rt.h = w;
                     SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff));
                 }
-                draw_info(nds.menu.drastic.main, p->msg, 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, p->msg, 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
                 if ((p->y >= 240) && (p->y <= 384)) {
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
                 }
             }
             else {
                 if (p->bg) {
-                    rt.x = 5;
-                    rt.y = y - 4;
-                    rt.w = 630;
-                    rt.h = 30;
+                    rt.x = 5 / div;
+                    rt.y = y - (3 / div);
+                    rt.w = FB_W - (10 / div);
+                    rt.h = w;
                     SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                         (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
                 }
-                draw_info(nds.menu.drastic.main, to_lang(p->msg), 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, to_lang(p->msg), 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
         }
 
@@ -498,14 +529,21 @@ static int draw_drastic_menu_firmware(void)
     int t = 0;
     int w = 0;
     int y = 0;
+    int ww = 30;
     int cc = 0;
+    int div = 1;
     int cnt = 0;
     SDL_Rect rt = {0};
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
     char name[MAX_PATH] = {0};
 
+#ifdef TRIMUI
+    div = 2;
+#endif
+
     for (cc=0; cc<drastic_menu.cnt; cc++) {
+        ww = 30 / div;
         p = &drastic_menu.item[cc];
         if ((p->x == 352) || (p->x == 108)) {
             continue;
@@ -516,12 +554,12 @@ static int draw_drastic_menu_firmware(void)
             strcat(name, p->msg);
         }
         else {
-            y = 25 + (cnt * 30);
+            y = (25 / div) + (cnt * ww);
             if ((p->x == 92) && (p->bg)) {
-                rt.x = 5;
-                rt.y = y - 4;
-                rt.w = 630;
-                rt.h = 30;
+                rt.x = 5 / div;
+                rt.y = y - (3 / div);
+                rt.w = FB_W - (10 / div);
+                rt.h = ww;
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
             }
@@ -530,11 +568,11 @@ static int draw_drastic_menu_firmware(void)
             if (p->y == 280) {
                 mark_double_spaces(p->msg);
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else if (p->y == 296) {
                 w = get_font_width(name);
-                draw_info(nds.menu.drastic.main, name, FB_W - w - 20, 25, nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, name, FB_W - w - (20 / div), 25 / div, nds.menu.c1, 0);
 
                 w = strlen(p->msg);
                 p->msg[w - 3] = 0;
@@ -545,28 +583,28 @@ static int draw_drastic_menu_firmware(void)
                     }
                 }
                 w = get_font_width(buf);
-                draw_info(nds.menu.drastic.main, buf, FB_W - w - 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, FB_W - w - (20 / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
                 strcpy(buf, to_lang("Favorite Color"));
-                draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else if (p->y <= 312) {
                 strcpy(buf, to_lang(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
-                draw_info(nds.menu.drastic.main, buf, FB_W - w - 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, FB_W - w - (20 / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
                 mark_double_spaces(p->msg);
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else {
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
 
             if ((p->x == 92) && (p->bg) && nds.menu.drastic.cursor) {
-                rt.x = 10;
-                rt.y = y - (nds.menu.drastic.cursor->h / 3) - 2;
+                rt.x = 10 / div;
+                rt.y = y - (nds.menu.drastic.cursor->h / 3) - (2 / div);
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
@@ -579,7 +617,9 @@ static int draw_drastic_menu_firmware(void)
 static int draw_drastic_menu_cheat(void)
 {
     int y = 0;
+    int w = 30;
     int cc = 0;
+    int div = 1;
     int cnt = 0;
     int cursor = 0;
     SDL_Rect rt = {0};
@@ -587,6 +627,9 @@ static int draw_drastic_menu_cheat(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
+#ifdef TRIMUI
+    div = 2;
+#endif
     for (cc=0; cc<drastic_menu.cnt; cc++) {
         p = &drastic_menu.item[cc];
         if (p->x == 650) {
@@ -640,6 +683,7 @@ static int draw_drastic_menu_cheat(void)
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
+        w = 30 / div;
         memset(buf, 0, sizeof(buf));
         p = &drastic_menu.item[cc];
 
@@ -648,29 +692,29 @@ static int draw_drastic_menu_cheat(void)
         }
 
         if ((cc >= s0) && (cc < s1)) {
-            y = 25 + (cnt * 30);
+            y = (25 / div) + (cnt * w);
 
             if (p->bg) {
-                rt.x = 5;
-                rt.y = y - 4;
-                rt.w = 630;
-                rt.h = 30;
+                rt.x = 5 / div;
+                rt.y = y - (3 / div);
+                rt.w = FB_W - (10 / div);
+                rt.h = w;
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format,
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
             }
 
             cnt+= 1;
-            draw_info(nds.menu.drastic.main, p->msg, 60, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+            draw_info(nds.menu.drastic.main, p->msg, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             if (p->cheat) {
-                rt.x = 600;
-                rt.y = y - 2;
+                rt.x = 600 / div;
+                rt.y = y - (2 / div);
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface((p->enable > 0 ) ? nds.menu.drastic.yes : nds.menu.drastic.no, NULL, nds.menu.drastic.main, &rt);
             }
             if (p->bg && nds.menu.drastic.cursor) {
-                rt.x = 10;
-                rt.y = y - (nds.menu.drastic.cursor->h / 3) - 2;
+                rt.x = 10 / div;
+                rt.y = y - (nds.menu.drastic.cursor->h / 3) - (2 / div);
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
@@ -683,7 +727,9 @@ static int draw_drastic_menu_cheat(void)
 static int draw_drastic_menu_rom(void)
 {
     int y = 0;
+    int w = 0;
     int cc = 0;
+    int div = 1;
     int chk = 0;
     int all = 0;
     int cnt = 0;
@@ -691,7 +737,11 @@ static int draw_drastic_menu_rom(void)
     SDL_Rect rt = {0};
     int s0 = 0, s1 = 0;
     CUST_MENU_SUB *p = NULL;
-    
+
+#ifdef TRIMUI
+    div = 2;
+#endif
+
     for (cc=0; cc<drastic_menu.cnt; cc++) {
         if (drastic_menu.item[cc].x == 10) {
             if (drastic_menu.item[cc].bg > 0) {
@@ -744,30 +794,32 @@ static int draw_drastic_menu_rom(void)
     {
         uint32_t c = 0x335445;
 
+        w = 30 / div;
         p = &drastic_menu.item[0];
-        rt.x = 5;
-        rt.y = 25 - 4;
-        rt.w = 630;
-        rt.h = 30;
+        rt.x = 5 / div;
+        rt.y = (25 / div) - (4 / div);
+        rt.w = FB_W - (10 / div);
+        rt.h = w;
         SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff));
-        draw_info(nds.menu.drastic.main, p->msg, 20, 25, 0xa0cb93, 0);
+        draw_info(nds.menu.drastic.main, p->msg, 20 / div, 25 / div, 0xa0cb93, 0);
     }
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
+        w = 30 / div;
         p = &drastic_menu.item[cc];
         if (p->x == chk) {
-            y = 25 + (((cnt - s0) + 1) * 30);
+            y = (25 / div) + (((cnt - s0) + 1) * w);
             if ((cnt >= s0) && (cnt < s1)) {
                 if (p->bg) {
-                    rt.x = 5;
-                    rt.y = y - 4;
-                    rt.w = 630;
-                    rt.h = 30;
+                    rt.x = 5 / div;
+                    rt.y = y - (4 / div);
+                    rt.w = FB_W - (10 / div);
+                    rt.h = w;
                     SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format,
                         (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
                 }
-                draw_info(nds.menu.drastic.main, p->msg, 20, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, p->msg, 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             cnt+= 1;
         }
@@ -926,6 +978,7 @@ static void *video_handler(void *threadid)
         if (gfx.action == GFX_ACTION_FLIP) {
             gfx.action = GFX_ACTION_NONE;
 
+#ifdef MMIYOO
             if (((nds.dis_mode != NDS_DIS_MODE_S0) && (nds.dis_mode != NDS_DIS_MODE_S1)) || (nds.hres_mode > 0)) {
                 My_QueueCopy(gfx.thread[0].texture, (nds.hres_mode > 0) ? gfx.thread[0].pixels : get_pixels(gfx.thread[0].texture), 
                     &gfx.thread[0].srt, &gfx.thread[0].drt);
@@ -933,6 +986,11 @@ static void *video_handler(void *threadid)
             if ((gfx.thread[1].srt.w == 256) && (gfx.thread[1].srt.h == 192)) {
                 My_QueueCopy(gfx.thread[1].texture, get_pixels(gfx.thread[1].texture), &gfx.thread[1].srt, &gfx.thread[1].drt);
             }
+#endif
+
+#ifdef TRIMUI
+            My_QueueCopy(gfx.thread[0].texture, get_pixels(gfx.thread[0].texture), &gfx.thread[0].srt, &gfx.thread[0].drt);
+#endif
             GFX_Flip();
         }
         usleep(1);
@@ -1180,10 +1238,15 @@ static int read_config(void)
     }
 
     reload_pen();
+#ifdef MMIYOO
     reload_overlay();
+#endif
     json_object_put(jfile);
-
     snd_nds_reload_config();
+
+#ifdef TRIMUI
+    nds.dis_mode = NDS_DIS_MODE_S0;
+#endif
     return 0;
 }
 
@@ -1213,6 +1276,7 @@ static int write_config(void)
     return 0;
 }
 
+#ifdef MMIYOO
 static int get_cpuclock(void)
 {
     static const uint64_t divsrc = 432000000llu * 524288;
@@ -1337,6 +1401,7 @@ static int set_cpuclock(uint32_t newclock)
     close(fd_mem);
     return 0;
 }
+#endif
 
 static int get_dir_path(const char *path, int desire, char *buf)
 {
@@ -1501,15 +1566,27 @@ void GFX_Init(void)
     int cc = 0;
     SDL_Surface *t = NULL;
 
+#ifdef MMIYOO
     MI_SYS_Init();
     MI_GFX_Open();
+#endif
 
     gfx.fd = open("/dev/fb0", O_RDWR);
     ioctl(gfx.fd, FBIOGET_FSCREENINFO, &gfx.finfo);
-    gfx.fb.phyAddr = gfx.finfo.smem_start;
     ioctl(gfx.fd, FBIOGET_VSCREENINFO, &gfx.vinfo);
     gfx.vinfo.yoffset = 0;
+    gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
     ioctl(gfx.fd, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+
+#ifdef TRIMUI
+    gfx.fb.flip = 0;
+    gfx.fb.virAddr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fd, 0);
+    printf(PREFIX"fb mapped buffer at %p\n", gfx.fb.virAddr);
+    memset(gfx.fb.virAddr, 0 , FB_SIZE);
+#endif
+
+#ifdef MMIYOO
+    gfx.fb.phyAddr = gfx.finfo.smem_start;
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_Mmap(gfx.fb.phyAddr, gfx.finfo.smem_len, &gfx.fb.virAddr, TRUE);
     memset(&gfx.hw.opt, 0, sizeof(gfx.hw.opt));
@@ -1519,6 +1596,7 @@ void GFX_Init(void)
 
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.overlay.phyAddr);
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
+#endif
 
     for (cc=0; cc<MAX_QUEUE; cc++) {
         gfx.thread[cc].pixels = malloc(TMP_SIZE);
@@ -1549,15 +1627,42 @@ void GFX_Init(void)
 
     t = IMG_Load(DRASTIC_MENU_BG_FILE);
     if (t) {
+#ifdef MMIYOO
         nds.menu.drastic.bg = SDL_ConvertSurface(t, cvt->format, 0);
+#endif
+
+#ifdef TRIMUI
+        nds.menu.drastic.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        if (nds.menu.drastic.bg) {
+            SDL_SoftStretch(t, NULL, nds.menu.drastic.bg, NULL);
+        }
+#endif
         printf(PREFIX"drastic menu bg: %p\n", nds.menu.drastic.bg);
         SDL_FreeSurface(t);
     }
+
+#ifdef MMIYOO
     nds.menu.drastic.cursor = IMG_Load(DRASTIC_MENU_CURSOR_FILE);
     if (nds.menu.drastic.cursor) {
         printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
     }
-    
+#endif
+
+#ifdef TRIMUI
+    t = IMG_Load(DRASTIC_MENU_CURSOR_FILE);
+    if (t) {
+        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+        nds.menu.drastic.cursor = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        if (nds.menu.drastic.cursor) {
+            SDL_SoftStretch(t, NULL, t, &nrt);
+            SDL_BlitSurface(t, NULL, nds.menu.drastic.cursor, &nrt);
+            printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
+        }
+        SDL_FreeSurface(t);
+    }
+#endif
+
+#ifdef MMIYOO
     nds.menu.drastic.yes = IMG_Load(DRASTIC_MENU_YES_FILE);
     if (nds.menu.drastic.yes) {
         printf(PREFIX"drastic menu yes: %p\n", nds.menu.drastic.yes);
@@ -1567,7 +1672,34 @@ void GFX_Init(void)
     if (nds.menu.drastic.no) {
         printf(PREFIX"drastic menu no: %p\n", nds.menu.drastic.no);
     }
+#endif
+
+#ifdef TRIMUI
+    t = IMG_Load(DRASTIC_MENU_YES_FILE);
+    if (t) {
+        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+        nds.menu.drastic.yes = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        if (nds.menu.drastic.yes) {
+            SDL_SoftStretch(t, NULL, t, &nrt);
+            SDL_BlitSurface(t, NULL, nds.menu.drastic.yes, &nrt);
+            printf(PREFIX"drastic menu yes: %p\n", nds.menu.drastic.yes);
+        }
+        SDL_FreeSurface(t);
+    }
     
+    t = IMG_Load(DRASTIC_MENU_NO_FILE);
+    if (t) {
+        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+        nds.menu.drastic.no = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        if (nds.menu.drastic.no) {
+            SDL_SoftStretch(t, NULL, t, &nrt);
+            SDL_BlitSurface(t, NULL, nds.menu.drastic.no, &nrt);
+            printf(PREFIX"drastic menu no: %p\n", nds.menu.drastic.no);
+        }
+        SDL_FreeSurface(t);
+    }
+#endif
+
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
     if (nds.menu.drastic.main) {
         if (nds.menu.drastic.bg) {
@@ -1593,16 +1725,19 @@ void GFX_Quit(void)
     int cc = 0;
     void *ret = NULL;
 
-    gfx.vinfo.yoffset = 0;
-    ioctl(gfx.fd, FBIOPUT_VSCREENINFO, &gfx.vinfo);
-    close(gfx.fd);
-    gfx.fd = 0;
+    is_running = 0;
+    pthread_join(thread, &ret);
 
+#ifdef MMIYOO
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
     MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.tmp.phyAddr);
     MI_SYS_Munmap(gfx.overlay.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.overlay.phyAddr);
+
+    MI_GFX_Close();
+    MI_SYS_Exit();
+#endif
 
     for (cc=0; cc<MAX_QUEUE; cc++) {
         if (gfx.thread[cc].pixels) {
@@ -1610,17 +1745,26 @@ void GFX_Quit(void)
             gfx.thread[cc].pixels = NULL;
         }
     }
-    MI_GFX_Close();
-    MI_SYS_Exit();
 
-    is_running = 0;
-    pthread_join(thread, &ret);
+#ifdef TRIMUI
+    if (gfx.fb.virAddr != MAP_FAILED) {
+        munmap(gfx.fb.virAddr, FB_SIZE);
+        gfx.fb.virAddr = MAP_FAILED;
+    }
+#endif
+
+    gfx.vinfo.yoffset = 0;
+    ioctl(gfx.fd, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    close(gfx.fd);
+    gfx.fd = 0;
 }
 
 void GFX_Clear(void)
 {
+#ifdef MMIYOO
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
+#endif
 }
 
 int draw_pen(const void *pixels, int width, int pitch)
@@ -1742,13 +1886,53 @@ int draw_pen(const void *pixels, int width, int pitch)
 
 int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
+#ifdef TRIMUI
+    int x = 0;
+    int y = 0;
+    int ox = 32;
+    int oy = 24;
+    int sw = srcrect.w;
+    int sh = srcrect.h;
+    int rgb565 = 0;
+    uint32_t v = 0; 
+    uint16_t *src_16 = (uint16_t *)pixels;
+    uint32_t *src_32 = (uint32_t *)pixels;
+    uint16_t *dst = (uint16_t *)gfx.fb.virAddr + (FB_W * FB_H * gfx.fb.flip);
+
+    if ((pixels == NULL) || (gfx.fb.virAddr == MAP_FAILED)) {
+        return -1;
+    }    
+
+    if ((srcrect.w >= 320) || (srcrect.h >= 240)) {
+        ox = 0;
+        oy = 0;
+        sw = FB_W;
+        sh = FB_H;
+    }
+    
+    rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
+    for (y = 0; y < sh; y++) {
+        for (x = 0; x < sw; x++) {
+            if (rgb565) {
+                dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = *src_16++;
+            }
+            else {
+                v = *src_32++;
+                dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = ((v >> 8) & 0xf800) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
+            }
+        }
+    }
+    return 0;
+#endif
+
+#ifdef MMIYOO
     int copy_it = 1;
     MI_U16 u16Fence = 0;
 
     if (pixels == NULL) {
         return -1;
     }
-    
+
     if (alpha != 0) {
         if (nds.alpha.val > NDS_ALPHA_MAX) {
             nds.alpha.val = 0;
@@ -1767,7 +1951,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             uint32_t col[] = {
                 0x000000, 0xa0a0a0, 0x400000, 0x004000, 0x000040, 0x000000, 0xa0a000, 0x00a0a0
             };
-            
+
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
                 sw = 170;
@@ -1816,7 +2000,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                             g1 = (s1_888[((y + ay) * srcrect.w) + x + ax] & 0x00ff00) >> 8;
                             b1 = (s1_888[((y + ay) * srcrect.w) + x + ax] & 0x0000ff) >> 0;
                         }
-                        
+
                         switch (nds.alpha.pos % 4) {
                         case 0:
                             r0 = (s0[((sh - y + (FB_H - sh) - 1) * FB_W) + (sw - x - 1)] & 0xff0000) >> 16;
@@ -1849,7 +2033,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             }
             copy_it = 0;
         }
-       
+
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
             dstrect.w = 170;
@@ -1870,7 +2054,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             }
             break;
         }
-        
+
         switch (nds.alpha.pos % 4) {
         case 0:
             dstrect.x = 0;
@@ -1970,7 +2154,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     if (copy_it) {
         neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
     }
-    
+
     gfx.hw.opt.u32GlobalSrcConstColor = 0;
     gfx.hw.opt.eRotate = rotate;
     gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
@@ -1986,7 +2170,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     gfx.hw.src.surf.u32Stride = pitch;
     gfx.hw.src.surf.eColorFmt = (pitch / srcrect.w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
     gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
-    
+
     gfx.hw.dst.rt.s32Xpos = 0;
     gfx.hw.dst.rt.s32Ypos = 0;
     gfx.hw.dst.rt.u32Width = FB_W;
@@ -2004,7 +2188,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
     MI_GFX_BitBlit(&gfx.hw.src.surf, &gfx.hw.src.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
     MI_GFX_WaitAllDone(FALSE, u16Fence);
-    
+
     if ((nds.menu.enable == 0) && (srcrect.w != 800) && ((srcrect.w == 256) || (srcrect.w == 512)) && (nds.overlay.sel < nds.overlay.max)) {
         gfx.hw.src.rt.s32Xpos = 0;
         gfx.hw.src.rt.s32Ypos = 0;
@@ -2026,12 +2210,24 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         MI_GFX_WaitAllDone(FALSE, u16Fence);
     }
     return 0;
+#endif
 }
 
 void GFX_Flip(void)
 {
+#ifdef MMIYOO
     ioctl(gfx.fd, FBIOPAN_DISPLAY, &gfx.vinfo);
     gfx.vinfo.yoffset ^= FB_H;
+#endif
+
+#ifdef TRIMUI
+    int ret = 0;
+
+    gfx.vinfo.yoffset = gfx.fb.flip * gfx.vinfo.yres;
+    ioctl(gfx.fd, FBIOPAN_DISPLAY, &gfx.vinfo);
+    ioctl(gfx.fd, FBIO_WAITFORVSYNC, &ret);
+    gfx.fb.flip^= 1;
+#endif
 }
 
 int get_font_width(const char *info)
@@ -2179,13 +2375,14 @@ int reload_pen(void)
 
 int reload_bg(void)
 {
+#ifdef MMIYOO
     static int pre_sel = -1;
     static int pre_mode = -1;
 
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
-    SDL_Rect srt = {0, 0, FB_W, FB_H};
-    SDL_Rect drt = {0, 0, FB_W, FB_H};
+    SDL_Rect srt = {0, 0, IMG_W, IMG_H};
+    SDL_Rect drt = {0, 0, IMG_W, IMG_H};
 
     if (nds.overlay.sel >= nds.overlay.max) {
         if ((pre_sel != nds.theme.sel) || (pre_mode != nds.dis_mode)) {
@@ -2197,7 +2394,7 @@ int reload_bg(void)
                 nds.theme.img = NULL;
             }
 
-            nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
+            nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
             if (nds.theme.img) {
                 SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
 
@@ -2263,7 +2460,7 @@ int reload_bg(void)
         }
     }
     else {
-        t = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
+        t = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
         if (t) {
             SDL_Rect rt = {0, 0, FB_W, FB_H};
 
@@ -2272,9 +2469,63 @@ int reload_bg(void)
             SDL_FreeSurface(t);
         }
     }
+#endif
+
+#ifdef TRIMUI
+    static int pre_sel = -1;
+
+    char buf[MAX_PATH] = {0};
+    SDL_Surface *t = NULL;
+
+    if (pre_sel != nds.theme.sel) {
+        pre_sel = nds.theme.sel;
+
+        if (nds.theme.img) {
+            SDL_FreeSurface(nds.theme.img);
+            nds.theme.img = NULL;
+        }
+
+        nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 16, 0, 0, 0, 0);
+        if (nds.theme.img) {
+            SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
+
+            if (get_dir_path(nds.theme.path, nds.theme.sel, buf) == 0) {
+                strcat(buf, "/bg_s0.png");
+                printf(PREFIX"wallpaper (%s)\n", buf);
+                t = IMG_Load(buf);
+                if (t) {
+                    SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
+                    SDL_FreeSurface(t);
+                }
+                else {
+                    printf(PREFIX"failed to load wallpaper (%s)\n", buf);
+                }
+            }
+        }
+    }
+    
+    if (nds.theme.img) {
+        int x = 0, y = 0, z = 0;
+        uint16_t *dst = NULL;
+        uint16_t *src = NULL;
+
+        for (z=0; z<2; z++) {
+            src = (uint16_t*)nds.theme.img->pixels;
+            dst = (uint16_t *)gfx.fb.virAddr + (FB_W * FB_H * z);
+            for (y = 0; y < FB_H; y++) {
+                for (x = 0; x < FB_W; x++) {
+                    dst[(((FB_W - 1) - x) * FB_H) + y] = *src;
+                    src+= 2;
+                }
+                src+= IMG_W;
+            }
+        }
+    }
+#endif
     return 0;
 }
 
+#ifdef MMIYOO
 int reload_overlay(void)
 {
     static int pre_sel = -1;
@@ -2321,6 +2572,7 @@ int reload_overlay(void)
     }
     return 0;
 }
+#endif
 
 static int MMIYOO_Available(void)
 {
@@ -2404,6 +2656,7 @@ int MMIYOO_VideoInit(_THIS)
     SDL_DisplayMode mode={0};
     SDL_VideoDisplay display={0};
 
+    printf(PREFIX"MMIYOO_VideoInit\n");
     signal(SIGTERM, sigterm_handler);
 
     SDL_zero(mode);
@@ -2476,7 +2729,7 @@ int MMIYOO_VideoInit(_THIS)
     SDL_AddDisplayMode(&display, &mode);
 
     SDL_AddVideoDisplay(&display, SDL_FALSE);
-    
+
     GFX_Init();
     read_config();
     MMIYOO_EventInit();
@@ -2496,6 +2749,7 @@ void MMIYOO_VideoQuit(_THIS)
 {
     int cc = 0;
 
+    printf(PREFIX"MMIYOO_VideoQuit\n");
     printf(PREFIX"wait for savestate complete\n");
     while (savestate_busy) {
         usleep(1000000);
@@ -2582,6 +2836,7 @@ void MMIYOO_VideoQuit(_THIS)
     }
 }
 
+#ifdef MMIYOO
 static const char *DIS_MODE0[] = {
     "640*480",
     "640*480",
@@ -3215,6 +3470,7 @@ int handle_menu(int key)
     need_reload_bg = RELOAD_BG_COUNT;
     return 0;
 }
+#endif
 
 #endif
 

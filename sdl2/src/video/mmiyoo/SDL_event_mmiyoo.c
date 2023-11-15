@@ -39,18 +39,42 @@
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
 
-#define UP      103
-#define DOWN    108
-#define LEFT    105
-#define RIGHT   106
-#define A       57
-#define B       29
-#define X       42
-#define Y       56
-#define L1      18
-#define L2      15
-#define R1      20
-#define R2      14
+#ifdef MMIYOO
+    #define UP      103
+    #define DOWN    108
+    #define LEFT    105
+    #define RIGHT   106
+    #define A       57
+    #define B       29
+    #define X       42
+    #define Y       56
+    #define L1      18
+    #define L2      15
+    #define R1      20
+    #define R2      14
+    #define START   28
+    #define SELECT  97
+    #define MENU    1
+    #define POWER   116
+    #define VOLUP   115
+    #define VOLDOWN 114
+#endif
+
+#ifdef TRIMUI
+    #define UP      103
+    #define DOWN    108
+    #define LEFT    105
+    #define RIGHT   106
+    #define A       57
+    #define B       29
+    #define X       42
+    #define Y       56
+    #define L1      15
+    #define R1      14
+    #define START   28
+    #define SELECT  97
+    #define MENU    1
+#endif
 
 MMIYOO_EventInfo evt = {0};
 
@@ -61,7 +85,9 @@ extern int down_scale;
 static int running = 0;
 static int event_fd = -1;
 static int lower_speed = 0;
+#ifdef MMIYOO
 static int is_stock_system = 0;
+#endif
 static SDL_sem *event_sem = NULL;
 static SDL_Thread *thread = NULL;
 static uint32_t hotkey = 0;
@@ -147,7 +173,13 @@ static void release_all_keys(void)
 
 static int hit_hotkey(uint32_t bit)
 {
+#ifdef MMIYOO
     uint32_t mask = (1 << bit) | (1 << (is_stock_system ? MYKEY_SELECT : MYKEY_MENU));
+#endif
+
+#ifdef TRIMUI
+    uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
+#endif
 
     return (hotkey ^ mask) ? 0 : 1;
 }
@@ -157,6 +189,14 @@ static void set_key(uint32_t bit, int val)
     if (val) {
         hotkey|= (1 << bit);
         evt.keypad.bitmaps|= (1 << bit);
+
+#ifdef TRIMUI
+        if (bit == MYKEY_MENU) {
+            hotkey = (1 << MYKEY_MENU);
+        }
+#endif
+
+#ifdef MMIYOO
         if (is_stock_system) {
             if (bit == MYKEY_SELECT) {
                 hotkey = (1 << MYKEY_SELECT);
@@ -167,6 +207,7 @@ static void set_key(uint32_t bit, int val)
                 hotkey = (1 << MYKEY_MENU);
             }
         }
+#endif
     }
     else {
         hotkey&= ~(1 << bit);
@@ -179,9 +220,11 @@ int EventUpdate(void *data)
     struct input_event ev = {0};
 
     uint32_t l1 = L1;
-    uint32_t l2 = L2;
     uint32_t r1 = R1;
+#ifdef MMIYOO
+    uint32_t l2 = L2;
     uint32_t r2 = R2;
+#endif
 
     uint32_t a = A;
     uint32_t b = B;
@@ -193,6 +236,7 @@ int EventUpdate(void *data)
     uint32_t left = LEFT;
     uint32_t right = RIGHT;
 
+#ifdef MMIYOO
     if (nds.swap_l1l2) {
         l1 = L2;
         l2 = L1;
@@ -204,6 +248,7 @@ int EventUpdate(void *data)
         r2 = R1;
         printf(PREFIX"swap R1 and R2 keys\n");
     }
+#endif
 
     while (running) {
         SDL_SemWait(event_sem);
@@ -235,9 +280,11 @@ int EventUpdate(void *data)
             if (read(event_fd, &ev, sizeof(struct input_event))) {
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
                     if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
-                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
                     if (ev.code == r1)      { set_key(MYKEY_R1,    ev.value); }
+#ifdef MMIYOO
+                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
                     if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
+#endif
                     if (ev.code == up)      { set_key(MYKEY_UP,    ev.value); }
                     if (ev.code == down)    { set_key(MYKEY_DOWN,  ev.value); }
                     if (ev.code == left)    { set_key(MYKEY_LEFT,  ev.value); }
@@ -248,11 +295,12 @@ int EventUpdate(void *data)
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
 
                     switch (ev.code) {
-                    case 28:  set_key(MYKEY_START, ev.value);  break;
-                    case 97:  set_key(MYKEY_SELECT, ev.value); break;
-                    case 1:   set_key(MYKEY_MENU, ev.value);   break;
-                    case 116: set_key(MYKEY_POWER, ev.value);  break;
-                    case 115:
+                    case START:  set_key(MYKEY_START, ev.value);  break;
+                    case SELECT: set_key(MYKEY_SELECT, ev.value); break;
+                    case MENU:   set_key(MYKEY_MENU, ev.value);   break;
+#ifdef MMIYOO
+                    case POWER:  set_key(MYKEY_POWER, ev.value);  break;
+                    case VOLUP:
                         set_key(MYKEY_VOLUP, ev.value);
                         if (is_stock_system && (ev.value == 0)) {
                             nds.volume = volume_inc();
@@ -261,7 +309,7 @@ int EventUpdate(void *data)
                             nds.defer_update_bg = 180;
                         }
                         break;
-                    case 114:
+                    case VOLDOWN:
                         set_key(MYKEY_VOLDOWN, ev.value);
                         if (is_stock_system && (ev.value == 0)) {
                             nds.volume = volume_dec();
@@ -270,26 +318,52 @@ int EventUpdate(void *data)
                             nds.defer_update_bg = 180;
                         }
                         break;
+#endif
                     }
 
                     if (nds.menu.enable) {
                         hotkey = 0;
                     }
-                    
+
                     if (hit_hotkey(MYKEY_UP)) {
+#ifdef MMIYOO
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             nds.pen.pos = 1;
                         }
+#endif
                         set_key(MYKEY_UP, 0);
                     }
-                    
+
                     if (hit_hotkey(MYKEY_DOWN)) {
+#ifdef MMIYOO
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             nds.pen.pos = 0;
                         }
+#endif
                         set_key(MYKEY_DOWN, 0);
                     }
-                    
+
+#ifdef TRIMUI
+                    if (hit_hotkey(MYKEY_LEFT)) {
+                        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+                            evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
+
+                            if (evt.mode == MMIYOO_MOUSE_MODE) {
+                                release_all_keys();
+                                evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
+                                evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
+                            }
+                            lower_speed = 0;
+                        }
+                        set_key(MYKEY_LEFT, 0);
+                    }
+
+                    if (hit_hotkey(MYKEY_RIGHT)) {
+                        set_key(MYKEY_R2, 1);
+                        set_key(MYKEY_RIGHT, 0);
+                    }
+#endif
+
                     if (hit_hotkey(MYKEY_A)) {
                         if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
                             uint32_t tmp = nds.alt_mode;
@@ -298,12 +372,12 @@ int EventUpdate(void *data)
                         }
                         set_key(MYKEY_A, 0);
                     }
-                    
+
                     if (hit_hotkey(MYKEY_B)) {
                         down_scale = down_scale ? 0 : 1;
                         set_key(MYKEY_B, 0);
                     }
-                    
+
                     if (hit_hotkey(MYKEY_Y)) {
                         if (evt.mode == MMIYOO_KEYPAD_MODE) {
                             if ((nds.overlay.sel >= nds.overlay.max) && 
@@ -331,36 +405,58 @@ int EventUpdate(void *data)
                     if (hit_hotkey(MYKEY_START)) {
                         if (nds.menu.enable == 0) {
                             nds.menu.enable = 1;
-
+#ifdef MMIYOO
                             usleep(100000);
                             handle_menu(-1);
-
+#endif
                             hotkey = 0;
                             pre_keypad_bitmaps = evt.keypad.bitmaps = 0;
                         }
                         set_key(MYKEY_START, 0);
                     }
 
+#ifdef MMIYOO
                     if (is_stock_system == 0) {
                         if (hit_hotkey(MYKEY_SELECT)) {
                             set_key(MYKEY_MENU_ONION, 1);
                             set_key(MYKEY_SELECT, 0);
                         }
                     }
+#endif
+
+#ifdef TRIMUI
+                    if (hit_hotkey(MYKEY_SELECT)) {
+                        set_key(MYKEY_MENU_ONION, 1);
+                        set_key(MYKEY_SELECT, 0);
+                    }
+#endif
 
                     if (hit_hotkey(MYKEY_R1)) {
+#ifdef MMIYOO
                         set_key(MYKEY_FF, 1);
+#endif
+
+#ifdef TRIMUI
+                        set_key(MYKEY_QSAVE, 1);
+#endif
                         set_key(MYKEY_R1, 0);
                     }
 
+                    if (hit_hotkey(MYKEY_L1)) {
+#ifdef MMIYOO
+                        set_key(MYKEY_EXIT, 1);
+#endif
+
+#ifdef TRIMUI
+                        set_key(MYKEY_QLOAD, 1);
+#endif
+                        set_key(MYKEY_L1, 0);
+                    }
+
+#ifdef MMIYOO
                     if (hit_hotkey(MYKEY_R2)) {
                         set_key(MYKEY_QSAVE, 1);
                         set_key(MYKEY_R2, 0);
-                    }
-
-                    if (hit_hotkey(MYKEY_L1)) {
-                        set_key(MYKEY_EXIT, 1);
-                        set_key(MYKEY_L1, 0);
                     }
 
                     if (hit_hotkey(MYKEY_L2)) {
@@ -380,6 +476,7 @@ int EventUpdate(void *data)
                             lower_speed = 0;
                         }
                     }
+#endif
                 }
             
                 if (!(evt.keypad.bitmaps & 0x0f)) {
@@ -396,7 +493,9 @@ int EventUpdate(void *data)
 
 void MMIYOO_EventInit(void)
 {
+#ifdef MMIYOO
     DIR *dir = NULL;
+#endif
 
     pre_keypad_bitmaps = 0;
     memset(&evt, 0, sizeof(evt));
@@ -405,7 +504,13 @@ void MMIYOO_EventInit(void)
     evt.mouse.maxx = 256;
     evt.mouse.maxy = 192;
     evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
+#ifdef MMIYOO
     evt.mouse.y = 120 + (evt.mouse.maxy - evt.mouse.miny) / 2;
+#endif
+
+#ifdef TRIMUI
+    evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
+#endif
     evt.mode = MMIYOO_KEYPAD_MODE;
 
     event_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
@@ -424,7 +529,7 @@ void MMIYOO_EventInit(void)
         return;
     }
 
-
+#ifdef MMIYOO
     dir = opendir("/mnt/SDCARD/.tmp_update");
     if (dir) {
         closedir(dir);
@@ -433,6 +538,7 @@ void MMIYOO_EventInit(void)
         is_stock_system = 1;
         printf(PREFIX"run on stock system\n");
     }
+#endif
 }
 
 void MMIYOO_EventDeinit(void)
@@ -450,6 +556,7 @@ void MMIYOO_PumpEvents(_THIS)
 {
     SDL_SemWait(event_sem);
     if (nds.menu.enable) {
+#ifdef MMIYOO
         int cc = 0;
         uint32_t bit = 0;
         uint32_t changed = pre_keypad_bitmaps ^ evt.keypad.bitmaps;
@@ -463,6 +570,7 @@ void MMIYOO_PumpEvents(_THIS)
             }
         }
         pre_keypad_bitmaps = evt.keypad.bitmaps;
+#endif
     }
     else {
         if (evt.mode == MMIYOO_KEYPAD_MODE) {
@@ -474,15 +582,30 @@ void MMIYOO_PumpEvents(_THIS)
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
 
+#ifdef MMIYOO
                     if ((is_stock_system == 0) && (cc == MYKEY_MENU)) {
                         continue;
                     }
+#endif
 
+#ifdef TRIMUI
+                    if (cc == MYKEY_MENU) {
+                        continue;
+                    }
+#endif
                     if (changed & bit) {
                         SDL_SendKeyboardKey((evt.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                     }
                 }
 
+#ifdef TRIMUI
+                if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
+                    set_key(MYKEY_R2, 0);
+                }
+                if (pre_keypad_bitmaps & (1 << MYKEY_L2)) {
+                    set_key(MYKEY_L2, 0);
+                }
+#endif
                 if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
                     nds.state|= NDS_STATE_QSAVE;
                     set_key(MYKEY_QSAVE, 0);
@@ -571,7 +694,7 @@ void MMIYOO_PumpEvents(_THIS)
 
             if(updated){
                 int addx = 0, addy = 0;
-
+#ifdef MMIYOO
                 if ((evt.mouse.minx == 0) && (evt.mouse.miny == 120)) {
                     addx = 80;
                 }
@@ -603,6 +726,7 @@ void MMIYOO_PumpEvents(_THIS)
                         break;
                     }
                 }
+#endif
                 SDL_SendMouseMotion(vid.window, 0, 0, evt.mouse.x + addx, evt.mouse.y + addy);
             }
             

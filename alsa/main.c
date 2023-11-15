@@ -14,11 +14,15 @@
 #include <alsa/global.h>
 #include <alsa/timer.h>
 #include <alsa/pcm.h>
+#include <linux/soundcard.h>
 
 #include "detour.h"
-#include "mi_ao.h"
-#include "mi_sys.h"
-#include "mi_common_datatype.h"
+
+#ifdef MMIYOO
+    #include "mi_ao.h"
+    #include "mi_sys.h"
+    #include "mi_common_datatype.h"
+#endif
 
 #define PREFIX              "[SND] "
 #define FREQ                44100
@@ -27,12 +31,14 @@
 #define SAMPLES             8192
 #define QUEUE_SIZE          (2 * 1024 * 1024)
 
-#define MAX_VOLUME          20
-#define MIN_RAW_VALUE       -60
-#define MAX_RAW_VALUE       30
-#define MI_AO_SETVOLUME     0x4008690b
-#define MI_AO_GETVOLUME     0xc008690c
-#define MI_AO_SETMUTE       0x4008690d
+#ifdef MMIYOO
+    #define MAX_VOLUME      20
+    #define MIN_RAW_VALUE   -60
+    #define MAX_RAW_VALUE   30
+    #define MI_AO_SETVOLUME 0x4008690b
+    #define MI_AO_GETVOLUME 0xc008690c
+    #define MI_AO_SETMUTE   0x4008690d
+#endif
 
 #define JSON_APP_FILE       "/appconfigs/system.json"
 #define JSON_CFG_FILE       "resources/settings.json"
@@ -52,10 +58,16 @@ typedef struct {
 static pthread_t thread;
 static queue_t queue = {0};
 
-static MI_AO_CHN AoChn = 0;
-static MI_AUDIO_DEV AoDevId = 0;
-static MI_AUDIO_Attr_t stSetAttr = {0};
-static MI_AUDIO_Attr_t stGetAttr = {0};
+#ifdef MMIYOO
+    static MI_AO_CHN AoChn = 0;
+    static MI_AUDIO_DEV AoDevId = 0;
+    static MI_AUDIO_Attr_t stSetAttr = {0};
+    static MI_AUDIO_Attr_t stGetAttr = {0};
+#endif
+
+#ifdef TRIMUI
+    static int dsp_fd = -1;
+#endif
 
 static int half_vol = 0;
 static int auto_slot = 0;
@@ -68,6 +80,7 @@ static struct json_object *jfile = NULL;
 
 void neon_memcpy(void *dest, const void *src, size_t n);
 
+#ifdef MMIYOO
 static int set_volume_raw(int value, int add)
 {
     int fd = -1;
@@ -151,6 +164,19 @@ int volume_dec(void)
     }
     return cur_volume;
 }
+#endif
+
+#ifdef TRIMUI
+int volume_inc(void)
+{
+    return 0;
+}
+
+int volume_dec(void)
+{
+    return 0;
+}
+#endif
 
 void snd_nds_reload_config(void)
 {
@@ -270,7 +296,9 @@ static size_t queue_get(queue_t *q, uint8_t *buffer, size_t max)
 
 static void *audio_handler(void *threadid)
 {
+#ifdef MMIYOO
     MI_AUDIO_Frame_t aoTestFrame = {0};
+#endif
     int r = 0, len = pcm_buf_len, idx = 0;
 
     while (pcm_ready) {
@@ -281,12 +309,18 @@ static void *audio_handler(void *threadid)
             if (len == 0) {
                 idx = 0;
                 len = pcm_buf_len;
+#ifdef MMIYOO
                 aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
                 aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
                 aoTestFrame.u32Len = pcm_buf_len;
                 aoTestFrame.apVirAddr[0] = pcm_buf;
                 aoTestFrame.apVirAddr[1] = NULL;
                 MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
+#endif
+
+#ifdef TRIMUI
+                write(dsp_fd, pcm_buf, pcm_buf_len);
+#endif
             }
         }
         usleep(10);
@@ -379,8 +413,14 @@ int snd_pcm_recover(snd_pcm_t *pcm, int err, int silent)
 
 int snd_pcm_start(snd_pcm_t *pcm)
 {
+#ifdef MMIYOO
     MI_S32 miret = 0;
     MI_SYS_ChnPort_t stAoChn0OutputPort0;
+#endif
+
+#ifdef TRIMUI
+    int arg = 0;
+#endif
 
     queue_init(&queue, (size_t)QUEUE_SIZE);
     if (queue.buffer == NULL) {
@@ -406,6 +446,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
         json_object_put(jfile);
     }
 
+#ifdef MMIYOO
     stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
     stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
     stSetAttr.u32FrmNum = 6;
@@ -443,9 +484,26 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stAoChn0OutputPort0.u32ChnId = AoChn;
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
+    set_volume(cur_volume);
+#endif
+
+#ifdef TRIMUI
+    dsp_fd = open("/dev/dsp", O_RDWR);
+    if (dsp_fd < 0) {
+        return -1;
+    }
+
+    arg = 16;
+    ioctl(dsp_fd, SOUND_PCM_WRITE_BITS, &arg);
+
+    arg = CHANNELS;
+    ioctl(dsp_fd, SOUND_PCM_WRITE_CHANNELS, &arg);
+
+    arg = FREQ;
+    ioctl(dsp_fd, SOUND_PCM_WRITE_RATE, &arg);
+#endif
 
     pcm_ready = 1;
-    set_volume(cur_volume);
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);
     return 0;
 }
@@ -465,8 +523,18 @@ int snd_pcm_close(snd_pcm_t *pcm)
         pcm_buf = NULL;
     }
     queue_destroy(&queue);
+
+#ifdef MMIYOO
     MI_AO_DisableChn(AoDevId, AoChn);
     MI_AO_Disable(AoDevId);
+#endif
+
+#ifdef TRIMUI
+    if (dsp_fd > 0) {
+        close(dsp_fd);
+        dsp_fd = -1;
+    }
+#endif
     return 0;
 }
 

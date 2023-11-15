@@ -1,4 +1,3 @@
-export MOD=mmiyoo
 export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
 export CC=${CROSS}gcc
 export AR=${CROSS}ar
@@ -31,25 +30,32 @@ SDL2_CFG+= --disable-diskaudio
 SDL2_CFG+= --disable-pulseaudio
 SDL2_CFG+= --disable-dummyaudio
 
+MOD      = mmiyoo
 REL_VER  = $(shell git rev-parse HEAD | cut -c 1-8)
+
+ifeq ($(MOD),mmiyoo)
+    $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
+else
+    $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
+endif
 
 .PHONY: all
 all:
 	make -C detour
 	cp detour/libdtr.so drastic/libs/
-	make -C alsa
+	make -C alsa MOD=$(MOD)
 	cp alsa/libasound.so.2 drastic/libs/
 	make -C sdl2
 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/libs/
 
 .PHONY: config
 config:
-	cd sdl2 && ./autogen.sh && ./configure ${SDL2_CFG} --host=${HOST}
+	cp assets/$(MOD)/* drastic/
+	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure ${SDL2_CFG} --host=${HOST}
 
 .PHONY: rel
 rel:
-	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates
-	zip -r drastic_${REL_VER}.zip drastic
+	zip -r drastic_$(MOD)_${REL_VER}.zip drastic
 
 .PHONY: clean
 clean:
@@ -59,3 +65,5 @@ clean:
 	make -C alsa clean
 	make -C detour clean
 	make -C sdl2 distclean
+	sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg
+	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates

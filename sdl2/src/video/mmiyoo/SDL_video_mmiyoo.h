@@ -47,17 +47,35 @@
 #include "SDL_opengles_mmiyoo.h"
 
 #include "detour.h"
-#include "mi_sys.h"
-#include "mi_gfx.h"
+
+#ifdef MMIYOO
+    #include "mi_sys.h"
+    #include "mi_gfx.h"
+#else
+    #define E_MI_GFX_ROTATE_180 0
+#endif
 
 #ifndef MAX_PATH
     #define MAX_PATH 255
 #endif
 
+#ifdef MMIYOO
+    #define FB_W                    640
+    #define FB_H                    480
+    #define FB_BPP                  4
+    #define IMG_W                   FB_W
+    #define IMG_H                   FB_H
+#endif
+
+#ifdef TRIMUI
+    #define FB_W                    320
+    #define FB_H                    240
+    #define FB_BPP                  2
+    #define IMG_W                   640
+    #define IMG_H                   480
+#endif
+
 #define PREFIX                      "[SDL] "
-#define FB_W                        640
-#define FB_H                        480
-#define FB_BPP                      4
 #define FB_SIZE                     (FB_W * FB_H * FB_BPP * 2)
 #define TMP_SIZE                    (FB_W * FB_H * FB_BPP)
 #define CFG_PATH                    "resources/settings.json"
@@ -80,7 +98,14 @@
 #define PEN_RT                      2
 #define PEN_RB                      3
 #define FONT_PATH                   "resources/font/font.ttf"
-#define FONT_SIZE                   24
+
+#ifdef MMIYOO
+    #define FONT_SIZE               24
+#endif
+
+#ifdef TRIMUI
+    #define FONT_SIZE               12
+#endif
 
 #define NDS_DIS_MODE_VH_T0          0
 #define NDS_DIS_MODE_VH_T1          1
@@ -138,7 +163,13 @@
 #define GFX_ACTION_COPY0            2
 #define GFX_ACTION_COPY1            3
 
-#define RELOAD_BG_COUNT             5
+#ifdef MMIYOO
+    #define RELOAD_BG_COUNT         5
+#endif
+
+#ifdef TRIMUI
+    #define RELOAD_BG_COUNT         1
+#endif
 #define MAX_QUEUE                   2
 
 #define NDS_LANG_EN                 0
@@ -164,10 +195,16 @@ typedef struct _GFX {
     struct fb_fix_screeninfo finfo;
 
     struct _DMA {
+#ifdef MMIYOO
         MI_PHY phyAddr;
+#endif
         void *virAddr;
+#ifdef TRIMUI
+        int flip;
+#endif
     } fb, tmp, overlay;
 
+#ifdef MMIYOO
     struct _HW {
         struct _BUF {
             MI_GFX_Surface_t surf;
@@ -175,6 +212,7 @@ typedef struct _GFX {
         } src, dst, overlay;
         MI_GFX_Opt_t opt;
     } hw;
+#endif
 
     int action;
     struct _THREAD {
