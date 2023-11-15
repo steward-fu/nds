@@ -729,7 +729,15 @@ void MMIYOO_PumpEvents(_THIS)
 #endif
                 SDL_SendMouseMotion(vid.window, 0, 0, evt.mouse.x + addx, evt.mouse.y + addy);
             }
-            
+
+#ifdef TRIMUI
+                if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
+                    set_key(MYKEY_R2, 0);
+                }
+                if (pre_keypad_bitmaps & (1 << MYKEY_L2)) {
+                    set_key(MYKEY_L2, 0);
+                }
+#endif
             if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
                 set_key(MYKEY_QSAVE, 0);
             }
