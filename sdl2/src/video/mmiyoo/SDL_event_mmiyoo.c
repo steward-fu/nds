@@ -403,15 +403,19 @@ int EventUpdate(void *data)
                     }
 
                     if (hit_hotkey(MYKEY_START)) {
+#ifdef MMIYOO
                         if (nds.menu.enable == 0) {
                             nds.menu.enable = 1;
-#ifdef MMIYOO
                             usleep(100000);
                             handle_menu(-1);
-#endif
                             hotkey = 0;
                             pre_keypad_bitmaps = evt.keypad.bitmaps = 0;
                         }
+#endif
+
+#ifdef TRIMUI
+                        set_key(MYKEY_EXIT, 1);
+#endif
                         set_key(MYKEY_START, 0);
                     }
 
