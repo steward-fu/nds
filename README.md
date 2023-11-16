@@ -44,10 +44,10 @@ In DraStic emulator, it only supports 3 display modes, which are vertical, horiz
 &nbsp;
 
 ### Terminology
-|  Term       | Description                                                |
-| ----------- | ---------------------------------------------------------- |
-| Keypad Mode | This is the default mode and it is so-called gamepad mode. |
-| Stylus Mode | It is touch mode. In this mode, the touch pen shows on either top or bottom screen. DPAD is used to move touch pen and A button acts touch point. | 
+|  Term             | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| Keypad Mode       | This is the default mode and it is so-called gamepad mode. |
+| Stylus Mode       | It is touch mode. In this mode, the touch pen shows on either top or bottom screen. DPAD is used to move touch pen and A button acts touch point. | 
 | Normal Resolution | This is the default display mode and the display resolution is 256x192 pixels. If user doesn't turn on High-resolution mode in DraStic menu, it is the Normal Resolution. |
 | High Resolution   | Turn on "Change Options -> High-resolution 3D" in DraStic menu and then the display resolution will be changed to 512x384 pixels. In this mode, only single screen is rendered. |
 
@@ -220,6 +220,8 @@ Refined Cheat Menu
 |MENU + L2      | SELECT + L2    | Quick load state                 |
 |MENU + L1      | SELECT + L1    | Exit DraStic emulator            |
 |MENU + START   | SELECT + START | Enter the customized menu        |
+|MENU + LEFT    | SELECT + LEFT  | Change the display mode          |
+|MENU + RIGHT   | SELECT + RIGHT | Change the display mode          |
 
 &nbsp;
 
@@ -235,7 +237,7 @@ Refined Cheat Menu
 **Keypad mode only**
 |  Keys (Onion) | Keys (Stock)   | Functionality                       |
 | ------------- | -------------- | ----------------------------------- |
-| MENU + SELECT | MENU           | Enter DraStic’s menu                |
+| MENU + SELECT | MENU           | Enter DraStic menu                  |
 | MENU + A      | SELECT + A     | Alternate display mode              |
 | MENU + B      | SELECT + B     | Change video filter (blur or pixel) |
 | MENU + Y      | SELECT + Y     | Change background image             |
@@ -297,6 +299,7 @@ $ sudo docker image rm mmiyoo
 ### Special Thanks
 ```
 河馬
+路人乙
 背包胖熊
 Miyoo Mini 掌機 QQ 群 (742661857)
 Onion Development Team
