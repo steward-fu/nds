@@ -26,6 +26,8 @@
 #ifndef __SDL_VIDEO_MMIYOO_H__
 #define __SDL_VIDEO_MMIYOO_H__
 
+#include <stdint.h>
+#include <stdbool.h>
 #include <linux/fb.h>
 
 #include "../SDL_sysvideo.h"
@@ -51,7 +53,10 @@
 #ifdef MMIYOO
     #include "mi_sys.h"
     #include "mi_gfx.h"
-#else
+#endif
+
+#ifdef TRIMUI
+    #include "trimui.h"
     #define E_MI_GFX_ROTATE_180 0
 #endif
 
@@ -70,7 +75,7 @@
 #ifdef TRIMUI
     #define FB_W                    320
     #define FB_H                    240
-    #define FB_BPP                  2
+    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
 #endif
@@ -190,29 +195,44 @@ typedef struct MMIYOO_VideoInfo {
 } MMIYOO_VideoInfo;
 
 typedef struct _GFX {
-    int fd;
+    int fb_dev;
+
+#ifdef TRIMUI
+    int ion_dev;
+    int mem_dev;
+    int disp_dev;
+#endif
+
     struct fb_var_screeninfo vinfo;
     struct fb_fix_screeninfo finfo;
 
     struct _DMA {
 #ifdef MMIYOO
+        void *virAddr;
         MI_PHY phyAddr;
 #endif
-        void *virAddr;
+
 #ifdef TRIMUI
         int flip;
 #endif
     } fb, tmp, overlay;
 
-#ifdef MMIYOO
     struct _HW {
+#ifdef MMIYOO
         struct _BUF {
             MI_GFX_Surface_t surf;
             MI_GFX_Rect_t rt;
         } src, dst, overlay;
         MI_GFX_Opt_t opt;
-    } hw;
 #endif
+
+#ifdef TRIMUI
+        uint32_t *mem;
+        disp_layer_config disp;
+        disp_layer_config buf;
+        ion_alloc_info_t ion;
+#endif
+    } hw;
 
     int action;
     struct _THREAD {
@@ -326,6 +346,7 @@ int get_font_height(const char *info);
 int reload_bg(void);
 int reload_pen(void);
 int reload_overlay(void);
+void disp_resize(int x, int y, int w, int h);
 
 int handle_menu(int key);
 int process_drastic_menu(void);

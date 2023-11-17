@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -886,7 +887,7 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
             strcpy(drastic_menu.item[drastic_menu.cnt].msg, p);
             drastic_menu.cnt+= 1;
         }
-        //printf("x:%d, y:%d, fg:0x%x, bg:0x%x, \'%s\'\n", x, y, fg, bg, p);
+        //printf(PREFIX"x:%d, y:%d, fg:0x%x, bg:0x%x, \'%s\'\n", x, y, fg, bg, p);
     }
 
     if ((x == 0) && (y == 0) && (fg == 0xffff) && (bg == 0x0000)) {
@@ -1220,7 +1221,7 @@ static int read_config(void)
                     translate[cc] = malloc(len);
                     if (translate[cc] != NULL) {
                         memcpy(translate[cc], buf, len);
-                        //printf("Translate: \'%s\'(len=%d)\n", translate[cc], len);
+                        //printf(PREFIX"Translate: \'%s\'(len=%d)\n", translate[cc], len);
                     }
                     cc+= 1;
                     if (cc >= MAX_LANG_LINE) {
@@ -1245,7 +1246,16 @@ static int read_config(void)
     snd_nds_reload_config();
 
 #ifdef TRIMUI
-    nds.dis_mode = NDS_DIS_MODE_S0;
+    if ((nds.dis_mode != NDS_DIS_MODE_S0) && (nds.dis_mode != NDS_DIS_MODE_S1)) {
+        nds.dis_mode = NDS_DIS_MODE_S0;
+    }
+
+    if (nds.dis_mode == NDS_DIS_MODE_S0) {
+        disp_resize(0, 0, FB_H, FB_W);
+    }
+    else {
+        disp_resize(24, 32, 192, 256);
+    }
 #endif
     return 0;
 }
@@ -1561,31 +1571,169 @@ static int get_overlay_count(void)
     return r;
 }
 
-void GFX_Init(void)
+#ifdef TRIMUI
+static int ion_alloc(int ion_fd, ion_alloc_info_t* info)
 {
-    int cc = 0;
-    SDL_Surface *t = NULL;
+    struct ion_allocation_data iad;
+    struct ion_fd_data ifd;
+    struct ion_custom_data icd;
+    sunxi_phys_data spd;
+
+    iad.len = info->size;
+    iad.align = sysconf(_SC_PAGESIZE);
+    iad.heap_id_mask = ION_HEAP_TYPE_DMA_MASK;
+    iad.flags = 0;
+    if (ioctl(ion_fd, ION_IOC_ALLOC, &iad) < 0) {
+        printf(PREFIX"failed to call ION_IOC_ALLOC\n");
+        return -1;
+    }
+
+    icd.cmd = ION_IOC_SUNXI_PHYS_ADDR;
+    icd.arg = (uintptr_t)&spd;
+    spd.handle = iad.handle;
+    if (ioctl(ion_fd, ION_IOC_CUSTOM, &icd) < 0) {
+        printf(PREFIX"failed to call ION_IOC_CUSTOM\n");
+        return -1;
+    }
+    ifd.handle = iad.handle;
+    if (ioctl(ion_fd, ION_IOC_MAP, &ifd) < 0) {
+        printf(PREFIX"failed to call ION_IOC_MAP\n");
+    }
+
+    info->handle = iad.handle;
+    info->fd = ifd.fd;
+    info->padd = (void*)spd.phys_addr;
+    info->vadd = mmap(0, info->size, PROT_READ | PROT_WRITE, MAP_SHARED, info->fd, 0);
+    printf(PREFIX"mmap padd: 0x%x vadd: 0x%x size: %d\n", (uintptr_t)info->padd, (uintptr_t)info->vadd, info->size);
+    return 0;
+}
+
+static void ion_free(int ion_fd, ion_alloc_info_t* info)
+{
+    struct ion_handle_data ihd;
+
+    munmap(info->vadd, info->size);
+    close(info->fd);
+    ihd.handle = info->handle;
+    if (ioctl(ion_fd, ION_IOC_FREE, &ihd) < 0) {
+        printf(PREFIX"failed to call ION_ION_FREE\n");
+    }
+}
+
+static int fb_init(void)
+{
+    int r = 0;
+    uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
+
+    gfx.fb_dev = open("/dev/fb0", O_RDWR);
+    gfx.ion_dev = open("/dev/ion", O_RDWR);
+    gfx.mem_dev = open("/dev/mem", O_RDWR);
+    gfx.disp_dev = open("/dev/disp", O_RDWR);
+
+    if (gfx.fb_dev < 0) {
+        printf(PREFIX"failed to open /dev/fb0\n");
+        return -1;
+    }
+
+    memset(&gfx.hw.disp, 0, sizeof(disp_layer_config));
+    memset(&gfx.hw.buf, 0, sizeof(disp_layer_config));
+    gfx.hw.mem = mmap(0, sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE, MAP_SHARED, gfx.mem_dev, OVL_V);
+
+    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+
+    gfx.hw.disp.channel = DEF_FB_CH;
+    gfx.hw.disp.layer_id = DEF_FB_LAYER;
+    ioctl(gfx.disp_dev, DISP_LAYER_GET_CONFIG, args);
+
+    gfx.hw.disp.enable = 0;
+    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+
+    gfx.hw.ion.size = FB_W * FB_H * FB_BPP * 2;
+    ion_alloc(gfx.ion_dev, &gfx.hw.ion);
+
+    gfx.hw.buf.channel = SCALER_CH;
+    gfx.hw.buf.layer_id = SCALER_LAYER;
+    gfx.hw.buf.enable = 1;
+    gfx.hw.buf.info.fb.format = DISP_FORMAT_ARGB_8888;
+    gfx.hw.buf.info.fb.addr[0] = (uintptr_t)gfx.hw.ion.padd;
+    gfx.hw.buf.info.fb.size[0].width = FB_H;
+    gfx.hw.buf.info.fb.size[0].height = FB_W;
+    gfx.hw.buf.info.mode = LAYER_MODE_BUFFER;
+    gfx.hw.buf.info.zorder = SCALER_ZORDER;
+    gfx.hw.buf.info.alpha_mode = 0;
+    gfx.hw.buf.info.alpha_value = 0;
+    gfx.hw.buf.info.screen_win.x = 0;
+    gfx.hw.buf.info.screen_win.y = 0;
+    gfx.hw.buf.info.screen_win.width  = FB_H;
+    gfx.hw.buf.info.screen_win.height = FB_W;
+    gfx.hw.buf.info.fb.pre_multiply = 0;
+    gfx.hw.buf.info.fb.crop.x = (uint64_t)0 << 32;
+    gfx.hw.buf.info.fb.crop.y = (uint64_t)0 << 32;
+    gfx.hw.buf.info.fb.crop.width  = (uint64_t)FB_H << 32;
+    gfx.hw.buf.info.fb.crop.height = (uint64_t)FB_W << 32;
+    args[1] = (uintptr_t)&gfx.hw.buf;
+    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+    return 0;
+}
+
+static int fb_uninit(void)
+{
+    uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
+
+    gfx.hw.disp.enable = gfx.hw.buf.enable = 0;
+    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+
+    args[1] = (uintptr_t)&gfx.hw.buf;
+    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+
+    gfx.hw.disp.enable = 1;
+    gfx.hw.disp.channel = DEF_FB_CH;
+    gfx.hw.disp.layer_id = DEF_FB_LAYER;
+    args[1] = (uintptr_t)&gfx.hw.disp;
+    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+
+    ion_free(gfx.ion_dev, &gfx.hw.ion);
+    munmap(gfx.hw.mem, sysconf(_SC_PAGESIZE));
+
+    close(gfx.fb_dev);
+    close(gfx.ion_dev);
+    close(gfx.mem_dev);
+    close(gfx.disp_dev);
+
+    gfx.fb_dev = -1;
+    gfx.ion_dev = -1;
+    gfx.mem_dev = -1;
+    gfx.disp_dev = -1;
+    return 0;
+}
+
+void disp_resize(int x, int y, int w, int h)
+{
+    int r = 0;
+    uint32_t args[4] = {0, (uintptr_t)&gfx.hw.buf, 1, 0};
+
+    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+    gfx.hw.buf.info.fb.crop.width  = (uint64_t)w << 32;
+    gfx.hw.buf.info.fb.crop.height = (uint64_t)h << 32;
+    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+}
+#endif
 
 #ifdef MMIYOO
+static int fb_init(void)
+{
     MI_SYS_Init();
     MI_GFX_Open();
-#endif
 
-    gfx.fd = open("/dev/fb0", O_RDWR);
-    ioctl(gfx.fd, FBIOGET_FSCREENINFO, &gfx.finfo);
-    ioctl(gfx.fd, FBIOGET_VSCREENINFO, &gfx.vinfo);
+    gfx.fb_dev = open("/dev/fb0", O_RDWR);
+    ioctl(gfx.fb_dev, FBIOGET_FSCREENINFO, &gfx.finfo);
+    ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo);
     gfx.vinfo.yoffset = 0;
     gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
-    ioctl(gfx.fd, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
 
-#ifdef TRIMUI
-    gfx.fb.flip = 0;
-    gfx.fb.virAddr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fd, 0);
-    printf(PREFIX"fb mapped buffer at %p\n", gfx.fb.virAddr);
-    memset(gfx.fb.virAddr, 0 , FB_SIZE);
-#endif
-
-#ifdef MMIYOO
     gfx.fb.phyAddr = gfx.finfo.smem_start;
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_Mmap(gfx.fb.phyAddr, gfx.finfo.smem_len, &gfx.fb.virAddr, TRUE);
@@ -1596,8 +1744,27 @@ void GFX_Init(void)
 
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.overlay.phyAddr);
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
+}
+
+static int fb_uninit(void)
+{
+    MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
+    MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
+    MI_SYS_MMA_Free(gfx.tmp.phyAddr);
+    MI_SYS_Munmap(gfx.overlay.virAddr, TMP_SIZE);
+    MI_SYS_MMA_Free(gfx.overlay.phyAddr);
+
+    MI_GFX_Close();
+    MI_SYS_Exit();
+}
 #endif
 
+void GFX_Init(void)
+{
+    int cc = 0;
+    SDL_Surface *t = NULL;
+
+    fb_init();
     for (cc=0; cc<MAX_QUEUE; cc++) {
         gfx.thread[cc].pixels = malloc(TMP_SIZE);
     }
@@ -1728,17 +1895,7 @@ void GFX_Quit(void)
     is_running = 0;
     pthread_join(thread, &ret);
 
-#ifdef MMIYOO
-    MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
-    MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
-    MI_SYS_MMA_Free(gfx.tmp.phyAddr);
-    MI_SYS_Munmap(gfx.overlay.virAddr, TMP_SIZE);
-    MI_SYS_MMA_Free(gfx.overlay.phyAddr);
-
-    MI_GFX_Close();
-    MI_SYS_Exit();
-#endif
-
+    fb_uninit();
     for (cc=0; cc<MAX_QUEUE; cc++) {
         if (gfx.thread[cc].pixels) {
             free(gfx.thread[cc].pixels);
@@ -1746,17 +1903,10 @@ void GFX_Quit(void)
         }
     }
 
-#ifdef TRIMUI
-    if (gfx.fb.virAddr != MAP_FAILED) {
-        munmap(gfx.fb.virAddr, FB_SIZE);
-        gfx.fb.virAddr = MAP_FAILED;
-    }
-#endif
-
     gfx.vinfo.yoffset = 0;
-    ioctl(gfx.fd, FBIOPUT_VSCREENINFO, &gfx.vinfo);
-    close(gfx.fd);
-    gfx.fd = 0;
+    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    close(gfx.fb_dev);
+    gfx.fb_dev = 0;
 }
 
 void GFX_Clear(void)
@@ -1893,15 +2043,22 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     int oy = 24;
     int sw = srcrect.w;
     int sh = srcrect.h;
-    int rgb565 = 0;
-    uint32_t v = 0; 
-    uint16_t *src_16 = (uint16_t *)pixels;
-    uint32_t *src_32 = (uint32_t *)pixels;
-    uint16_t *dst = (uint16_t *)gfx.fb.virAddr + (FB_W * FB_H * gfx.fb.flip);
+    uint32_t *src = (uint32_t *)pixels;
+    uint32_t *dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
 
-    if ((pixels == NULL) || (gfx.fb.virAddr == MAP_FAILED)) {
+    if (pixels == NULL) {
         return -1;
-    }    
+    }
+
+    if ((pitch / srcrect.w) != 4) {
+        printf(PREFIX"only support 32 bits (%dx%dx%d)\n", srcrect.w, srcrect.h, (pitch / srcrect.w));
+        return -1;
+    }
+
+    if (nds.dis_mode == NDS_DIS_MODE_S1) {
+        ox = 0;
+        oy = 0;
+    }
 
     if ((srcrect.w >= 320) || (srcrect.h >= 240)) {
         ox = 0;
@@ -1909,17 +2066,10 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         sw = FB_W;
         sh = FB_H;
     }
-    
-    rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
+
     for (y = 0; y < sh; y++) {
         for (x = 0; x < sw; x++) {
-            if (rgb565) {
-                dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = *src_16++;
-            }
-            else {
-                v = *src_32++;
-                dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = ((v >> 8) & 0xf800) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
-            }
+            dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = *src++;
         }
     }
     return 0;
@@ -2216,16 +2366,16 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 void GFX_Flip(void)
 {
 #ifdef MMIYOO
-    ioctl(gfx.fd, FBIOPAN_DISPLAY, &gfx.vinfo);
+    ioctl(gfx.fb_dev, FBIOPAN_DISPLAY, &gfx.vinfo);
     gfx.vinfo.yoffset ^= FB_H;
 #endif
 
 #ifdef TRIMUI
-    int ret = 0;
+    //int r = 0;
 
-    gfx.vinfo.yoffset = gfx.fb.flip * gfx.vinfo.yres;
-    ioctl(gfx.fd, FBIOPAN_DISPLAY, &gfx.vinfo);
-    ioctl(gfx.fd, FBIO_WAITFORVSYNC, &ret);
+    gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
+    gfx.hw.mem[OVL_V_TOP_LADD0 / 4] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
+    //ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
     gfx.fb.flip^= 1;
 #endif
 }
@@ -2268,13 +2418,13 @@ const char *to_lang(const char *p)
         if (memcmp((char*)p, translate[cc], len) == 0) {
             r = 1;
             info = &translate[cc][len + 1];
-            //printf("Translate \'%s\' as \'%s\'\n", p, info);
+            //printf(PREFIX"Translate \'%s\' as \'%s\'\n", p, info);
             break;
         }
     }
 
     if (r == 0) {
-        //printf("Failed to find the translation: \'%s\'(len=%d)\n", p, len);
+        //printf(PREFIX"Failed to find the translation: \'%s\'(len=%d)\n", p, len);
         info = p;
     }
     return info;
@@ -2375,10 +2525,10 @@ int reload_pen(void)
 
 int reload_bg(void)
 {
-#ifdef MMIYOO
     static int pre_sel = -1;
     static int pre_mode = -1;
 
+#ifdef MMIYOO
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
     SDL_Rect srt = {0, 0, IMG_W, IMG_H};
@@ -2472,10 +2622,22 @@ int reload_bg(void)
 #endif
 
 #ifdef TRIMUI
-    static int pre_sel = -1;
-
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
+
+    if (nds.dis_mode == NDS_DIS_MODE_S1) {
+        return 0;
+    }
+
+    if (pre_mode != nds.dis_mode) {
+        pre_mode = nds.dis_mode;
+        if (nds.dis_mode == NDS_DIS_MODE_S0) {
+            disp_resize(0, 0, FB_H, FB_W);
+        }
+        else {
+            disp_resize(24, 32, 192, 256);
+        }
+    }
 
     if (pre_sel != nds.theme.sel) {
         pre_sel = nds.theme.sel;
@@ -2485,7 +2647,7 @@ int reload_bg(void)
             nds.theme.img = NULL;
         }
 
-        nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 16, 0, 0, 0, 0);
+        nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
         if (nds.theme.img) {
             SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
 
@@ -2506,12 +2668,13 @@ int reload_bg(void)
     
     if (nds.theme.img) {
         int x = 0, y = 0, z = 0;
-        uint16_t *dst = NULL;
-        uint16_t *src = NULL;
+        uint32_t *dst = NULL;
+        uint32_t *src = NULL;
 
+        ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
         for (z=0; z<2; z++) {
-            src = (uint16_t*)nds.theme.img->pixels;
-            dst = (uint16_t *)gfx.fb.virAddr + (FB_W * FB_H * z);
+            src = (uint32_t *)nds.theme.img->pixels;
+            dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * z);
             for (y = 0; y < FB_H; y++) {
                 for (x = 0; x < FB_W; x++) {
                     dst[(((FB_W - 1) - x) * FB_H) + y] = *src;
@@ -2520,6 +2683,7 @@ int reload_bg(void)
                 src+= IMG_W;
             }
         }
+        ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
     }
 #endif
     return 0;

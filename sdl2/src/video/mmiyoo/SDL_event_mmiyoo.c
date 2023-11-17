@@ -78,6 +78,7 @@
 
 MMIYOO_EventInfo evt = {0};
 
+extern GFX gfx;
 extern NDS nds;
 extern MMIYOO_VideoInfo vid;
 extern int down_scale;
@@ -321,7 +322,7 @@ int EventUpdate(void *data)
 #endif
                     }
 
-                    if (nds.menu.enable) {
+                    if (nds.menu.enable || nds.menu.drastic.enable) {
                         hotkey = 0;
                     }
 
@@ -331,6 +332,11 @@ int EventUpdate(void *data)
                             nds.pen.pos = 1;
                         }
 #endif
+
+#ifdef TRIMUI
+                        nds.dis_mode = NDS_DIS_MODE_S1;
+                        disp_resize(24, 32, 192, 256);
+#endif
                         set_key(MYKEY_UP, 0);
                     }
 
@@ -339,6 +345,11 @@ int EventUpdate(void *data)
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             nds.pen.pos = 0;
                         }
+#endif
+
+#ifdef TRIMUI
+                        nds.dis_mode = NDS_DIS_MODE_S0;
+                        disp_resize(0, 0, FB_H, FB_W);
 #endif
                         set_key(MYKEY_DOWN, 0);
                     }

@@ -24,7 +24,10 @@
 #include "../../SDL_internal.h"
 
 #if SDL_VIDEO_RENDER_MMIYOO
+
 #include <unistd.h>
+#include <stdbool.h>
+
 #include "SDL_hints.h"
 #include "../SDL_sysrender.h"
 #include "../../video/mmiyoo/SDL_video_mmiyoo.h"
@@ -234,7 +237,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     if ((srcrect->w == 32) && (srcrect->h == 32)) {
         return 0;
     }
-    
+
     if ((evt.mode == MMIYOO_MOUSE_MODE) || (srcrect->w == 800)) {
         threading_mode = 0;
         if (srcrect->w == 800) {
@@ -359,6 +362,13 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     }
 
     if ((src.w == 800) && (src.h == 480)) {
+#ifdef TRIMUI
+        if (nds.dis_mode != NDS_DIS_MODE_S0) {
+            nds.dis_mode = NDS_DIS_MODE_S0;
+            disp_resize(0, 0, FB_H, FB_W);
+        }
+#endif
+
         dst.x = 0;
         dst.y = 0;
         dst.w = 640;
