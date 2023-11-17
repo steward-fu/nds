@@ -343,8 +343,19 @@ int EventUpdate(void *data)
                         set_key(MYKEY_DOWN, 0);
                     }
 
-#ifdef TRIMUI
                     if (hit_hotkey(MYKEY_LEFT)) {
+#ifdef MMIYOO
+                        if (nds.hres_mode == 0) {
+                            if (nds.dis_mode > 0) {
+                                nds.dis_mode-= 1;
+                            }
+                        }
+                        else {
+                            nds.dis_mode = NDS_DIS_MODE_HRES0;
+                        }
+#endif
+
+#ifdef TRIMUI
                         if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
                             evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
 
@@ -355,14 +366,27 @@ int EventUpdate(void *data)
                             }
                             lower_speed = 0;
                         }
+#endif
                         set_key(MYKEY_LEFT, 0);
                     }
 
                     if (hit_hotkey(MYKEY_RIGHT)) {
+#ifdef MMIYOO
+                        if (nds.hres_mode == 0) {
+                            if (nds.dis_mode < NDS_DIS_MODE_LAST) {
+                                nds.dis_mode+= 1;
+                            }
+                        }
+                        else {
+                            nds.dis_mode = NDS_DIS_MODE_HRES1;
+                        }
+#endif
+
+#ifdef TRIMUI
                         set_key(MYKEY_R2, 1);
+#endif
                         set_key(MYKEY_RIGHT, 0);
                     }
-#endif
 
                     if (hit_hotkey(MYKEY_A)) {
                         if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
