@@ -118,7 +118,7 @@ Background Image: bg_h1.png
 
 ##### Mode 8
 Screen Resolution: 480x360, 160x120  
-Background Image: bg_s0.png
+Background Image: bg_vh_s0.png
 | ![image](images/dis_8.png) |
 |-|
 
@@ -126,7 +126,7 @@ Background Image: bg_s0.png
 
 ##### Mode 9
 Screen Resolution: 384x288, 256x192  
-Background Image: bg_s1.png
+Background Image: bg_vh_s1.png
 | ![image](images/dis_9.png) |
 |-|
 
@@ -134,7 +134,7 @@ Background Image: bg_s1.png
 
 ##### Mode 10
 Screen Resolution: 384x288, 256x192  
-Background Image: bg_c0.png
+Background Image: bg_vh_c0.png
 | ![image](images/dis_10.png) |
 |-|
 
@@ -142,7 +142,7 @@ Background Image: bg_c0.png
 
 ##### Mode 11
 Screen Resolution: 384x288, 256x192  
-Background Image: bg_c1.png
+Background Image: bg_vh_c1.png
 | ![image](images/dis_11.png) |
 |-|
 
