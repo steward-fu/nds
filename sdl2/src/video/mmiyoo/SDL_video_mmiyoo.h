@@ -65,24 +65,19 @@
 #endif
 
 #ifdef MMIYOO
-    #define FB_W                    640
-    #define FB_H                    480
-    #define FB_BPP                  4
-    #define IMG_W                   FB_W
-    #define IMG_H                   FB_H
+    #define DEF_FB_W                640
+    #define DEF_FB_H                480
 #endif
 
 #ifdef TRIMUI
-    #define FB_W                    320
-    #define FB_H                    240
-    #define FB_BPP                  4
-    #define IMG_W                   640
-    #define IMG_H                   480
+    #define DEF_FB_W                320
+    #define DEF_FB_H                240
 #endif
+#define FB_BPP                      4
+#define IMG_W                       640
+#define IMG_H                       480
 
 #define PREFIX                      "[SDL] "
-#define FB_SIZE                     (FB_W * FB_H * FB_BPP * 2)
-#define TMP_SIZE                    (FB_W * FB_H * FB_BPP)
 #define CFG_PATH                    "resources/settings.json"
 #define THEME_PATH                  "resources/bg"
 #define PEN_PATH                    "resources/pen"
@@ -105,11 +100,11 @@
 #define FONT_PATH                   "resources/font/font.ttf"
 
 #ifdef MMIYOO
-    #define FONT_SIZE               24
+    #define DEF_FONT_SIZE           24
 #endif
 
 #ifdef TRIMUI
-    #define FONT_SIZE               12
+    #define DEF_FONT_SIZE           12
 #endif
 
 #define NDS_DIS_MODE_VH_T0          0
@@ -257,6 +252,7 @@ typedef struct _NDS {
     int keys_90d;
     int auto_slot;
     int auto_state;
+    int enable_752x560;
     int defer_update_bg;
     char cfg_path[MAX_PATH];
 
@@ -342,6 +338,9 @@ int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor
 
 int get_font_width(const char *info);
 int get_font_height(const char *info);
+
+int fb_init(void);
+int fb_uninit(void);
 
 int reload_bg(void);
 int reload_pen(void);

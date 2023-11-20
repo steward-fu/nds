@@ -61,8 +61,12 @@ struct _NDS_TEXTURE {
 extern GFX gfx;
 extern NDS nds;
 extern MMIYOO_EventInfo evt;
-extern int show_fps;
 extern SDL_Surface *fps_info;
+extern int FB_W;
+extern int FB_H;
+extern int FB_SIZE;
+extern int TMP_SIZE;
+extern int show_fps;
 
 int need_reload_bg = 0;
 static int threading_mode = 0;
@@ -271,6 +275,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     static char show_info_buf[MAX_PATH] = {0};
     static int show_info_cnt = 0;
     static int cur_w = 0;
+    static int cur_fb_w = 0;
     static int cur_volume = 0;
     static int cur_dis_mode = 0;
     static int cur_touchpad = 0;
@@ -300,12 +305,17 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     }
 
     if ((cur_w != src.w) ||
+        (cur_fb_w != FB_W) ||
         (cur_touchpad != nds.pen.pos) ||
         (cur_dis_mode != nds.dis_mode) ||
         (cur_theme_sel != nds.theme.sel) ||
         (cur_volume != nds.volume))
     {
-        if (cur_volume != nds.volume) {
+        if (cur_fb_w != FB_W) {
+            show_info_cnt = 150;
+            sprintf(show_info_buf, " %d x %d ", FB_W, FB_H);
+        }
+        else if (cur_volume != nds.volume) {
             show_info_cnt = 50;
             sprintf(show_info_buf, " %s %d ", to_lang("Volume"), nds.volume);
         }
@@ -321,6 +331,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         }
 
         cur_w = src.w;
+        cur_fb_w = FB_W;
         cur_theme_sel = nds.theme.sel;
         cur_volume = nds.volume;
         cur_dis_mode = nds.dis_mode;
@@ -438,8 +449,8 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             if (screen0) {
                 dst.x = 0;
                 dst.y = 0;
-                dst.w = 640;
-                dst.h = 480;
+                dst.w = FB_W;
+                dst.h = FB_H;
                 need_pen = 1;
                 need_fps = 1;
             }
@@ -453,8 +464,8 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             if (screen0) {
                 dst.x = 0;
                 dst.y = 0;
-                dst.w = 640;
-                dst.h = 480;
+                dst.w = FB_W;
+                dst.h = FB_H;
                 need_pen = 1;
                 need_fps = 1;
             }
@@ -466,10 +477,10 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             break;
         case NDS_DIS_MODE_S0:
             if (screen1) {
-                dst.x = (640 - (256 * 2)) / 2;
-                dst.y = (480 - (192 * 2)) / 2;
                 dst.w = 256 * 2;
                 dst.h = 192 * 2;
+                dst.x = (FB_W - dst.w) / 2;
+                dst.y = (FB_H - dst.h) / 2;
                 need_pen = 1;
                 need_fps = 1;
             }
@@ -483,8 +494,8 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             if (screen1) {
                 dst.x = 0;
                 dst.y = 0;
-                dst.w = 640;
-                dst.h = 480;
+                dst.w = FB_W;
+                dst.h = FB_H;
                 need_pen = 1;
                 need_fps = 1;
             }
@@ -495,58 +506,89 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             }
             break;
         case NDS_DIS_MODE_V0:
-            dst.x = (640 - 256) / 2;
-            dst.y = screen0 ? 48 : 48 + 192;
             dst.w = 256;
             dst.h = 192;
+            dst.x = (FB_W - dst.w) / 2;
+            if (nds.enable_752x560 == 0) {
+                dst.y = screen0 ? 48 : 48 + dst.h;
+            }
+            else {
+                dst.y = screen0 ? 88 : 88 + dst.h;
+            }
             break;
         case NDS_DIS_MODE_V1:
-            dst.x = (640 - 320) / 2;
-            dst.y = screen0 ? 0 : 240;
-            dst.w = 320;
-            dst.h = 240;
+            if (nds.enable_752x560 == 0) {
+                dst.w = 320;
+                dst.h = 240;
+            }
+            else {
+                dst.w = 373;
+                dst.h = 280;
+            }
+            dst.x = (FB_W - dst.w) / 2;
+            dst.y = screen0 ? 0 : dst.h;
             break;
         case NDS_DIS_MODE_H0:
-            dst.x = screen0 ? 64 : 64 + 256;
-            dst.y = (480 - 192) / 2;
             dst.w = 256;
             dst.h = 192;
+            if (nds.enable_752x560 == 0) {
+                dst.x = screen0 ? 64 : 64 + dst.w;
+            }
+            else {
+                dst.x = screen0 ? 120 : 120 + dst.w;
+            }
+            dst.y = (FB_H - dst.h) / 2;
             break;
         case NDS_DIS_MODE_H1:
-            dst.x = screen0 ? 0 : 320;
-            dst.y = (480 - 240) / 2;
-            dst.w = 320;
-            dst.h = 240;
+            if (nds.enable_752x560 == 0) {
+                dst.w = 320;
+                dst.h = 240;
+                dst.x = screen0 ? 0 : dst.w;
+            }
+            else {
+                dst.w = 373;
+                dst.h = 280;
+                dst.x = screen0 ? 3 : (dst.w + 3);
+            }
+            dst.y = (FB_H - dst.h) / 2;
             break;
         case NDS_DIS_MODE_VH_S0:
             dst.x = screen1 ? 160 : 0;
             dst.y = screen1 ? 120 : 0;
-            dst.w = screen1 ? 480 : 160;
-            dst.h = screen1 ? 360 : 120;
+            dst.w = screen1 ? (FB_W - 160) : 160;
+            dst.h = screen1 ? (FB_H - 120) : 120;
             break;
         case NDS_DIS_MODE_VH_S1:
             dst.x = screen1 ? 256 : 0;
             dst.y = screen1 ? 192 : 0;
-            dst.w = screen1 ? (640 - 256) : 256;
-            dst.h = screen1 ? (480 - 192) : 192;
+            dst.w = screen1 ? (FB_W - 256) : 256;
+            dst.h = screen1 ? (FB_H - 192) : 192;
             break;
         case NDS_DIS_MODE_VH_C0:
-            dst.x = screen0 ? (640 - 256) / 2 : (640 - 384) / 2;
+            dst.w = screen0 ? 256 : (FB_W - 256);
+            dst.h = screen0 ? 192 : (FB_H - 192);
+            dst.x = screen0 ? ((FB_W - dst.w) / 2) : ((FB_W - dst.w) / 2);
             dst.y = screen0 ? 0 : 192;
-            dst.w = screen0 ? 256 : 384;
-            dst.h = screen0 ? 192 : 288;
             break;
         case NDS_DIS_MODE_VH_C1:
+            dst.w = screen0 ? 256 : (FB_W - 256);
+            dst.h = screen0 ? 192 : (FB_H - 192);
             dst.x = screen0 ? 0 : 256;
-            dst.y = screen0 ? (480 - 192) / 2 : (480 - 288) / 2;
-            dst.w = screen0 ? 256 : 384;
-            dst.h = screen0 ? 192 : 288;
+            dst.y = screen0 ? ((FB_H - dst.h) / 2) : ((FB_H - dst.h) / 2);
             break;
         case NDS_DIS_MODE_HH0:
-            dst.x = screen0 ? 0 : 320;
-            dst.y = 26;
-            dst.w = 427;
-            dst.h = 320;
+            if (nds.enable_752x560 == 0) {
+                dst.x = screen0 ? 0 : 320;
+                dst.y = 26;
+                dst.w = 427;
+                dst.h = 320;
+            }
+            else {
+                dst.x = screen0 ? 0 : 376;
+                dst.y = 29;
+                dst.w = 501;
+                dst.h = 376;
+            }
             rotate = E_MI_GFX_ROTATE_90;
             break;
         }
@@ -574,8 +616,6 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         GFX_Copy(pixels, src, dst, pitch, alpha, rotate);
 
         if (need_fps && show_fps && fps_info) {
-            //dst.x = dst.x;
-            //dst.y = dst.y;
             dst.w = fps_info->w;
             dst.h = fps_info->h;
             GFX_Copy(fps_info->pixels, fps_info->clip_rect, dst, fps_info->pitch, 0, E_MI_GFX_ROTATE_180);

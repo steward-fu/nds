@@ -6,11 +6,11 @@ LDFLAGS = -fpic -shared -Wl,--no-undefined
 LDFLAGS+= -lpthread -lm -ljson-c
 LDFLAGS+= -L../detour -ldtr
 
-ifeq ($(MOD),mmiyoo)
+ifeq ($(MOD),trimui)
+    CFLAGS += -DTRIMUI -I../trimui/inc
+else
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     LDFLAGS+= -L../mmiyoo/lib -lmi_common -lmi_sys -lmi_gfx -lmi_ao
-else
-    CFLAGS += -DTRIMUI -I../trimui/inc
 endif
 
 .PHONY: all

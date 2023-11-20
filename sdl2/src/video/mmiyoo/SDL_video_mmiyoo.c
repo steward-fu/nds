@@ -63,6 +63,12 @@ NDS nds = {0};
 GFX gfx = {0};
 MMIYOO_VideoInfo vid={0};
 
+int FB_W = 0;
+int FB_H = 0;
+int FB_SIZE = 0;
+int TMP_SIZE = 0;
+int LINE_H = 0;
+int FONT_SIZE = 0;
 int show_fps = 0;
 int down_scale = 1;
 int savestate_busy = 0;
@@ -138,7 +144,7 @@ static int draw_drastic_menu_main(void)
     for (cc=0; cc<drastic_menu.cnt; cc++) {
         draw = 0;
         x = 150 / div;
-        w = 30 / div;
+        w = LINE_H / div;
         h = 100 / div;
         
         memset(buf, 0, sizeof(buf));
@@ -212,7 +218,7 @@ static int draw_drastic_menu_main(void)
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             if (p->bg && nds.menu.drastic.cursor) {
                 rt.x = x - (50 / div);
-                rt.y = y - (nds.menu.drastic.cursor->h / 3);
+                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
             }
         }
@@ -286,7 +292,7 @@ static int draw_drastic_menu_option(void)
     }
 
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        ww = 30 / div;
+        ww = LINE_H / div;
 
         if ((cc >= s0) && (cc < s1)) {
             y = (25 / div) + (cnt * ww);
@@ -306,20 +312,19 @@ static int draw_drastic_menu_option(void)
             if (p->y <= 384) {
                 strcpy(buf, to_lang(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
-                draw_info(nds.menu.drastic.main, buf, FB_W - w - (20 / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, FB_W - w - (ww / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
                 mark_double_spaces(p->msg);
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else {
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
+            draw_info(nds.menu.drastic.main, buf, ww / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
             if (p->bg && nds.menu.drastic.cursor) {
                 rt.x = 10 / div;
-                rt.y = y - (nds.menu.drastic.cursor->h / 3) - (2 / div);
+                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
@@ -378,7 +383,7 @@ static int draw_drastic_menu_controller(void)
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        w = 30 / div;
+        w = LINE_H / div;
         p = &drastic_menu.item[cc];
 
         if ((p->y == 224) || (p->y == 232) || (p->y == 201)) {
@@ -402,8 +407,14 @@ static int draw_drastic_menu_controller(void)
                 }
                 draw_info(nds.menu.drastic.main, p->msg, 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
                 if ((p->y >= 240) && (p->y <= 376)) {
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    if (nds.enable_752x560) {
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 320 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 550 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    }
+                    else {
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    }
                 }
             }
             else {
@@ -476,7 +487,7 @@ static int draw_drastic_menu_controller2(void)
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        w = 30 / div;
+        w = LINE_H / div;
         p = &drastic_menu.item[cc];
 
         if ((p->y == 224) || (p->y == 232) || (p->y == 201)) {
@@ -500,8 +511,14 @@ static int draw_drastic_menu_controller2(void)
                 }
                 draw_info(nds.menu.drastic.main, p->msg, 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
                 if ((p->y >= 240) && (p->y <= 384)) {
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
-                    draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    if (nds.enable_752x560) {
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 320 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 550 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    }
+                    else {
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 300 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                        draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 480 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
+                    }
                 }
             }
             else {
@@ -544,7 +561,7 @@ static int draw_drastic_menu_firmware(void)
 #endif
 
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        ww = 30 / div;
+        ww = LINE_H / div;
         p = &drastic_menu.item[cc];
         if ((p->x == 352) || (p->x == 108)) {
             continue;
@@ -569,11 +586,10 @@ static int draw_drastic_menu_firmware(void)
             if (p->y == 280) {
                 mark_double_spaces(p->msg);
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else if (p->y == 296) {
                 w = get_font_width(name);
-                draw_info(nds.menu.drastic.main, name, FB_W - w - (20 / div), 25 / div, nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, name, FB_W - w - (ww / div), 25 / div, nds.menu.c1, 0);
 
                 w = strlen(p->msg);
                 p->msg[w - 3] = 0;
@@ -584,28 +600,26 @@ static int draw_drastic_menu_firmware(void)
                     }
                 }
                 w = get_font_width(buf);
-                draw_info(nds.menu.drastic.main, buf, FB_W - w - (20 / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, FB_W - w - (ww / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
                 strcpy(buf, to_lang("Favorite Color"));
-                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else if (p->y <= 312) {
                 strcpy(buf, to_lang(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
-                draw_info(nds.menu.drastic.main, buf, FB_W - w - (20 / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+                draw_info(nds.menu.drastic.main, buf, FB_W - w - (ww / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
                 mark_double_spaces(p->msg);
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
             else {
                 strcpy(buf, to_lang(p->msg));
-                draw_info(nds.menu.drastic.main, buf, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             }
+            draw_info(nds.menu.drastic.main, buf, ww / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
 
             if ((p->x == 92) && (p->bg) && nds.menu.drastic.cursor) {
                 rt.x = 10 / div;
-                rt.y = y - (nds.menu.drastic.cursor->h / 3) - (2 / div);
+                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
@@ -684,7 +698,7 @@ static int draw_drastic_menu_cheat(void)
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        w = 30 / div;
+        w = LINE_H / div;
         memset(buf, 0, sizeof(buf));
         p = &drastic_menu.item[cc];
 
@@ -705,17 +719,17 @@ static int draw_drastic_menu_cheat(void)
             }
 
             cnt+= 1;
-            draw_info(nds.menu.drastic.main, p->msg, 60 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
-            if (p->cheat) {
-                rt.x = 600 / div;
-                rt.y = y - (2 / div);
+            draw_info(nds.menu.drastic.main, p->msg, w / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
+            if (p->cheat && nds.menu.drastic.yes && nds.menu.drastic.no) {
+                rt.x = (FB_W - nds.menu.drastic.yes->w - w) / div;
+                rt.y = y - 1;
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface((p->enable > 0 ) ? nds.menu.drastic.yes : nds.menu.drastic.no, NULL, nds.menu.drastic.main, &rt);
             }
             if (p->bg && nds.menu.drastic.cursor) {
                 rt.x = 10 / div;
-                rt.y = y - (nds.menu.drastic.cursor->h / 3) - (2 / div);
+                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
@@ -795,7 +809,7 @@ static int draw_drastic_menu_rom(void)
     {
         uint32_t c = 0x335445;
 
-        w = 30 / div;
+        w = LINE_H / div;
         p = &drastic_menu.item[0];
         rt.x = 5 / div;
         rt.y = (25 / div) - (4 / div);
@@ -807,7 +821,7 @@ static int draw_drastic_menu_rom(void)
 
     cnt = 0;
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        w = 30 / div;
+        w = LINE_H / div;
         p = &drastic_menu.item[cc];
         if (p->x == chk) {
             y = (25 / div) + (((cnt - s0) + 1) * w);
@@ -832,7 +846,7 @@ int process_drastic_menu(void)
 {
     int layer = get_current_menu_layer();
 
-    SDL_BlitSurface(nds.menu.drastic.bg, NULL, nds.menu.drastic.main, NULL);
+    SDL_SoftStretch(nds.menu.drastic.bg, NULL, nds.menu.drastic.main, NULL);
     switch (layer) {
     case NDS_DRASTIC_MENU_MAIN:
         draw_drastic_menu_main();
@@ -1540,6 +1554,7 @@ static int get_theme_count(void)
     if (getcwd(nds.theme.path, sizeof(nds.theme.path))) {
         strcat(nds.theme.path, "/");
         strcat(nds.theme.path, THEME_PATH);
+        strcat(nds.theme.path, nds.enable_752x560 ? "_752" : "_640");
         r = get_dir_count(nds.theme.path);
     }
     return r;
@@ -1620,7 +1635,7 @@ static void ion_free(int ion_fd, ion_alloc_info_t* info)
     }
 }
 
-static int fb_init(void)
+int fb_init(void)
 {
     int r = 0;
     uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
@@ -1677,7 +1692,7 @@ static int fb_init(void)
     return 0;
 }
 
-static int fb_uninit(void)
+int fb_uninit(void)
 {
     uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
 
@@ -1722,7 +1737,7 @@ void disp_resize(int x, int y, int w, int h)
 #endif
 
 #ifdef MMIYOO
-static int fb_init(void)
+int fb_init(void)
 {
     MI_SYS_Init();
     MI_GFX_Open();
@@ -1744,9 +1759,10 @@ static int fb_init(void)
 
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.overlay.phyAddr);
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
+    return 0;
 }
 
-static int fb_uninit(void)
+int fb_uninit(void)
 {
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
     MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
@@ -1756,6 +1772,7 @@ static int fb_uninit(void)
 
     MI_GFX_Close();
     MI_SYS_Exit();
+    return 0;
 }
 #endif
 
@@ -1809,7 +1826,7 @@ void GFX_Init(void)
     }
 
 #ifdef MMIYOO
-    nds.menu.drastic.cursor = IMG_Load(DRASTIC_MENU_CURSOR_FILE);
+    nds.menu.drastic.cursor = NULL; // IMG_Load(DRASTIC_MENU_CURSOR_FILE);
     if (nds.menu.drastic.cursor) {
         printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
     }
@@ -1819,7 +1836,7 @@ void GFX_Init(void)
     t = IMG_Load(DRASTIC_MENU_CURSOR_FILE);
     if (t) {
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-        nds.menu.drastic.cursor = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        nds.menu.drastic.cursor = NULL; //SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.cursor) {
             SDL_SoftStretch(t, NULL, t, &nrt);
             SDL_BlitSurface(t, NULL, nds.menu.drastic.cursor, &nrt);
@@ -1829,26 +1846,17 @@ void GFX_Init(void)
     }
 #endif
 
-#ifdef MMIYOO
-    nds.menu.drastic.yes = IMG_Load(DRASTIC_MENU_YES_FILE);
-    if (nds.menu.drastic.yes) {
-        printf(PREFIX"drastic menu yes: %p\n", nds.menu.drastic.yes);
-    }
-    
-    nds.menu.drastic.no = IMG_Load(DRASTIC_MENU_NO_FILE);
-    if (nds.menu.drastic.no) {
-        printf(PREFIX"drastic menu no: %p\n", nds.menu.drastic.no);
-    }
-#endif
-
-#ifdef TRIMUI
     t = IMG_Load(DRASTIC_MENU_YES_FILE);
     if (t) {
+#ifdef MMIYOO
+        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
+#endif
+#ifdef TRIMUI
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+#endif
         nds.menu.drastic.yes = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.yes) {
-            SDL_SoftStretch(t, NULL, t, &nrt);
-            SDL_BlitSurface(t, NULL, nds.menu.drastic.yes, &nrt);
+            SDL_SoftStretch(t, NULL, nds.menu.drastic.yes, NULL);
             printf(PREFIX"drastic menu yes: %p\n", nds.menu.drastic.yes);
         }
         SDL_FreeSurface(t);
@@ -1856,21 +1864,24 @@ void GFX_Init(void)
     
     t = IMG_Load(DRASTIC_MENU_NO_FILE);
     if (t) {
+#ifdef MMIYOO
+        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
+#endif
+#ifdef TRIMUI
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+#endif
         nds.menu.drastic.no = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.no) {
-            SDL_SoftStretch(t, NULL, t, &nrt);
-            SDL_BlitSurface(t, NULL, nds.menu.drastic.no, &nrt);
+            SDL_SoftStretch(t, NULL, nds.menu.drastic.no, NULL);
             printf(PREFIX"drastic menu no: %p\n", nds.menu.drastic.no);
         }
         SDL_FreeSurface(t);
     }
-#endif
 
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
     if (nds.menu.drastic.main) {
         if (nds.menu.drastic.bg) {
-            SDL_BlitSurface(nds.menu.drastic.bg, NULL, nds.menu.drastic.main, NULL);
+            SDL_SoftStretch(nds.menu.drastic.bg, NULL, nds.menu.drastic.main, NULL);
         }
     }
 
@@ -1880,6 +1891,9 @@ void GFX_Init(void)
 
     TTF_Init();
     nds.font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
+    if (nds.enable_752x560) {
+        TTF_SetFontStyle(nds.font, TTF_STYLE_BOLD);
+    }
     printf(PREFIX"nds.font: %p\n", nds.font);
 
     is_running = 1;
@@ -2078,6 +2092,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 #ifdef MMIYOO
     int copy_it = 1;
     MI_U16 u16Fence = 0;
+    int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
 
     if (pixels == NULL) {
         return -1;
@@ -2138,7 +2153,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                             break;
                         }
 
-                        if (pitch == 512) {
+                        if (is_rgb565) {
                             asm ("PLD [%0, #128]"::"r" (s1_565));
                             r1 = (s1_565[((y + ay) * srcrect.w) + x + ax] & 0xf800) >> 8;
                             g1 = (s1_565[((y + ay) * srcrect.w) + x + ax] & 0x07e0) >> 3;
@@ -2208,14 +2223,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         switch (nds.alpha.pos % 4) {
         case 0:
             dstrect.x = 0;
-            dstrect.y = 480 - dstrect.h;
+            dstrect.y = FB_H - dstrect.h;
             break;
         case 1:
-            dstrect.x = 640 - dstrect.w;
-            dstrect.y = 480 - dstrect.h;
+            dstrect.x = FB_W - dstrect.w;
+            dstrect.y = FB_H - dstrect.h;
             break;
         case 2:
-            dstrect.x = 640 - dstrect.w;
+            dstrect.x = FB_W - dstrect.w;
             dstrect.y = 0;
             break;
         case 3:
@@ -2318,7 +2333,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     gfx.hw.src.surf.u32Width = srcrect.w;
     gfx.hw.src.surf.u32Height = srcrect.h;
     gfx.hw.src.surf.u32Stride = pitch;
-    gfx.hw.src.surf.eColorFmt = (pitch / srcrect.w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
+    gfx.hw.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
     gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
 
     gfx.hw.dst.rt.s32Xpos = 0;
@@ -2532,7 +2547,12 @@ int reload_bg(void)
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
     SDL_Rect srt = {0, 0, IMG_W, IMG_H};
-    SDL_Rect drt = {0, 0, IMG_W, IMG_H};
+    SDL_Rect drt = {0, 0, FB_W, FB_H};
+
+    if (nds.enable_752x560) {
+        srt.w = FB_W;
+        srt.h = FB_H;
+    }
 
     if (nds.overlay.sel >= nds.overlay.max) {
         if ((pre_sel != nds.theme.sel) || (pre_mode != nds.dis_mode)) {
@@ -2544,7 +2564,7 @@ int reload_bg(void)
                 nds.theme.img = NULL;
             }
 
-            nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+            nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
             if (nds.theme.img) {
                 SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
 
@@ -2599,23 +2619,21 @@ int reload_bg(void)
                     else {
                         printf(PREFIX"failed to load wallpaper (%s)\n", buf);
                     }
-                    GFX_Copy(nds.theme.img->pixels, srt, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+                    GFX_Copy(nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
                 }
             }
         }
         else {
             if (nds.theme.img) {
-                GFX_Copy(nds.theme.img->pixels, srt, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+                GFX_Copy(nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
             }
         }
     }
     else {
         t = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
         if (t) {
-            SDL_Rect rt = {0, 0, FB_W, FB_H};
-
             SDL_FillRect(t, &t->clip_rect, SDL_MapRGB(t->format, 0x00, 0x00, 0x00));
-            GFX_Copy(t->pixels, rt, rt, t->pitch, 0, E_MI_GFX_ROTATE_180);
+            GFX_Copy(t->pixels, t->clip_rect, drt, t->pitch, 0, E_MI_GFX_ROTATE_180);
             SDL_FreeSurface(t);
         }
     }
@@ -2817,6 +2835,9 @@ VideoBootStrap MMIYOO_bootstrap = {MMIYOO_DRIVER_NAME, "MMIYOO VIDEO DRIVER", MM
 
 int MMIYOO_VideoInit(_THIS)
 {
+    FILE *fd = NULL;
+    char buf[MAX_PATH] = {0};
+
     SDL_DisplayMode mode={0};
     SDL_VideoDisplay display={0};
 
@@ -2893,6 +2914,32 @@ int MMIYOO_VideoInit(_THIS)
     SDL_AddDisplayMode(&display, &mode);
 
     SDL_AddVideoDisplay(&display, SDL_FALSE);
+
+    LINE_H = 30;
+    FONT_SIZE = DEF_FONT_SIZE;
+
+    FB_W = DEF_FB_W;
+    FB_H = DEF_FB_H;
+    FB_SIZE = (FB_W * FB_H * FB_BPP * 2);
+    TMP_SIZE = (FB_W * FB_H * FB_BPP);
+#ifdef MMIYOO
+    fd = popen("fbset | grep \"mode \"", "r");
+    if (fd) {
+        fgets(buf, sizeof(buf), fd);
+        pclose(fd);
+
+        if (strstr(buf, "752")) {
+            FONT_SIZE = 26;
+            LINE_H = FONT_SIZE + 8;
+
+            FB_W = 752;
+            FB_H = 560;
+            FB_SIZE = (FB_W * FB_H * FB_BPP * 2);
+            TMP_SIZE = (FB_W * FB_H * FB_BPP);
+            nds.enable_752x560 = 1;
+        }
+    }
+#endif
 
     GFX_Init();
     read_config();
@@ -3051,9 +3098,9 @@ int handle_menu(int key)
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
 
-    const int SX = 150;
-    const int SY = 95;
-    const int SSX = 385;
+    const int SX = nds.enable_752x560 ? 200 : 150;
+    const int SY = nds.enable_752x560 ? 107 : 95;
+    const int SSX = nds.enable_752x560 ? 410 : 385;
     const int MENU_CPU = 0;
     const int MENU_OVERLAY = 1;
     const int MENU_DIS = 2;
@@ -3066,6 +3113,8 @@ int handle_menu(int key)
 
     char buf[MAX_PATH] = {0};
     SDL_Rect rt = {0};
+    int sx = 0;
+    int sy = 0;
     int pre_w = 0;
     int h = get_font_height(" ") + 9;
     uint32_t sel_col = 0xffff00;
@@ -3096,8 +3145,8 @@ int handle_menu(int key)
             }
             break;
         case MENU_OVERLAY:
-            if (nds.overlay.sel > 0) {
-                nds.overlay.sel-= 1;
+            if (nds.overlay.sel < nds.overlay.max) {
+                nds.overlay.sel+= 1;
             }
             break;
         case MENU_DIS:
@@ -3149,8 +3198,8 @@ int handle_menu(int key)
             }
             break;
         case MENU_OVERLAY:
-            if (nds.overlay.sel < nds.overlay.max) {
-                nds.overlay.sel+= 1;
+            if (nds.overlay.sel > 0) {
+                nds.overlay.sel-= 1;
             }
             break;
         case MENU_DIS:
@@ -3204,7 +3253,7 @@ int handle_menu(int key)
     }
 
     dis_mode = nds.dis_mode;
-    SDL_BlitSurface(nds.menu.bg, NULL, cvt, NULL);
+    SDL_SoftStretch(nds.menu.bg, NULL, cvt, NULL);
 
     if (cur_sel == MENU_CPU) {
         col0 = sel_col;
@@ -3342,9 +3391,11 @@ int handle_menu(int key)
     sprintf(buf, "%s", DPAD[nds.keys_90d % 2]);
     draw_info(cvt, buf, SSX, SY + (h * MENU_KEYS), col1, 0);
 
+    sx = nds.enable_752x560 ? 540 : 450;
+    sy = nds.enable_752x560 ? 430 : 360;
     if ((cur_sel == MENU_OVERLAY) && (nds.overlay.sel < nds.overlay.max) && (nds.overlay.img)) {
-        rt.x = 450;
-        rt.y = 360;
+        rt.x = sx;
+        rt.y = sy;
         rt.w = 128;
         rt.h = 96;
         SDL_SoftStretch(nds.overlay.img, NULL, cvt, &rt);
@@ -3352,8 +3403,8 @@ int handle_menu(int key)
     else {
         switch (dis_mode) {
         case NDS_DIS_MODE_VH_T0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
@@ -3362,27 +3413,27 @@ int handle_menu(int key)
             rt.h = 26;
             switch (nds.alpha.pos) {
             case 0:
-                rt.x = (450 + 128) - rt.w;
-                rt.y = 360;
+                rt.x = (sx + 128) - rt.w;
+                rt.y = sy;
                 break;
             case 1:
-                rt.x = 450;
-                rt.y = 360;
+                rt.x = sx;
+                rt.y = sy;
                 break;
             case 2:
-                rt.x = 450;
-                rt.y = (360 + 96) - rt.h;
+                rt.x = sx;
+                rt.y = (sy + 96) - rt.h;
                 break;
             case 3:
-                rt.x = (450 + 128) - rt.w;
-                rt.y = (360 + 96) - rt.h;
+                rt.x = (sx + 128) - rt.w;
+                rt.y = (sy + 96) - rt.h;
                 break;
             }
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, (30 * nds.alpha.val)));
             break;
         case NDS_DIS_MODE_VH_T1:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
@@ -3391,231 +3442,231 @@ int handle_menu(int key)
             rt.h = 38;
             switch (nds.alpha.pos) {
             case 0:
-                rt.x = (450 + 128) - rt.w;
-                rt.y = 360;
+                rt.x = (sx + 128) - rt.w;
+                rt.y = sy;
                 break;
             case 1:
-                rt.x = 450;
-                rt.y = 360;
+                rt.x = sx;
+                rt.y = sy;
                 break;
             case 2:
-                rt.x = 450;
-                rt.y = (360 + 96) - rt.h;
+                rt.x = sx;
+                rt.y = (sy + 96) - rt.h;
                 break;
             case 3:
-                rt.x = (450 + 128) - rt.w;
-                rt.y = (360 + 96) - rt.h;
+                rt.x = (sx + 128) - rt.w;
+                rt.y = (sy + 96) - rt.h;
                 break;
             }
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, (30 * nds.alpha.val)));
             break;
         case NDS_DIS_MODE_S0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 102;
             rt.h = 76;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             break;
         case NDS_DIS_MODE_S1:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             break;
         case NDS_DIS_MODE_V0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360 + ((96 - (rt.h * 2)) / 2);
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - (rt.h * 2)) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360 + ((96 - (rt.h * 2)) / 2) + rt.h;
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_V1:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 64;
             rt.h = 48;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360 + ((96 - (rt.h * 2)) / 2);
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - (rt.h * 2)) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 64;
             rt.h = 48;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360 + ((96 - (rt.h * 2)) / 2) + rt.h;
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_H0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = 450 + ((128 - (rt.w * 2)) / 2);
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + ((128 - (rt.w * 2)) / 2);
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = 450 + ((128 - (rt.w * 2)) / 2) + rt.w;
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_H1:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 64;
             rt.h = 48;
-            rt.x = 450 + ((128 - (rt.w * 2)) / 2);
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + ((128 - (rt.w * 2)) / 2);
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 64;
             rt.h = 48;
-            rt.x = 450 + ((128 - (rt.w * 2)) / 2) + rt.w;
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_VH_S0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 96;
             rt.h = 72;
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 32;
             rt.h = 24;
-            rt.x = 450 + (128 - rt.w);
-            rt.y = 360 + (96 - rt.h);
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy + (96 - rt.h);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_VH_S1:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 77;
             rt.h = 58;
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = 450 + (128 - rt.w);
-            rt.y = 360 + (96 - rt.h);
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy + (96 - rt.h);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_VH_C0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 77;
             rt.h = 58;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360;
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360 + (96 - rt.h);
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + (96 - rt.h);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_VH_C1:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 77;
             rt.h = 58;
-            rt.x = 450;
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx;
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = 450 + (128 - rt.w);
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_HH0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 64;
             rt.h = 85;
-            rt.x = 450;
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx;
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 64;
             rt.h = 85;
-            rt.x = 450 + (128 - rt.w);
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_HRES0:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
             
             rt.w = 102;
             rt.h = 76;
-            rt.x = 450 + ((128 - rt.w) / 2);
-            rt.y = 360 + ((96 - rt.h) / 2);
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             break;
         case NDS_DIS_MODE_HRES1:
-            rt.x = 450;
-            rt.y = 360;
+            rt.x = sx;
+            rt.y = sy;
             rt.w = 128;
             rt.h = 96;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
@@ -3624,7 +3675,7 @@ int handle_menu(int key)
     }
 
     if (nds.menu.cursor) {
-        rt.x = SX - 60;
+        rt.x = SX - (nds.enable_752x560 ? 80 : 60);
         rt.y = SY + (h * cur_sel) - (nds.menu.cursor->h / 3) - 2;
         SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
     }

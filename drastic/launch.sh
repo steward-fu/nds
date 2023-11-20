@@ -23,6 +23,12 @@ fi
 
 CUST_LOGO=0
 CUST_CPUCLOCK=1
+USE_752x560_RES=0
+
+if [ "$USE_752x560_RES" == "1" ]; then
+    fbset -g 752 560 752 1120 32
+    fbset > fbset.log
+fi
 
 cd $mydir
 if [ "$CUST_LOGO" == "1" ]; then
@@ -44,3 +50,7 @@ fi
 sync
 
 echo $sv > /proc/sys/vm/swappiness
+
+if [ "$USE_752x560_RES" == "1" ]; then
+    fbset -g 640 480 640 960 32
+fi
