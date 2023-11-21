@@ -33,7 +33,7 @@ else
     killall audioserver
     killall audioserver.mod
 fi
-purge_devil
+#purge_devil
 
 if [ "$USE_752x560_RES" == "1" ]; then
     fbset -g 752 560 752 1120 32
