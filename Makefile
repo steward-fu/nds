@@ -59,6 +59,8 @@ rel:
 
 .PHONY: clean
 clean:
+	rm -rf drastic/launch.sh
+	rm -rf drastic/config.json
 	rm -rf drastic/libs/libdtr.so
 	rm -rf drastic/libs/libasound.so.2
 	rm -rf drastic/libs/libSDL2-2.0.so.0
