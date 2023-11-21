@@ -1,5 +1,18 @@
 #!/bin/sh
+CUST_LOGO=0
+CUST_CPUCLOCK=1
+USE_752x560_RES=0
+
 mydir=`dirname "$0"`
+
+purge_devil() {
+    if pgrep -f "/dev/l" > /dev/null; then
+        echo "Process /dev/l is running. Killing it now..."
+        killall -9 l
+    else
+        echo "Process /dev/l is not running."
+    fi
+}
 
 cd $mydir
 if [ ! -f "/tmp/.show_hotkeys" ]; then
@@ -20,10 +33,7 @@ else
     killall audioserver
     killall audioserver.mod
 fi
-
-CUST_LOGO=0
-CUST_CPUCLOCK=1
-USE_752x560_RES=0
+purge_devil
 
 if [ "$USE_752x560_RES" == "1" ]; then
     fbset -g 752 560 752 1120 32
