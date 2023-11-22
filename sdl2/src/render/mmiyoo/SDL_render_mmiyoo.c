@@ -392,17 +392,17 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     else if ((src.w == 512) && (src.h == 384)) {
         need_fps = 1;
         if (nds.dis_mode == NDS_DIS_MODE_HRES0) {
-            dst.x = 64;
-            dst.y = 48;
             dst.w = 512;
             dst.h = 384;
+            dst.x = (FB_W - dst.w) / 2;
+            dst.y = (FB_H - dst.h) / 2;
             need_pen = 1;
         }
         else {
             dst.x = 0;
             dst.y = 0;
-            dst.w = 640;
-            dst.h = 480;
+            dst.w = FB_W;
+            dst.h = FB_H;
             need_pen = 1;
             need_reload_bg = 0;
         }
@@ -414,14 +414,14 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         if (nds.dis_mode != NDS_DIS_MODE_S1) {
             dst.x = 0;
             dst.y = 0;
-            dst.w = 640;
-            dst.h = 480;
+            dst.w = FB_W;
+            dst.h = FB_H;
         }
         else {
-            dst.x = (640 - (256 * 2)) / 2;
-            dst.y = (480 - (192 * 2)) / 2;
             dst.w = 256 * 2;
             dst.h = 192 * 2;
+            dst.x = (FB_W - dst.w) / 2;
+            dst.y = (FB_H - dst.h) / 2;
         }
     }
 #ifdef MMIYOO
