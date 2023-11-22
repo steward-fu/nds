@@ -152,7 +152,7 @@
 #define JSON_NDS_SWAP_R1R2          "swap_r1r2"
 #define JSON_NDS_CUST_MENU          "cust_menu"
 #define JSON_NDS_LANG               "lang"
-#define JSON_NDS_KEYS_90D           "key_90d"
+#define JSON_NDS_KEYS_90D           "keys_90d"
 #define JSON_NDS_MENU_C0            "menu_c0"
 #define JSON_NDS_MENU_C1            "menu_c1"
 #define JSON_NDS_MENU_C2            "menu_c2"
