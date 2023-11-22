@@ -147,7 +147,7 @@ static int get_move_interval(int type)
         xv*= 2;
     }
 
-    if (nds.dis_mode == NDS_DIS_MODE_HH0) {
+    if ((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) {
         move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? yv : xv);
     }
     else {
@@ -255,15 +255,28 @@ int EventUpdate(void *data)
         SDL_SemWait(event_sem);
 
         if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.keys_90d) {
-            up = LEFT;
-            down = RIGHT;
-            left = DOWN;
-            right = UP;
+            if (nds.keys_90d == 1) {
+                up = LEFT;
+                down = RIGHT;
+                left = DOWN;
+                right = UP;
 
-            a = X;
-            b = A;
-            x = Y;
-            y = B;
+                a = X;
+                b = A;
+                x = Y;
+                y = B;
+            }
+            else {
+                up = RIGHT;
+                down = LEFT;
+                left = UP;
+                right = DOWN;
+
+                a = B;
+                b = Y;
+                x = A;
+                y = X;
+            }
         }
         else {
             up = UP;
@@ -693,7 +706,7 @@ void MMIYOO_PumpEvents(_THIS)
                 }
             }
 
-            if ((nds.dis_mode == NDS_DIS_MODE_HH0) && (nds.keys_90d == 0)) {
+            if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_90d == 0)) {
                 if (evt.keypad.bitmaps & (1 << MYKEY_UP)) {
                     updated = 1;
                     evt.mouse.x+= get_move_interval(1);
@@ -761,6 +774,7 @@ void MMIYOO_PumpEvents(_THIS)
                     case NDS_DIS_MODE_VH_C0:
                     case NDS_DIS_MODE_VH_C1:
                     case NDS_DIS_MODE_HH0:
+                    case NDS_DIS_MODE_HH1:
                         addy = -120;
                         break;
                     }

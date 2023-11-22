@@ -1163,7 +1163,7 @@ static int read_config(void)
 
     json_object_object_get_ex(jfile, JSON_NDS_KEYS_90D, &jval);
     if (jval) {
-        nds.keys_90d = json_object_get_int(jval) ? 1 : 0;
+        nds.keys_90d = json_object_get_int(jval) % 3;
         printf(PREFIX"[json] nds.keys_90d: %d\n", nds.keys_90d);
     }
 
@@ -1892,7 +1892,7 @@ void GFX_Init(void)
     TTF_Init();
     nds.font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
     if (nds.enable_752x560) {
-        TTF_SetFontStyle(nds.font, TTF_STYLE_BOLD);
+        //TTF_SetFontStyle(nds.font, TTF_STYLE_BOLD);
     }
     printf(PREFIX"nds.font: %p\n", nds.font);
 
@@ -1908,6 +1908,7 @@ void GFX_Quit(void)
 
     is_running = 0;
     pthread_join(thread, &ret);
+    GFX_Clear();
 
     fb_uninit();
     for (cc=0; cc<MAX_QUEUE; cc++) {
@@ -1981,6 +1982,7 @@ int draw_pen(const void *pixels, int width, int pitch)
         case NDS_DIS_MODE_VH_C0:
         case NDS_DIS_MODE_VH_C1:
         case NDS_DIS_MODE_HH0:
+        case NDS_DIS_MODE_HH1:
             sub = sh;
             break;
         }
@@ -2603,6 +2605,7 @@ int reload_bg(void)
                         strcat(buf, "/bg_vh_c1.png");
                         break;
                     case NDS_DIS_MODE_HH0:
+                    case NDS_DIS_MODE_HH1:
                         strcat(buf, "/bg_hh0.png");
                         break;
                     case NDS_DIS_MODE_HRES0:
@@ -2929,7 +2932,7 @@ int MMIYOO_VideoInit(_THIS)
         pclose(fd);
 
         if (strstr(buf, "752")) {
-            FONT_SIZE = 26;
+            FONT_SIZE = 27;
             LINE_H = FONT_SIZE + 8;
 
             FB_W = 752;
@@ -3048,7 +3051,7 @@ void MMIYOO_VideoQuit(_THIS)
 }
 
 #ifdef MMIYOO
-static const char *DIS_MODE0[] = {
+static const char *DIS_MODE0_640[] = {
     "640*480",
     "640*480",
     "512*384",
@@ -3061,10 +3064,11 @@ static const char *DIS_MODE0[] = {
     "384*288",
     "384*288",
     "384*288",
+    "427*320",
     "427*320"
 };
 
-static const char *DIS_MODE1[] = {
+static const char *DIS_MODE1_640[] = {
     "170*128",
     "256*192",
     "",
@@ -3077,7 +3081,42 @@ static const char *DIS_MODE1[] = {
     "256*192",
     "256*192",
     "256*192",
-    "427*320"
+    "427*320",
+    "427*320",
+};
+
+static const char *DIS_MODE0_752[] = {
+    "752*560",
+    "752*560",
+    "512*384",
+    "752*560",
+    "256*192",
+    "373*280",
+    "256*192",
+    "373*280",
+    "592*440",
+    "496*368",
+    "496*368",
+    "496*368",
+    "501*376",
+    "501*376"
+};
+
+static const char *DIS_MODE1_752[] = {
+    "170*128",
+    "256*192",
+    "",
+    "",
+    "256*192",
+    "373*280",
+    "256*192",
+    "373*280",
+    "160*120",
+    "256*192",
+    "256*192",
+    "256*192",
+    "501*376",
+    "501*376",
 };
 
 static const char *POS[] = {
@@ -3089,7 +3128,7 @@ static const char *BORDER[] = {
 };
 
 static const char *DPAD[] = {
-    "0°", "90°"
+    "0°", "90°", "270°"
 };
 
 int handle_menu(int key)
@@ -3099,7 +3138,7 @@ int handle_menu(int key)
     static uint32_t pre_cpuclock = 0;
 
     const int SX = nds.enable_752x560 ? 200 : 150;
-    const int SY = nds.enable_752x560 ? 107 : 95;
+    const int SY = nds.enable_752x560 ? 120 : 107;
     const int SSX = nds.enable_752x560 ? 410 : 385;
     const int MENU_CPU = 0;
     const int MENU_OVERLAY = 1;
@@ -3116,7 +3155,7 @@ int handle_menu(int key)
     int sx = 0;
     int sy = 0;
     int pre_w = 0;
-    int h = get_font_height(" ") + 9;
+    int h = LINE_H; //get_font_height(" ") + 9;
     uint32_t sel_col = 0xffff00;
     uint32_t unsel_col = 0x666600;
     uint32_t dis_col = 0x666666;
@@ -3186,7 +3225,9 @@ int handle_menu(int key)
             }
             break;
         case MENU_KEYS:
-            nds.keys_90d = 0;
+            if (nds.keys_90d > 0) {
+                nds.keys_90d-= 1;
+            }
             break;
         }
         break;
@@ -3239,7 +3280,9 @@ int handle_menu(int key)
             }
             break;
         case MENU_KEYS:
-            nds.keys_90d = 1;
+            if (nds.keys_90d < 2) {
+                nds.keys_90d+= 1;
+            }
             break;
         }
         break;
@@ -3295,15 +3338,15 @@ int handle_menu(int key)
     }
     draw_info(cvt, to_lang("Display"), SX, SY + (h * MENU_DIS), col0, 0);
     if (nds.hres_mode == 0) {
-        sprintf(buf, "[%02d] %s", nds.dis_mode, DIS_MODE0[nds.dis_mode]);
+        sprintf(buf, "[%02d] %s", nds.dis_mode, nds.enable_752x560 ? DIS_MODE0_752[nds.dis_mode] : DIS_MODE0_640[nds.dis_mode]);
     }
     else {
-        sprintf(buf, "[%02d] %s", nds.dis_mode, nds.dis_mode == NDS_DIS_MODE_HRES0 ? "512*384" : "640*480");
+        sprintf(buf, "[%02d] %s", nds.dis_mode, nds.dis_mode == NDS_DIS_MODE_HRES0 ? "512*384" : (nds.enable_752x560 ? "752x560" : "640*480"));
     }
     pre_w = get_font_width(buf);
     draw_info(cvt, buf, SSX, SY + (h * MENU_DIS), col1, 0);
     if (nds.hres_mode == 0) {
-        sprintf(buf, "%s", DIS_MODE1[nds.dis_mode]);
+        sprintf(buf, "%s", nds.enable_752x560 ? DIS_MODE1_752[nds.dis_mode] : DIS_MODE1_640[nds.dis_mode]);
     }
     draw_info(cvt, buf, SSX + (pre_w - get_font_width(buf)), SY + (h * (MENU_DIS + 1)), col1, 0);
 
@@ -3371,11 +3414,11 @@ int handle_menu(int key)
         col1 = unsel_col;
     }
     draw_info(cvt, to_lang("Alt. Display"), SX, SY + (h * MENU_ALT), col0, 0);
-    sprintf(buf, "[%02d] %s", nds.alt_mode, DIS_MODE0[nds.alt_mode]);
+    sprintf(buf, "[%02d] %s", nds.alt_mode, nds.enable_752x560 ? DIS_MODE0_752[nds.alt_mode] : DIS_MODE0_640[nds.alt_mode]);
     pre_w = get_font_width(buf);
     draw_info(cvt, buf, SSX, SY + (h * MENU_ALT), col1, 0);
     if (nds.hres_mode == 0) {
-        sprintf(buf, "%s", DIS_MODE1[nds.alt_mode]);
+        sprintf(buf, "%s", nds.enable_752x560 ? DIS_MODE1_752[nds.alt_mode] : DIS_MODE1_640[nds.alt_mode]);
     }
     draw_info(cvt, buf, SSX + (pre_w - get_font_width(buf)), SY + (h * (MENU_ALT + 1)), col1, 0);
 
@@ -3388,7 +3431,7 @@ int handle_menu(int key)
         col1 = unsel_col;
     }
     draw_info(cvt, to_lang("Keys"), SX, SY + (h * MENU_KEYS), col0, 0);
-    sprintf(buf, "%s", DPAD[nds.keys_90d % 2]);
+    sprintf(buf, "%s", DPAD[nds.keys_90d % 3]);
     draw_info(cvt, buf, SSX, SY + (h * MENU_KEYS), col1, 0);
 
     sx = nds.enable_752x560 ? 540 : 450;
@@ -3633,6 +3676,7 @@ int handle_menu(int key)
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_HH0:
+        case NDS_DIS_MODE_HH1:
             rt.x = sx;
             rt.y = sy;
             rt.w = 128;
@@ -3675,7 +3719,7 @@ int handle_menu(int key)
     }
 
     if (nds.menu.cursor) {
-        rt.x = SX - (nds.enable_752x560 ? 80 : 60);
+        rt.x = SX - (nds.enable_752x560 ? 75 : 60);
         rt.y = SY + (h * cur_sel) - (nds.menu.cursor->h / 3) - 2;
         SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
     }

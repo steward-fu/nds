@@ -577,6 +577,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             dst.y = screen0 ? ((FB_H - dst.h) / 2) : ((FB_H - dst.h) / 2);
             break;
         case NDS_DIS_MODE_HH0:
+        case NDS_DIS_MODE_HH1:
             if (nds.enable_752x560 == 0) {
                 dst.x = screen0 ? 0 : 320;
                 dst.y = 26;
@@ -589,7 +590,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
                 dst.w = 501;
                 dst.h = 376;
             }
-            rotate = E_MI_GFX_ROTATE_90;
+            rotate = (nds.dis_mode == NDS_DIS_MODE_HH0) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
             break;
         }
     }
