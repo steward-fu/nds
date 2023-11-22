@@ -94,6 +94,11 @@ static SDL_Thread *thread = NULL;
 static uint32_t hotkey = 0;
 static uint32_t pre_keypad_bitmaps = 0;
 
+#ifdef TRIMUI
+extern int FB_W;
+extern int FB_H;
+#endif
+
 const SDL_Scancode code[]={
     SDLK_UP,            // UP
     SDLK_DOWN,          // DOWN

@@ -721,7 +721,7 @@ static int draw_drastic_menu_cheat(void)
             cnt+= 1;
             draw_info(nds.menu.drastic.main, p->msg, w / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             if (p->cheat && nds.menu.drastic.yes && nds.menu.drastic.no) {
-                rt.x = (FB_W - nds.menu.drastic.yes->w - w) / div;
+                rt.x = FB_W - nds.menu.drastic.yes->w - (w / div);
                 rt.y = y - 1;
                 rt.w = 0;
                 rt.h = 0;
@@ -1811,16 +1811,7 @@ void GFX_Init(void)
 
     t = IMG_Load(DRASTIC_MENU_BG_FILE);
     if (t) {
-#ifdef MMIYOO
         nds.menu.drastic.bg = SDL_ConvertSurface(t, cvt->format, 0);
-#endif
-
-#ifdef TRIMUI
-        nds.menu.drastic.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
-        if (nds.menu.drastic.bg) {
-            SDL_SoftStretch(t, NULL, nds.menu.drastic.bg, NULL);
-        }
-#endif
         printf(PREFIX"drastic menu bg: %p\n", nds.menu.drastic.bg);
         SDL_FreeSurface(t);
     }
@@ -1836,7 +1827,7 @@ void GFX_Init(void)
     t = IMG_Load(DRASTIC_MENU_CURSOR_FILE);
     if (t) {
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-        nds.menu.drastic.cursor = NULL; //SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        nds.menu.drastic.cursor = NULL; // SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.cursor) {
             SDL_SoftStretch(t, NULL, t, &nrt);
             SDL_BlitSurface(t, NULL, nds.menu.drastic.cursor, &nrt);
@@ -2838,8 +2829,10 @@ VideoBootStrap MMIYOO_bootstrap = {MMIYOO_DRIVER_NAME, "MMIYOO VIDEO DRIVER", MM
 
 int MMIYOO_VideoInit(_THIS)
 {
+#ifdef MMIYOO
     FILE *fd = NULL;
     char buf[MAX_PATH] = {0};
+#endif
 
     SDL_DisplayMode mode={0};
     SDL_VideoDisplay display={0};
