@@ -17,6 +17,7 @@
        - [Mode 10 - 384x288, 256x192](#mode-10)
        - [Mode 11 - 384x288, 256x192](#mode-11)
        - [Mode 12 - 427x320, 427x320](#mode-12)
+       - [Mode 13 - 427x320, 427x320](#mode-13)
      - [Display Modes (High Resolution)](#display-modes-high-resolution)
        - [Mode 0 - 512x384](#mode-0)
        - [Mode 1 - 640x480](#mode-1)
@@ -57,14 +58,14 @@ In DraStic emulator, it only supports 3 display modes, which are vertical, horiz
 #### Display Modes (Normal Resolution)
 ##### Mode 0
 Screen Resolution: 640x480, 170x128
-| ![image](images/dis_0.png) |
+| ![image](images/640x480/dis_0.png) |
 |-|
 
 &nbsp;
 
 ##### Mode 1
 Screen Resolution: 640x480, 256x192
-| ![image](images/dis_1.png) |
+| ![image](images/640x480/dis_1.png) |
 |-|
 
 &nbsp;
@@ -72,14 +73,14 @@ Screen Resolution: 640x480, 256x192
 ##### Mode 2
 Screen Resolution: 512x384  
 Background Image: bg_s0.png
-| ![image](images/dis_2.png) |
+| ![image](images/640x480/dis_2.png) |
 |-|
 
 &nbsp;
 
 ##### Mode 3
 Screen Resolution: 640x480
-| ![image](images/dis_3.png) |
+| ![image](images/640x480/dis_3.png) |
 |-|
 
 &nbsp;
@@ -87,7 +88,7 @@ Screen Resolution: 640x480
 ##### Mode 4
 Screen Resolution: 256x192, 256x192  
 Background Image: bg_v0.png
-| ![image](images/dis_4.png) |
+| ![image](images/640x480/dis_4.png) |
 |-|
 
 &nbsp;
@@ -95,7 +96,7 @@ Background Image: bg_v0.png
 ##### Mode 5
 Screen Resolution: 320x240, 320x240  
 Background Image: bg_v1.png
-| ![image](images/dis_5.png) |
+| ![image](images/640x480/dis_5.png) |
 |-|
 
 &nbsp;
@@ -103,7 +104,7 @@ Background Image: bg_v1.png
 ##### Mode 6
 Screen Resolution: 256x192, 256x192  
 Background Image: bg_h0.png
-| ![image](images/dis_6.png) |
+| ![image](images/640x480/dis_6.png) |
 |-|
 
 &nbsp;
@@ -111,7 +112,7 @@ Background Image: bg_h0.png
 ##### Mode 7
 Screen Resolution: 320x240, 320x240  
 Background Image: bg_h1.png
-| ![image](images/dis_7.png) |
+| ![image](images/640x480/dis_7.png) |
 |-|
 
 &nbsp;
@@ -119,7 +120,7 @@ Background Image: bg_h1.png
 ##### Mode 8
 Screen Resolution: 480x360, 160x120  
 Background Image: bg_vh_s0.png
-| ![image](images/dis_8.png) |
+| ![image](images/640x480/dis_8.png) |
 |-|
 
 &nbsp;
@@ -127,7 +128,7 @@ Background Image: bg_vh_s0.png
 ##### Mode 9
 Screen Resolution: 384x288, 256x192  
 Background Image: bg_vh_s1.png
-| ![image](images/dis_9.png) |
+| ![image](images/640x480/dis_9.png) |
 |-|
 
 &nbsp;
@@ -135,7 +136,7 @@ Background Image: bg_vh_s1.png
 ##### Mode 10
 Screen Resolution: 384x288, 256x192  
 Background Image: bg_vh_c0.png
-| ![image](images/dis_10.png) |
+| ![image](images/640x480/dis_10.png) |
 |-|
 
 &nbsp;
@@ -143,7 +144,7 @@ Background Image: bg_vh_c0.png
 ##### Mode 11
 Screen Resolution: 384x288, 256x192  
 Background Image: bg_vh_c1.png
-| ![image](images/dis_11.png) |
+| ![image](images/640x480/dis_11.png) |
 |-|
 
 &nbsp;
@@ -151,7 +152,15 @@ Background Image: bg_vh_c1.png
 ##### Mode 12
 Screen Resolution: 427x320, 427x320  
 Background Image: bg_hh0.png
-| ![image](images/dis_12.png) |
+| ![image](images/640x480/dis_12.png) |
+|-|
+
+&nbsp;
+
+##### Mode 13
+Screen Resolution: 427x320, 427x320  
+Background Image: bg_hh0.png
+| ![image](images/640x480/dis_13.png) |
 |-|
 
 &nbsp;
@@ -160,52 +169,52 @@ Background Image: bg_hh0.png
 ##### Mode 0
 Screen Resolution: 512x384  
 Background Image: bg_hres0.png
-| ![image](images/hres_0.png) |
+| ![image](images/640x480/hres_0.png) |
 |-|
 
 &nbsp;
 
 ##### Mode 1
 Screen Resolution: 640x480
-| ![image](images/hres_1.png) |
+| ![image](images/640x480/hres_1.png) |
 |-|
 
 &nbsp;
 
 #### Video Filters
 ##### Pixel
-| ![image](images/filter_pixel.png) |
+| ![image](images/640x480/filter_pixel.png) |
 |-|
 
 &nbsp;
 
 ##### Blur
-| ![image](images/filter_blur.png) |
+| ![image](images/640x480/filter_blur.png) |
 |-|
 
 &nbsp;
 
 #### Refined Menu
 Original Main Menu
-| ![image](images/menu_2.png) |
+| ![image](images/640x480/menu_2.png) |
 |-|
 
 &nbsp;
 
 Refined Main Menu
-| ![image](images/menu_0.png) |
+| ![image](images/640x480/menu_0.png) |
 |-|
 
 &nbsp;
 
 Original Cheat Menu
-| ![image](images/menu_3.png) |
+| ![image](images/640x480/menu_3.png) |
 |-|
 
 &nbsp;
 
 Refined Cheat Menu
-| ![image](images/menu_1.png) |
+| ![image](images/640x480/menu_1.png) |
 |-|
 
 &nbsp;
@@ -292,7 +301,7 @@ $ sudo docker image rm mmiyoo
 
 ### Limitations
  - Screen orientation **MUST** be set as **vertical** in DraStic menu as the following image because all of display modes are handled by SDL2 library, not DraStic emulator  
-![image](images/setting_0.png)  
+![image](images/640x480/setting_0.png)
 
 &nbsp;
 
@@ -428,4 +437,11 @@ The resolution must be 400x150 pixels.
 ```
 Turn on "Hight-resolution 3D" settings in DraStic menu.
 The display resolution will be changed as 512x384 pixels.
+```
+
+&nbsp;
+
+**Q15: How to run the DraStic emulator on 752x560 resolution ?**
+```
+Change "USE_752x560_RES=1" in launch.sh file. By default, it is set as 0 (640x480 resolution)
 ```
