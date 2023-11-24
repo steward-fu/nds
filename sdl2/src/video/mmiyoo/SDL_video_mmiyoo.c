@@ -1013,10 +1013,103 @@ static void *video_handler(void *threadid)
     pthread_exit(NULL);
 }
 
-static int read_config(void)
+static int lang_unload(void)
+{
+    int cc = 0;
+
+    for (cc=0; translate[cc]; cc++) {
+        if (translate[cc]) {
+            free(translate[cc]);
+        }
+        translate[cc] = NULL;
+    }
+    memset(translate, 0, sizeof(translate));
+    return 0;
+}
+
+static int lang_load(const char *lang)
 {
     FILE *f = NULL;
     char buf[MAX_PATH] = {0};
+
+    if (strcasecmp(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG)) {
+        sprintf(buf, "%s/%s", nds.lang_path, lang);
+        f = fopen(buf, "r");
+
+        if (f != NULL) {
+            int cc = 0, len = 0;
+
+            memset(buf, 0, sizeof(buf));
+            while (fgets(buf, sizeof(buf), f)) {
+                strip_newline(buf);
+                len = strlen(buf) + 2;
+                if (len == 0) {
+                    continue;
+                }
+
+                if (translate[cc] != NULL) {
+                    free(translate[cc]);
+                }
+                translate[cc] = malloc(len);
+                if (translate[cc] != NULL) {
+                    memcpy(translate[cc], buf, len);
+                    printf(PREFIX"Translate: \'%s\'(len=%d)\n", translate[cc], len);
+                }
+                cc+= 1;
+                if (cc >= MAX_LANG_LINE) {
+                    break;
+                }
+                memset(buf, 0, sizeof(buf));
+            }
+            fclose(f);
+        }
+        else {
+            printf(PREFIX"failed to open lang folder \'%s\'\n", nds.lang_path);
+        }
+    }
+    return 0;
+}
+
+static void lang_enum(void)
+{
+    int idx = 2;
+    DIR *d = NULL;
+    struct dirent *dir = NULL;
+
+    memset(nds.lang_path, 0, sizeof(nds.lang_path));
+    if (getcwd(nds.lang_path, sizeof(nds.lang_path))) {
+        strcat(nds.lang_path, "/");
+        strcat(nds.lang_path, LANG_PATH);
+    }
+
+    strcpy(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG);
+    strcpy(nds.lang[DEF_LANG_SLOT + 1], DEF_LANG_LANG);
+    d = opendir(nds.lang_path);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (dir->d_type == DT_DIR) {
+                continue;
+            }
+            if (strcmp(dir->d_name, ".") == 0) {
+                continue;
+            }
+            if (strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+
+            printf(PREFIX"found lang \'lang[%d]=%s\'\n", idx, dir->d_name);
+            strcpy(nds.lang[idx], dir->d_name);
+            idx+= 1;
+            if (idx >= MAX_LANG_FILE) {
+                break;
+            }
+        }
+        closedir(d);
+    }
+}
+
+static int read_config(void)
+{
     struct json_object *jval = NULL;
     struct json_object *jfile = NULL;
 
@@ -1211,45 +1304,14 @@ static int read_config(void)
         printf(PREFIX"[json] nds.auto_slot: %d\n", nds.auto_slot);
     }
 
+    lang_enum();
     json_object_object_get_ex(jfile, JSON_NDS_LANG, &jval);
     if (jval) {
         const char *lang = json_object_get_string(jval);
 
         printf(PREFIX"[json] nds.lang: %s\n", lang);
-        if (strcasecmp(lang, "en") == 0) {
-            nds.lang = NDS_LANG_EN;
-        }
-        else {
-            sprintf(buf, "%s/%s", TRANSLATE_PATH, lang); 
-            f = fopen(buf, "r");
-            if (f != NULL) {
-                int cc = 0, len = 0;
-
-                memset(buf, 0, sizeof(buf));
-                while (fgets(buf, sizeof(buf), f)) {
-                    strip_newline(buf);
-                    len = strlen(buf) + 2;
-                    if (len == 0) {
-                        continue;
-                    }
-                    translate[cc] = malloc(len);
-                    if (translate[cc] != NULL) {
-                        memcpy(translate[cc], buf, len);
-                        //printf(PREFIX"Translate: \'%s\'(len=%d)\n", translate[cc], len);
-                    }
-                    cc+= 1;
-                    if (cc >= MAX_LANG_LINE) {
-                        break;
-                    }
-                    memset(buf, 0, sizeof(buf));
-                }
-                fclose(f);
-                nds.lang = !NDS_LANG_EN;
-            }
-            else {
-                nds.lang = NDS_LANG_EN;
-            }
-        }
+        strcpy(nds.lang[DEF_LANG_SLOT], lang);
+        lang_load(lang);
     }
 
     reload_pen();
@@ -1293,6 +1355,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_OVERLAY, json_object_new_int(nds.overlay.sel));
     json_object_object_add(jfile, JSON_NDS_ALT_MODE, json_object_new_int(nds.alt_mode));
     json_object_object_add(jfile, JSON_NDS_KEYS_90D, json_object_new_int(nds.keys_90d));
+    json_object_object_add(jfile, JSON_NDS_LANG, json_object_new_string(nds.lang[DEF_LANG_SLOT]));
 
     json_object_to_file_ext(nds.cfg_path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -2413,7 +2476,7 @@ const char *to_lang(const char *p)
     const char *info = p;
     int cc = 0, r = 0, len = 0;
     
-    if ((nds.lang == NDS_LANG_EN) || (p == NULL)) {
+    if (!strcmp(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG) || (p == NULL)) {
         return p;
     }
 
@@ -2954,8 +3017,6 @@ static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMo
 
 void MMIYOO_VideoQuit(_THIS)
 {
-    int cc = 0;
-
     printf(PREFIX"MMIYOO_VideoQuit\n");
     printf(PREFIX"wait for savestate complete\n");
     while (savestate_busy) {
@@ -3036,11 +3097,7 @@ void MMIYOO_VideoQuit(_THIS)
     TTF_Quit();
     GFX_Quit();
     MMIYOO_EventDeinit();
-
-    for (cc=0; translate[cc]; cc++) {
-        free(translate[cc]);
-        translate[cc] = NULL;
-    }
+    lang_unload();
 }
 
 #ifdef MMIYOO
@@ -3124,40 +3181,77 @@ static const char *DPAD[] = {
     "0°", "90°", "270°"
 };
 
+static int lang_next(void)
+{
+    int cc = 0;
+
+    for (cc=1; cc<(MAX_LANG_FILE-1); cc++) {
+        if (!strcmp(nds.lang[DEF_LANG_SLOT], nds.lang[cc])) {
+            if (strcmp(nds.lang[cc + 1], "")) {
+                strcpy(nds.lang[DEF_LANG_SLOT], nds.lang[cc + 1]);
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
+static int lang_prev(void)
+{
+    int cc = 0;
+
+    for (cc=(MAX_LANG_FILE-1); cc>1; cc--) {
+        if (!strcmp(nds.lang[DEF_LANG_SLOT], nds.lang[cc])) {
+            if (strcmp(nds.lang[cc - 1], "")) {
+                strcpy(nds.lang[DEF_LANG_SLOT], nds.lang[cc - 1]);
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
 int handle_menu(int key)
 {
     static int cur_sel = 0;
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
+    static char pre_lang[LANG_FILE_LEN] = {0};
 
     const int SX = nds.enable_752x560 ? 200 : 150;
     const int SY = nds.enable_752x560 ? 120 : 107;
     const int SSX = nds.enable_752x560 ? 410 : 385;
-    const int MENU_CPU = 0;
-    const int MENU_OVERLAY = 1;
-    const int MENU_DIS = 2;
-    const int MENU_DIS_ALPHA = 3;
-    const int MENU_DIS_BORDER = 4;
-    const int MENU_DIS_POSITION = 5;
-    const int MENU_ALT = 6;
-    const int MENU_KEYS = 7;
-    const int MENU_LAST = 7;
+    const int MENU_LANG = 0;
+    const int MENU_CPU = 1;
+    const int MENU_OVERLAY = 2;
+    const int MENU_DIS = 3;
+    const int MENU_DIS_ALPHA = 4;
+    const int MENU_DIS_BORDER = 5;
+    const int MENU_DIS_POSITION = 6;
+    const int MENU_ALT = 7;
+    const int MENU_KEYS = 8;
+    const int MENU_LAST = 8;
 
     char buf[MAX_PATH] = {0};
     SDL_Rect rt = {0};
     int sx = 0;
     int sy = 0;
     int pre_w = 0;
-    int h = LINE_H; //get_font_height(" ") + 9;
+    int h = LINE_H;
     uint32_t sel_col = 0xffff00;
     uint32_t unsel_col = 0x666600;
     uint32_t dis_col = 0x666666;
     uint32_t val_col = 0xff0000;
     uint32_t col0 = 0, col1 = 0, dis_mode = 0;
 
+    if (pre_lang[0] == 0) {
+        printf(PREFIX"prelang \'%s\'\n", nds.lang[DEF_LANG_SLOT]);
+        strcpy(pre_lang, nds.lang[DEF_LANG_SLOT]);
+    }
     if (pre_cpuclock == 0) {
         cur_cpuclock = pre_cpuclock = get_cpuclock();
     }
+
     switch (key) {
     case MYKEY_UP:
         if (cur_sel > 0) {
@@ -3171,6 +3265,9 @@ int handle_menu(int key)
         break;
     case MYKEY_LEFT:
         switch(cur_sel) {
+        case MENU_LANG:
+            lang_prev();
+            break;
         case MENU_CPU:
             if (cur_cpuclock > nds.mincpu) {
                 cur_cpuclock-= 50;
@@ -3226,6 +3323,9 @@ int handle_menu(int key)
         break;
     case MYKEY_RIGHT:
         switch(cur_sel) {
+        case MENU_LANG:
+            lang_next();
+            break;
         case MENU_CPU:
             if (cur_cpuclock < nds.maxcpu) {
                 cur_cpuclock+= 50;
@@ -3284,12 +3384,31 @@ int handle_menu(int key)
             set_cpuclock(cur_cpuclock);
             pre_cpuclock = cur_cpuclock;
         }
+
+        if (strcmp(pre_lang, nds.lang[DEF_LANG_SLOT])) {
+            printf(PREFIX"update language as \'%s\'\n", nds.lang[DEF_LANG_SLOT]);
+            lang_unload();
+            lang_load(nds.lang[DEF_LANG_SLOT]);
+            memset(pre_lang, 0, sizeof(pre_lang));
+        }
         nds.menu.enable = 0;
         return 0;
     }
 
     dis_mode = nds.dis_mode;
     SDL_SoftStretch(nds.menu.bg, NULL, cvt, NULL);
+
+    if (cur_sel == MENU_LANG) {
+        col0 = sel_col;
+        col1 = val_col;
+    }
+    else {
+        col0 = unsel_col;
+        col1 = unsel_col;
+    }
+    draw_info(cvt, to_lang("Language"), SX, SY + (h * MENU_LANG), col0, 0);
+    sprintf(buf, "%s", nds.lang[DEF_LANG_SLOT]);
+    draw_info(cvt, buf, SSX, SY + (h * MENU_LANG), col1, 0);
 
     if (cur_sel == MENU_CPU) {
         col0 = sel_col;

@@ -81,6 +81,7 @@
 #define CFG_PATH                    "resources/settings.json"
 #define THEME_PATH                  "resources/bg"
 #define PEN_PATH                    "resources/pen"
+#define LANG_PATH                   "resources/lang"
 #define OVERLAY_PATH                "resources/overlay"
 #define MENU_BG_FILE                "resources/menu/bg.png"
 #define MENU_CURSOR_FILE            "resources/menu/cursor.png"
@@ -88,7 +89,6 @@
 #define DRASTIC_MENU_YES_FILE       "resources/menu/drastic_yes.png"
 #define DRASTIC_MENU_NO_FILE        "resources/menu/drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "resources/menu/drastic_cursor.png"
-#define TRANSLATE_PATH              "resources/translate"
 #define MMIYOO_DRIVER_NAME          "mmiyoo"
 #define BASE_REG_RIU_PA             0x1f000000
 #define BASE_REG_MPLL_PA            (BASE_REG_RIU_PA + 0x103000 * 2)
@@ -173,8 +173,10 @@
 #endif
 #define MAX_QUEUE                   2
 
-#define NDS_LANG_EN                 0
-
+#define DEF_LANG_SLOT               0
+#define DEF_LANG_LANG               "english"
+#define LANG_FILE_LEN               16
+#define MAX_LANG_FILE               32
 #define MAX_LANG_LINE               128
 #define MAX_MENU_LINE               128
 
@@ -240,7 +242,6 @@ typedef struct _GFX {
 } GFX;
 
 typedef struct _NDS {
-    int lang;
     int mincpu;
     int maxcpu;
     int volume;
@@ -255,6 +256,8 @@ typedef struct _NDS {
     int auto_state;
     int enable_752x560;
     int defer_update_bg;
+    char lang[MAX_LANG_FILE][LANG_FILE_LEN];
+    char lang_path[MAX_PATH];
     char cfg_path[MAX_PATH];
 
     TTF_Font *font;
