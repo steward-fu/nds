@@ -61,7 +61,7 @@
 #endif
 
 #ifndef MAX_PATH
-    #define MAX_PATH 255
+    #define MAX_PATH 128
 #endif
 
 #ifdef MMIYOO

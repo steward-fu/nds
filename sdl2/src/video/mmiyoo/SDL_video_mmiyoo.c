@@ -1030,7 +1030,7 @@ static int lang_unload(void)
 static int lang_load(const char *lang)
 {
     FILE *f = NULL;
-    char buf[MAX_PATH] = {0};
+    char buf[MAX_PATH << 1] = {0};
 
     if (strcasecmp(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG)) {
         sprintf(buf, "%s/%s", nds.lang_path, lang);
@@ -1053,7 +1053,7 @@ static int lang_load(const char *lang)
                 translate[cc] = malloc(len);
                 if (translate[cc] != NULL) {
                     memcpy(translate[cc], buf, len);
-                    printf(PREFIX"Translate: \'%s\'(len=%d)\n", translate[cc], len);
+                    //printf(PREFIX"Translate: \'%s\'(len=%d)\n", translate[cc], len);
                 }
                 cc+= 1;
                 if (cc >= MAX_LANG_LINE) {
@@ -3101,74 +3101,6 @@ void MMIYOO_VideoQuit(_THIS)
 }
 
 #ifdef MMIYOO
-static const char *DIS_MODE0_640[] = {
-    "640*480",
-    "640*480",
-    "512*384",
-    "640*480",
-    "256*192",
-    "320*240",
-    "256*192",
-    "320*240",
-    "480*360",
-    "384*288",
-    "384*288",
-    "384*288",
-    "427*320",
-    "427*320"
-};
-
-static const char *DIS_MODE1_640[] = {
-    "170*128",
-    "256*192",
-    "",
-    "",
-    "256*192",
-    "320*240",
-    "256*192",
-    "320*240",
-    "160*120",
-    "256*192",
-    "256*192",
-    "256*192",
-    "427*320",
-    "427*320",
-};
-
-static const char *DIS_MODE0_752[] = {
-    "752*560",
-    "752*560",
-    "512*384",
-    "752*560",
-    "256*192",
-    "373*280",
-    "256*192",
-    "373*280",
-    "592*440",
-    "496*368",
-    "496*368",
-    "496*368",
-    "501*376",
-    "501*376"
-};
-
-static const char *DIS_MODE1_752[] = {
-    "170*128",
-    "256*192",
-    "",
-    "",
-    "256*192",
-    "373*280",
-    "256*192",
-    "373*280",
-    "160*120",
-    "256*192",
-    "256*192",
-    "256*192",
-    "501*376",
-    "501*376",
-};
-
 static const char *POS[] = {
     "Top-Right", "Top-Left", "Bottom-Left", "Bottom-Right"
 };
@@ -3179,6 +3111,18 @@ static const char *BORDER[] = {
 
 static const char *DPAD[] = {
     "0°", "90°", "270°"
+};
+
+static const char *MENU_ITEM[] = {
+    "Language",
+    "CPU",
+    "Overlay",
+    "Display",
+    "Alpha",
+    "Border",
+    "Position",
+    "Alt. Display",
+    "Keys"
 };
 
 static int lang_next(void)
@@ -3213,6 +3157,17 @@ static int lang_prev(void)
 
 int handle_menu(int key)
 {
+    #define MENU_LANG           0
+    #define MENU_CPU            1
+    #define MENU_OVERLAY        2
+    #define MENU_DIS            3
+    #define MENU_DIS_ALPHA      4
+    #define MENU_DIS_BORDER     5
+    #define MENU_DIS_POSITION   6
+    #define MENU_ALT            7
+    #define MENU_KEYS           8
+    #define MENU_LAST           8
+
     static int cur_sel = 0;
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
@@ -3221,31 +3176,24 @@ int handle_menu(int key)
     const int SX = nds.enable_752x560 ? 200 : 150;
     const int SY = nds.enable_752x560 ? 120 : 107;
     const int SSX = nds.enable_752x560 ? 410 : 385;
-    const int MENU_LANG = 0;
-    const int MENU_CPU = 1;
-    const int MENU_OVERLAY = 2;
-    const int MENU_DIS = 3;
-    const int MENU_DIS_ALPHA = 4;
-    const int MENU_DIS_BORDER = 5;
-    const int MENU_DIS_POSITION = 6;
-    const int MENU_ALT = 7;
-    const int MENU_KEYS = 8;
-    const int MENU_LAST = 8;
 
-    char buf[MAX_PATH] = {0};
-    SDL_Rect rt = {0};
+    int cc = 0;
     int sx = 0;
     int sy = 0;
-    int pre_w = 0;
+    int s0 = 0;
+    int s1 = 0;
+    int idx = 0;
     int h = LINE_H;
+    int dis_mode = -1;
+    SDL_Rect rt = {0};
+    char buf[MAX_PATH] = {0};
     uint32_t sel_col = 0xffff00;
     uint32_t unsel_col = 0x666600;
     uint32_t dis_col = 0x666666;
     uint32_t val_col = 0xff0000;
-    uint32_t col0 = 0, col1 = 0, dis_mode = 0;
+    uint32_t col0 = 0, col1 = 0;
 
     if (pre_lang[0] == 0) {
-        printf(PREFIX"prelang \'%s\'\n", nds.lang[DEF_LANG_SLOT]);
         strcpy(pre_lang, nds.lang[DEF_LANG_SLOT]);
     }
     if (pre_cpuclock == 0) {
@@ -3386,7 +3334,6 @@ int handle_menu(int key)
         }
 
         if (strcmp(pre_lang, nds.lang[DEF_LANG_SLOT])) {
-            printf(PREFIX"update language as \'%s\'\n", nds.lang[DEF_LANG_SLOT]);
             lang_unload();
             lang_load(nds.lang[DEF_LANG_SLOT]);
             memset(pre_lang, 0, sizeof(pre_lang));
@@ -3395,156 +3342,140 @@ int handle_menu(int key)
         return 0;
     }
 
-    dis_mode = nds.dis_mode;
-    SDL_SoftStretch(nds.menu.bg, NULL, cvt, NULL);
-
-    if (cur_sel == MENU_LANG) {
-        col0 = sel_col;
-        col1 = val_col;
-    }
-    else {
-        col0 = unsel_col;
-        col1 = unsel_col;
-    }
-    draw_info(cvt, to_lang("Language"), SX, SY + (h * MENU_LANG), col0, 0);
-    sprintf(buf, "%s", nds.lang[DEF_LANG_SLOT]);
-    draw_info(cvt, buf, SSX, SY + (h * MENU_LANG), col1, 0);
-
-    if (cur_sel == MENU_CPU) {
-        col0 = sel_col;
-        col1 = val_col;
-    }
-    else {
-        col0 = unsel_col;
-        col1 = unsel_col;
-    }
-    draw_info(cvt, to_lang("CPU"), SX, SY + (h * MENU_CPU), col0, 0);
-    sprintf(buf, "%dMHz", cur_cpuclock);
-    draw_info(cvt, buf, SSX, SY + (h * MENU_CPU), col1, 0);
-
-    if (cur_sel == MENU_OVERLAY) {
-        col0 = sel_col;
-        col1 = val_col;
-    }
-    else {
-        col0 = unsel_col;
-        col1 = unsel_col;
-    }
-    draw_info(cvt, to_lang("Overlay"), SX, SY + (h * MENU_OVERLAY), col0, 0);
-    if (nds.overlay.sel < nds.overlay.max) {
-        get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
-        reload_overlay();
-    }
-    else {
-        sprintf(buf, to_lang("None"));
-    }
-    draw_info(cvt, buf, SSX, SY + (h * MENU_OVERLAY), col1, 0);
-
     if (cur_sel == MENU_DIS) {
-        col0 = sel_col;
-        col1 = val_col;
+        dis_mode = nds.dis_mode;
     }
-    else {
-        col0 = unsel_col;
-        col1 = unsel_col;
-    }
-    draw_info(cvt, to_lang("Display"), SX, SY + (h * MENU_DIS), col0, 0);
-    if (nds.hres_mode == 0) {
-        sprintf(buf, "[%02d] %s", nds.dis_mode, nds.enable_752x560 ? DIS_MODE0_752[nds.dis_mode] : DIS_MODE0_640[nds.dis_mode]);
-    }
-    else {
-        sprintf(buf, "[%02d] %s", nds.dis_mode, nds.dis_mode == NDS_DIS_MODE_HRES0 ? "512*384" : (nds.enable_752x560 ? "752x560" : "640*480"));
-    }
-    pre_w = get_font_width(buf);
-    draw_info(cvt, buf, SSX, SY + (h * MENU_DIS), col1, 0);
-    if (nds.hres_mode == 0) {
-        sprintf(buf, "%s", nds.enable_752x560 ? DIS_MODE1_752[nds.dis_mode] : DIS_MODE1_640[nds.dis_mode]);
-    }
-    draw_info(cvt, buf, SSX + (pre_w - get_font_width(buf)), SY + (h * (MENU_DIS + 1)), col1, 0);
-
-    if ((cur_sel == MENU_DIS_ALPHA) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-        col0 = sel_col;
-        col1 = val_col;
-    }
-    else {
-        if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-            col0 = unsel_col;
-            col1 = unsel_col;
-        }
-        else {
-            col0 = dis_col;
-            col1 = dis_col;
-        }
-    }
-    draw_info(cvt, to_lang("Alpha"), SX + 20, SY + (h * MENU_DIS_ALPHA), col0, 0);
-    sprintf(buf, "%d", nds.alpha.val);
-    draw_info(cvt, buf, SSX, SY + (h * MENU_DIS_ALPHA), col1, 0);
-    
-    if ((cur_sel == MENU_DIS_BORDER) && (nds.alpha.val > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-        col0 = sel_col;
-        col1 = val_col;
-    }
-    else {
-        if ((nds.alpha.val > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-            col0 = unsel_col;
-            col1 = unsel_col;
-        }
-        else {
-            col0 = dis_col;
-            col1 = dis_col;
-        }
-    }
-    draw_info(cvt, to_lang("Border"), SX + 20, SY + (h * MENU_DIS_BORDER), col0, 0);
-    sprintf(buf, "%s", to_lang(BORDER[nds.alpha.border]));
-    draw_info(cvt, buf, SSX, SY + (h * MENU_DIS_BORDER), col1, 0);
-    
-    if ((cur_sel == MENU_DIS_POSITION) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-        col0 = sel_col;
-        col1 = val_col;
-    }
-    else {
-        if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-            col0 = unsel_col;
-            col1 = unsel_col;
-        }
-        else {
-            col0 = dis_col;
-            col1 = dis_col;
-        }
-    }
-    draw_info(cvt, to_lang("Position"), SX + 20, SY + (h * MENU_DIS_POSITION), col0, 0);
-    sprintf(buf, "%s", to_lang(POS[nds.alpha.pos]));
-    draw_info(cvt, buf, SSX, SY + (h * MENU_DIS_POSITION), col1, 0);
-    
     if (cur_sel == MENU_ALT) {
-        col0 = sel_col;
-        col1 = val_col;
         dis_mode = nds.alt_mode;
     }
-    else {
-        col0 = unsel_col;
-        col1 = unsel_col;
-    }
-    draw_info(cvt, to_lang("Alt. Display"), SX, SY + (h * MENU_ALT), col0, 0);
-    sprintf(buf, "[%02d] %s", nds.alt_mode, nds.enable_752x560 ? DIS_MODE0_752[nds.alt_mode] : DIS_MODE0_640[nds.alt_mode]);
-    pre_w = get_font_width(buf);
-    draw_info(cvt, buf, SSX, SY + (h * MENU_ALT), col1, 0);
-    if (nds.hres_mode == 0) {
-        sprintf(buf, "%s", nds.enable_752x560 ? DIS_MODE1_752[nds.alt_mode] : DIS_MODE1_640[nds.alt_mode]);
-    }
-    draw_info(cvt, buf, SSX + (pre_w - get_font_width(buf)), SY + (h * (MENU_ALT + 1)), col1, 0);
+    SDL_SoftStretch(nds.menu.bg, NULL, cvt, NULL);
 
-    if (cur_sel == MENU_KEYS) {
-        col0 = sel_col;
-        col1 = val_col;
+    if (cur_sel < 3) {
+        s0 = 0;
+        s1 = 7;
+    }
+    else if (cur_sel >= (MENU_LAST - 3)) {
+        s0 = MENU_LAST - 7;
+        s1 = MENU_LAST;
     }
     else {
-        col0 = unsel_col;
-        col1 = unsel_col;
+        s0 = cur_sel - 3;
+        s1 = cur_sel + 4;
     }
-    draw_info(cvt, to_lang("Keys"), SX, SY + (h * MENU_KEYS), col0, 0);
-    sprintf(buf, "%s", DPAD[nds.keys_90d % 3]);
-    draw_info(cvt, buf, SSX, SY + (h * MENU_KEYS), col1, 0);
+
+    for (cc=0, idx=0; cc<=MENU_LAST; cc++) {
+        if ((cc < s0) || (cc > s1)) {
+            continue;
+        }
+
+        switch (cc) {
+        case MENU_DIS_ALPHA:
+            sx = 20;
+            if ((cur_sel == MENU_DIS_ALPHA) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
+                col0 = sel_col;
+                col1 = val_col;
+            }
+            else {
+                if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
+                    col0 = unsel_col;
+                    col1 = unsel_col;
+                }
+                else {
+                    col0 = dis_col;
+                    col1 = dis_col;
+                }
+            }
+            break;
+        case MENU_DIS_BORDER:
+            sx = 20;
+            if ((cur_sel == MENU_DIS_BORDER) && (nds.alpha.val > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
+                col0 = sel_col;
+                col1 = val_col;
+            }
+            else {
+                if ((nds.alpha.val > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
+                    col0 = unsel_col;
+                    col1 = unsel_col;
+                }
+                else {
+                    col0 = dis_col;
+                    col1 = dis_col;
+                }
+            }
+            break;
+        case MENU_DIS_POSITION:
+            sx = 20;
+            if ((cur_sel == MENU_DIS_POSITION) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
+                col0 = sel_col;
+                col1 = val_col;
+            }
+            else {
+                if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
+                    col0 = unsel_col;
+                    col1 = unsel_col;
+                }
+                else {
+                    col0 = dis_col;
+                    col1 = dis_col;
+                }
+            }
+            break;
+        default:
+            sx = 0;
+            col0 = (cur_sel == cc) ? sel_col : unsel_col;
+            col1 = (cur_sel == cc) ? val_col : unsel_col;
+            break;
+        }
+        draw_info(cvt, to_lang(MENU_ITEM[cc]), SX + sx, SY + (h * idx), col0, 0);
+
+        sx = 0;
+        switch (cc) {
+        case MENU_LANG:
+            sprintf(buf, "%s", nds.lang[DEF_LANG_SLOT]);
+            break;
+        case MENU_CPU:
+            sprintf(buf, "%dMHz", cur_cpuclock);
+            break;
+        case MENU_OVERLAY:
+            if (nds.overlay.sel < nds.overlay.max) {
+                get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
+                reload_overlay();
+            }
+            else {
+                sprintf(buf, to_lang("None"));
+            }
+            break;
+        case MENU_DIS:
+            sprintf(buf, "Mode %02d", nds.dis_mode);
+            break;
+        case MENU_DIS_ALPHA:
+            sx = 20;
+            sprintf(buf, "%d", nds.alpha.val);
+            break;
+        case MENU_DIS_BORDER:
+            sx = 20;
+            sprintf(buf, "%s", to_lang(BORDER[nds.alpha.border]));
+            break;
+        case MENU_DIS_POSITION:
+            sx = 20;
+            sprintf(buf, "%s", to_lang(POS[nds.alpha.pos]));
+            break;
+        case MENU_ALT:
+            sprintf(buf, "Mode %02d", nds.alt_mode);
+            break;
+        case MENU_KEYS:
+            sprintf(buf, "%s", DPAD[nds.keys_90d % 3]);
+            break;
+        }
+        draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
+        idx+= 1;
+    }
+
+    if (nds.menu.cursor) {
+        rt.x = SX - (nds.enable_752x560 ? 75 : 60);
+        rt.y = SY + (h * (cur_sel - s0)) - (nds.menu.cursor->h / 3) - 2;
+        SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
+    }
 
     sx = nds.enable_752x560 ? 540 : 450;
     sy = nds.enable_752x560 ? 430 : 360;
@@ -3555,7 +3486,7 @@ int handle_menu(int key)
         rt.h = 96;
         SDL_SoftStretch(nds.overlay.img, NULL, cvt, &rt);
     }
-    else {
+    else if(dis_mode >= 0) {
         switch (dis_mode) {
         case NDS_DIS_MODE_VH_T0:
             rt.x = sx;
@@ -3788,7 +3719,6 @@ int handle_menu(int key)
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_HH0:
-        case NDS_DIS_MODE_HH1:
             rt.x = sx;
             rt.y = sy;
             rt.w = 128;
@@ -3806,6 +3736,25 @@ int handle_menu(int key)
             rt.x = sx + (128 - rt.w);
             rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+            break;
+        case NDS_DIS_MODE_HH1:
+            rt.x = sx;
+            rt.y = sy;
+            rt.w = 128;
+            rt.h = 96;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
+
+            rt.w = 64;
+            rt.h = 85;
+            rt.x = sx;
+            rt.y = sy + ((96 - rt.h) / 2);
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+
+            rt.w = 64;
+            rt.h = 85;
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy + ((96 - rt.h) / 2);
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             break;
         case NDS_DIS_MODE_HRES0:
             rt.x = sx;
@@ -3828,12 +3777,6 @@ int handle_menu(int key)
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             break;
         }
-    }
-
-    if (nds.menu.cursor) {
-        rt.x = SX - (nds.enable_752x560 ? 75 : 60);
-        rt.y = SY + (h * cur_sel) - (nds.menu.cursor->h / 3) - 2;
-        SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
     }
 
     GFX_Copy(cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
