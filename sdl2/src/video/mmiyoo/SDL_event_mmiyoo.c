@@ -363,7 +363,7 @@ int EventUpdate(void *data)
 
 #ifdef TRIMUI
                         nds.dis_mode = NDS_DIS_MODE_S1;
-                        disp_resize(24, 32, 192, 256);
+                        disp_resize();
 #endif
                         set_key(MYKEY_UP, 0);
                     }
@@ -377,7 +377,7 @@ int EventUpdate(void *data)
 
 #ifdef TRIMUI
                         nds.dis_mode = NDS_DIS_MODE_S0;
-                        disp_resize(0, 0, FB_H, FB_W);
+                        disp_resize();
 #endif
                         set_key(MYKEY_DOWN, 0);
                     }
@@ -438,6 +438,11 @@ int EventUpdate(void *data)
 
                     if (hit_hotkey(MYKEY_B)) {
                         down_scale = down_scale ? 0 : 1;
+#ifdef TRIMUI
+                        if (nds.dis_mode == NDS_DIS_MODE_S1) {
+                            disp_resize();
+                        }
+#endif
                         set_key(MYKEY_B, 0);
                     }
 

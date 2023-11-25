@@ -1331,13 +1331,7 @@ static int read_config(void)
     if ((nds.dis_mode != NDS_DIS_MODE_S0) && (nds.dis_mode != NDS_DIS_MODE_S1)) {
         nds.dis_mode = NDS_DIS_MODE_S0;
     }
-
-    if (nds.dis_mode == NDS_DIS_MODE_S0) {
-        disp_resize(0, 0, FB_H, FB_W);
-    }
-    else {
-        disp_resize(24, 32, 192, 256);
-    }
+    disp_resize();
 #endif
     return 0;
 }
@@ -1737,7 +1731,7 @@ int fb_init(void)
     gfx.hw.disp.enable = 0;
     ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
 
-    gfx.hw.ion.size = FB_W * FB_H * FB_BPP * 2;
+    gfx.hw.ion.size = ION_W * ION_H * FB_BPP * 2;
     ion_alloc(gfx.ion_dev, &gfx.hw.ion);
 
     gfx.hw.buf.channel = SCALER_CH;
@@ -1797,14 +1791,32 @@ int fb_uninit(void)
     return 0;
 }
 
-void disp_resize(int x, int y, int w, int h)
+void disp_resize(void)
 {
     int r = 0;
     uint32_t args[4] = {0, (uintptr_t)&gfx.hw.buf, 1, 0};
 
     ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
-    gfx.hw.buf.info.fb.crop.width  = (uint64_t)w << 32;
-    gfx.hw.buf.info.fb.crop.height = (uint64_t)h << 32;
+    if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && (nds.dis_mode == NDS_DIS_MODE_S1)) {
+        if (down_scale) {
+            gfx.hw.buf.info.fb.size[0].width = ION_H;
+            gfx.hw.buf.info.fb.size[0].height = ION_W;
+            gfx.hw.buf.info.fb.crop.width  = (uint64_t)ION_H << 32;
+            gfx.hw.buf.info.fb.crop.height = (uint64_t)ION_W << 32;
+        }
+        else {
+            gfx.hw.buf.info.fb.size[0].width = FB_H;
+            gfx.hw.buf.info.fb.size[0].height = FB_W;
+            gfx.hw.buf.info.fb.crop.width  = (uint64_t)192 << 32;
+            gfx.hw.buf.info.fb.crop.height = (uint64_t)256 << 32;
+        }
+    }
+    else {
+        gfx.hw.buf.info.fb.size[0].width = FB_H;
+        gfx.hw.buf.info.fb.size[0].height = FB_W;
+        gfx.hw.buf.info.fb.crop.width  = (uint64_t)FB_H << 32;
+        gfx.hw.buf.info.fb.crop.height = (uint64_t)FB_W << 32;
+    }
     ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
     ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
 }
@@ -2124,8 +2136,9 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     int oy = 24;
     int sw = srcrect.w;
     int sh = srcrect.h;
+    uint32_t v = 0;
+    uint32_t *dst = NULL;
     uint32_t *src = (uint32_t *)pixels;
-    uint32_t *dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
 
     if (pixels == NULL) {
         return -1;
@@ -2141,16 +2154,31 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         oy = 0;
     }
 
-    if ((srcrect.w >= 320) || (srcrect.h >= 240)) {
-        ox = 0;
-        oy = 0;
-        sw = FB_W;
-        sh = FB_H;
+    if ((nds.dis_mode == NDS_DIS_MODE_S1) && (down_scale > 0)) {
+        dst = (uint32_t *)gfx.hw.ion.vadd + (ION_W * ION_H * gfx.fb.flip);
+        for (y = 0; y < sh; y++) {
+            for (x = 0; x < sw; x++) {
+                v = *src++;
+                dst[(((ION_W - 1) - ((x << 1) + 0)) * ION_H) + ((y << 1) + 0)] = v;
+                dst[(((ION_W - 1) - ((x << 1) + 1)) * ION_H) + ((y << 1) + 0)] = v;
+                dst[(((ION_W - 1) - ((x << 1) + 0)) * ION_H) + ((y << 1) + 1)] = v;
+                dst[(((ION_W - 1) - ((x << 1) + 1)) * ION_H) + ((y << 1) + 1)] = v;
+            }
+        }
     }
+    else {
+        if ((srcrect.w >= 320) || (srcrect.h >= 240)) {
+            ox = 0;
+            oy = 0;
+            sw = FB_W;
+            sh = FB_H;
+        }
 
-    for (y = 0; y < sh; y++) {
-        for (x = 0; x < sw; x++) {
-            dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = *src++;
+        dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
+        for (y = 0; y < sh; y++) {
+            for (x = 0; x < sw; x++) {
+                dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = *src++;
+            }
         }
     }
     return 0;
@@ -2455,8 +2483,18 @@ void GFX_Flip(void)
 #ifdef TRIMUI
     //int r = 0;
 
-    gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
-    gfx.hw.mem[OVL_V_TOP_LADD0 / 4] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
+    if (nds.dis_mode == NDS_DIS_MODE_S0) {
+        gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
+    }
+    else {
+        if (down_scale) {
+            gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (ION_W * ION_H * gfx.fb.flip));
+        }
+        else {
+            gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
+        }
+    }
+    gfx.hw.mem[OVL_V_TOP_LADD0 / 4] = gfx.hw.buf.info.fb.addr[0];
     //ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
     gfx.fb.flip^= 1;
 #endif
@@ -2720,12 +2758,7 @@ int reload_bg(void)
 
     if (pre_mode != nds.dis_mode) {
         pre_mode = nds.dis_mode;
-        if (nds.dis_mode == NDS_DIS_MODE_S0) {
-            disp_resize(0, 0, FB_H, FB_W);
-        }
-        else {
-            disp_resize(24, 32, 192, 256);
-        }
+        disp_resize();
     }
 
     if (pre_sel != nds.theme.sel) {

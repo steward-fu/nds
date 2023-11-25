@@ -67,6 +67,7 @@ extern int FB_H;
 extern int FB_SIZE;
 extern int TMP_SIZE;
 extern int show_fps;
+extern int down_scale;
 
 int need_reload_bg = 0;
 static int threading_mode = 0;
@@ -280,6 +281,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     static int cur_dis_mode = 0;
     static int cur_touchpad = 0;
     static int cur_theme_sel = 0;
+    static int cur_down_scale = 0;
 
     int alpha = 0;
     int pitch = 0;
@@ -309,6 +311,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         (cur_touchpad != nds.pen.pos) ||
         (cur_dis_mode != nds.dis_mode) ||
         (cur_theme_sel != nds.theme.sel) ||
+        (cur_down_scale != down_scale) ||
         (cur_volume != nds.volume))
     {
         if (cur_fb_w != FB_W) {
@@ -329,6 +332,10 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
                 sprintf(show_info_buf, " %s %d ", to_lang("Wallpaper"), nds.theme.sel);
             }
         }
+        else if (cur_down_scale != down_scale) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s ", to_lang(down_scale ? "Pixel" : "Blur"));
+        }
 
         cur_w = src.w;
         cur_fb_w = FB_W;
@@ -336,6 +343,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         cur_volume = nds.volume;
         cur_dis_mode = nds.dis_mode;
         cur_touchpad = nds.pen.pos;
+        cur_down_scale = down_scale;
         need_reload_bg = RELOAD_BG_COUNT;
     }
 
@@ -376,7 +384,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
 #ifdef TRIMUI
         if (nds.dis_mode != NDS_DIS_MODE_S0) {
             nds.dis_mode = NDS_DIS_MODE_S0;
-            disp_resize(0, 0, FB_H, FB_W);
+            disp_resize();
         }
 #endif
 

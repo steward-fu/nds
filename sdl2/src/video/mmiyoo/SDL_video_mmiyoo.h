@@ -72,7 +72,10 @@
 #ifdef TRIMUI
     #define DEF_FB_W                320
     #define DEF_FB_H                240
+    #define ION_W                   512
+    #define ION_H                   384
 #endif
+
 #define FB_BPP                      4
 #define IMG_W                       640
 #define IMG_H                       480
@@ -363,7 +366,7 @@ int fb_uninit(void);
 int reload_bg(void);
 int reload_pen(void);
 int reload_overlay(void);
-void disp_resize(int x, int y, int w, int h);
+void disp_resize(void);
 
 int handle_menu(int key);
 int process_drastic_menu(void);
