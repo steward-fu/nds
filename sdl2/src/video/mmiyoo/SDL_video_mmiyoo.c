@@ -1328,6 +1328,7 @@ static int read_config(void)
     snd_nds_reload_config();
 
 #ifdef TRIMUI
+    down_scale = 0;
     if ((nds.dis_mode != NDS_DIS_MODE_S0) && (nds.dis_mode != NDS_DIS_MODE_S1)) {
         nds.dis_mode = NDS_DIS_MODE_S0;
     }
