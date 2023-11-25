@@ -445,3 +445,9 @@ The display resolution will be changed as 512x384 pixels.
 ```
 Change "USE_752x560_RES=1" in launch.sh file. By default, it is set as 0 (640x480 resolution)
 ```
+&nbsp;
+
+**Q16: How to fix it when DraStic emulator shows white or black screen ?**
+```
+Go to DraStic menu and then select "Restart Game"
+```
