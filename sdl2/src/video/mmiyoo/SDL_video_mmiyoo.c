@@ -1365,6 +1365,8 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_HOTKEY, json_object_new_int(nds.hotkey));
     json_object_object_add(jfile, JSON_NDS_SWAP_L1L2, json_object_new_int(nds.swap_l1l2));
     json_object_object_add(jfile, JSON_NDS_SWAP_R1R2, json_object_new_int(nds.swap_r1r2));
+    json_object_object_add(jfile, JSON_NDS_PEN_XV, json_object_new_int(nds.pen.xv));
+    json_object_object_add(jfile, JSON_NDS_PEN_YV, json_object_new_int(nds.pen.yv));
 
     json_object_to_file_ext(nds.cfg_path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -3162,9 +3164,6 @@ static int lang_prev(void)
 enum {
     MENU_LANG = 0,
     MENU_CPU,
-    MENU_HOTKEY,
-    MENU_SWAP_L1L2,
-    MENU_SWAP_R1R2,
     MENU_OVERLAY,
     MENU_DIS,
     MENU_DIS_ALPHA,
@@ -3172,15 +3171,17 @@ enum {
     MENU_DIS_POSITION,
     MENU_ALT,
     MENU_KEYS,
+    MENU_HOTKEY,
+    MENU_SWAP_L1L2,
+    MENU_SWAP_R1R2,
+    MENU_PEN_XV,
+    MENU_PEN_YV,
     MENU_LAST,
 };
 
 static const char *MENU_ITEM[] = {
     "Language",
     "CPU",
-    "Hotkey",
-    "Swap L1-L2",
-    "Swap R1-R2",
     "Overlay",
     "Display",
     "Alpha",
@@ -3188,6 +3189,11 @@ static const char *MENU_ITEM[] = {
     "Position",
     "Alt. Display",
     "Keys",
+    "Hotkey",
+    "Swap L1-L2",
+    "Swap R1-R2",
+    "Pen X Speed",
+    "Pen Y Speed",
 };
 
 int handle_menu(int key)
@@ -3300,6 +3306,16 @@ int handle_menu(int key)
                 nds.keys_rotate-= 1;
             }
             break;
+        case MENU_PEN_XV:
+            if (nds.pen.xv > PEN_XV_MIN) {
+                nds.pen.xv-= PEN_XV_DEC;
+            }
+            break;
+        case MENU_PEN_YV:
+            if (nds.pen.yv > PEN_YV_MIN) {
+                nds.pen.yv-= PEN_YV_DEC;
+            }
+            break;
         }
         break;
     case MYKEY_RIGHT:
@@ -3365,6 +3381,16 @@ int handle_menu(int key)
         case MENU_KEYS:
             if (nds.keys_rotate < 2) {
                 nds.keys_rotate+= 1;
+            }
+            break;
+        case MENU_PEN_XV:
+            if (nds.pen.xv < PEN_XV_MAX) {
+                nds.pen.xv+= PEN_XV_INC;
+            }
+            break;
+        case MENU_PEN_YV:
+            if (nds.pen.yv < PEN_YV_MAX) {
+                nds.pen.yv+= PEN_YV_INC;
             }
             break;
         }
@@ -3516,6 +3542,12 @@ int handle_menu(int key)
             break;
         case MENU_KEYS:
             sprintf(buf, "%s", DPAD[nds.keys_rotate % 3]);
+            break;
+        case MENU_PEN_XV:
+            sprintf(buf, "%d (30000)", nds.pen.xv);
+            break;
+        case MENU_PEN_YV:
+            sprintf(buf, "%d (35000)", nds.pen.yv);
             break;
         }
         draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);

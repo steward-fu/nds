@@ -192,6 +192,15 @@
 #define HOTKEY_BIND_MENU                0
 #define HOTKEY_BIND_SELECT              1
 
+#define PEN_XV_MIN                      5000
+#define PEN_XV_DEC                      1000
+#define PEN_XV_INC                      1000
+#define PEN_XV_MAX                      500000
+#define PEN_YV_MIN                      5000
+#define PEN_YV_DEC                      1000
+#define PEN_YV_INC                      1000
+#define PEN_YV_MAX                      500000
+
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
 } MMIYOO_VideoInfo;
