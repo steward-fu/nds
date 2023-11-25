@@ -1314,6 +1314,12 @@ static int read_config(void)
         lang_load(lang);
     }
 
+    json_object_object_get_ex(jfile, JSON_NDS_HOTKEY, &jval);
+    if (jval) {
+        nds.hotkey = json_object_get_int(jval);
+        printf(PREFIX"[json] nds.hotkey: %d\n", nds.hotkey);
+    }
+
     reload_pen();
 #ifdef MMIYOO
     reload_overlay();
@@ -1356,6 +1362,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_ALT_MODE, json_object_new_int(nds.alt_mode));
     json_object_object_add(jfile, JSON_NDS_KEYS_90D, json_object_new_int(nds.keys_90d));
     json_object_object_add(jfile, JSON_NDS_LANG, json_object_new_string(nds.lang[DEF_LANG_SLOT]));
+    json_object_object_add(jfile, JSON_NDS_HOTKEY, json_object_new_int(nds.hotkey));
 
     json_object_to_file_ext(nds.cfg_path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -3113,16 +3120,8 @@ static const char *DPAD[] = {
     "0°", "90°", "270°"
 };
 
-static const char *MENU_ITEM[] = {
-    "Language",
-    "CPU",
-    "Overlay",
-    "Display",
-    "Alpha",
-    "Border",
-    "Position",
-    "Alt. Display",
-    "Keys"
+static const char *HOTKEY[] = {
+    "MENU", "SELECT"
 };
 
 static int lang_next(void)
@@ -3155,19 +3154,35 @@ static int lang_prev(void)
     return -1;
 }
 
+enum {
+    MENU_LANG = 0,
+    MENU_CPU,
+    MENU_HOTKEY,
+    MENU_OVERLAY,
+    MENU_DIS,
+    MENU_DIS_ALPHA,
+    MENU_DIS_BORDER,
+    MENU_DIS_POSITION,
+    MENU_ALT,
+    MENU_KEYS,
+    MENU_LAST,
+};
+
+static const char *MENU_ITEM[] = {
+    "Language",
+    "CPU",
+    "Hotkey",
+    "Overlay",
+    "Display",
+    "Alpha",
+    "Border",
+    "Position",
+    "Alt. Display",
+    "Keys"
+};
+
 int handle_menu(int key)
 {
-    #define MENU_LANG           0
-    #define MENU_CPU            1
-    #define MENU_OVERLAY        2
-    #define MENU_DIS            3
-    #define MENU_DIS_ALPHA      4
-    #define MENU_DIS_BORDER     5
-    #define MENU_DIS_POSITION   6
-    #define MENU_ALT            7
-    #define MENU_KEYS           8
-    #define MENU_LAST           8
-
     static int cur_sel = 0;
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
@@ -3207,7 +3222,7 @@ int handle_menu(int key)
         }
         break;
     case MYKEY_DOWN:
-        if (cur_sel < MENU_LAST) {
+        if (cur_sel < (MENU_LAST - 1)) {
             cur_sel+= 1;
         }
         break;
@@ -3220,6 +3235,9 @@ int handle_menu(int key)
             if (cur_cpuclock > nds.mincpu) {
                 cur_cpuclock-= 50;
             }
+            break;
+        case MENU_HOTKEY:
+            nds.hotkey = HOTKEY_BIND_MENU;
             break;
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
@@ -3278,6 +3296,9 @@ int handle_menu(int key)
             if (cur_cpuclock < nds.maxcpu) {
                 cur_cpuclock+= 50;
             }
+            break;
+        case MENU_HOTKEY:
+            nds.hotkey = HOTKEY_BIND_SELECT;
             break;
         case MENU_OVERLAY:
             if (nds.overlay.sel > 0) {
@@ -3354,16 +3375,16 @@ int handle_menu(int key)
         s0 = 0;
         s1 = 7;
     }
-    else if (cur_sel >= (MENU_LAST - 3)) {
-        s0 = MENU_LAST - 7;
-        s1 = MENU_LAST;
+    else if (cur_sel >= (MENU_LAST - 4)) {
+        s0 = MENU_LAST - 8;
+        s1 = MENU_LAST - 1;
     }
     else {
         s0 = cur_sel - 3;
         s1 = cur_sel + 4;
     }
 
-    for (cc=0, idx=0; cc<=MENU_LAST; cc++) {
+    for (cc=0, idx=0; cc<MENU_LAST; cc++) {
         if ((cc < s0) || (cc > s1)) {
             continue;
         }
@@ -3435,6 +3456,9 @@ int handle_menu(int key)
             break;
         case MENU_CPU:
             sprintf(buf, "%dMHz", cur_cpuclock);
+            break;
+        case MENU_HOTKEY:
+            sprintf(buf, "%s", to_lang(HOTKEY[nds.hotkey]));
             break;
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {

@@ -87,7 +87,7 @@ static int running = 0;
 static int event_fd = -1;
 static int lower_speed = 0;
 #ifdef MMIYOO
-static int is_stock_system = 0;
+static int is_stock_os = 0;
 #endif
 static SDL_sem *event_sem = NULL;
 static SDL_Thread *thread = NULL;
@@ -180,7 +180,7 @@ static void release_all_keys(void)
 static int hit_hotkey(uint32_t bit)
 {
 #ifdef MMIYOO
-    uint32_t mask = (1 << bit) | (1 << (is_stock_system ? MYKEY_SELECT : MYKEY_MENU));
+    uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU));
 #endif
 
 #ifdef TRIMUI
@@ -203,7 +203,7 @@ static void set_key(uint32_t bit, int val)
 #endif
 
 #ifdef MMIYOO
-        if (is_stock_system) {
+        if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == MYKEY_SELECT) {
                 hotkey = (1 << MYKEY_SELECT);
             }
@@ -321,20 +321,24 @@ int EventUpdate(void *data)
                     case POWER:  set_key(MYKEY_POWER, ev.value);  break;
                     case VOLUP:
                         set_key(MYKEY_VOLUP, ev.value);
-                        if (is_stock_system && (ev.value == 0)) {
-                            nds.volume = volume_inc();
-                        }
-                        else {
-                            nds.defer_update_bg = 180;
+                        if (is_stock_os) {
+                            if (ev.value == 0) {
+                                nds.volume = volume_inc();
+                            }
+                            else {
+                                nds.defer_update_bg = 180;
+                            }
                         }
                         break;
                     case VOLDOWN:
                         set_key(MYKEY_VOLDOWN, ev.value);
-                        if (is_stock_system && (ev.value == 0)) {
-                            nds.volume = volume_dec();
-                        }
-                        else {
-                            nds.defer_update_bg = 180;
+                        if (is_stock_os) {
+                            if (ev.value == 0) {
+                                nds.volume = volume_dec();
+                            }
+                            else {
+                                nds.defer_update_bg = 180;
+                            }
                         }
                         break;
 #endif
@@ -473,7 +477,7 @@ int EventUpdate(void *data)
                     }
 
 #ifdef MMIYOO
-                    if (is_stock_system == 0) {
+                    if (nds.hotkey == HOTKEY_BIND_MENU) {
                         if (hit_hotkey(MYKEY_SELECT)) {
                             set_key(MYKEY_MENU_ONION, 1);
                             set_key(MYKEY_SELECT, 0);
@@ -592,8 +596,8 @@ void MMIYOO_EventInit(void)
         closedir(dir);
     }
     else {
-        is_stock_system = 1;
-        printf(PREFIX"run on stock system\n");
+        is_stock_os = 1;
+        printf(PREFIX"run on Stock OS\n");
     }
 #endif
 }
@@ -640,7 +644,7 @@ void MMIYOO_PumpEvents(_THIS)
                     bit = 1 << cc;
 
 #ifdef MMIYOO
-                    if ((is_stock_system == 0) && (cc == MYKEY_MENU)) {
+                    if ((nds.hotkey == HOTKEY_BIND_MENU) && (cc == MYKEY_MENU)) {
                         continue;
                     }
 #endif

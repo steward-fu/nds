@@ -158,6 +158,7 @@
 #define JSON_NDS_MENU_C2            "menu_c2"
 #define JSON_NDS_AUTO_STATE         "auto_state"
 #define JSON_NDS_AUTO_SLOT          "auto_slot"
+#define JSON_NDS_HOTKEY             "hotkey"
 
 #define GFX_ACTION_NONE             0
 #define GFX_ACTION_FLIP             1
@@ -187,6 +188,9 @@
 #define NDS_DRASTIC_MENU_FIRMWARE       5
 #define NDS_DRASTIC_MENU_CHEAT          6
 #define NDS_DRASTIC_MENU_ROM            7
+
+#define HOTKEY_BIND_MENU                0
+#define HOTKEY_BIND_SELECT              1
 
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
@@ -245,6 +249,7 @@ typedef struct _NDS {
     int mincpu;
     int maxcpu;
     int volume;
+    int hotkey;
     int dis_mode;
     int alt_mode;
     int hres_mode;
