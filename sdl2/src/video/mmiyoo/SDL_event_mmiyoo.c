@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <dirent.h>
 #include <linux/input.h>
 
@@ -97,6 +98,14 @@ static uint32_t pre_keypad_bitmaps = 0;
 #ifdef TRIMUI
 extern int FB_W;
 extern int FB_H;
+
+typedef struct _cust_key_t {
+    int fd;
+    uint8_t *mem;
+    uint32_t *gpio;
+} cust_key_t;
+
+static cust_key_t cust_key = {0};
 #endif
 
 const SDL_Scancode code[]={
@@ -298,6 +307,18 @@ int EventUpdate(void *data)
         else {
             r1 = R1;
             r2 = R2;
+        }
+#endif
+
+#ifdef TRIMUI
+        if (cust_key.gpio != NULL) {
+            static uint32_t pre_value = 0;
+            uint32_t v = *cust_key.gpio & 0x800;
+
+            if (v != pre_value) {
+                pre_value = v;
+                set_key(MYKEY_R2, !v);
+            }
         }
 #endif
 
@@ -581,6 +602,25 @@ void MMIYOO_EventInit(void)
 #endif
 
 #ifdef TRIMUI
+    cust_key.gpio = NULL;
+    cust_key.fd = open("/dev/mem", O_RDWR);
+    printf(PREFIX"cust_key.fd %d\n", cust_key.fd);
+    if (cust_key.fd > 0) {
+        cust_key.mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, cust_key.fd, 0x01c20000);
+        printf(PREFIX"cust_key.mem %p\n", cust_key.mem);
+        if (cust_key.mem != MAP_FAILED) {
+            uint32_t *p = NULL;
+
+            p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
+            *p &= 0xffff0fff;
+
+            p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x1c);
+            *p |= 0x00400000;
+
+            cust_key.gpio = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
+            printf(PREFIX"cust_key.gpio %p\n", cust_key.gpio);
+        }
+    }
     evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
 #endif
     evt.mode = MMIYOO_KEYPAD_MODE;
@@ -622,6 +662,16 @@ void MMIYOO_EventDeinit(void)
         close(event_fd);
         event_fd = -1;
     }
+
+#ifdef TRIMUI
+    if (cust_key.fd > 0) {
+        munmap(cust_key.mem, 4096);
+        close(cust_key.fd);
+
+        cust_key.gpio = NULL;
+        cust_key.fd = -1;
+    }
+#endif
 }
 
 void MMIYOO_PumpEvents(_THIS)
