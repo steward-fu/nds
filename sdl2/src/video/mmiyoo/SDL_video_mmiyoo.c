@@ -1363,6 +1363,8 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_KEYS_90D, json_object_new_int(nds.keys_90d));
     json_object_object_add(jfile, JSON_NDS_LANG, json_object_new_string(nds.lang[DEF_LANG_SLOT]));
     json_object_object_add(jfile, JSON_NDS_HOTKEY, json_object_new_int(nds.hotkey));
+    json_object_object_add(jfile, JSON_NDS_SWAP_L1L2, json_object_new_int(nds.swap_l1l2));
+    json_object_object_add(jfile, JSON_NDS_SWAP_R1R2, json_object_new_int(nds.swap_r1r2));
 
     json_object_to_file_ext(nds.cfg_path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -2481,21 +2483,24 @@ int get_font_height(const char *info)
 const char *to_lang(const char *p)
 {
     const char *info = p;
+    char buf[MAX_PATH] = {0};
     int cc = 0, r = 0, len = 0;
     
     if (!strcmp(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG) || (p == NULL)) {
         return p;
     }
 
-    len = strlen(p);
+    strcpy(buf, p);
+    strcat(buf, "=");
+    len = strlen(buf);
     if ((len == 0) || (len >= MAX_PATH)) {
         return 0;
     }
 
     for (cc=0; translate[cc]; cc++) {
-        if (memcmp((char*)p, translate[cc], len) == 0) {
+        if (memcmp(buf, translate[cc], len) == 0) {
             r = 1;
-            info = &translate[cc][len + 1];
+            info = &translate[cc][len];
             //printf(PREFIX"Translate \'%s\' as \'%s\'\n", p, info);
             break;
         }
@@ -3158,6 +3163,8 @@ enum {
     MENU_LANG = 0,
     MENU_CPU,
     MENU_HOTKEY,
+    MENU_SWAP_L1L2,
+    MENU_SWAP_R1R2,
     MENU_OVERLAY,
     MENU_DIS,
     MENU_DIS_ALPHA,
@@ -3172,13 +3179,15 @@ static const char *MENU_ITEM[] = {
     "Language",
     "CPU",
     "Hotkey",
+    "Swap L1-L2",
+    "Swap R1-R2",
     "Overlay",
     "Display",
     "Alpha",
     "Border",
     "Position",
     "Alt. Display",
-    "Keys"
+    "Keys",
 };
 
 int handle_menu(int key)
@@ -3238,6 +3247,12 @@ int handle_menu(int key)
             break;
         case MENU_HOTKEY:
             nds.hotkey = HOTKEY_BIND_MENU;
+            break;
+        case MENU_SWAP_L1L2:
+            nds.swap_l1l2 = 0;
+            break;
+        case MENU_SWAP_R1R2:
+            nds.swap_r1r2 = 0;
             break;
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
@@ -3299,6 +3314,12 @@ int handle_menu(int key)
             break;
         case MENU_HOTKEY:
             nds.hotkey = HOTKEY_BIND_SELECT;
+            break;
+        case MENU_SWAP_L1L2:
+            nds.swap_l1l2 = 1;
+            break;
+        case MENU_SWAP_R1R2:
+            nds.swap_r1r2 = 1;
             break;
         case MENU_OVERLAY:
             if (nds.overlay.sel > 0) {
@@ -3460,6 +3481,12 @@ int handle_menu(int key)
         case MENU_HOTKEY:
             sprintf(buf, "%s", to_lang(HOTKEY[nds.hotkey]));
             break;
+        case MENU_SWAP_L1L2:
+            sprintf(buf, "%s", to_lang(nds.swap_l1l2 ? "Yes" : "No"));
+            break;
+        case MENU_SWAP_R1R2:
+            sprintf(buf, "%s", to_lang(nds.swap_r1r2 ? "Yes" : "No"));
+            break;
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
                 get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
@@ -3470,7 +3497,7 @@ int handle_menu(int key)
             }
             break;
         case MENU_DIS:
-            sprintf(buf, "Mode %02d", nds.dis_mode);
+            sprintf(buf, "%s %d", to_lang("Mode"), nds.dis_mode);
             break;
         case MENU_DIS_ALPHA:
             sx = 20;
@@ -3485,7 +3512,7 @@ int handle_menu(int key)
             sprintf(buf, "%s", to_lang(POS[nds.alpha.pos]));
             break;
         case MENU_ALT:
-            sprintf(buf, "Mode %02d", nds.alt_mode);
+            sprintf(buf, "%s %d", to_lang("Mode"), nds.alt_mode);
             break;
         case MENU_KEYS:
             sprintf(buf, "%s", DPAD[nds.keys_90d % 3]);

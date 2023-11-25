@@ -242,20 +242,6 @@ int EventUpdate(void *data)
     uint32_t left = LEFT;
     uint32_t right = RIGHT;
 
-#ifdef MMIYOO
-    if (nds.swap_l1l2) {
-        l1 = L2;
-        l2 = L1;
-        printf(PREFIX"swap L1 and L2 keys\n");
-    }
-
-    if (nds.swap_r1r2) {
-        r1 = R2;
-        r2 = R1;
-        printf(PREFIX"swap R1 and R2 keys\n");
-    }
-#endif
-
     while (running) {
         SDL_SemWait(event_sem);
 
@@ -294,6 +280,26 @@ int EventUpdate(void *data)
             x = X;
             y = Y;
         }
+
+#ifdef MMIYOO
+        if (nds.swap_l1l2) {
+            l1 = L2;
+            l2 = L1;
+        }
+        else {
+            l1 = L1;
+            l2 = L2;
+        }
+
+        if (nds.swap_r1r2) {
+            r1 = R2;
+            r2 = R1;
+        }
+        else {
+            r1 = R1;
+            r2 = R2;
+        }
+#endif
 
         if (event_fd > 0) {
             if (read(event_fd, &ev, sizeof(struct input_event))) {
