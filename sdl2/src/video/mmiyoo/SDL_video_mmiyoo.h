@@ -152,7 +152,7 @@
 #define JSON_NDS_SWAP_R1R2          "swap_r1r2"
 #define JSON_NDS_CUST_MENU          "cust_menu"
 #define JSON_NDS_LANG               "lang"
-#define JSON_NDS_KEYS_90D           "keys_90d"
+#define JSON_NDS_KEYS_ROTATE        "keys_rotate"
 #define JSON_NDS_MENU_C0            "menu_c0"
 #define JSON_NDS_MENU_C1            "menu_c1"
 #define JSON_NDS_MENU_C2            "menu_c2"
@@ -256,9 +256,9 @@ typedef struct _NDS {
     int cust_menu;
     int swap_l1l2;
     int swap_r1r2;
-    int keys_90d;
     int auto_slot;
     int auto_state;
+    int keys_rotate;
     int enable_752x560;
     int defer_update_bg;
     char lang[MAX_LANG_FILE][LANG_FILE_LEN];

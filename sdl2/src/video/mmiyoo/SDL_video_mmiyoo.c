@@ -1254,10 +1254,10 @@ static int read_config(void)
         printf(PREFIX"[json] nds.swap_r1r2: %d\n", nds.swap_r1r2);
     }
 
-    json_object_object_get_ex(jfile, JSON_NDS_KEYS_90D, &jval);
+    json_object_object_get_ex(jfile, JSON_NDS_KEYS_ROTATE, &jval);
     if (jval) {
-        nds.keys_90d = json_object_get_int(jval) % 3;
-        printf(PREFIX"[json] nds.keys_90d: %d\n", nds.keys_90d);
+        nds.keys_rotate = json_object_get_int(jval) % 3;
+        printf(PREFIX"[json] nds.keys_rotate: %d\n", nds.keys_rotate);
     }
 
     json_object_object_get_ex(jfile, JSON_NDS_CUST_MENU, &jval);
@@ -1360,7 +1360,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_ALPHA_BORDER, json_object_new_int(nds.alpha.border));
     json_object_object_add(jfile, JSON_NDS_OVERLAY, json_object_new_int(nds.overlay.sel));
     json_object_object_add(jfile, JSON_NDS_ALT_MODE, json_object_new_int(nds.alt_mode));
-    json_object_object_add(jfile, JSON_NDS_KEYS_90D, json_object_new_int(nds.keys_90d));
+    json_object_object_add(jfile, JSON_NDS_KEYS_ROTATE, json_object_new_int(nds.keys_rotate));
     json_object_object_add(jfile, JSON_NDS_LANG, json_object_new_string(nds.lang[DEF_LANG_SLOT]));
     json_object_object_add(jfile, JSON_NDS_HOTKEY, json_object_new_int(nds.hotkey));
     json_object_object_add(jfile, JSON_NDS_SWAP_L1L2, json_object_new_int(nds.swap_l1l2));
@@ -3296,8 +3296,8 @@ int handle_menu(int key)
             }
             break;
         case MENU_KEYS:
-            if (nds.keys_90d > 0) {
-                nds.keys_90d-= 1;
+            if (nds.keys_rotate > 0) {
+                nds.keys_rotate-= 1;
             }
             break;
         }
@@ -3363,8 +3363,8 @@ int handle_menu(int key)
             }
             break;
         case MENU_KEYS:
-            if (nds.keys_90d < 2) {
-                nds.keys_90d+= 1;
+            if (nds.keys_rotate < 2) {
+                nds.keys_rotate+= 1;
             }
             break;
         }
@@ -3515,7 +3515,7 @@ int handle_menu(int key)
             sprintf(buf, "%s %d", to_lang("Mode"), nds.alt_mode);
             break;
         case MENU_KEYS:
-            sprintf(buf, "%s", DPAD[nds.keys_90d % 3]);
+            sprintf(buf, "%s", DPAD[nds.keys_rotate % 3]);
             break;
         }
         draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);

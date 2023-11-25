@@ -245,8 +245,8 @@ int EventUpdate(void *data)
     while (running) {
         SDL_SemWait(event_sem);
 
-        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.keys_90d) {
-            if (nds.keys_90d == 1) {
+        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.keys_rotate) {
+            if (nds.keys_rotate == 1) {
                 up = LEFT;
                 down = RIGHT;
                 left = DOWN;
@@ -721,7 +721,7 @@ void MMIYOO_PumpEvents(_THIS)
                 }
             }
 
-            if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_90d == 0)) {
+            if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_rotate == 0)) {
                 if (evt.keypad.bitmaps & (1 << MYKEY_UP)) {
                     updated = 1;
                     evt.mouse.x+= get_move_interval(1);
