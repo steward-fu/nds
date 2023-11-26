@@ -2186,9 +2186,21 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             lut = LUT_256x192_S1;
         }
 
-        for (x = 0; x < (192 * 256); x++) {
-            dst[*lut++] = *src++;
-        }
+        asm volatile (
+            "    mov r8, %0             ;"
+            "    mov r9, %2             ;"
+            "    mov r12, %3            ;"
+            "1:  ldr r10, [r8], #4      ;"
+            "    ldr r11, [r9], #4      ;"
+            "    lsl r11, #2            ;"
+            "    add r11, %1            ;"
+            "    str r10, [r11]         ;"
+            "    subs r12, #1           ;"
+            "    bne 1b                 ;"
+            :
+            : "r"(src), "r"(dst), "r"(lut), "r"(256 * 192)
+            : "r8", "r9", "r10", "r11", "r12", "memory", "cc"
+        );
     }
     else {
         if ((srcrect.w >= 320) || (srcrect.h >= 240)) {
