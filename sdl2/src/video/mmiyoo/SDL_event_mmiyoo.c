@@ -384,11 +384,6 @@ int EventUpdate(void *data)
                             nds.pen.pos = 1;
                         }
 #endif
-
-#ifdef TRIMUI
-                        nds.dis_mode = NDS_DIS_MODE_S1;
-                        disp_resize();
-#endif
                         set_key(MYKEY_UP, 0);
                     }
 
@@ -397,11 +392,6 @@ int EventUpdate(void *data)
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             nds.pen.pos = 0;
                         }
-#endif
-
-#ifdef TRIMUI
-                        nds.dis_mode = NDS_DIS_MODE_S0;
-                        disp_resize();
 #endif
                         set_key(MYKEY_DOWN, 0);
                     }
@@ -452,11 +442,18 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_A)) {
+#ifdef MMIYOO
                         if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
                             uint32_t tmp = nds.alt_mode;
                             nds.alt_mode = nds.dis_mode;
                             nds.dis_mode = tmp;
                         }
+#endif
+
+#ifdef TRIMUI
+                        nds.dis_mode = (nds.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
+                        disp_resize();
+#endif
                         set_key(MYKEY_A, 0);
                     }
 
