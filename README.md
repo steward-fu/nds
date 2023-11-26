@@ -35,8 +35,26 @@
    - [Limitations](#limitations)
    - [Special Thanks](#special-thanks)
    - [Q & A](#q--a)
+ - [TRIMUI SMART](#trimui-smart)
+   - [New Features](#new-features)
+     - [Display Modes](#display-modes)
+       - [Mode 0 - 256x192](#mode-0)
+       - [Mode 1 - 320x240](#mode-1)
+     - [Refined Menu](#refined-menu)
+     - [Hotkeys](#hotkeys)
+   - [Build from Scratch](#build-from-scratch)
+     - [How to prepare the build environment (Docker)](#how-to-prepare-the-build-environment-docker)
+     - [How to build all libraries](#how-to-build-all-libraries)
+     - [How to pack the release build](#how-to-pack-the-release-build)
+     - [How to delete the build environment (Docker)](#how-to-delete-the-build-environment-docker)
+   - [Installation](#installation)
+   - [Limitations](#limitations)
+
+&nbsp;
 
 ## Miyoo Mini (Plus)
+![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg)  
+
 ### Introduction
 This repository hosts all of resources, which include SDL2 and ALSA source code, needed for NDS emulator on Miyoo Mini (Plus) handheld. The NDS emulator we used is DraStic emulator (close-source) that obtained from RetroPie package and the ELF binary is in ARM32 format, not AArch64. The DraStic version is v2.5.0.4 and sha1 is ae9c215bdea88359cbcb3c259ce0d60a1f59986c. In this porting, I focusd on SDL2 and ALSA libraries and heavily customized for DraStic emulator on Miyoo Mini (Plus) handheld. Therefore, there are some hooking points used in this emulator. To make sure it works as expected, please use the correct DraStic emulator. It is welcome to file any suggestion or issue to this GitHub but I must say that I cannot make sure whether it can be fixed. Since this porting is heavily customized, it is not recommended for generic use-case on Miyoo Mini (Plus) handheld.  
 
@@ -58,14 +76,14 @@ In DraStic emulator, it only supports 3 display modes, which are vertical, horiz
 #### Display Modes (Normal Resolution)
 ##### Mode 0
 Screen Resolution: 640x480, 170x128
-| ![image](images/640x480/dis_0.png) |
+| ![image](images/mmiyoo_640/dis_0.png) |
 |-|
 
 &nbsp;
 
 ##### Mode 1
 Screen Resolution: 640x480, 256x192
-| ![image](images/640x480/dis_1.png) |
+| ![image](images/mmiyoo_640/dis_1.png) |
 |-|
 
 &nbsp;
@@ -73,14 +91,14 @@ Screen Resolution: 640x480, 256x192
 ##### Mode 2
 Screen Resolution: 512x384  
 Background Image: bg_s0.png
-| ![image](images/640x480/dis_2.png) |
+| ![image](images/mmiyoo_640/dis_2.png) |
 |-|
 
 &nbsp;
 
 ##### Mode 3
 Screen Resolution: 640x480
-| ![image](images/640x480/dis_3.png) |
+| ![image](images/mmiyoo_640/dis_3.png) |
 |-|
 
 &nbsp;
@@ -88,7 +106,7 @@ Screen Resolution: 640x480
 ##### Mode 4
 Screen Resolution: 256x192, 256x192  
 Background Image: bg_v0.png
-| ![image](images/640x480/dis_4.png) |
+| ![image](images/mmiyoo_640/dis_4.png) |
 |-|
 
 &nbsp;
@@ -96,7 +114,7 @@ Background Image: bg_v0.png
 ##### Mode 5
 Screen Resolution: 320x240, 320x240  
 Background Image: bg_v1.png
-| ![image](images/640x480/dis_5.png) |
+| ![image](images/mmiyoo_640/dis_5.png) |
 |-|
 
 &nbsp;
@@ -104,7 +122,7 @@ Background Image: bg_v1.png
 ##### Mode 6
 Screen Resolution: 256x192, 256x192  
 Background Image: bg_h0.png
-| ![image](images/640x480/dis_6.png) |
+| ![image](images/mmiyoo_640/dis_6.png) |
 |-|
 
 &nbsp;
@@ -112,7 +130,7 @@ Background Image: bg_h0.png
 ##### Mode 7
 Screen Resolution: 320x240, 320x240  
 Background Image: bg_h1.png
-| ![image](images/640x480/dis_7.png) |
+| ![image](images/mmiyoo_640/dis_7.png) |
 |-|
 
 &nbsp;
@@ -120,7 +138,7 @@ Background Image: bg_h1.png
 ##### Mode 8
 Screen Resolution: 480x360, 160x120  
 Background Image: bg_vh_s0.png
-| ![image](images/640x480/dis_8.png) |
+| ![image](images/mmiyoo_640/dis_8.png) |
 |-|
 
 &nbsp;
@@ -128,7 +146,7 @@ Background Image: bg_vh_s0.png
 ##### Mode 9
 Screen Resolution: 384x288, 256x192  
 Background Image: bg_vh_s1.png
-| ![image](images/640x480/dis_9.png) |
+| ![image](images/mmiyoo_640/dis_9.png) |
 |-|
 
 &nbsp;
@@ -136,7 +154,7 @@ Background Image: bg_vh_s1.png
 ##### Mode 10
 Screen Resolution: 384x288, 256x192  
 Background Image: bg_vh_c0.png
-| ![image](images/640x480/dis_10.png) |
+| ![image](images/mmiyoo_640/dis_10.png) |
 |-|
 
 &nbsp;
@@ -144,7 +162,7 @@ Background Image: bg_vh_c0.png
 ##### Mode 11
 Screen Resolution: 384x288, 256x192  
 Background Image: bg_vh_c1.png
-| ![image](images/640x480/dis_11.png) |
+| ![image](images/mmiyoo_640/dis_11.png) |
 |-|
 
 &nbsp;
@@ -152,7 +170,7 @@ Background Image: bg_vh_c1.png
 ##### Mode 12
 Screen Resolution: 427x320, 427x320  
 Background Image: bg_hh0.png
-| ![image](images/640x480/dis_12.png) |
+| ![image](images/mmiyoo_640/dis_12.png) |
 |-|
 
 &nbsp;
@@ -160,7 +178,7 @@ Background Image: bg_hh0.png
 ##### Mode 13
 Screen Resolution: 427x320, 427x320  
 Background Image: bg_hh0.png
-| ![image](images/640x480/dis_13.png) |
+| ![image](images/mmiyoo_640/dis_13.png) |
 |-|
 
 &nbsp;
@@ -169,52 +187,52 @@ Background Image: bg_hh0.png
 ##### Mode 0
 Screen Resolution: 512x384  
 Background Image: bg_hres0.png
-| ![image](images/640x480/hres_0.png) |
+| ![image](images/mmiyoo_640/hres_0.png) |
 |-|
 
 &nbsp;
 
 ##### Mode 1
 Screen Resolution: 640x480
-| ![image](images/640x480/hres_1.png) |
+| ![image](images/mmiyoo_640/hres_1.png) |
 |-|
 
 &nbsp;
 
 #### Video Filters
 ##### Pixel
-| ![image](images/640x480/filter_pixel.png) |
+| ![image](images/mmiyoo_640/filter_pixel.png) |
 |-|
 
 &nbsp;
 
 ##### Blur
-| ![image](images/640x480/filter_blur.png) |
+| ![image](images/mmiyoo_640/filter_blur.png) |
 |-|
 
 &nbsp;
 
 #### Refined Menu
 Original Main Menu
-| ![image](images/640x480/menu_2.png) |
+| ![image](images/mmiyoo_640/menu_2.png) |
 |-|
 
 &nbsp;
 
 Refined Main Menu
-| ![image](images/640x480/menu_0.png) |
+| ![image](images/mmiyoo_640/menu_0.png) |
 |-|
 
 &nbsp;
 
 Original Cheat Menu
-| ![image](images/640x480/menu_3.png) |
+| ![image](images/mmiyoo_640/menu_3.png) |
 |-|
 
 &nbsp;
 
 Refined Cheat Menu
-| ![image](images/640x480/menu_1.png) |
+| ![image](images/mmiyoo_640/menu_1.png) |
 |-|
 
 &nbsp;
@@ -224,13 +242,13 @@ Refined Cheat Menu
 | ------------- | -------------- | -------------------------------- |
 | R2            | R2             | Swap screen                      |
 | L2            | L2             | Change Keypad mode / Stylus mode |
-|MENU + R1      | SELECT + R1    | Fast forward                     |
-|MENU + R2      | SELECT + R2    | Quick save state                 |
-|MENU + L2      | SELECT + L2    | Quick load state                 |
-|MENU + L1      | SELECT + L1    | Exit DraStic emulator            |
-|MENU + START   | SELECT + START | Enter the customized menu        |
-|MENU + LEFT    | SELECT + LEFT  | Change the display mode          |
-|MENU + RIGHT   | SELECT + RIGHT | Change the display mode          |
+| MENU + R1     | SELECT + R1    | Fast forward                     |
+| MENU + R2     | SELECT + R2    | Quick save state                 |
+| MENU + L2     | SELECT + L2    | Quick load state                 |
+| MENU + L1     | SELECT + L1    | Exit from DraStic emulator       |
+| MENU + START  | SELECT + START | Enter the customized menu        |
+| MENU + LEFT   | SELECT + LEFT  | Change the display mode          |
+| MENU + RIGHT  | SELECT + RIGHT | Change the display mode          |
 
 &nbsp;
 
@@ -301,7 +319,7 @@ $ sudo docker image rm mmiyoo
 
 ### Limitations
  - Screen orientation **MUST** be set as **vertical** in DraStic menu as the following image because all of display modes are handled by SDL2 library, not DraStic emulator  
-![image](images/640x480/setting_0.png)
+![image](images/mmiyoo_640/setting_0.png)
 
 &nbsp;
 
@@ -450,4 +468,144 @@ Change "USE_752x560_RES=1" in launch.sh file. By default, it is set as 0 (640x48
 **Q16: How to fix it when DraStic emulator shows white or black screen ?**
 ```
 Go to DraStic menu and then select "Restart Game"
+```
+
+&nbsp;
+
+## TRIMUI SMART
+![image](images/trimui_320/trimui.jpg)  
+
+### Introduction
+This repository hosts all of resources, which include SDL2 and ALSA source code, needed for NDS emulator on TRIMUI SMART handheld. The NDS emulator we used is DraStic emulator (close-source) that obtained from RetroPie package and the ELF binary is in ARM32 format, not AArch64. The DraStic version is v2.5.0.4 and sha1 is ae9c215bdea88359cbcb3c259ce0d60a1f59986c. In this porting, I focusd on SDL2 and ALSA libraries and heavily customized for DraStic emulator on TRIMUI SMART handheld. Therefore, there are some hooking points used in this emulator. To make sure it works as expected, please use the correct DraStic emulator. It is welcome to file any suggestion or issue to this GitHub but I must say that I cannot make sure whether it can be fixed. Since this porting is heavily customized, it is not recommended for generic use-case on TRIMUI SMART handheld. The most important thing is that only single mode is supported on TRIMUI SMART handheld. Therefore, the orientation in DraStic menu must be set as single mode.  
+
+&nbsp;
+
+### Terminology
+|  Term             | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| Keypad Mode       | This is the default mode and it is so-called gamepad mode. |
+| Stylus Mode       | It is touch mode. In this mode, the touch pen shows on either top or bottom screen. DPAD is used to move touch pen and A button acts touch point. | 
+
+&nbsp;
+
+### New Features
+#### Display Modes
+##### Mode 0
+Screen Resolution: 256x192  
+Background Image: bg_s0.png
+| ![image](images/trimui_320/dis_0.png) |
+|-|
+
+&nbsp;
+
+##### Mode 1
+Screen Resolution: 320x240
+| ![image](images/trimui_320/dis_1.png) |
+|-|
+
+&nbsp;
+
+#### Refined Menu
+Original Main Menu
+| ![image](images/mmiyoo_640/menu_2.png) |
+|-|
+
+&nbsp;
+
+Refined Main Menu
+| ![image](images/trimui_320/menu_0.png) |
+|-|
+
+&nbsp;
+
+Original Cheat Menu
+| ![image](images/mmiyoo_640/menu_3.png) |
+|-|
+
+&nbsp;
+
+Refined Cheat Menu
+| ![image](images/trimui_320/menu_1.png) |
+|-|
+
+&nbsp;
+
+#### Hotkeys
+|  Keys         | Functionality                     |
+| ------------- | --------------------------------- |
+| MENU + LEFT   | Change Keypad mode / Stylus mode  |
+| MENU + RIGHT  | Swap screen                       |
+| MENU + L1     | Quick load state                  |
+| MENU + R1     | Quick save state                  |
+| MENU + START  | Exit from DraStic emulator        |
+
+&nbsp;
+
+**Keypad mode only**
+|  Keys         | Functionality                               |
+| ------------- | ------------------------------------------- |
+| MENU + SELECT | Enter DraStic menu                          |
+| MENU + A      | Alternate display mode (320x240 or 256x192) |
+| MENU + B      | Change video filter (blur or pixel)         |
+| MENU + X      | Take screenshot (Emus/drastic/screenshot)   |
+| MENU + Y      | Change background image                     |
+
+&nbsp;
+
+**Stylus mode only**
+|  Keys (Onion) | Keys (Stock)   | Functionality                   |
+| ------------- | -------------- | ------------------------------- |
+| DPAD          | DPAD           | Move the stylus pen             |
+| A             | A              | Touch screen                    |
+| R1            | R1             | Lower moving speed              |
+| MENU + Y      | SELECT + Y     | Change stylus pen               |
+
+&nbsp;
+
+### Build from Scratch
+#### How to prepare the build environment (Docker)
+```
+$ sudo docker build -t mmiyoo .
+```
+
+#### How to build all libraries
+```
+$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
+$ make config MOD=trimui
+$ make MOD=trimui
+```
+
+#### How to pack the release build
+```
+$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
+$ make rel MOD=trimui
+```
+
+#### How to delete the build environment (Docker)
+```
+$ sudo docker image rm mmiyoo
+```
+
+&nbsp;
+
+### Installation
+```
+1. Put drastic into Emus folder
+2. Put ROMs into Roms/NDS folder
+```
+
+&nbsp;
+
+### Limitations
+ - Screen orientation **MUST** be set as **single** in DraStic menu as the following image  
+![image](images/trimui_320/setting_0.png)
+
+&nbsp;
+
+### Special Thanks
+```
+河馬
+路人乙
+背包胖熊
+DraStic Development Team
 ```
