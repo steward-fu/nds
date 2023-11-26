@@ -90,8 +90,10 @@ static CUST_MENU drastic_menu = {0};
 static char *translate[MAX_LANG_LINE] = {0};
 
 #ifdef TRIMUI
-static uint32_t LUT_256x192_S0[256 * 192] = {0};
-static uint32_t LUT_256x192_S1[256 * 192] = {0};
+static uint32_t LUT_256x192_S00[256 * 192] = {0};
+static uint32_t LUT_256x192_S01[256 * 192] = {0};
+static uint32_t LUT_256x192_S10[256 * 192] = {0};
+static uint32_t LUT_256x192_S11[256 * 192] = {0};
 #endif
 
 static int get_current_menu_layer(void)
@@ -1867,6 +1869,7 @@ void GFX_Init(void)
     int y = 0;
     int ox = 32;
     int oy = 24;
+    uint32_t *dst = NULL;
 #endif
 
     fb_init();
@@ -1985,8 +1988,13 @@ void GFX_Init(void)
     cc = 0;
     for (y = 0; y < 192; y++) {
         for (x = 0; x < 256; x++) {
-            LUT_256x192_S0[cc] = ((((256 - 1) - x) + ox) * FB_H) + y + oy;
-            LUT_256x192_S1[cc] = ((((256 - 1) - x)) * FB_H) + y;
+            dst = (uint32_t *)gfx.hw.ion.vadd;
+            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
+            LUT_256x192_S10[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
+
+            dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H);
+            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
+            LUT_256x192_S11[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
             cc+= 1;
         }
     }
@@ -2160,7 +2168,6 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     int oy = 24;
     int sw = srcrect.w;
     int sh = srcrect.h;
-    uint32_t *lut = NULL;
     uint32_t *dst = NULL;
     uint32_t *src = (uint32_t *)pixels;
 
@@ -2179,27 +2186,26 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     }
 
     if((srcrect.w == 256) && (srcrect.h == 192)) {
-        dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
-
-        lut = LUT_256x192_S0;
-        if (nds.dis_mode == NDS_DIS_MODE_S1) {
-            lut = LUT_256x192_S1;
+        if (nds.dis_mode == NDS_DIS_MODE_S0) {
+            dst = gfx.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
+        }
+        else {
+            dst = gfx.fb.flip ? LUT_256x192_S11 : LUT_256x192_S10;
         }
 
         asm volatile (
             "    mov r8, %0             ;"
-            "    mov r9, %2             ;"
-            "    mov r12, %3            ;"
-            "1:  ldr r10, [r8], #4      ;"
+            "    mov r9, %1             ;"
+            "    mov r12, %2            ;"
+            "1:                         ;"
+            "    ldr r10, [r8], #4      ;"
             "    ldr r11, [r9], #4      ;"
-            "    lsl r11, #2            ;"
-            "    add r11, %1            ;"
             "    str r10, [r11]         ;"
             "    subs r12, #1           ;"
             "    bne 1b                 ;"
             :
-            : "r"(src), "r"(dst), "r"(lut), "r"(256 * 192)
-            : "r8", "r9", "r10", "r11", "r12", "memory", "cc"
+            : "r"(src), "r"(dst), "r"(256 * 192)
+            : "r8", "r9", "r10", "r11", "r12", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
         );
     }
     else {
