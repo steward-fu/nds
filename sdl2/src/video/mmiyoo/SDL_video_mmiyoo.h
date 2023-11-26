@@ -81,6 +81,7 @@
 #define IMG_H                       480
 
 #define PREFIX                      "[SDL] "
+#define SHOT_PATH                   "screenshot"
 #define CFG_PATH                    "resources/settings.json"
 #define THEME_PATH                  "resources/bg"
 #define PEN_PATH                    "resources/pen"
@@ -280,6 +281,11 @@ typedef struct _NDS {
     TTF_Font *font;
     uint32_t state;
 
+    struct _SHOT {
+        int take;
+        char path[MAX_PATH];
+    } shot;
+
     struct _MENU {
         int enable;
         SDL_Surface *bg;
@@ -338,7 +344,7 @@ typedef struct _CUST_MENU_SUB {
     int enable;
     uint32_t fg;
     uint32_t bg;
-    char msg[128];
+    char msg[MAX_PATH];
 } CUST_MENU_SUB;
 
 typedef struct _CUST_MENU {

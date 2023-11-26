@@ -308,6 +308,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
 
     if ((cur_w != src.w) ||
         (cur_fb_w != FB_W) ||
+        (nds.shot.take) ||
         (cur_touchpad != nds.pen.pos) ||
         (cur_dis_mode != nds.dis_mode) ||
         (cur_theme_sel != nds.theme.sel) ||
@@ -335,6 +336,10 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         else if (cur_down_scale != down_scale) {
             show_info_cnt = 50;
             sprintf(show_info_buf, " %s ", to_lang(down_scale ? "Pixel" : "Blur"));
+        }
+        else if (nds.shot.take) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s ", to_lang("Take Screenshot"));
         }
 
         cur_w = src.w;

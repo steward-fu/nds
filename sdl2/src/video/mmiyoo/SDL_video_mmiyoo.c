@@ -25,6 +25,7 @@
 
 #if SDL_VIDEO_DRIVER_MMIYOO
 
+#include <time.h>
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -1974,6 +1975,12 @@ void GFX_Init(void)
     }
     printf(PREFIX"nds.font: %p\n", nds.font);
 
+    memset(nds.shot.path, 0, sizeof(nds.shot.path));
+    if (getcwd(nds.shot.path, sizeof(nds.shot.path))) {
+        strcat(nds.shot.path, "/");
+        strcat(nds.shot.path, SHOT_PATH);
+    }
+
     is_running = 1;
     gfx.action = GFX_ACTION_NONE;
     pthread_create(&thread, NULL, video_handler, (void *)NULL);
@@ -2000,6 +2007,11 @@ void GFX_Quit(void)
     ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
     close(gfx.fb_dev);
     gfx.fb_dev = 0;
+
+    if (cvt) {
+        SDL_FreeSurface(cvt);
+        cvt = NULL;
+    }
 }
 
 void GFX_Clear(void)
@@ -2137,6 +2149,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     int oy = 24;
     int sw = srcrect.w;
     int sh = srcrect.h;
+    char buf[MAX_PATH << 1] = {0};
     uint32_t v = 0;
     uint32_t *dst = NULL;
     uint32_t *src = (uint32_t *)pixels;
@@ -2179,6 +2192,21 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         for (y = 0; y < sh; y++) {
             for (x = 0; x < sw; x++) {
                 dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = *src++;
+            }
+        }
+
+        if (nds.shot.take) {
+            SDL_Surface *p = SDL_CreateRGBSurfaceFrom(dst, FB_H, FB_W, 32, FB_H * FB_BPP, 0, 0, 0, 0);
+
+            if (p) {
+                time_t t = time(NULL);
+                struct tm tm = *localtime(&t);
+
+                nds.shot.take = 0;
+                sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                IMG_SavePNG(p, buf);
+                SDL_FreeSurface(p);
+                printf(PREFIX"saved \'%s\'\n", buf);
             }
         }
     }
@@ -3078,10 +3106,6 @@ void MMIYOO_VideoQuit(_THIS)
     }
 
     write_config();
-    if (cvt) {
-        SDL_FreeSurface(cvt);
-        cvt = NULL;
-    }
 
     if (fps_info) {
         SDL_FreeSurface(fps_info);

@@ -68,4 +68,4 @@ clean:
 	make -C detour clean
 	make -C sdl2 distclean
 	sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg
-	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates
+	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates screenshot

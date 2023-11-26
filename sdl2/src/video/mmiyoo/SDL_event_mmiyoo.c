@@ -467,6 +467,15 @@ int EventUpdate(void *data)
                         set_key(MYKEY_B, 0);
                     }
 
+                    if (hit_hotkey(MYKEY_X)) {
+#ifdef TRIMUI
+                        if (nds.dis_mode == NDS_DIS_MODE_S0) {
+                            nds.shot.take = 1;
+                        }
+#endif
+                        set_key(MYKEY_X, 0);
+                    }
+
                     if (hit_hotkey(MYKEY_Y)) {
                         if (evt.mode == MMIYOO_KEYPAD_MODE) {
                             if ((nds.overlay.sel >= nds.overlay.max) && 
