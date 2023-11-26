@@ -251,6 +251,8 @@ int EventUpdate(void *data)
     uint32_t left = LEFT;
     uint32_t right = RIGHT;
 
+    int hotkey_mask = 0;
+
     while (running) {
         SDL_SemWait(event_sem);
 
@@ -371,11 +373,12 @@ int EventUpdate(void *data)
 #endif
                     }
 
+                    hotkey_mask = 1;
                     if (nds.menu.enable || nds.menu.drastic.enable) {
-                        hotkey = 0;
+                        hotkey_mask = 0;
                     }
 
-                    if (hit_hotkey(MYKEY_UP)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_UP)) {
 #ifdef MMIYOO
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             nds.pen.pos = 1;
@@ -389,7 +392,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_UP, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_DOWN)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_DOWN)) {
 #ifdef MMIYOO
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             nds.pen.pos = 0;
@@ -403,7 +406,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_DOWN, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_LEFT)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
 #ifdef MMIYOO
                         if (nds.hres_mode == 0) {
                             if (nds.dis_mode > 0) {
@@ -430,7 +433,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_LEFT, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_RIGHT)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_RIGHT)) {
 #ifdef MMIYOO
                         if (nds.hres_mode == 0) {
                             if (nds.dis_mode < NDS_DIS_MODE_LAST) {
@@ -448,7 +451,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_RIGHT, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_A)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_A)) {
                         if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
                             uint32_t tmp = nds.alt_mode;
                             nds.alt_mode = nds.dis_mode;
@@ -457,7 +460,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_A, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_B)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_B)) {
                         down_scale = down_scale ? 0 : 1;
 #ifdef TRIMUI
                         if (nds.dis_mode == NDS_DIS_MODE_S1) {
@@ -476,7 +479,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_X, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_Y)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_Y)) {
                         if (evt.mode == MMIYOO_KEYPAD_MODE) {
                             if ((nds.overlay.sel >= nds.overlay.max) && 
                                 (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
@@ -500,7 +503,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_Y, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_START)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_START)) {
 #ifdef MMIYOO
                         if (nds.menu.enable == 0) {
                             nds.menu.enable = 1;
@@ -519,7 +522,7 @@ int EventUpdate(void *data)
 
 #ifdef MMIYOO
                     if (nds.hotkey == HOTKEY_BIND_MENU) {
-                        if (hit_hotkey(MYKEY_SELECT)) {
+                        if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
                             set_key(MYKEY_MENU_ONION, 1);
                             set_key(MYKEY_SELECT, 0);
                         }
@@ -527,13 +530,13 @@ int EventUpdate(void *data)
 #endif
 
 #ifdef TRIMUI
-                    if (hit_hotkey(MYKEY_SELECT)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
                         set_key(MYKEY_MENU_ONION, 1);
                         set_key(MYKEY_SELECT, 0);
                     }
 #endif
 
-                    if (hit_hotkey(MYKEY_R1)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
 #ifdef MMIYOO
                         set_key(MYKEY_FF, 1);
 #endif
@@ -544,7 +547,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_R1, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_L1)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_L1)) {
 #ifdef MMIYOO
                         set_key(MYKEY_EXIT, 1);
 #endif
@@ -556,12 +559,12 @@ int EventUpdate(void *data)
                     }
 
 #ifdef MMIYOO
-                    if (hit_hotkey(MYKEY_R2)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
                         set_key(MYKEY_QSAVE, 1);
                         set_key(MYKEY_R2, 0);
                     }
 
-                    if (hit_hotkey(MYKEY_L2)) {
+                    if (hotkey_mask && hit_hotkey(MYKEY_L2)) {
                         set_key(MYKEY_QLOAD, 1);
                         set_key(MYKEY_L2, 0);
                     }
