@@ -89,6 +89,11 @@ static void MMIYOO_VideoQuit(_THIS);
 static CUST_MENU drastic_menu = {0};
 static char *translate[MAX_LANG_LINE] = {0};
 
+#ifdef TRIMUI
+static uint32_t LUT_256x192_S0[256 * 192] = {0};
+static uint32_t LUT_256x192_S1[256 * 192] = {0};
+#endif
+
 static int get_current_menu_layer(void)
 {
     int cc = 0;
@@ -1799,23 +1804,11 @@ void disp_resize(void)
     uint32_t args[4] = {0, (uintptr_t)&gfx.hw.buf, 1, 0};
 
     ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
-    if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && (nds.dis_mode == NDS_DIS_MODE_S1)) {
-        if (down_scale) {
-            gfx.hw.buf.info.fb.size[0].width = ION_H;
-            gfx.hw.buf.info.fb.size[0].height = ION_W;
-            gfx.hw.buf.info.fb.crop.width  = (uint64_t)ION_H << 32;
-            gfx.hw.buf.info.fb.crop.height = (uint64_t)ION_W << 32;
-        }
-        else {
-            gfx.hw.buf.info.fb.size[0].width = FB_H;
-            gfx.hw.buf.info.fb.size[0].height = FB_W;
-            gfx.hw.buf.info.fb.crop.width  = (uint64_t)192 << 32;
-            gfx.hw.buf.info.fb.crop.height = (uint64_t)256 << 32;
-        }
+    if (nds.dis_mode == NDS_DIS_MODE_S1) {
+        gfx.hw.buf.info.fb.crop.width  = (uint64_t)192 << 32;
+        gfx.hw.buf.info.fb.crop.height = (uint64_t)256 << 32;
     }
     else {
-        gfx.hw.buf.info.fb.size[0].width = FB_H;
-        gfx.hw.buf.info.fb.size[0].height = FB_W;
         gfx.hw.buf.info.fb.crop.width  = (uint64_t)FB_H << 32;
         gfx.hw.buf.info.fb.crop.height = (uint64_t)FB_W << 32;
     }
@@ -1868,6 +1861,13 @@ void GFX_Init(void)
 {
     int cc = 0;
     SDL_Surface *t = NULL;
+
+#ifdef TRIMUI
+    int x = 0;
+    int y = 0;
+    int ox = 32;
+    int oy = 24;
+#endif
 
     fb_init();
     for (cc=0; cc<MAX_QUEUE; cc++) {
@@ -1980,6 +1980,17 @@ void GFX_Init(void)
         strcat(nds.shot.path, "/");
         strcat(nds.shot.path, SHOT_PATH);
     }
+
+#ifdef TRIMUI
+    cc = 0;
+    for (y = 0; y < 192; y++) {
+        for (x = 0; x < 256; x++) {
+            LUT_256x192_S0[cc] = ((((256 - 1) - x) + ox) * FB_H) + y + oy;
+            LUT_256x192_S1[cc] = ((((256 - 1) - x)) * FB_H) + y;
+            cc+= 1;
+        }
+    }
+#endif
 
     is_running = 1;
     gfx.action = GFX_ACTION_NONE;
@@ -2149,7 +2160,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     int oy = 24;
     int sw = srcrect.w;
     int sh = srcrect.h;
-    uint32_t v = 0;
+    uint32_t *lut = NULL;
     uint32_t *dst = NULL;
     uint32_t *src = (uint32_t *)pixels;
 
@@ -2167,16 +2178,16 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         oy = 0;
     }
 
-    if ((nds.dis_mode == NDS_DIS_MODE_S1) && (down_scale > 0)) {
-        dst = (uint32_t *)gfx.hw.ion.vadd + (ION_W * ION_H * gfx.fb.flip);
-        for (y = 0; y < sh; y++) {
-            for (x = 0; x < sw; x++) {
-                v = *src++;
-                dst[(((ION_W - 1) - ((x << 1) + 0)) * ION_H) + ((y << 1) + 0)] = v;
-                dst[(((ION_W - 1) - ((x << 1) + 1)) * ION_H) + ((y << 1) + 0)] = v;
-                dst[(((ION_W - 1) - ((x << 1) + 0)) * ION_H) + ((y << 1) + 1)] = v;
-                dst[(((ION_W - 1) - ((x << 1) + 1)) * ION_H) + ((y << 1) + 1)] = v;
-            }
+    if((srcrect.w == 256) && (srcrect.h == 192)) {
+        dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
+
+        lut = LUT_256x192_S0;
+        if (nds.dis_mode == NDS_DIS_MODE_S1) {
+            lut = LUT_256x192_S1;
+        }
+
+        for (x = 0; x < (192 * 256); x++) {
+            dst[*lut++] = *src++;
         }
     }
     else {
@@ -2496,17 +2507,7 @@ void GFX_Flip(void)
 #ifdef TRIMUI
     //int r = 0;
 
-    if (nds.dis_mode == NDS_DIS_MODE_S0) {
-        gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
-    }
-    else {
-        if (down_scale) {
-            gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (ION_W * ION_H * gfx.fb.flip));
-        }
-        else {
-            gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
-        }
-    }
+    gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
     gfx.hw.mem[OVL_V_TOP_LADD0 / 4] = gfx.hw.buf.info.fb.addr[0];
     //ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
     gfx.fb.flip^= 1;

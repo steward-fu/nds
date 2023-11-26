@@ -459,11 +459,8 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_B)) {
+#ifdef MMIYOO
                         down_scale = down_scale ? 0 : 1;
-#ifdef TRIMUI
-                        if (nds.dis_mode == NDS_DIS_MODE_S1) {
-                            disp_resize();
-                        }
 #endif
                         set_key(MYKEY_B, 0);
                     }
