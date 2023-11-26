@@ -1,54 +1,55 @@
 ## NDS Emulator (DraStic) for Miyoo Mini (Plus) and TRIMUI SMART
  - [Miyoo Mini (Plus)](#miyoo-mini-plus)
-   - [Introduction](#introduction)
-   - [Terminology](#terminology)
-   - [New Features](#new-features)
-     - [Display Modes (Normal Resolution)](#display-modes-normal-resolution)
-       - [Mode 0 - 640x480, 170x128](#mode-0)
-       - [Mode 1 - 640x480, 256x192](#mode-1)
-       - [Mode 2 - 512x384](#mode-2)
-       - [Mode 3 - 640x480](#mode-3)
-       - [Mode 4 - 256x192, 256x192](#mode-4)
-       - [Mode 5 - 320x240, 320x240](#mode-5)
-       - [Mode 6 - 256x192, 256x192](#mode-6)
-       - [Mode 7 - 320x240, 320x240](#mode-7)
-       - [Mode 8 - 480x360, 160x120](#mode-8)
-       - [Mode 9 - 384x288, 256x192](#mode-9)
-       - [Mode 10 - 384x288, 256x192](#mode-10)
-       - [Mode 11 - 384x288, 256x192](#mode-11)
-       - [Mode 12 - 427x320, 427x320](#mode-12)
-       - [Mode 13 - 427x320, 427x320](#mode-13)
-     - [Display Modes (High Resolution)](#display-modes-high-resolution)
-       - [Mode 0 - 512x384](#mode-0)
-       - [Mode 1 - 640x480](#mode-1)
-     - [Video Filters](#video-filters)
-       - [Pixel](#pixel) 
-       - [Blur](#blur)
-     - [Refined Menu](#refined-menu)
-     - [Hotkeys](#hotkeys)
-   - [Build from Scratch](#build-from-scratch)
-     - [How to prepare the build environment (Docker)](#how-to-prepare-the-build-environment-docker)
-     - [How to build all libraries](#how-to-build-all-libraries)
-     - [How to pack the release build](#how-to-pack-the-release-build)
-     - [How to delete the build environment (Docker)](#how-to-delete-the-build-environment-docker)
-   - [Installation](#installation)
-   - [Limitations](#limitations)
-   - [Special Thanks](#special-thanks)
-   - [Q & A](#q--a)
+   - Introduction
+   - Terminology
+   - New Features
+     - Display Modes (Normal Resolution)
+       - Mode 0 - 640x480, 170x128
+       - Mode 1 - 640x480, 256x192
+       - Mode 2 - 512x384
+       - Mode 3 - 640x480
+       - Mode 4 - 256x192, 256x192
+       - Mode 5 - 320x240, 320x240
+       - Mode 6 - 256x192, 256x192
+       - Mode 7 - 320x240, 320x240
+       - Mode 8 - 480x360, 160x120
+       - Mode 9 - 384x288, 256x192
+       - Mode 10 - 384x288, 256x192
+       - Mode 11 - 384x288, 256x192
+       - Mode 12 - 427x320, 427x320
+       - Mode 13 - 427x320, 427x320
+     - Display Modes (High Resolution)
+       - Mode 0 - 512x384
+       - Mode 1 - 640x480
+     - Video Filters
+       - Pixel
+       - Blur
+     - Refined Menu
+     - Hotkeys
+   - Build from Scratch
+     - How to prepare the build environment (Docker)
+     - How to build all libraries
+     - How to pack the release build
+     - How to delete the build environment (Docker)
+   - Installation
+   - Limitations
+   - Special Thanks
+   - Q & A
  - [TRIMUI SMART](#trimui-smart)
-   - [New Features](#new-features)
-     - [Display Modes](#display-modes)
-       - [Mode 0 - 256x192](#mode-0)
-       - [Mode 1 - 320x240](#mode-1)
-     - [Refined Menu](#refined-menu)
-     - [Hotkeys](#hotkeys)
-   - [Build from Scratch](#build-from-scratch)
-     - [How to prepare the build environment (Docker)](#how-to-prepare-the-build-environment-docker)
-     - [How to build all libraries](#how-to-build-all-libraries)
-     - [How to pack the release build](#how-to-pack-the-release-build)
-     - [How to delete the build environment (Docker)](#how-to-delete-the-build-environment-docker)
-   - [Installation](#installation)
-   - [Limitations](#limitations)
+   - New Features
+     - Display Modes
+       - Mode 0 - 256x192
+       - Mode 1 - 320x240
+     - Refined Menu
+     - Hotkeys
+   - Build from Scratch
+     - How to prepare the build environment (Docker)
+     - How to build all libraries
+     - How to pack the release build
+     - How to delete the build environment (Docker)
+   - Installation
+   - Limitations
+   - Special Thanks
 
 &nbsp;
 
@@ -311,8 +312,8 @@ $ sudo docker image rm mmiyoo
 
 ### Installation
 ```
-1. put drastic into Emu folder
-2. put ROMs into Roms/NDS folder
+1. Put drastic into Emu folder
+2. Put ROMs into Roms/NDS folder
 ```
 
 &nbsp;
@@ -546,7 +547,6 @@ Refined Cheat Menu
 | ------------- | ------------------------------------------- |
 | MENU + SELECT | Enter DraStic menu                          |
 | MENU + A      | Alternate display mode (320x240 or 256x192) |
-| MENU + B      | Change video filter (blur or pixel)         |
 | MENU + X      | Take screenshot (Emus/drastic/screenshot)   |
 | MENU + Y      | Change background image                     |
 
