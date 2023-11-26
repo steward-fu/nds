@@ -252,6 +252,7 @@ int EventUpdate(void *data)
     uint32_t right = RIGHT;
 
     int hotkey_mask = 0;
+    char buf[MAX_PATH << 1] = {0};
 
     while (running) {
         SDL_SemWait(event_sem);
@@ -470,7 +471,19 @@ int EventUpdate(void *data)
                     if (hit_hotkey(MYKEY_X)) {
 #ifdef TRIMUI
                         if (nds.dis_mode == NDS_DIS_MODE_S0) {
-                            nds.shot.take = 1;
+                            uint32_t *dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
+                            SDL_Surface *p = SDL_CreateRGBSurfaceFrom(dst, FB_H, FB_W, 32, FB_H * FB_BPP, 0, 0, 0, 0);
+
+                            if (p) {
+                                time_t t = time(NULL);
+                                struct tm tm = *localtime(&t);
+
+                                sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                                IMG_SavePNG(p, buf);
+                                SDL_FreeSurface(p);
+                                printf(PREFIX"saved \'%s\'\n", buf);
+                                nds.shot.take = hotkey_mask;
+                            }
                         }
 #endif
                         set_key(MYKEY_X, 0);

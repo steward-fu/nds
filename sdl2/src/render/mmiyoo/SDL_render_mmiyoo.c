@@ -339,6 +339,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         }
         else if (nds.shot.take) {
             show_info_cnt = 50;
+            nds.shot.take = 0;
             sprintf(show_info_buf, " %s ", to_lang("Take Screenshot"));
         }
 
