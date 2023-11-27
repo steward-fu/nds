@@ -252,7 +252,9 @@ int EventUpdate(void *data)
     uint32_t right = RIGHT;
 
     int hotkey_mask = 0;
+#ifdef TRIMUI
     char buf[MAX_PATH << 1] = {0};
+#endif
 
     while (running) {
         SDL_SemWait(event_sem);
