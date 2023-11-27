@@ -892,6 +892,10 @@ int process_drastic_menu(void)
     return 0;
 }
 
+void sdl_update_screen(void)
+{
+}
+
 void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
     int w = 0, h = 0;
@@ -3424,7 +3428,7 @@ int MMIYOO_VideoInit(_THIS)
     MMIYOO_EventInit();
 
     if (nds.cust_menu) {
-        detour_init(sysconf(_SC_PAGESIZE), (uint32_t)sdl_print_string, (uint32_t)sdl_savestate_pre, (uint32_t)sdl_savestate_post);
+        detour_init(sysconf(_SC_PAGESIZE), (uint32_t)sdl_print_string, (uint32_t)sdl_savestate_pre, (uint32_t)sdl_savestate_post, (uint32_t)sdl_update_screen);
     }
     return 0;
 }

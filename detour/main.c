@@ -41,7 +41,7 @@ int dtr_quit(void)
     _func((void*)VAR_SYSTEM);
 }
 
-void detour_init(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post)
+void detour_init(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post, uint32_t fun_update_screen)
 {
     uint32_t val = 0;
     volatile uint8_t *base = NULL;
@@ -81,6 +81,20 @@ void detour_init(size_t page_size, uint32_t fun_print_string, uint32_t fun_saves
     base[5] = val >> 8;
     base[6] = val >> 16;
     base[7] = val >> 24;
+
+#if 0
+    val = fun_update_screen;
+    base = (uint8_t*)FUN_UPDATE_SCREEN;
+    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
+    base[0] = 0x04;
+    base[1] = 0xf0;
+    base[2] = 0x1f;
+    base[3] = 0xe5;
+    base[4] = val >> 0;
+    base[5] = val >> 8;
+    base[6] = val >> 16;
+    base[7] = val >> 24;
+#endif
 }
 
 void detour_quit(size_t page_size)
