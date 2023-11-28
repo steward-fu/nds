@@ -1044,8 +1044,8 @@ static int lang_load(const char *lang)
     FILE *f = NULL;
     char buf[MAX_PATH << 1] = {0};
 
-    if (strcasecmp(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG)) {
-        sprintf(buf, "%s/%s", nds.lang_path, lang);
+    if (strcasecmp(nds.lang.trans[DEF_LANG_SLOT], DEF_LANG_LANG)) {
+        sprintf(buf, "%s/%s", nds.lang.path, lang);
         f = fopen(buf, "r");
 
         if (f != NULL) {
@@ -1076,7 +1076,7 @@ static int lang_load(const char *lang)
             fclose(f);
         }
         else {
-            printf(PREFIX"failed to open lang folder \'%s\'\n", nds.lang_path);
+            printf(PREFIX"failed to open lang folder \'%s\'\n", nds.lang.path);
         }
     }
     return 0;
@@ -1088,15 +1088,9 @@ static void lang_enum(void)
     DIR *d = NULL;
     struct dirent *dir = NULL;
 
-    memset(nds.lang_path, 0, sizeof(nds.lang_path));
-    if (getcwd(nds.lang_path, sizeof(nds.lang_path))) {
-        strcat(nds.lang_path, "/");
-        strcat(nds.lang_path, LANG_PATH);
-    }
-
-    strcpy(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG);
-    strcpy(nds.lang[DEF_LANG_SLOT + 1], DEF_LANG_LANG);
-    d = opendir(nds.lang_path);
+    strcpy(nds.lang.trans[DEF_LANG_SLOT], DEF_LANG_LANG);
+    strcpy(nds.lang.trans[DEF_LANG_SLOT + 1], DEF_LANG_LANG);
+    d = opendir(nds.lang.path);
     if (d) {
         while ((dir = readdir(d)) != NULL) {
             if (dir->d_type == DT_DIR) {
@@ -1110,7 +1104,7 @@ static void lang_enum(void)
             }
 
             printf(PREFIX"found lang \'lang[%d]=%s\'\n", idx, dir->d_name);
-            strcpy(nds.lang[idx], dir->d_name);
+            strcpy(nds.lang.trans[idx], dir->d_name);
             idx+= 1;
             if (idx >= MAX_LANG_FILE) {
                 break;
@@ -1125,9 +1119,9 @@ static int read_config(void)
     struct json_object *jval = NULL;
     struct json_object *jfile = NULL;
 
-    jfile = json_object_from_file(nds.cfg_path);
+    jfile = json_object_from_file(nds.cfg.path);
     if (jfile == NULL) {
-        printf(PREFIX"failed to read settings from json file (%s)\n", nds.cfg_path);
+        printf(PREFIX"failed to read settings from json file (%s)\n", nds.cfg.path);
         return -1;
     }
 
@@ -1321,8 +1315,8 @@ static int read_config(void)
     if (jval) {
         const char *lang = json_object_get_string(jval);
 
-        printf(PREFIX"[json] nds.lang: %s\n", lang);
-        strcpy(nds.lang[DEF_LANG_SLOT], lang);
+        printf(PREFIX"[json] nds.lang.trans: %s\n", lang);
+        strcpy(nds.lang.trans[DEF_LANG_SLOT], lang);
         lang_load(lang);
     }
 
@@ -1353,9 +1347,9 @@ static int write_config(void)
 {
     struct json_object *jfile = NULL;
 
-    jfile = json_object_from_file(nds.cfg_path);
+    jfile = json_object_from_file(nds.cfg.path);
     if (jfile == NULL) {
-        printf(PREFIX"failed to write settings to json file (%s)\n", nds.cfg_path);
+        printf(PREFIX"failed to write settings to json file (%s)\n", nds.cfg.path);
         return -1;
     }
 
@@ -1368,14 +1362,14 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_OVERLAY, json_object_new_int(nds.overlay.sel));
     json_object_object_add(jfile, JSON_NDS_ALT_MODE, json_object_new_int(nds.alt_mode));
     json_object_object_add(jfile, JSON_NDS_KEYS_ROTATE, json_object_new_int(nds.keys_rotate));
-    json_object_object_add(jfile, JSON_NDS_LANG, json_object_new_string(nds.lang[DEF_LANG_SLOT]));
+    json_object_object_add(jfile, JSON_NDS_LANG, json_object_new_string(nds.lang.trans[DEF_LANG_SLOT]));
     json_object_object_add(jfile, JSON_NDS_HOTKEY, json_object_new_int(nds.hotkey));
     json_object_object_add(jfile, JSON_NDS_SWAP_L1L2, json_object_new_int(nds.swap_l1l2));
     json_object_object_add(jfile, JSON_NDS_SWAP_R1R2, json_object_new_int(nds.swap_r1r2));
     json_object_object_add(jfile, JSON_NDS_PEN_XV, json_object_new_int(nds.pen.xv));
     json_object_object_add(jfile, JSON_NDS_PEN_YV, json_object_new_int(nds.pen.yv));
 
-    json_object_to_file_ext(nds.cfg_path, jfile, JSON_C_TO_STRING_PRETTY);
+    json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
     printf(PREFIX"writing settings to json file done !\n");
     return 0;
@@ -1629,42 +1623,17 @@ static int get_file_count(const char *path)
 
 static int get_theme_count(void)
 {
-    int r = 0;
-
-    memset(nds.theme.path, 0, sizeof(nds.theme.path));
-    if (getcwd(nds.theme.path, sizeof(nds.theme.path))) {
-        strcat(nds.theme.path, "/");
-        strcat(nds.theme.path, THEME_PATH);
-        strcat(nds.theme.path, nds.enable_752x560 ? "_752" : "_640");
-        r = get_dir_count(nds.theme.path);
-    }
-    return r;
+    return get_dir_count(nds.theme.path);
 }
 
 static int get_pen_count(void)
 {
-    int r = 0;
-
-    memset(nds.pen.path, 0, sizeof(nds.pen.path));
-    if (getcwd(nds.pen.path, sizeof(nds.pen.path))) {
-        strcat(nds.pen.path, "/");
-        strcat(nds.pen.path, PEN_PATH);
-        r = get_file_count(nds.pen.path);
-    }
-    return r;
+    return get_file_count(nds.pen.path);
 }
 
 static int get_overlay_count(void)
 {
-    int r = 0;
-
-    memset(nds.overlay.path, 0, sizeof(nds.overlay.path));
-    if (getcwd(nds.overlay.path, sizeof(nds.overlay.path))) {
-        strcat(nds.overlay.path, "/");
-        strcat(nds.overlay.path, OVERLAY_PATH);
-        r = get_file_count(nds.overlay.path);
-    }
-    return r;
+    return get_file_count(nds.overlay.path);
 }
 
 #ifdef TRIMUI
@@ -1881,6 +1850,37 @@ void GFX_Init(void)
         gfx.thread[cc].pixels = malloc(TMP_SIZE);
     }
 
+    memset(nds.pen.path, 0, sizeof(nds.pen.path));
+    if (getcwd(nds.pen.path, sizeof(nds.pen.path))) {
+        strcat(nds.pen.path, "/");
+        strcat(nds.pen.path, PEN_PATH);
+    }
+
+    memset(nds.shot.path, 0, sizeof(nds.shot.path));
+    if (getcwd(nds.shot.path, sizeof(nds.shot.path))) {
+        strcat(nds.shot.path, "/");
+        strcat(nds.shot.path, SHOT_PATH);
+    }
+
+    memset(nds.theme.path, 0, sizeof(nds.theme.path));
+    if (getcwd(nds.theme.path, sizeof(nds.theme.path))) {
+        strcat(nds.theme.path, "/");
+        strcat(nds.theme.path, THEME_PATH);
+        strcat(nds.theme.path, nds.enable_752x560 ? "_752" : "_640");
+    }
+
+    memset(nds.overlay.path, 0, sizeof(nds.overlay.path));
+    if (getcwd(nds.overlay.path, sizeof(nds.overlay.path))) {
+        strcat(nds.overlay.path, "/");
+        strcat(nds.overlay.path, OVERLAY_PATH);
+    }
+
+    memset(nds.lang.path, 0, sizeof(nds.lang.path));
+    if (getcwd(nds.lang.path, sizeof(nds.lang.path))) {
+        strcat(nds.lang.path, "/");
+        strcat(nds.lang.path, LANG_PATH);
+    }
+
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
     printf(PREFIX"surface for convert: %p\n", cvt);
 
@@ -1971,9 +1971,9 @@ void GFX_Init(void)
         }
     }
 
-    getcwd(nds.cfg_path, sizeof(nds.cfg_path));
-    strcat(nds.cfg_path, "/");
-    strcat(nds.cfg_path, CFG_PATH);
+    getcwd(nds.cfg.path, sizeof(nds.cfg.path));
+    strcat(nds.cfg.path, "/");
+    strcat(nds.cfg.path, CFG_PATH);
 
     TTF_Init();
     nds.font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
@@ -1981,12 +1981,6 @@ void GFX_Init(void)
         //TTF_SetFontStyle(nds.font, TTF_STYLE_BOLD);
     }
     printf(PREFIX"nds.font: %p\n", nds.font);
-
-    memset(nds.shot.path, 0, sizeof(nds.shot.path));
-    if (getcwd(nds.shot.path, sizeof(nds.shot.path))) {
-        strcat(nds.shot.path, "/");
-        strcat(nds.shot.path, SHOT_PATH);
-    }
 
 #ifdef TRIMUI
     cc = 0;
@@ -2902,7 +2896,7 @@ const char *to_lang(const char *p)
     char buf[MAX_PATH] = {0};
     int cc = 0, r = 0, len = 0;
     
-    if (!strcmp(nds.lang[DEF_LANG_SLOT], DEF_LANG_LANG) || (p == NULL)) {
+    if (!strcmp(nds.lang.trans[DEF_LANG_SLOT], DEF_LANG_LANG) || (p == NULL)) {
         return p;
     }
 
@@ -3541,9 +3535,9 @@ static int lang_next(void)
     int cc = 0;
 
     for (cc=1; cc<(MAX_LANG_FILE-1); cc++) {
-        if (!strcmp(nds.lang[DEF_LANG_SLOT], nds.lang[cc])) {
-            if (strcmp(nds.lang[cc + 1], "")) {
-                strcpy(nds.lang[DEF_LANG_SLOT], nds.lang[cc + 1]);
+        if (!strcmp(nds.lang.trans[DEF_LANG_SLOT], nds.lang.trans[cc])) {
+            if (strcmp(nds.lang.trans[cc + 1], "")) {
+                strcpy(nds.lang.trans[DEF_LANG_SLOT], nds.lang.trans[cc + 1]);
                 return 0;
             }
         }
@@ -3556,9 +3550,9 @@ static int lang_prev(void)
     int cc = 0;
 
     for (cc=(MAX_LANG_FILE-1); cc>1; cc--) {
-        if (!strcmp(nds.lang[DEF_LANG_SLOT], nds.lang[cc])) {
-            if (strcmp(nds.lang[cc - 1], "")) {
-                strcpy(nds.lang[DEF_LANG_SLOT], nds.lang[cc - 1]);
+        if (!strcmp(nds.lang.trans[DEF_LANG_SLOT], nds.lang.trans[cc])) {
+            if (strcmp(nds.lang.trans[cc - 1], "")) {
+                strcpy(nds.lang.trans[DEF_LANG_SLOT], nds.lang.trans[cc - 1]);
                 return 0;
             }
         }
@@ -3629,7 +3623,7 @@ int handle_menu(int key)
     uint32_t col0 = 0, col1 = 0;
 
     if (pre_lang[0] == 0) {
-        strcpy(pre_lang, nds.lang[DEF_LANG_SLOT]);
+        strcpy(pre_lang, nds.lang.trans[DEF_LANG_SLOT]);
     }
     if (pre_cpuclock == 0) {
         cur_cpuclock = pre_cpuclock = get_cpuclock();
@@ -3806,9 +3800,9 @@ int handle_menu(int key)
             pre_cpuclock = cur_cpuclock;
         }
 
-        if (strcmp(pre_lang, nds.lang[DEF_LANG_SLOT])) {
+        if (strcmp(pre_lang, nds.lang.trans[DEF_LANG_SLOT])) {
             lang_unload();
-            lang_load(nds.lang[DEF_LANG_SLOT]);
+            lang_load(nds.lang.trans[DEF_LANG_SLOT]);
             memset(pre_lang, 0, sizeof(pre_lang));
         }
         nds.menu.enable = 0;
@@ -3904,7 +3898,7 @@ int handle_menu(int key)
         sx = 0;
         switch (cc) {
         case MENU_LANG:
-            sprintf(buf, "%s", nds.lang[DEF_LANG_SLOT]);
+            sprintf(buf, "%s", nds.lang.trans[DEF_LANG_SLOT]);
             break;
         case MENU_CPU:
             sprintf(buf, "%dMHz", cur_cpuclock);

@@ -274,12 +274,18 @@ typedef struct _NDS {
     int keys_rotate;
     int enable_752x560;
     int defer_update_bg;
-    char lang[MAX_LANG_FILE][LANG_FILE_LEN];
-    char lang_path[MAX_PATH];
-    char cfg_path[MAX_PATH];
 
     TTF_Font *font;
     uint32_t state;
+
+    struct _CFG {
+        char path[MAX_PATH];
+    } cfg;
+
+    struct _LANG {
+        char trans[MAX_LANG_FILE][LANG_FILE_LEN];
+        char path[MAX_PATH];
+    } lang;
 
     struct _SHOT {
         int take;
