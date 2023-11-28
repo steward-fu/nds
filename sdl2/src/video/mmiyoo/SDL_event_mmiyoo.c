@@ -464,6 +464,13 @@ int EventUpdate(void *data)
 #ifdef MMIYOO
                         down_scale = down_scale ? 0 : 1;
 #endif
+
+#ifdef TRIMUI
+                        if (nds.dis_mode == NDS_DIS_MODE_S0) {
+                            down_scale = down_scale ? 0 : 1;
+                            disp_resize();
+                        }
+#endif
                         set_key(MYKEY_B, 0);
                     }
 

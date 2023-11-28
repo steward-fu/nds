@@ -205,6 +205,10 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
+#ifdef TRIMUI
+    #define BLUR_OFFSET                 16
+#endif
+
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
 } MMIYOO_VideoInfo;

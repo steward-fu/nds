@@ -389,8 +389,15 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     if ((src.w == 800) && (src.h == 480)) {
 #ifdef TRIMUI
         if (nds.dis_mode != NDS_DIS_MODE_S0) {
+            down_scale = 1;
             nds.dis_mode = NDS_DIS_MODE_S0;
             disp_resize();
+        }
+        else {
+            if (down_scale == 0) {
+                down_scale = 1;
+                disp_resize();
+            }
         }
 #endif
 

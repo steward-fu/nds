@@ -90,10 +90,12 @@ static CUST_MENU drastic_menu = {0};
 static char *translate[MAX_LANG_LINE] = {0};
 
 #ifdef TRIMUI
-static uint32_t LUT_256x192_S00[256 * 192] = {0};
-static uint32_t LUT_256x192_S01[256 * 192] = {0};
 static uint32_t LUT_256x192_S10[256 * 192] = {0};
 static uint32_t LUT_256x192_S11[256 * 192] = {0};
+static uint32_t LUT_256x192_S00_pixel[256 * 192] = {0};
+static uint32_t LUT_256x192_S01_pixel[256 * 192] = {0};
+static uint32_t LUT_256x192_S00_blur[256 * 192] = {0};
+static uint32_t LUT_256x192_S01_blur[256 * 192] = {0};
 #endif
 
 static int get_current_menu_layer(void)
@@ -1334,7 +1336,6 @@ static int read_config(void)
     snd_nds_reload_config();
 
 #ifdef TRIMUI
-    down_scale = 0;
     if ((nds.dis_mode != NDS_DIS_MODE_S0) && (nds.dis_mode != NDS_DIS_MODE_S1)) {
         nds.dis_mode = NDS_DIS_MODE_S0;
     }
@@ -1784,8 +1785,11 @@ void disp_resize(void)
         gfx.hw.buf.info.fb.crop.height = (uint64_t)256 << 32;
     }
     else {
-        gfx.hw.buf.info.fb.crop.width  = (uint64_t)FB_H << 32;
-        gfx.hw.buf.info.fb.crop.height = (uint64_t)FB_W << 32;
+        if (down_scale == 0) {
+            r = BLUR_OFFSET << 1;
+        }
+        gfx.hw.buf.info.fb.crop.width  = (uint64_t)(FB_H - r) << 32;
+        gfx.hw.buf.info.fb.crop.height = (uint64_t)(FB_W - r) << 32;
     }
     ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
     ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
@@ -1842,6 +1846,8 @@ void GFX_Init(void)
     int y = 0;
     int ox = 32;
     int oy = 24;
+    int bx = 16;
+    int by = 8;
     uint32_t *dst = NULL;
 #endif
 
@@ -1987,12 +1993,14 @@ void GFX_Init(void)
     for (y = 0; y < 192; y++) {
         for (x = 0; x < 256; x++) {
             dst = (uint32_t *)gfx.hw.ion.vadd;
-            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
             LUT_256x192_S10[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
+            LUT_256x192_S00_pixel[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
+            LUT_256x192_S00_blur[cc] = (uint32_t)(dst + ((((256 - 1) - x) + bx) * FB_H) + y + by);
 
             dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H);
-            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
             LUT_256x192_S11[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
+            LUT_256x192_S01_pixel[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
+            LUT_256x192_S01_blur[cc] = (uint32_t)(dst + ((((256 - 1) - x) + bx) * FB_H) + y + by);
             cc+= 1;
         }
     }
@@ -2182,10 +2190,21 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         ox = 0;
         oy = 0;
     }
+    else {
+        if (down_scale == 0) {
+            ox = 16;
+            oy = 8;
+        }
+    }
 
     if((srcrect.w == 256) && (srcrect.h == 192)) {
         if (nds.dis_mode == NDS_DIS_MODE_S0) {
-            dst = gfx.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
+            if (down_scale) {
+                dst = gfx.fb.flip ? LUT_256x192_S01_pixel : LUT_256x192_S00_pixel;
+            }
+            else {
+                dst = gfx.fb.flip ? LUT_256x192_S01_blur : LUT_256x192_S00_blur;
+            }
         }
         else {
             dst = gfx.fb.flip ? LUT_256x192_S11 : LUT_256x192_S10;
@@ -3159,19 +3178,27 @@ int reload_bg(void)
     }
     
     if (nds.theme.img) {
+        int ox = 0, oy = 0;
         int x = 0, y = 0, z = 0;
         uint32_t *dst = NULL;
         uint32_t *src = NULL;
 
+        if (down_scale == 0) {
+            ox = 16;
+            oy = 8;
+        }
+
         ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
         for (z=0; z<2; z++) {
-            src = (uint32_t *)nds.theme.img->pixels;
+            src = (uint32_t *)nds.theme.img->pixels + ((oy << 1) * (nds.theme.img->w << 1));
             dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * z);
-            for (y = 0; y < FB_H; y++) {
-                for (x = 0; x < FB_W; x++) {
-                    dst[(((FB_W - 1) - x) * FB_H) + y] = *src;
+            for (y = 0; y < (FB_H - (oy << 1)); y++) {
+                src+= (ox << 1);
+                for (x = 0; x < (FB_W - (ox << 1)); x++) {
+                    dst[(((FB_W - 1 - (ox << 1)) - x) * FB_H) + y] = *src;
                     src+= 2;
                 }
+                src+= (ox << 1);
                 src+= IMG_W;
             }
         }
