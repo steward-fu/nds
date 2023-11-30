@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
     json_object_object_get_ex(jfile, JSON_LANG, &jval);
     if (jval) {
-        if (strcmp(json_object_get_string(jval), "cn") == 0) {
+        if (strcmp(json_object_get_string(jval), "chinese_cn") == 0) {
             is_en = 0;
         }
     }
@@ -69,21 +69,23 @@ int main(int argc, char *argv[])
     }
 
     SDL_Surface* t = IMG_Load_RW(rw, 1);
-    SDL_Surface *png = SDL_ConvertSurface(t, screen->format, 0);
-    SDL_BlitSurface(png, NULL, screen, NULL);
-    SDL_Flip(screen);
-    SDL_FreeSurface(t);
-    SDL_FreeSurface(png);
+    if (t) {
+        SDL_Surface *png = SDL_ConvertSurface(t, screen->format, 0);
+        SDL_BlitSurface(png, NULL, screen, NULL);
+        SDL_Flip(screen);
+        SDL_FreeSurface(png);
+        SDL_FreeSurface(t);
 
-    int cc = 100;
-    SDL_Event event = {0};
-    while (cc--) {
-        if (SDL_PollEvent(&event)) {
-            if (event.type == SDL_KEYDOWN) {
-                break;
+        int cc = 100;
+        SDL_Event event = {0};
+        while (cc--) {
+            if (SDL_PollEvent(&event)) {
+                if (event.type == SDL_KEYDOWN) {
+                    break;
+                }
             }
+            SDL_Delay(30);
         }
-        SDL_Delay(30);
     }
     SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
     SDL_Flip(screen);
