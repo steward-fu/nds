@@ -283,6 +283,12 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     static int cur_theme_sel = 0;
     static int cur_down_scale = 0;
 
+#ifdef TRIMUI
+    static int need_restore = 0;
+    static int pre_dismode = 0;
+    static int pre_downscale = 0;
+#endif
+
     int alpha = 0;
     int pitch = 0;
     int need_pen = 0;
@@ -389,12 +395,20 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     if ((src.w == 800) && (src.h == 480)) {
 #ifdef TRIMUI
         if (nds.dis_mode != NDS_DIS_MODE_S0) {
+            need_restore = 1;
+            pre_dismode = nds.dis_mode;
+            pre_downscale = down_scale;
+
             down_scale = 1;
             nds.dis_mode = NDS_DIS_MODE_S0;
             disp_resize();
         }
         else {
             if (down_scale == 0) {
+                need_restore = 1;
+                pre_dismode = nds.dis_mode;
+                pre_downscale = down_scale;
+
                 down_scale = 1;
                 disp_resize();
             }
@@ -655,6 +669,14 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     }
     else {
         nds.menu.drastic.enable = 0;
+#ifdef TRIMUI
+        if (need_restore) {
+            need_restore = 0;
+            down_scale = pre_downscale;
+            nds.dis_mode = pre_dismode;
+            disp_resize();
+        }
+#endif
     }
     return 0;
 }
