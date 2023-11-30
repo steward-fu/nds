@@ -103,6 +103,7 @@ typedef struct _cust_key_t {
     int fd;
     uint8_t *mem;
     uint32_t *gpio;
+    uint32_t pre_cfg;
 } cust_key_t;
 
 static cust_key_t cust_key = {0};
@@ -646,6 +647,7 @@ void MMIYOO_EventInit(void)
             uint32_t *p = NULL;
 
             p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
+            cust_key.pre_cfg = *p;
             *p &= 0xffff0fff;
 
             p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x1c);
@@ -699,6 +701,10 @@ void MMIYOO_EventDeinit(void)
 
 #ifdef TRIMUI
     if (cust_key.fd > 0) {
+        uint32_t *p = NULL;
+
+        p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
+        *p = cust_key.pre_cfg;
         munmap(cust_key.mem, 4096);
         close(cust_key.fd);
 
