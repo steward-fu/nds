@@ -58,12 +58,14 @@
    - Special Thanks
    - Q & A
  - [TRIMUI SMART](#trimui-smart)
+   - Introduction
+   - Terminology
    - New Features
      - Display Modes
        - Mode 0 - 256x192
        - Mode 1 - 288x208
        - Mode 2 - 320x240
-     - Refined Menu
+     - DraStic Menu
      - Hotkeys
    - Build from Scratch
      - How to prepare the build environment (Docker)
@@ -678,7 +680,8 @@ Background Image: bg_s0.png
 &nbsp;
 
 ##### Mode 1
-Screen Resolution: 288x208
+Screen Resolution: 288x208  
+Background Image: bg_s0.png
 | ![image](images/trimui_320/dis_1.png) |
 |-|
 
@@ -691,7 +694,7 @@ Screen Resolution: 320x240
 
 &nbsp;
 
-#### Refined Menu
+#### DraStic Menu
 Original Main Menu
 | ![image](images/mmiyoo_640/menu_2.png) |
 |-|
