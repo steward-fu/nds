@@ -95,10 +95,10 @@ static SDL_Thread *thread = NULL;
 static uint32_t hotkey = 0;
 static uint32_t pre_keypad_bitmaps = 0;
 
-#ifdef TRIMUI
 extern int FB_W;
 extern int FB_H;
 
+#ifdef TRIMUI
 typedef struct _cust_key_t {
     int fd;
     uint8_t *mem;
@@ -253,9 +253,7 @@ int EventUpdate(void *data)
     uint32_t right = RIGHT;
 
     int hotkey_mask = 0;
-#ifdef TRIMUI
     char buf[MAX_PATH << 1] = {0};
-#endif
 
     while (running) {
         SDL_SemWait(event_sem);
@@ -482,23 +480,42 @@ int EventUpdate(void *data)
                     }
 
                     if (hit_hotkey(MYKEY_X)) {
+                        int w = FB_W;
+                        int h = FB_H;
+                        int pitch = FB_W * FB_BPP;
+                        uint32_t *dst = NULL;
+                        SDL_Surface *p = NULL;
+                        time_t t = time(NULL);
+                        struct tm tm = *localtime(&t);
+
+#ifdef MMIYOO
+                        dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
+#endif
+
 #ifdef TRIMUI
+                        dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
+
                         if (nds.dis_mode == NDS_DIS_MODE_S0) {
-                            uint32_t *dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
-                            SDL_Surface *p = SDL_CreateRGBSurfaceFrom(dst, FB_H, FB_W, 32, FB_H * FB_BPP, 0, 0, 0, 0);
+                            w = down_scale ? FB_H : (FB_H - (BLUR_OFFSET << 1));
+                            h = down_scale ? FB_W : (FB_W - (BLUR_OFFSET << 1));
+                        }
+                        else {
+                            w = 192;
+                            h = 256;
+                        }
+                        pitch = FB_H * FB_BPP;
+#endif
 
+                        if (dst) {
+                            p = SDL_CreateRGBSurfaceFrom(dst, w, h, 32, pitch, 0, 0, 0, 0);
                             if (p) {
-                                time_t t = time(NULL);
-                                struct tm tm = *localtime(&t);
-
                                 sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
                                 IMG_SavePNG(p, buf);
                                 SDL_FreeSurface(p);
                                 printf(PREFIX"saved \'%s\'\n", buf);
-                                nds.shot.take = hotkey_mask;
                             }
                         }
-#endif
+                        nds.shot.take = 1;
                         set_key(MYKEY_X, 0);
                     }
 
