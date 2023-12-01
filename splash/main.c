@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         SDL_FreeSurface(png);
         SDL_FreeSurface(t);
 
-        int cc = 100;
+        int cc = 1000;
         SDL_Event event = {0};
         while (cc--) {
             if (SDL_PollEvent(&event)) {
