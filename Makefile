@@ -45,7 +45,7 @@ all:
 	cp detour/libdtr.so drastic/libs/
 	make -C alsa MOD=$(MOD)
 	cp alsa/libasound.so.2 drastic/libs/
-	make -C sdl2
+	make -C sdl2 -j4
 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/libs/
 
 .PHONY: config
