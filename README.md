@@ -20,8 +20,8 @@
          - Mode 12 - 427x320, 427x320
          - Mode 13 - 427x320, 427x320
        - Display Modes (High Resolution)
-         - Mode 0 - 512x384
-         - Mode 1 - 640x480
+         - Mode 14 - 512x384
+         - Mode 15 - 640x480
      - 752x560
        - Display Modes (Normal Resolution)
          - Mode 0 - 752x560, 170x128
@@ -39,8 +39,8 @@
          - Mode 12 - 501x376, 501x376
          - Mode 13 - 501x376, 501x376
        - Display Modes (High Resolution)
-         - Mode 0 - 512x384
-         - Mode 1 - 752x560
+         - Mode 14 - 512x384
+         - Mode 15 - 752x560
      - Video Filters
        - Pixel
        - Blur
@@ -215,7 +215,7 @@ Background Image: bg_hh0.png
 &nbsp;
 
 ##### Display Modes (High Resolution)
-###### Mode 0
+###### Mode 14
 Screen Resolution: 512x384  
 Background Image: bg_hres0.png
 | ![image](images/mmiyoo_640/hres_0.png) |
@@ -223,7 +223,7 @@ Background Image: bg_hres0.png
 
 &nbsp;
 
-###### Mode 1
+###### Mode 15
 Screen Resolution: 640x480
 | ![image](images/mmiyoo_640/hres_1.png) |
 |-|
@@ -342,7 +342,7 @@ Background Image: bg_hh0.png
 &nbsp;
 
 ##### Display Modes (High Resolution)
-###### Mode 0
+###### Mode 14
 Screen Resolution: 512x384  
 Background Image: bg_hres0.png
 | ![image](images/mmiyoo_752/hres_0.png) |
@@ -350,7 +350,7 @@ Background Image: bg_hres0.png
 
 &nbsp;
 
-###### Mode 1
+###### Mode 15
 Screen Resolution: 752x560
 | ![image](images/mmiyoo_752/hres_1.png) |
 |-|
