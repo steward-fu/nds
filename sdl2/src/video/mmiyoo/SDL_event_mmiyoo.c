@@ -665,10 +665,10 @@ void MMIYOO_EventInit(void)
 
             p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
             cust_key.pre_cfg = *p;
-            *p &= 0xffff0fff;
+            *p &= 0xfff000ff;
 
             p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x1c);
-            *p |= 0x00400000;
+            *p |= 0x01500000;
 
             cust_key.gpio = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
             printf(PREFIX"cust_key.gpio %p\n", cust_key.gpio);
