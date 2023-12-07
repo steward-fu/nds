@@ -506,14 +506,16 @@ $ sudo docker build -t mmiyoo .
 #### How to build all libraries
 ```
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-$ make config
-$ make
+# cd /nds_miyoo
+# make config
+# make
 ```
 
 #### How to pack the release build
 ```
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-$ make rel
+# cd /nds_miyoo
+# make rel
 ```
 
 #### How to delete the build environment (Docker)
@@ -759,14 +761,16 @@ $ sudo docker build -t mmiyoo .
 #### How to build all libraries
 ```
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-$ make config MOD=trimui
-$ make MOD=trimui
+# cd /nds_miyoo
+# make config MOD=trimui
+# make MOD=trimui
 ```
 
 #### How to pack the release build
 ```
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-$ make rel MOD=trimui
+# cd /nds_miyoo
+# make rel MOD=trimui
 ```
 
 #### How to delete the build environment (Docker)
