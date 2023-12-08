@@ -6,6 +6,8 @@
 
 #include "detour.h"
 
+static size_t page_size = 0;
+
 int dtr_savestate(int slot)
 {
     screen_copy16 _func0 = (screen_copy16)FUN_SCREEN_COPY16;
@@ -41,79 +43,27 @@ int dtr_quit(void)
     _func((void*)VAR_SYSTEM);
 }
 
-void detour_init(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post, uint32_t fun_update_screen)
+void detour_init(size_t page)
 {
-    uint32_t val = 0;
-    volatile uint8_t *base = NULL;
-
-    val = fun_print_string;
-    base = (uint8_t*)FUN_PRINT_STRING;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = val >> 0;
-    base[5] = val >> 8;
-    base[6] = val >> 16;
-    base[7] = val >> 24;
-
-    val = fun_savestate_pre;
-    base = (uint8_t*)FUN_SAVESTATE_PRE;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = val >> 0;
-    base[5] = val >> 8;
-    base[6] = val >> 16;
-    base[7] = val >> 24;
-
-    val = fun_savestate_post;
-    base = (uint8_t*)FUN_SAVESTATE_POST;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = val >> 0;
-    base[5] = val >> 8;
-    base[6] = val >> 16;
-    base[7] = val >> 24;
-
-#if 0
-    val = fun_update_screen;
-    base = (uint8_t*)FUN_UPDATE_SCREEN;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = val >> 0;
-    base[5] = val >> 8;
-    base[6] = val >> 16;
-    base[7] = val >> 24;
-#endif
+    page_size = page;
 }
 
-void detour_quit(size_t page_size)
+void detour_hook(uint32_t old_func, uint32_t new_func)
 {
-    volatile uint32_t *base = NULL;
+    volatile uint8_t *base = (volatile uint8_t *)old_func;
 
-    base = (uint32_t*)FUN_PRINT_STRING;
     mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0xe16d42f4;
-    base[1] = 0xe1a05001;
+    base[0] = 0x04;
+    base[1] = 0xf0;
+    base[2] = 0x1f;
+    base[3] = 0xe5;
+    base[4] = new_func >> 0;
+    base[5] = new_func >> 8;
+    base[6] = new_func >> 16;
+    base[7] = new_func >> 24;
+}
 
-    base = (uint32_t*)FUN_SAVESTATE_PRE;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0xe28dd020;
-    base[1] = 0xe49df004;
-
-    base = (uint32_t*)FUN_SAVESTATE_POST;
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0xe28dd018;
-    base[1] = 0xe49df004;
+void detour_quit(void)
+{
 }
 

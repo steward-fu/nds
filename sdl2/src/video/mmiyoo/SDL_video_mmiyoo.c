@@ -3449,7 +3449,11 @@ int MMIYOO_VideoInit(_THIS)
     MMIYOO_EventInit();
 
     if (nds.cust_menu) {
-        detour_init(sysconf(_SC_PAGESIZE), (uint32_t)sdl_print_string, (uint32_t)sdl_savestate_pre, (uint32_t)sdl_savestate_post, (uint32_t)sdl_update_screen);
+        detour_init(sysconf(_SC_PAGESIZE));
+        detour_hook(FUN_PRINT_STRING, (uint32_t)sdl_print_string);
+        detour_hook(FUN_SAVESTATE_PRE, (uint32_t)sdl_savestate_pre);
+        detour_hook(FUN_SAVESTATE_POST, (uint32_t)sdl_savestate_post);
+        //detour_hook(FUN_UPDATE_SCREEN, (uint32_t)sdl_update_screen);
     }
     return 0;
 }
@@ -3470,7 +3474,7 @@ void MMIYOO_VideoQuit(_THIS)
     system("sync");
 
     if (nds.cust_menu) {
-        detour_quit(sysconf(_SC_PAGESIZE));
+        detour_quit();
     }
 
     write_config();

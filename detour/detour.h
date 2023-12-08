@@ -2,6 +2,7 @@
 #define __PATCH_H__
 
     #define VAR_SYSTEM                  0x083f4000
+    #define VAR_SYSTEM_GAMECARD_NAME    0x0847e8e8
     #define VAR_SDL_SCREEN_RENDERER     0x0aee9568
     #define VAR_SDL_SCREEN_BPP          0x0aee957c
     #define VAR_SDL_SCREEN_NEED_INIT    0x0aee95a0
@@ -23,6 +24,7 @@
     #define FUN_SAVESTATE_POST          0x08095154
     #define FUN_UPDATE_SCREEN           0x080a83c0
     #define FUN_SET_SCREEN_MENU_OFF     0x080a8240
+    #define FUN_LOAD_STATE              0x080951c0
     
     #define ALIGN_ADDR(addr)        ((void*)((size_t)(addr) & ~(page_size - 1)))
 
@@ -31,8 +33,9 @@
     typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
     typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
 
-    void detour_init(size_t page_size, uint32_t fun_print_string, uint32_t fun_savestate_pre, uint32_t fun_savestate_post, uint32_t fun_update_screen);
-    void detour_quit(size_t page_size);
+    void detour_init(size_t page_size);
+    void detour_quit(void);
+    void detour_hook(uint32_t old_func, uint32_t new_func);
 
     int dtr_quit(void);
     int dtr_savestate(int slot);
