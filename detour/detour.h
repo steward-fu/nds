@@ -25,6 +25,7 @@
     #define FUN_UPDATE_SCREEN           0x080a83c0
     #define FUN_SET_SCREEN_MENU_OFF     0x080a8240
     #define FUN_LOAD_STATE              0x080951c0
+    #define FUN_SAVE_STATE              0x0809580c
     
     #define ALIGN_ADDR(addr)        ((void*)((size_t)(addr) & ~(page_size - 1)))
 
