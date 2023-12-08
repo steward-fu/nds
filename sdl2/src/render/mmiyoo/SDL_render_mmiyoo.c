@@ -273,7 +273,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
 
 int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcrect, const SDL_FRect *dstrect)
 {
-    static char show_info_buf[MAX_PATH] = {0};
+    static char show_info_buf[MAX_PATH << 1] = {0};
     static int show_info_cnt = 0;
     static int cur_w = 0;
     static int cur_fb_w = 0;
@@ -289,6 +289,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     static int pre_downscale = 0;
 #endif
 
+    char buf[MAX_PATH] = {0};
     int alpha = 0;
     int pitch = 0;
     int need_pen = 0;
@@ -336,7 +337,16 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         else if (cur_theme_sel != nds.theme.sel) {
             show_info_cnt = 50;
             if ((nds.theme.max > 0) && (nds.theme.sel < nds.theme.max)) {
-                sprintf(show_info_buf, " %s %d ", to_lang("Wallpaper"), nds.theme.sel);
+                if (get_dir_path(nds.theme.path, nds.theme.sel, buf) == 0) {
+                    int off = strlen(nds.theme.path);
+                    sprintf(show_info_buf, " %s %s ", to_lang("Wallpaper"), &buf[off + 1]);
+                }
+                else {
+                    sprintf(show_info_buf, " %s %d ", to_lang("Wallpaper"), nds.theme.sel);
+                }
+            }
+            else {
+                sprintf(show_info_buf, " %s %s ", to_lang("Wallpaper"), to_lang("None"));
             }
         }
         else if (cur_down_scale != down_scale) {

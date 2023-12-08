@@ -1503,7 +1503,7 @@ static int set_cpuclock(uint32_t newclock)
 }
 #endif
 
-static int get_dir_path(const char *path, int desire, char *buf)
+int get_dir_path(const char *path, int desire, char *buf)
 {
     DIR *d = NULL;
     int count = 0, r = -1;

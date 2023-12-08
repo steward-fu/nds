@@ -375,6 +375,7 @@ int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor
 
 int get_font_width(const char *info);
 int get_font_height(const char *info);
+int get_dir_path(const char *path, int desire, char *buf);
 
 int fb_init(void);
 int fb_uninit(void);
