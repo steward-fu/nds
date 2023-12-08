@@ -33,8 +33,10 @@
     typedef void (*screen_copy16)(uint16_t *dest, uint32_t screen_number);
     typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
     typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
+    typedef int32_t (*load_state)(void *system, const char *path, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
+    typedef int32_t (*save_state)(void *system, const char *dir, char *filename, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
 
-    void detour_init(size_t page_size);
+    void detour_init(size_t page_size, const char *path);
     void detour_quit(void);
     void detour_hook(uint32_t old_func, uint32_t new_func);
 

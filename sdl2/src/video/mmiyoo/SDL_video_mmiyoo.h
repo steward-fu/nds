@@ -163,6 +163,7 @@
 #define JSON_NDS_AUTO_STATE         "auto_state"
 #define JSON_NDS_AUTO_SLOT          "auto_slot"
 #define JSON_NDS_HOTKEY             "hotkey"
+#define JSON_NDS_STATES             "states"
 
 #define GFX_ACTION_NONE             0
 #define GFX_ACTION_FLIP             1
@@ -281,6 +282,10 @@ typedef struct _NDS {
 
     TTF_Font *font;
     uint32_t state;
+
+    struct _STATES {
+        char path[MAX_PATH];
+    } states;
 
     struct _CFG {
         char path[MAX_PATH];

@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -1327,6 +1329,27 @@ static int read_config(void)
         nds.hotkey = json_object_get_int(jval);
         printf(PREFIX"[json] nds.hotkey: %d\n", nds.hotkey);
     }
+
+#ifdef MMIYOO
+    json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
+    if (jval) {
+        struct stat st = {0};
+        const char *path = json_object_get_string(jval);
+
+        if ((path != NULL) && (path[0] != 0)) {
+            strcpy(nds.states.path, path);
+            printf(PREFIX"[json] states: %s\n", nds.states.path);
+
+            if (stat(nds.states.path, &st) == -1) {
+                mkdir(nds.states.path, 0755);
+                printf(PREFIX"create states folder under \'%s\'\n", nds.states.path);
+            }
+        }
+        else {
+            printf(PREFIX"use the default state path\n");
+        }
+    }
+#endif
 
     reload_pen();
 #ifdef MMIYOO
@@ -3449,7 +3472,7 @@ int MMIYOO_VideoInit(_THIS)
     MMIYOO_EventInit();
 
     if (nds.cust_menu) {
-        detour_init(sysconf(_SC_PAGESIZE));
+        detour_init(sysconf(_SC_PAGESIZE), nds.states.path);
         detour_hook(FUN_PRINT_STRING, (uint32_t)sdl_print_string);
         detour_hook(FUN_SAVESTATE_PRE, (uint32_t)sdl_savestate_pre);
         detour_hook(FUN_SAVESTATE_POST, (uint32_t)sdl_savestate_post);
