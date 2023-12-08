@@ -3541,6 +3541,74 @@ void MMIYOO_VideoQuit(_THIS)
 }
 
 #ifdef MMIYOO
+static const char *DIS_MODE0_640[] = {
+    "640*480",
+    "640*480",
+    "512*384",
+    "640*480",
+    "256*192",
+    "320*240",
+    "256*192",
+    "320*240",
+    "480*360",
+    "384*288",
+    "384*288",
+    "384*288",
+    "427*320",
+    "427*320"
+};
+
+static const char *DIS_MODE1_640[] = {
+    "170*128",
+    "256*192",
+    "",
+    "",
+    "256*192",
+    "320*240",
+    "256*192",
+    "320*240",
+    "160*120",
+    "256*192",
+    "256*192",
+    "256*192",
+    "427*320",
+    "427*320",
+};
+
+static const char *DIS_MODE0_752[] = {
+    "752*560",
+    "752*560",
+    "512*384",
+    "752*560",
+    "256*192",
+    "373*280",
+    "256*192",
+    "373*280",
+    "592*440",
+    "496*368",
+    "496*368",
+    "496*368",
+    "501*376",
+    "501*376"
+};
+
+static const char *DIS_MODE1_752[] = {
+    "170*128",
+    "256*192",
+    "",
+    "",
+    "256*192",
+    "373*280",
+    "256*192",
+    "373*280",
+    "160*120",
+    "256*192",
+    "256*192",
+    "256*192",
+    "501*376",
+    "501*376",
+};
+
 static const char *POS[] = {
     "Top-Right", "Top-Left", "Bottom-Left", "Bottom-Right"
 };
@@ -3723,7 +3791,7 @@ int handle_menu(int key)
             }
             break;
         case MENU_ALT:
-            if (nds.alt_mode > 0) {
+            if ((nds.hres_mode == 0) && (nds.alt_mode > 0)) {
                 nds.alt_mode-= 1;
             }
             break;
@@ -3800,7 +3868,7 @@ int handle_menu(int key)
             }
             break;
         case MENU_ALT:
-            if (nds.alt_mode < NDS_DIS_MODE_LAST) {
+            if ((nds.hres_mode == 0) && (nds.alt_mode < NDS_DIS_MODE_LAST)) {
                 nds.alt_mode+= 1;
             }
             break;
@@ -3914,6 +3982,16 @@ int handle_menu(int key)
                 }
             }
             break;
+        case MENU_ALT:
+            if (nds.hres_mode == 0) {
+                col0 = (cur_sel == cc) ? sel_col : unsel_col;
+                col1 = (cur_sel == cc) ? val_col : unsel_col;
+            }
+            else {
+                col0 = unsel_col;
+                col1 = unsel_col;
+            }
+            break;
         default:
             sx = 0;
             col0 = (cur_sel == cc) ? sel_col : unsel_col;
@@ -3949,24 +4027,45 @@ int handle_menu(int key)
             }
             break;
         case MENU_DIS:
-            sprintf(buf, "%s %d", to_lang("Mode"), nds.dis_mode);
+            if (nds.hres_mode == 0) {
+                sprintf(buf, "[%d]   %s", nds.dis_mode, nds.enable_752x560 ? DIS_MODE0_752[nds.dis_mode] : DIS_MODE0_640[nds.dis_mode]);
+            }
+            else {
+                if (nds.enable_752x560) {
+                    sprintf(buf, "[%d]   %s", nds.dis_mode, nds.dis_mode == NDS_DIS_MODE_HRES0 ? "512*384" : "752*560");
+                }
+                else {
+                    sprintf(buf, "[%d]   %s", nds.dis_mode, nds.dis_mode == NDS_DIS_MODE_HRES0 ? "512*384" : "640*480");
+                }
+            }
             break;
         case MENU_DIS_ALPHA:
-            sx = 20;
+            if (nds.hres_mode == 0) {
+                sprintf(buf, "[%d]   ", nds.dis_mode);
+                sx = get_font_width(buf);
+                sprintf(buf, "%s", nds.enable_752x560 ? DIS_MODE1_752[nds.dis_mode] : DIS_MODE1_640[nds.dis_mode]);
+                draw_info(cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_DIS) ? val_col : unsel_col, 0);
+            }
+
+            sx = 0;
             sprintf(buf, "%d", nds.alpha.val);
             break;
         case MENU_DIS_BORDER:
-            sx = 20;
             sprintf(buf, "%s", to_lang(BORDER[nds.alpha.border]));
             break;
         case MENU_DIS_POSITION:
-            sx = 20;
             sprintf(buf, "%s", to_lang(POS[nds.alpha.pos]));
             break;
         case MENU_ALT:
-            sprintf(buf, "%s %d", to_lang("Mode"), nds.alt_mode);
+            sprintf(buf, "[%d]   %s", nds.alt_mode, nds.enable_752x560 ? DIS_MODE0_752[nds.alt_mode] : DIS_MODE0_640[nds.alt_mode]);
             break;
         case MENU_KEYS:
+            sprintf(buf, "[%d]   ", nds.alt_mode);
+            sx = get_font_width(buf);
+            sprintf(buf, "%s", nds.enable_752x560 ? DIS_MODE1_752[nds.alt_mode] : DIS_MODE1_640[nds.alt_mode]);
+            draw_info(cvt, buf, SSX + sx, SY + (h * idx), (nds.hres_mode == 0) && (cur_sel == MENU_ALT) ? val_col : unsel_col, 0);
+
+            sx = 0;
             sprintf(buf, "%s", DPAD[nds.keys_rotate % 3]);
             break;
         case MENU_PEN_XV:
