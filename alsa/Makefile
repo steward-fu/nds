@@ -10,11 +10,11 @@ ifeq ($(MOD),trimui)
     CFLAGS += -DTRIMUI -I../trimui/inc
 endif
 
-ifeq ($MOD),funkeys)
+ifeq ($(MOD),funkeys)
     CFLAGS += -DFUNKEYS -I../funkeys/inc
 endif
 
-ifeq ($MOD),mmiyoo)
+ifeq ($(MOD),mmiyoo)
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     LDFLAGS+= -L../mmiyoo/lib -lmi_common -lmi_sys -lmi_gfx -lmi_ao
 endif
