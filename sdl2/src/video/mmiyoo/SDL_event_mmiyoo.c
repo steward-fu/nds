@@ -77,6 +77,22 @@
     #define MENU    1
 #endif
 
+#ifdef FUNKEYS
+    #define UP      22
+    #define DOWN    32
+    #define LEFT    38
+    #define RIGHT   19
+    #define A       30
+    #define B       48
+    #define X       45
+    #define Y       21
+    #define L1      50
+    #define R1      49
+    #define START   31
+    #define SELECT  37
+    #define MENU    16
+#endif
+
 MMIYOO_EventInfo evt = {0};
 
 extern GFX gfx;
@@ -197,6 +213,10 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
+#ifdef FUNKEYS
+    uint32_t mask = (1 << bit) | (1 << MYKEY_START);
+#endif
+
     return (hotkey ^ mask) ? 0 : 1;
 }
 
@@ -209,6 +229,12 @@ static void set_key(uint32_t bit, int val)
 #ifdef TRIMUI
         if (bit == MYKEY_MENU) {
             hotkey = (1 << MYKEY_MENU);
+        }
+#endif
+
+#ifdef FUNKEYS
+        if (bit == MYKEY_START) {
+            hotkey = (1 << MYKEY_START);
         }
 #endif
 
@@ -329,6 +355,7 @@ int EventUpdate(void *data)
         if (event_fd > 0) {
             if (read(event_fd, &ev, sizeof(struct input_event))) {
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
+                    //printf(PREFIX"code:%d, value:%d\n", ev.code, ev.value);
                     if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
                     if (ev.code == r1)      { set_key(MYKEY_R1,    ev.value); }
 #ifdef MMIYOO
@@ -410,7 +437,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                         if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
                             evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
 
@@ -437,7 +464,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                         set_key(MYKEY_R2, 1);
 #endif
                         set_key(MYKEY_RIGHT, 0);
@@ -543,6 +570,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_Y, 0);
                     }
 
+#ifndef FUNKEYS
                     if (hotkey_mask && hit_hotkey(MYKEY_START)) {
 #ifdef MMIYOO
                         if (nds.menu.enable == 0) {
@@ -559,6 +587,7 @@ int EventUpdate(void *data)
 #endif
                         set_key(MYKEY_START, 0);
                     }
+#endif
 
 #ifdef MMIYOO
                     if (nds.hotkey == HOTKEY_BIND_MENU) {
@@ -569,7 +598,7 @@ int EventUpdate(void *data)
                     }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                     if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
                         set_key(MYKEY_MENU_ONION, 1);
                         set_key(MYKEY_SELECT, 0);
@@ -581,7 +610,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_FF, 1);
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                         set_key(MYKEY_QSAVE, 1);
 #endif
                         set_key(MYKEY_R1, 0);
@@ -592,7 +621,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_EXIT, 1);
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                         set_key(MYKEY_QLOAD, 1);
 #endif
                         set_key(MYKEY_L1, 0);
@@ -772,12 +801,18 @@ void MMIYOO_PumpEvents(_THIS)
                         continue;
                     }
 #endif
+
+#ifdef FUNKEYS
+                    if (cc == MYKEY_START) {
+                        continue;
+                    }
+#endif
                     if (changed & bit) {
                         SDL_SendKeyboardKey((evt.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                     }
                 }
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                 if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }
@@ -910,7 +945,7 @@ void MMIYOO_PumpEvents(_THIS)
                 SDL_SendMouseMotion(vid.window, 0, 0, evt.mouse.x + addx, evt.mouse.y + addy);
             }
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                 if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }

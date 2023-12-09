@@ -51,11 +51,16 @@ all:
 .PHONY: config
 config:
 	cp assets/$(MOD)/* drastic/
-	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure ${SDL2_CFG} --host=${HOST}
+	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure $(SDL2_CFG) --host=$(HOST)
 
 .PHONY: rel
 rel:
-	zip -r drastic_$(MOD)_${REL_VER}.zip drastic
+	zip -r drastic_$(MOD)_$(REL_VER).zip drastic
+
+.PHONY: opk
+opk:
+	mksquashfs funkeys/opk/* nds_drastic_funkey-s_$(REL_VER).opk
+	zip -r drastic_$(MOD)_$(REL_VER).zip drastic nds_drastic_funkey-s_$(REL_VER).opk
 
 .PHONY: clean
 clean:

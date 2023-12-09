@@ -1022,6 +1022,10 @@ static void *video_handler(void *threadid)
 #ifdef TRIMUI
             My_QueueCopy(gfx.thread[0].texture, get_pixels(gfx.thread[0].texture), &gfx.thread[0].srt, &gfx.thread[0].drt);
 #endif
+
+#ifdef FUNKEYS
+            My_QueueCopy(gfx.thread[0].texture, get_pixels(gfx.thread[0].texture), &gfx.thread[0].srt, &gfx.thread[0].drt);
+#endif
             GFX_Flip();
         }
         usleep(1);
@@ -1660,6 +1664,34 @@ static int get_overlay_count(void)
     return get_file_count(nds.overlay.path);
 }
 
+#ifdef FUNKEYS
+int fb_init(void)
+{
+    gfx.fb_dev = open("/dev/fb0", O_RDWR);
+    if (gfx.fb_dev < 0) {
+        printf(PREFIX"failed to open /dev/fb0\n");
+        return -1;
+    }
+
+    gfx.hw.mem = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fb_dev, 0);
+    if (gfx.hw.mem == (void *)-1) {
+        close(gfx.fb_dev);
+        printf(PREFIX"failed to mmap /dev/fb0\n");
+        return -1;
+    }
+    memset(gfx.hw.mem, 0 , FB_SIZE);
+    return 0;
+}
+
+int fb_uninit(void)
+{
+    munmap(gfx.hw.mem, FB_SIZE);
+    close(gfx.fb_dev);
+    gfx.fb_dev = -1;
+    return 0;
+}
+#endif
+
 #ifdef TRIMUI
 static int ion_alloc(int ion_fd, ion_alloc_info_t* info)
 {
@@ -1969,6 +2001,9 @@ void GFX_Init(void)
 #ifdef TRIMUI
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
+#ifdef FUNKEYS
+        SDL_Rect nrt = {0, 0, FB_W, FB_H};
+#endif
         nds.menu.drastic.yes = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.yes) {
             SDL_SoftStretch(t, NULL, nds.menu.drastic.yes, NULL);
@@ -1984,6 +2019,9 @@ void GFX_Init(void)
 #endif
 #ifdef TRIMUI
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+#endif
+#ifdef FUNKEYS
+        SDL_Rect nrt = {0, 0, FB_W, FB_H};
 #endif
         nds.menu.drastic.no = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.no) {
@@ -2190,6 +2228,26 @@ int draw_pen(const void *pixels, int width, int pitch)
 
 int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
+#ifdef FUNKEYS
+    if ((srcrect.w == 256) && (srcrect.h == 192)) {
+        int x = 0;
+        int y = 0;
+        uint32_t v = 0;
+        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - 192) >> 1) * FB_W);
+        uint32_t *src = (uint32_t *)pixels;
+
+        for (y = 0; y < 192; y++) {
+            src+= 8;
+            for (x = 0; x < 240; x++) {
+                v = *src++;
+                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
+            }
+            src+= 8;
+        }
+    }
+    return 0;
+#endif
+
 #ifdef TRIMUI
     int x = 0;
     int y = 0;
@@ -3060,8 +3118,10 @@ int reload_pen(void)
 
 int reload_bg(void)
 {
+#ifndef FUNKEYS
     static int pre_sel = -1;
     static int pre_mode = -1;
+#endif
 
 #ifdef MMIYOO
     char buf[MAX_PATH] = {0};
@@ -3446,8 +3506,13 @@ int MMIYOO_VideoInit(_THIS)
 
     FB_W = DEF_FB_W;
     FB_H = DEF_FB_H;
-    FB_SIZE = (FB_W * FB_H * FB_BPP * 2);
-    TMP_SIZE = (FB_W * FB_H * FB_BPP);
+    FB_SIZE = FB_W * FB_H * FB_BPP * 2;
+    TMP_SIZE = FB_W * FB_H * FB_BPP;
+
+#ifdef FUNKEYS
+    FB_SIZE = FB_W * FB_H * FB_BPP;
+#endif
+
 #ifdef MMIYOO
     fd = popen("fbset | grep \"mode \"", "r");
     if (fd) {

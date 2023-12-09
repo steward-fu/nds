@@ -2409,6 +2409,19 @@ CheckTrimuiVideo()
     fi
 }
 
+CheckFunkeysVideo()
+{
+    if test x$enable_video = xyes; then
+        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
+        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFUNKEYS -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../funkeys/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckMMiyooAudio()
 {
     if test x$enable_audio = xyes; then
@@ -2424,6 +2437,20 @@ CheckMMiyooAudio()
 }
 
 CheckTrimuiAudio()
+{
+    if test x$enable_audio = xyes; then
+        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
+        have_audio=yes
+        if test x$HOST = xarm-linux; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
+        fi
+        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
+    fi
+}
+
+CheckFunkeysAudio()
 {
     if test x$enable_audio = xyes; then
         AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
@@ -3727,6 +3754,9 @@ case "$host" in
             *trimui*)           ARCH=trimui
                 CheckTrimuiVideo
                 ;;
+            *funkeys*)           ARCH=funkeys
+                CheckFunkeysVideo
+                ;;
         esac
 
         CheckVisibilityHidden
@@ -3839,6 +3869,9 @@ case "$host" in
             trimui)
                 CheckTrimuiAudio
             ;;
+            funkeys)
+                CheckFunkeysAudio
+            ;;
           esac
         fi
         # Set up files for the joystick library
@@ -3870,6 +3903,11 @@ case "$host" in
                 have_joystick=yes
             ;;
             trimui)
+                AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
+                SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
+                have_joystick=yes
+            ;;
+            funkeys)
                 AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
                 SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
                 have_joystick=yes

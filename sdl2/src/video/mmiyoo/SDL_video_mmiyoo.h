@@ -53,11 +53,12 @@
 #ifdef MMIYOO
     #include "mi_sys.h"
     #include "mi_gfx.h"
+#else
+    #define E_MI_GFX_ROTATE_180 0
 #endif
 
 #ifdef TRIMUI
     #include "trimui.h"
-    #define E_MI_GFX_ROTATE_180 0
 #endif
 
 #ifndef MAX_PATH
@@ -67,6 +68,7 @@
 #ifdef MMIYOO
     #define DEF_FB_W                640
     #define DEF_FB_H                480
+    #define FB_BPP                  4
 #endif
 
 #ifdef TRIMUI
@@ -74,9 +76,15 @@
     #define DEF_FB_H                240
     #define ION_W                   512
     #define ION_H                   384
+    #define FB_BPP                  4
 #endif
 
-#define FB_BPP                      4
+#ifdef FUNKEYS
+    #define DEF_FB_W                240
+    #define DEF_FB_H                240
+    #define FB_BPP                  2
+#endif
+
 #define IMG_W                       640
 #define IMG_H                       480
 
@@ -108,6 +116,10 @@
 #endif
 
 #ifdef TRIMUI
+    #define DEF_FONT_SIZE           12
+#endif
+
+#ifdef FUNKEYS
     #define DEF_FONT_SIZE           12
 #endif
 
@@ -172,11 +184,10 @@
 
 #ifdef MMIYOO
     #define RELOAD_BG_COUNT         5
-#endif
-
-#ifdef TRIMUI
+#else
     #define RELOAD_BG_COUNT         1
 #endif
+
 #define MAX_QUEUE                   2
 
 #define DEF_LANG_SLOT               0
@@ -251,6 +262,10 @@ typedef struct _GFX {
         disp_layer_config disp;
         disp_layer_config buf;
         ion_alloc_info_t ion;
+#endif
+
+#ifdef FUNKEYS
+        uint32_t *mem;
 #endif
     } hw;
 

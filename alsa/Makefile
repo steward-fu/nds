@@ -8,7 +8,13 @@ LDFLAGS+= -L../detour -ldtr
 
 ifeq ($(MOD),trimui)
     CFLAGS += -DTRIMUI -I../trimui/inc
-else
+endif
+
+ifeq ($MOD),funkeys)
+    CFLAGS += -DFUNKEYS -I../funkeys/inc
+endif
+
+ifeq ($MOD),mmiyoo)
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     LDFLAGS+= -L../mmiyoo/lib -lmi_common -lmi_sys -lmi_gfx -lmi_ao
 endif
