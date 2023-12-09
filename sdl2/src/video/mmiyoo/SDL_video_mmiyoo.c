@@ -144,6 +144,7 @@ static int draw_drastic_menu_main(void)
     int w = 30;
     int h = 100;
     int draw = 0;
+    int draw_shot = 1;
     int x = 0, y = 0;
     SDL_Rect rt = {0};
     CUST_MENU_SUB *p = NULL;
@@ -155,7 +156,11 @@ static int draw_drastic_menu_main(void)
 
     for (cc=0; cc<drastic_menu.cnt; cc++) {
         draw = 0;
+#ifdef MMIYOO
+        x = 90 / div;
+#else
         x = 150 / div;
+#endif
         w = LINE_H / div;
         h = 100 / div;
         
@@ -226,6 +231,10 @@ static int draw_drastic_menu_main(void)
                 rt.h = w;
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
+
+                if (p->y == 304) {
+                    //draw_shot = 0;
+                }
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             if (p->bg && nds.menu.drastic.cursor) {
@@ -235,6 +244,36 @@ static int draw_drastic_menu_main(void)
             }
         }
     }
+
+#ifdef MMIYOO
+    if (draw_shot && nds.menu.drastic.shot_top) {
+        SDL_Surface *t = SDL_CreateRGBSurfaceFrom(nds.menu.drastic.shot_top, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
+        if (t) {
+            rt.x = FB_W - (256 + 10);
+            rt.y = 50;
+            rt.w = 256;
+            rt.h = 192;
+            SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
+            SDL_FreeSurface(t);
+        }
+        free(nds.menu.drastic.shot_top);
+        nds.menu.drastic.shot_top = NULL;
+    }
+
+    if (draw_shot && nds.menu.drastic.shot_bottom) {
+        SDL_Surface *t = SDL_CreateRGBSurfaceFrom(nds.menu.drastic.shot_bottom, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
+        if (t) {
+            rt.x = FB_W - (256 + 10);
+            rt.y = 50 + 192;
+            rt.w = 256;
+            rt.h = 192;
+            SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
+            SDL_FreeSurface(t);
+        }
+        free(nds.menu.drastic.shot_bottom);
+        nds.menu.drastic.shot_bottom = NULL;
+    }
+#endif
     return 0;
 }
 
@@ -894,6 +933,24 @@ int process_drastic_menu(void)
     GFX_Flip();
     memset(&drastic_menu, 0, sizeof(drastic_menu));
     return 0;
+}
+
+void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+{
+    if ((x == 472) && (y == 48)) {
+        if (nds.menu.drastic.shot_top) {
+            free(nds.menu.drastic.shot_top);
+        }
+        nds.menu.drastic.shot_top = malloc(256 * 192 * 2);
+        memcpy(nds.menu.drastic.shot_top, src, 256 * 192 * 2);
+    }
+    else if ((x == 472) && (y == 240)) {
+        if (nds.menu.drastic.shot_bottom) {
+            free(nds.menu.drastic.shot_bottom);
+        }
+        nds.menu.drastic.shot_bottom = malloc(256 * 192 * 2);
+        memcpy(nds.menu.drastic.shot_bottom, src, 256 * 192 * 2);
+    }
 }
 
 void sdl_update_screen(void)
@@ -3541,6 +3598,7 @@ int MMIYOO_VideoInit(_THIS)
         detour_hook(FUN_PRINT_STRING, (uint32_t)sdl_print_string);
         detour_hook(FUN_SAVESTATE_PRE, (uint32_t)sdl_savestate_pre);
         detour_hook(FUN_SAVESTATE_POST, (uint32_t)sdl_savestate_post);
+        detour_hook(FUN_BLIT_SCREEN_MENU, (uint32_t)sdl_blit_screen_menu);
         //detour_hook(FUN_UPDATE_SCREEN, (uint32_t)sdl_update_screen);
     }
     return 0;
