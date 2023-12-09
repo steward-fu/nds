@@ -15,7 +15,8 @@ export SDL_AUDIODRIVER=mmiyoo
 export EGL_VIDEODRIVER=mmiyoo
 
 cd $mydir
-./drastic "$1"
+rom=`cat rom.txt`
+./drastic "$rom"
 sync
 
 echo $sv > /proc/sys/vm/swappiness
