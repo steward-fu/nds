@@ -168,7 +168,7 @@ static int draw_drastic_menu_main(void)
         p = &drastic_menu.item[cc];
         if (p->y == 201) {
             draw = 1;
-            sprintf(buf, "%s %s", to_lang("Version"), &p->msg[8]);
+            sprintf(buf, "DraStic %s", &p->msg[8]);
             x = FB_W - get_font_width(buf) - 10;
             y = 10 / div;
         }
@@ -245,12 +245,15 @@ static int draw_drastic_menu_main(void)
         }
     }
 
+    sprintf(buf, "Rel v1.8 - Res %s", nds.enable_752x560 ? "752*560" : "640*480");
+    draw_info(nds.menu.drastic.main, buf, 10, 10 / div, nds.menu.c1, 0);
+
 #ifdef MMIYOO
     if (draw_shot && nds.menu.drastic.shot_top) {
         SDL_Surface *t = SDL_CreateRGBSurfaceFrom(nds.menu.drastic.shot_top, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
         if (t) {
-            rt.x = FB_W - (256 + 10);
-            rt.y = 50;
+            rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
+            rt.y = nds.enable_752x560 ? h - 20 : 50;
             rt.w = 256;
             rt.h = 192;
             SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
@@ -263,8 +266,8 @@ static int draw_drastic_menu_main(void)
     if (draw_shot && nds.menu.drastic.shot_bottom) {
         SDL_Surface *t = SDL_CreateRGBSurfaceFrom(nds.menu.drastic.shot_bottom, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
         if (t) {
-            rt.x = FB_W - (256 + 10);
-            rt.y = 50 + 192;
+            rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
+            rt.y = nds.enable_752x560 ? (h + 192) - 20 : 50 + 192;
             rt.w = 256;
             rt.h = 192;
             SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
