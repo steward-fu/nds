@@ -598,9 +598,16 @@ int EventUpdate(void *data)
                     }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#ifdef TRIMUI
                     if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
                         set_key(MYKEY_MENU_ONION, 1);
+                        set_key(MYKEY_SELECT, 0);
+                    }
+#endif
+
+#ifdef FUNKEYS
+                    if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
+                        set_key(MYKEY_EXIT, 1);
                         set_key(MYKEY_SELECT, 0);
                     }
 #endif
