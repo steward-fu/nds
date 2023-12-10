@@ -144,11 +144,14 @@ static int draw_drastic_menu_main(void)
     int w = 30;
     int h = 100;
     int draw = 0;
-    int draw_shot = 1;
     int x = 0, y = 0;
     SDL_Rect rt = {0};
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
+
+#ifdef MMIYOO
+    int draw_shot = 1;
+#endif
 
 #ifdef TRIMUI
     div = 2;
@@ -1420,7 +1423,10 @@ static int read_config(void)
     reload_overlay();
 #endif
     json_object_put(jfile);
+
+#ifndef FUNKEYS
     snd_nds_reload_config();
+#endif
 
 #ifdef TRIMUI
     if ((nds.dis_mode != NDS_DIS_MODE_S0) && (nds.dis_mode != NDS_DIS_MODE_S1)) {

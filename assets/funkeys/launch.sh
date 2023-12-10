@@ -11,10 +11,15 @@ sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
 
 export SDL_VIDEODRIVER=mmiyoo
-export SDL_AUDIODRIVER=mmiyoo
+export SDL_AUDIODRIVER=alsa
 export EGL_VIDEODRIVER=mmiyoo
 
 cd $mydir
+
+if [ -f "libs/libasound.so.2" ]; then
+    rm -rf libs/libasound.so.2
+fi
+
 rom=`cat rom.txt`
 ./drastic "$rom"
 sync

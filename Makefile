@@ -23,8 +23,8 @@ SDL2_CFG+= --disable-video-opengles
 SDL2_CFG+= --disable-video-opengles2
 SDL2_CFG+= --disable-video-wayland
 SDL2_CFG+= --disable-video-dummy
-SDL2_CFG+= --disable-oss
-SDL2_CFG+= --disable-alsa
+#SDL2_CFG+= --disable-oss
+#SDL2_CFG+= --disable-alsa
 SDL2_CFG+= --disable-sndio
 SDL2_CFG+= --disable-diskaudio
 SDL2_CFG+= --disable-pulseaudio
@@ -60,7 +60,7 @@ rel:
 .PHONY: opk
 opk:
 	mksquashfs funkeys/opk/* nds_drastic_funkey-s_$(REL_VER).opk
-	zip -r drastic_$(MOD)_$(REL_VER).zip drastic nds_drastic_funkey-s_$(REL_VER).opk
+	cp $(MOD)/readme.txt . && zip -r drastic_$(MOD)_$(REL_VER).zip drastic nds_drastic_funkey-s_$(REL_VER).opk readme.txt -x drastic/system/* && rm -rf readme.txt
 
 .PHONY: clean
 clean:
