@@ -234,10 +234,11 @@ static int draw_drastic_menu_main(void)
                 rt.h = w;
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
-
+#ifdef MMIYOO
                 if ((p->y == 320) || (p->y == 328)) {
                     draw_shot = 1;
                 }
+#endif
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
             if (p->bg && nds.menu.drastic.cursor) {
@@ -1967,6 +1968,7 @@ int fb_uninit(void)
 void GFX_Init(void)
 {
     int cc = 0;
+    struct stat st = {0};
     SDL_Surface *t = NULL;
 
 #ifdef TRIMUI
@@ -1990,10 +1992,9 @@ void GFX_Init(void)
         strcat(nds.pen.path, PEN_PATH);
     }
 
-    memset(nds.shot.path, 0, sizeof(nds.shot.path));
-    if (getcwd(nds.shot.path, sizeof(nds.shot.path))) {
-        strcat(nds.shot.path, "/");
-        strcat(nds.shot.path, SHOT_PATH);
+    strcpy(nds.shot.path, SHOT_PATH);
+    if (stat(nds.shot.path, &st) == -1) {
+        mkdir(nds.shot.path, 0755);
     }
 
     memset(nds.theme.path, 0, sizeof(nds.theme.path));

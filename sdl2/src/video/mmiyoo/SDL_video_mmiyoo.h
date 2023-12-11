@@ -89,7 +89,13 @@
 #define IMG_H                       480
 
 #define PREFIX                      "[SDL] "
-#define SHOT_PATH                   "screenshot"
+
+#ifdef FUNKEYS
+    #define SHOT_PATH               "/mnt/Screenshots"
+#else
+    #define SHOT_PATH               "/mnt/SDCARD/Screenshots"
+#endif
+
 #define CFG_PATH                    "resources/settings.json"
 #define THEME_PATH                  "resources/bg"
 #define PEN_PATH                    "resources/pen"
