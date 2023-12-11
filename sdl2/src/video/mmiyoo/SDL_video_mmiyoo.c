@@ -918,7 +918,13 @@ int process_drastic_menu(void)
 {
     int layer = get_current_menu_layer();
 
-    SDL_SoftStretch(nds.menu.drastic.bg, NULL, nds.menu.drastic.main, NULL);
+    if (layer == NDS_DRASTIC_MENU_MAIN) {
+        SDL_SoftStretch(nds.menu.drastic.bg0, NULL, nds.menu.drastic.main, NULL);
+    }
+    else {
+        SDL_SoftStretch(nds.menu.drastic.bg1, NULL, nds.menu.drastic.main, NULL);
+    }
+
     switch (layer) {
     case NDS_DRASTIC_MENU_MAIN:
         draw_drastic_menu_main();
@@ -2032,10 +2038,17 @@ void GFX_Init(void)
     nds.menu.cursor = IMG_Load(MENU_CURSOR_FILE);
     printf(PREFIX"menu cursor: %p\n", nds.menu.cursor);
 
-    t = IMG_Load(DRASTIC_MENU_BG_FILE);
+    t = IMG_Load(DRASTIC_MENU_BG0_FILE);
     if (t) {
-        nds.menu.drastic.bg = SDL_ConvertSurface(t, cvt->format, 0);
-        printf(PREFIX"drastic menu bg: %p\n", nds.menu.drastic.bg);
+        nds.menu.drastic.bg0 = SDL_ConvertSurface(t, cvt->format, 0);
+        printf(PREFIX"drastic menu bg0: %p\n", nds.menu.drastic.bg0);
+        SDL_FreeSurface(t);
+    }
+
+    t = IMG_Load(DRASTIC_MENU_BG1_FILE);
+    if (t) {
+        nds.menu.drastic.bg1 = SDL_ConvertSurface(t, cvt->format, 0);
+        printf(PREFIX"drastic menu bg1: %p\n", nds.menu.drastic.bg1);
         SDL_FreeSurface(t);
     }
 
@@ -2100,8 +2113,8 @@ void GFX_Init(void)
 
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
     if (nds.menu.drastic.main) {
-        if (nds.menu.drastic.bg) {
-            SDL_SoftStretch(nds.menu.drastic.bg, NULL, nds.menu.drastic.main, NULL);
+        if (nds.menu.drastic.bg0) {
+            SDL_SoftStretch(nds.menu.drastic.bg0, NULL, nds.menu.drastic.main, NULL);
         }
     }
 
@@ -3665,9 +3678,14 @@ void MMIYOO_VideoQuit(_THIS)
         nds.menu.cursor = NULL;
     }
 
-    if (nds.menu.drastic.bg) {
-        SDL_FreeSurface(nds.menu.drastic.bg);
-        nds.menu.drastic.bg = NULL;
+    if (nds.menu.drastic.bg0) {
+        SDL_FreeSurface(nds.menu.drastic.bg0);
+        nds.menu.drastic.bg0 = NULL;
+    }
+
+    if (nds.menu.drastic.bg1) {
+        SDL_FreeSurface(nds.menu.drastic.bg1);
+        nds.menu.drastic.bg1 = NULL;
     }
 
     if (nds.menu.drastic.cursor) {

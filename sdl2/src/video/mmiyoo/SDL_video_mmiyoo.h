@@ -97,7 +97,8 @@
 #define OVERLAY_PATH                "resources/overlay"
 #define MENU_BG_FILE                "resources/menu/bg.png"
 #define MENU_CURSOR_FILE            "resources/menu/cursor.png"
-#define DRASTIC_MENU_BG_FILE        "resources/menu/drastic_bg.png"
+#define DRASTIC_MENU_BG0_FILE       "resources/menu/drastic_bg0.png"
+#define DRASTIC_MENU_BG1_FILE       "resources/menu/drastic_bg1.png"
 #define DRASTIC_MENU_YES_FILE       "resources/menu/drastic_yes.png"
 #define DRASTIC_MENU_NO_FILE        "resources/menu/drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "resources/menu/drastic_cursor.png"
@@ -322,7 +323,8 @@ typedef struct _NDS {
         SDL_Surface *cursor;
         struct _DRASTIC {
             int enable;
-            SDL_Surface *bg;
+            SDL_Surface *bg0;
+            SDL_Surface *bg1;
             SDL_Surface *main;
             SDL_Surface *yes;
             SDL_Surface *no;
