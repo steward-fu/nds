@@ -3,6 +3,7 @@
 
     #define VAR_SYSTEM                  0x083f4000
     #define VAR_SYSTEM_GAMECARD_NAME    0x0847e8e8
+    #define VAR_SYSTEM_SAVESTATE_NUM    0x08479780
     #define VAR_SDL_SCREEN_RENDERER     0x0aee9568
     #define VAR_SDL_SCREEN_BPP          0x0aee957c
     #define VAR_SDL_SCREEN_NEED_INIT    0x0aee95a0

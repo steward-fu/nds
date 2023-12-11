@@ -150,7 +150,7 @@ static int draw_drastic_menu_main(void)
     char buf[MAX_PATH] = {0};
 
 #ifdef MMIYOO
-    int draw_shot = 1;
+    int draw_shot = 0;
 #endif
 
 #ifdef TRIMUI
@@ -235,8 +235,8 @@ static int draw_drastic_menu_main(void)
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
 
-                if (p->y == 304) {
-                    //draw_shot = 0;
+                if ((p->y == 320) || (p->y == 328)) {
+                    draw_shot = 1;
                 }
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
@@ -252,32 +252,47 @@ static int draw_drastic_menu_main(void)
     draw_info(nds.menu.drastic.main, buf, 10, 10 / div, nds.menu.c1, 0);
 
 #ifdef MMIYOO
-    if (draw_shot && nds.menu.drastic.shot_top) {
-        SDL_Surface *t = SDL_CreateRGBSurfaceFrom(nds.menu.drastic.shot_top, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
-        if (t) {
-            rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
-            rt.y = nds.enable_752x560 ? h - 20 : 50;
-            rt.w = 256;
-            rt.h = 192;
-            SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
-            SDL_FreeSurface(t);
-        }
-        free(nds.menu.drastic.shot_top);
-        nds.menu.drastic.shot_top = NULL;
-    }
+    if (draw_shot) {
+        const uint32_t len = 256 * 192 * 2;
+        uint16_t *top = malloc(len);
+        uint16_t *bottom = malloc(len);
 
-    if (draw_shot && nds.menu.drastic.shot_bottom) {
-        SDL_Surface *t = SDL_CreateRGBSurfaceFrom(nds.menu.drastic.shot_bottom, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
-        if (t) {
-            rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
-            rt.y = nds.enable_752x560 ? (h + 192) - 20 : 50 + 192;
-            rt.w = 256;
-            rt.h = 192;
-            SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
-            SDL_FreeSurface(t);
+        if (top && bottom) {
+            SDL_Surface *t = NULL;
+            uint32_t slot = *((uint32_t *)VAR_SYSTEM_SAVESTATE_NUM);
+            load_state_index _func = (load_state_index)FUN_LOAD_STATE_INDEX;
+
+            memset(top, 0, len);
+            memset(bottom, 0, len);
+            _func((void*)VAR_SYSTEM, slot, top, bottom, 1);
+            t = SDL_CreateRGBSurfaceFrom(top, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
+            if (t) {
+                rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
+                rt.y = nds.enable_752x560 ? h - 20 : 50;
+                rt.w = 256;
+                rt.h = 192;
+                SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
+                SDL_FreeSurface(t);
+            }
+
+            t = SDL_CreateRGBSurfaceFrom(bottom, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
+            if (t) {
+                rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
+                rt.y = nds.enable_752x560 ? (h + 192) - 20 : 50 + 192;
+                rt.w = 256;
+                rt.h = 192;
+                SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
+                SDL_FreeSurface(t);
+            }
         }
-        free(nds.menu.drastic.shot_bottom);
-        nds.menu.drastic.shot_bottom = NULL;
+
+        if (top) {
+            free(top);
+        }
+
+        if (bottom) {
+            free(bottom);
+        }
     }
 #endif
     return 0;
@@ -943,20 +958,6 @@ int process_drastic_menu(void)
 
 void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-    if ((x == 472) && (y == 48)) {
-        if (nds.menu.drastic.shot_top) {
-            free(nds.menu.drastic.shot_top);
-        }
-        nds.menu.drastic.shot_top = malloc(256 * 192 * 2);
-        memcpy(nds.menu.drastic.shot_top, src, 256 * 192 * 2);
-    }
-    else if ((x == 472) && (y == 240)) {
-        if (nds.menu.drastic.shot_bottom) {
-            free(nds.menu.drastic.shot_bottom);
-        }
-        nds.menu.drastic.shot_bottom = malloc(256 * 192 * 2);
-        memcpy(nds.menu.drastic.shot_bottom, src, 256 * 192 * 2);
-    }
 }
 
 void sdl_update_screen(void)

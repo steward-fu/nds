@@ -327,8 +327,6 @@ typedef struct _NDS {
             SDL_Surface *yes;
             SDL_Surface *no;
             SDL_Surface *cursor;
-            uint16_t *shot_top;
-            uint16_t *shot_bottom;
         } drastic;
         uint32_t c0;
         uint32_t c1;
