@@ -23,8 +23,6 @@ SDL2_CFG+= --disable-video-opengles
 SDL2_CFG+= --disable-video-opengles2
 SDL2_CFG+= --disable-video-wayland
 SDL2_CFG+= --disable-video-dummy
-#SDL2_CFG+= --disable-oss
-#SDL2_CFG+= --disable-alsa
 SDL2_CFG+= --disable-sndio
 SDL2_CFG+= --disable-diskaudio
 SDL2_CFG+= --disable-pulseaudio
@@ -34,8 +32,18 @@ MOD      = mmiyoo
 REL_VER  = $(shell git rev-parse HEAD | cut -c 1-8)
 
 ifeq ($(MOD),mmiyoo)
+    SDL2_CFG+= --disable-oss
+    SDL2_CFG+= --disable-alsa
     $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
-else
+endif
+
+ifeq ($(MOD),trimui)
+    SDL2_CFG+= --disable-oss
+    SDL2_CFG+= --disable-alsa
+    $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
+endif
+
+ifeq ($(MOD),funkeys)
     $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
 endif
 
@@ -73,4 +81,4 @@ clean:
 	make -C detour clean
 	make -C sdl2 distclean
 	sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg
-	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates screenshot
+	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates
