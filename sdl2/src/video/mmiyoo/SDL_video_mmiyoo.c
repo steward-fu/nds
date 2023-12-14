@@ -165,13 +165,13 @@ static int draw_drastic_menu_main(void)
         x = 150 / div;
 #endif
         w = LINE_H / div;
-        h = 100 / div;
+        h = nds.enable_752x560 ? (115 / div) : (100 / div);
         
         memset(buf, 0, sizeof(buf));
         p = &drastic_menu.item[cc];
         if (p->y == 201) {
             draw = 1;
-            sprintf(buf, "DraStic %s", &p->msg[8]);
+            sprintf(buf, "NDS %s", &p->msg[8]);
             x = FB_W - get_font_width(buf) - 10;
             y = 10 / div;
         }
@@ -244,7 +244,7 @@ static int draw_drastic_menu_main(void)
         }
     }
 
-    sprintf(buf, "Rel v1.8 - Res %s", nds.enable_752x560 ? "752*560" : "640*480");
+    sprintf(buf, "Rel v1.8 Res %s", nds.enable_752x560 ? "752*560" : "640*480");
     draw_info(nds.menu.drastic.main, buf, 10, 10 / div, nds.menu.c1, 0);
 
 #ifdef MMIYOO
@@ -1453,6 +1453,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_SWAP_R1R2, json_object_new_int(nds.swap_r1r2));
     json_object_object_add(jfile, JSON_NDS_PEN_XV, json_object_new_int(nds.pen.xv));
     json_object_object_add(jfile, JSON_NDS_PEN_YV, json_object_new_int(nds.pen.yv));
+    json_object_object_add(jfile, JSON_NDS_MENU_BG, json_object_new_int(nds.menu.sel));
 
     json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -3125,6 +3126,9 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, MENU_BG_FILE);
     t = IMG_Load(buf);
     if (t) {
+        if (nds.menu.bg) {
+            SDL_FreeSurface(nds.menu.bg);
+        }
         nds.menu.bg = SDL_ConvertSurface(t, cvt->format, 0);
         SDL_FreeSurface(t);
     }
@@ -3132,6 +3136,9 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_BG0_FILE);
     t = IMG_Load(buf);
     if (t) {
+        if (nds.menu.drastic.bg0) {
+            SDL_FreeSurface(nds.menu.drastic.bg0);
+        }
         nds.menu.drastic.bg0 = SDL_ConvertSurface(t, cvt->format, 0);
         SDL_FreeSurface(t);
     }
@@ -3139,6 +3146,9 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_BG1_FILE);
     t = IMG_Load(buf);
     if (t) {
+        if (nds.menu.drastic.bg1) {
+            SDL_FreeSurface(nds.menu.drastic.bg1);
+        }
         nds.menu.drastic.bg1 = SDL_ConvertSurface(t, cvt->format, 0);
         SDL_FreeSurface(t);
     }
@@ -3155,6 +3165,9 @@ int reload_menu(void)
 #ifdef FUNKEYS
         SDL_Rect nrt = {0, 0, FB_W, FB_H};
 #endif
+        if (nds.menu.drastic.yes) {
+            SDL_FreeSurface(nds.menu.drastic.yes);
+        }
         nds.menu.drastic.yes = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.yes) {
             SDL_SoftStretch(t, NULL, nds.menu.drastic.yes, NULL);
@@ -3174,6 +3187,9 @@ int reload_menu(void)
 #ifdef FUNKEYS
         SDL_Rect nrt = {0, 0, FB_W, FB_H};
 #endif
+        if (nds.menu.drastic.no) {
+            SDL_FreeSurface(nds.menu.drastic.no);
+        }
         nds.menu.drastic.no = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
         if (nds.menu.drastic.no) {
             SDL_SoftStretch(t, NULL, nds.menu.drastic.no, NULL);
@@ -3872,10 +3888,10 @@ int handle_menu(int key)
     int dis_mode = -1;
     SDL_Rect rt = {0};
     char buf[MAX_PATH] = {0};
-    uint32_t sel_col = 0xff0000;
-    uint32_t unsel_col = 0x666600;
-    uint32_t dis_col = 0x666666;
-    uint32_t val_col = 0xff0000;
+    uint32_t sel_col = nds.menu.c0;
+    uint32_t unsel_col = nds.menu.c1;
+    uint32_t dis_col = 0x808080;
+    uint32_t val_col = nds.menu.c0;
     uint32_t col0 = 0, col1 = 0;
 
     if (pre_lang[0] == 0) {
@@ -4091,20 +4107,20 @@ int handle_menu(int key)
             continue;
         }
 
+        sx = 0;
+        col0 = (cur_sel == cc) ? sel_col : unsel_col;
+        col1 = (cur_sel == cc) ? val_col : unsel_col;
         switch (cc) {
         case MENU_DIS_ALPHA:
             sx = 20;
             if ((cur_sel == MENU_DIS_ALPHA) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                col0 = sel_col;
                 col1 = val_col;
             }
             else {
                 if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-                    col0 = unsel_col;
                     col1 = unsel_col;
                 }
                 else {
-                    col0 = dis_col;
                     col1 = dis_col;
                 }
             }
@@ -4112,16 +4128,13 @@ int handle_menu(int key)
         case MENU_DIS_BORDER:
             sx = 20;
             if ((cur_sel == MENU_DIS_BORDER) && (nds.alpha.val > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                col0 = sel_col;
                 col1 = val_col;
             }
             else {
                 if ((nds.alpha.val > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                    col0 = unsel_col;
                     col1 = unsel_col;
                 }
                 else {
-                    col0 = dis_col;
                     col1 = dis_col;
                 }
             }
@@ -4129,35 +4142,53 @@ int handle_menu(int key)
         case MENU_DIS_POSITION:
             sx = 20;
             if ((cur_sel == MENU_DIS_POSITION) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                col0 = sel_col;
                 col1 = val_col;
             }
             else {
                 if ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) {
-                    col0 = unsel_col;
                     col1 = unsel_col;
                 }
                 else {
-                    col0 = dis_col;
                     col1 = dis_col;
                 }
             }
             break;
         case MENU_ALT:
             if (nds.hres_mode == 0) {
-                col0 = (cur_sel == cc) ? sel_col : unsel_col;
                 col1 = (cur_sel == cc) ? val_col : unsel_col;
             }
             else {
-                col0 = unsel_col;
                 col1 = unsel_col;
             }
             break;
         default:
-            sx = 0;
-            col0 = (cur_sel == cc) ? sel_col : unsel_col;
-            col1 = (cur_sel == cc) ? val_col : unsel_col;
             break;
+        }
+
+        if (col0 == sel_col) {
+            rt.x = SX - (nds.enable_752x560 ? 83 : 50);
+            rt.y = SY + (h * idx) - 2;
+            rt.w = 461 + (nds.enable_752x560 ? 81 : 0);
+            rt.h = FONT_SIZE + 3;
+
+            if ((cc == MENU_DIS_ALPHA) || (cc == MENU_KEYS)) {
+                rt.w-= (nds.enable_752x560 ? 179 : 121);
+            }
+            if (col1 == dis_col) {
+                col1 = val_col;
+                SDL_FillRect(cvt, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 0x80, 0x80, 0x80));
+            }
+            else {
+                SDL_FillRect(cvt, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
+            }
+
+            if ((cc == MENU_DIS) || (cc == MENU_ALT)) {
+                rt.x = nds.enable_752x560 ? 480 : 440;
+                rt.y = SY + (h * (idx + 1)) - 7;
+                rt.w = nds.enable_752x560 ? 179 : 121;
+                rt.h = FONT_SIZE + 8;
+                SDL_FillRect(cvt, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
+            }
         }
         draw_info(cvt, to_lang(MENU_ITEM[cc]), SX + sx, SY + (h * idx), col0, 0);
 
@@ -4205,7 +4236,7 @@ int handle_menu(int key)
                 sprintf(buf, "[%d]   ", nds.dis_mode);
                 sx = get_font_width(buf);
                 sprintf(buf, "%s", nds.enable_752x560 ? DIS_MODE1_752[nds.dis_mode] : DIS_MODE1_640[nds.dis_mode]);
-                draw_info(cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_DIS) ? val_col : unsel_col, 0);
+                draw_info(cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_DIS) ? nds.menu.c0 : nds.menu.c1, 0);
             }
 
             sx = 0;
