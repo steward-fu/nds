@@ -546,26 +546,41 @@ int EventUpdate(void *data)
                         set_key(MYKEY_X, 0);
                     }
 
-                    if (hotkey_mask && hit_hotkey(MYKEY_Y)) {
-                        if (evt.mode == MMIYOO_KEYPAD_MODE) {
-                            if ((nds.overlay.sel >= nds.overlay.max) && 
-                                (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
-                                (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
-                                (nds.dis_mode != NDS_DIS_MODE_S1) &&
-                                (nds.dis_mode != NDS_DIS_MODE_HRES1))
-                            {
-                                nds.theme.sel+= 1;
-                                if (nds.theme.sel > nds.theme.max) {
-                                    nds.theme.sel = 0;
+                    if (hit_hotkey(MYKEY_Y)) {
+                        if (hotkey_mask) {
+                            if (evt.mode == MMIYOO_KEYPAD_MODE) {
+                                if ((nds.overlay.sel >= nds.overlay.max) &&
+                                    (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
+                                    (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
+                                    (nds.dis_mode != NDS_DIS_MODE_S1) &&
+                                    (nds.dis_mode != NDS_DIS_MODE_HRES1))
+                                {
+                                    nds.theme.sel+= 1;
+                                    if (nds.theme.sel > nds.theme.max) {
+                                        nds.theme.sel = 0;
+                                    }
                                 }
+                            }
+                            else {
+                                nds.pen.sel+= 1;
+                                if (nds.pen.sel >= nds.pen.max) {
+                                    nds.pen.sel = 0;
+                                }
+                                reload_pen();
                             }
                         }
                         else {
-                            nds.pen.sel+= 1;
-                            if (nds.pen.sel >= nds.pen.max) {
-                                nds.pen.sel = 0;
+                            nds.menu.sel+= 1;
+                            if (nds.menu.sel >= nds.menu.max) {
+                                nds.menu.sel = 0;
                             }
-                            reload_pen();
+                            reload_menu();
+
+                            if (nds.menu.drastic.enable) {
+                                SDL_SendKeyboardKey(SDL_PRESSED, SDLK_e);
+                                usleep(100000);
+                                SDL_SendKeyboardKey(SDL_RELEASED, SDLK_e);
+                            }
                         }
                         set_key(MYKEY_Y, 0);
                     }

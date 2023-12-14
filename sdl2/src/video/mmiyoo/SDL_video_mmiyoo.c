@@ -241,11 +241,6 @@ static int draw_drastic_menu_main(void)
 #endif
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
-            if (p->bg && nds.menu.drastic.cursor) {
-                rt.x = x - (50 / div);
-                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
-                SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
-            }
         }
     }
 
@@ -394,14 +389,6 @@ static int draw_drastic_menu_option(void)
                 strcpy(buf, to_lang(p->msg));
             }
             draw_info(nds.menu.drastic.main, buf, ww / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
-
-            if (p->bg && nds.menu.drastic.cursor) {
-                rt.x = 10 / div;
-                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
-                rt.w = 0;
-                rt.h = 0;
-                SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
-            }
         }
     }
     return 0;
@@ -689,14 +676,6 @@ static int draw_drastic_menu_firmware(void)
                 strcpy(buf, to_lang(p->msg));
             }
             draw_info(nds.menu.drastic.main, buf, ww / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
-
-            if ((p->x == 92) && (p->bg) && nds.menu.drastic.cursor) {
-                rt.x = 10 / div;
-                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
-                rt.w = 0;
-                rt.h = 0;
-                SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
-            }
         }
     }
     return 0;
@@ -799,13 +778,6 @@ static int draw_drastic_menu_cheat(void)
                 rt.w = 0;
                 rt.h = 0;
                 SDL_BlitSurface((p->enable > 0 ) ? nds.menu.drastic.yes : nds.menu.drastic.no, NULL, nds.menu.drastic.main, &rt);
-            }
-            if (p->bg && nds.menu.drastic.cursor) {
-                rt.x = 10 / div;
-                rt.y = y - (nds.menu.drastic.cursor->h - LINE_H);
-                rt.w = 0;
-                rt.h = 0;
-                SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
             }
         }
     }
@@ -1426,6 +1398,17 @@ static int read_config(void)
     }
 #endif
 
+    nds.menu.sel = 0;
+    json_object_object_get_ex(jfile, JSON_NDS_MENU_BG, &jval);
+    if (jval) {
+        nds.menu.sel = json_object_get_int(jval);
+        if (nds.menu.sel >= nds.menu.max) {
+            nds.menu.sel = 0;
+        }
+        printf(PREFIX"[json] nds.menu.sel: %d\n", nds.menu.sel);
+    }
+    reload_menu();
+
     reload_pen();
 #ifdef MMIYOO
     reload_overlay();
@@ -1728,6 +1711,11 @@ static int get_theme_count(void)
     return get_dir_count(nds.theme.path);
 }
 
+static int get_menu_count(void)
+{
+    return get_dir_count(MENU_PATH);
+}
+
 static int get_pen_count(void)
 {
     return get_file_count(nds.pen.path);
@@ -1969,7 +1957,6 @@ void GFX_Init(void)
 {
     int cc = 0;
     struct stat st = {0};
-    SDL_Surface *t = NULL;
 
 #ifdef TRIMUI
     int x = 0;
@@ -2016,6 +2003,12 @@ void GFX_Init(void)
         strcat(nds.lang.path, LANG_PATH);
     }
 
+    memset(nds.menu.path, 0, sizeof(nds.menu.path));
+    if (getcwd(nds.menu.path, sizeof(nds.menu.path))) {
+        strcat(nds.menu.path, "/");
+        strcat(nds.menu.path, MENU_PATH);
+    }
+
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
     printf(PREFIX"surface for convert: %p\n", cvt);
 
@@ -2030,87 +2023,9 @@ void GFX_Init(void)
     nds.overlay.sel = nds.overlay.max = get_overlay_count();
     printf(PREFIX"how many overlay:%d\n", nds.overlay.max);
 
-    t = IMG_Load(MENU_BG_FILE);
-    if (t) {
-        nds.menu.bg = SDL_ConvertSurface(t, cvt->format, 0);
-        printf(PREFIX"menu bg: %p\n", nds.menu.bg);
-        SDL_FreeSurface(t);
-    }
-    nds.menu.cursor = IMG_Load(MENU_CURSOR_FILE);
-    printf(PREFIX"menu cursor: %p\n", nds.menu.cursor);
-
-    t = IMG_Load(DRASTIC_MENU_BG0_FILE);
-    if (t) {
-        nds.menu.drastic.bg0 = SDL_ConvertSurface(t, cvt->format, 0);
-        printf(PREFIX"drastic menu bg0: %p\n", nds.menu.drastic.bg0);
-        SDL_FreeSurface(t);
-    }
-
-    t = IMG_Load(DRASTIC_MENU_BG1_FILE);
-    if (t) {
-        nds.menu.drastic.bg1 = SDL_ConvertSurface(t, cvt->format, 0);
-        printf(PREFIX"drastic menu bg1: %p\n", nds.menu.drastic.bg1);
-        SDL_FreeSurface(t);
-    }
-
-#ifdef MMIYOO
-    nds.menu.drastic.cursor = NULL; // IMG_Load(DRASTIC_MENU_CURSOR_FILE);
-    if (nds.menu.drastic.cursor) {
-        printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
-    }
-#endif
-
-#ifdef TRIMUI
-    t = IMG_Load(DRASTIC_MENU_CURSOR_FILE);
-    if (t) {
-        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-        nds.menu.drastic.cursor = NULL; // SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
-        if (nds.menu.drastic.cursor) {
-            SDL_SoftStretch(t, NULL, t, &nrt);
-            SDL_BlitSurface(t, NULL, nds.menu.drastic.cursor, &nrt);
-            printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
-        }
-        SDL_FreeSurface(t);
-    }
-#endif
-
-    t = IMG_Load(DRASTIC_MENU_YES_FILE);
-    if (t) {
-#ifdef MMIYOO
-        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
-#endif
-#ifdef TRIMUI
-        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-#endif
-#ifdef FUNKEYS
-        SDL_Rect nrt = {0, 0, FB_W, FB_H};
-#endif
-        nds.menu.drastic.yes = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
-        if (nds.menu.drastic.yes) {
-            SDL_SoftStretch(t, NULL, nds.menu.drastic.yes, NULL);
-            printf(PREFIX"drastic menu yes: %p\n", nds.menu.drastic.yes);
-        }
-        SDL_FreeSurface(t);
-    }
-    
-    t = IMG_Load(DRASTIC_MENU_NO_FILE);
-    if (t) {
-#ifdef MMIYOO
-        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
-#endif
-#ifdef TRIMUI
-        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-#endif
-#ifdef FUNKEYS
-        SDL_Rect nrt = {0, 0, FB_W, FB_H};
-#endif
-        nds.menu.drastic.no = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
-        if (nds.menu.drastic.no) {
-            SDL_SoftStretch(t, NULL, nds.menu.drastic.no, NULL);
-            printf(PREFIX"drastic menu no: %p\n", nds.menu.drastic.no);
-        }
-        SDL_FreeSurface(t);
-    }
+    nds.menu.sel = 0;
+    nds.menu.max = get_menu_count();
+    printf(PREFIX"how many menu:%d\n", nds.menu.max);
 
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
     if (nds.menu.drastic.main) {
@@ -3197,6 +3112,78 @@ int reload_pen(void)
     return 0;
 }
 
+int reload_menu(void)
+{
+    SDL_Surface *t = NULL;
+    char folder[MAX_PATH] = {0};
+    char buf[MAX_PATH << 1] = {0};
+
+    if (get_dir_path(nds.menu.path, nds.menu.sel, folder) != 0) {
+        return -1;
+    }
+
+    sprintf(buf, "%s/%s", folder, MENU_BG_FILE);
+    t = IMG_Load(buf);
+    if (t) {
+        nds.menu.bg = SDL_ConvertSurface(t, cvt->format, 0);
+        SDL_FreeSurface(t);
+    }
+
+    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_BG0_FILE);
+    t = IMG_Load(buf);
+    if (t) {
+        nds.menu.drastic.bg0 = SDL_ConvertSurface(t, cvt->format, 0);
+        SDL_FreeSurface(t);
+    }
+
+    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_BG1_FILE);
+    t = IMG_Load(buf);
+    if (t) {
+        nds.menu.drastic.bg1 = SDL_ConvertSurface(t, cvt->format, 0);
+        SDL_FreeSurface(t);
+    }
+
+    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
+    t = IMG_Load(buf);
+    if (t) {
+#ifdef MMIYOO
+        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
+#endif
+#ifdef TRIMUI
+        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+#endif
+#ifdef FUNKEYS
+        SDL_Rect nrt = {0, 0, FB_W, FB_H};
+#endif
+        nds.menu.drastic.yes = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        if (nds.menu.drastic.yes) {
+            SDL_SoftStretch(t, NULL, nds.menu.drastic.yes, NULL);
+        }
+        SDL_FreeSurface(t);
+    }
+
+    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
+    t = IMG_Load(buf);
+    if (t) {
+#ifdef MMIYOO
+        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
+#endif
+#ifdef TRIMUI
+        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+#endif
+#ifdef FUNKEYS
+        SDL_Rect nrt = {0, 0, FB_W, FB_H};
+#endif
+        nds.menu.drastic.no = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        if (nds.menu.drastic.no) {
+            SDL_SoftStretch(t, NULL, nds.menu.drastic.no, NULL);
+        }
+        SDL_FreeSurface(t);
+    }
+
+    return 0;
+}
+
 int reload_bg(void)
 {
 #ifndef FUNKEYS
@@ -3689,11 +3676,6 @@ void MMIYOO_VideoQuit(_THIS)
         nds.menu.drastic.bg1 = NULL;
     }
 
-    if (nds.menu.drastic.cursor) {
-        SDL_FreeSurface(nds.menu.drastic.cursor);
-        nds.menu.drastic.cursor = NULL;
-    }
-
     if (nds.menu.drastic.main) {
         SDL_FreeSurface(nds.menu.drastic.main);
         nds.menu.drastic.main = NULL;
@@ -3890,7 +3872,7 @@ int handle_menu(int key)
     int dis_mode = -1;
     SDL_Rect rt = {0};
     char buf[MAX_PATH] = {0};
-    uint32_t sel_col = 0xffff00;
+    uint32_t sel_col = 0xff0000;
     uint32_t unsel_col = 0x666600;
     uint32_t dis_col = 0x666666;
     uint32_t val_col = 0xff0000;

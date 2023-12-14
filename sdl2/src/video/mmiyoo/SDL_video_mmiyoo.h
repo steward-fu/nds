@@ -101,13 +101,12 @@
 #define PEN_PATH                    "resources/pen"
 #define LANG_PATH                   "resources/lang"
 #define OVERLAY_PATH                "resources/overlay"
-#define MENU_BG_FILE                "resources/menu/bg.png"
-#define MENU_CURSOR_FILE            "resources/menu/cursor.png"
-#define DRASTIC_MENU_BG0_FILE       "resources/menu/drastic_bg0.png"
-#define DRASTIC_MENU_BG1_FILE       "resources/menu/drastic_bg1.png"
-#define DRASTIC_MENU_YES_FILE       "resources/menu/drastic_yes.png"
-#define DRASTIC_MENU_NO_FILE        "resources/menu/drastic_no.png"
-#define DRASTIC_MENU_CURSOR_FILE    "resources/menu/drastic_cursor.png"
+#define MENU_PATH                   "resources/menu/"
+#define MENU_BG_FILE                "bg.png"
+#define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
+#define DRASTIC_MENU_BG1_FILE       "drastic_bg1.png"
+#define DRASTIC_MENU_YES_FILE       "drastic_yes.png"
+#define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define MMIYOO_DRIVER_NAME          "mmiyoo"
 #define BASE_REG_RIU_PA             0x1f000000
 #define BASE_REG_MPLL_PA            (BASE_REG_RIU_PA + 0x103000 * 2)
@@ -183,6 +182,7 @@
 #define JSON_NDS_AUTO_SLOT          "auto_slot"
 #define JSON_NDS_HOTKEY             "hotkey"
 #define JSON_NDS_STATES             "states"
+#define JSON_NDS_MENU_BG            "menu_bg"
 
 #define GFX_ACTION_NONE             0
 #define GFX_ACTION_FLIP             1
@@ -324,6 +324,8 @@ typedef struct _NDS {
     } shot;
 
     struct _MENU {
+        int sel;
+        int max;
         int enable;
         SDL_Surface *bg;
         SDL_Surface *cursor;
@@ -334,11 +336,11 @@ typedef struct _NDS {
             SDL_Surface *main;
             SDL_Surface *yes;
             SDL_Surface *no;
-            SDL_Surface *cursor;
         } drastic;
         uint32_t c0;
         uint32_t c1;
         uint32_t c2;
+        char path[MAX_PATH];
     } menu;
 
     struct _ALPHA {
@@ -410,6 +412,7 @@ int fb_uninit(void);
 
 int reload_bg(void);
 int reload_pen(void);
+int reload_menu(void);
 int reload_overlay(void);
 void disp_resize(void);
 
