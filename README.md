@@ -53,6 +53,7 @@
      - How to build all libraries
      - How to pack the release build
      - How to delete the build environment (Docker)
+   - Unit Test
    - Installation
    - Limitations
    - Special Thanks
@@ -72,6 +73,7 @@
      - How to build all libraries
      - How to pack the release build
      - How to delete the build environment (Docker)
+   - Unit Test
    - Installation
    - Limitations
    - Special Thanks
@@ -507,7 +509,7 @@ $ sudo docker build -t mmiyoo .
 ```
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
 # cd /nds_miyoo
-# make config
+# make cfg
 # make
 ```
 
@@ -521,6 +523,15 @@ $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
 #### How to delete the build environment (Docker)
 ```
 $ sudo docker image rm mmiyoo
+```
+
+&nbsp;
+
+### Unit Test
+#### How to run unit test
+```
+$ make cfg MOD=unittest
+$ make MOD=unittest
 ```
 
 &nbsp;
@@ -763,7 +774,7 @@ $ sudo docker build -t mmiyoo .
 ```
 $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
 # cd /nds_miyoo
-# make config MOD=trimui
+# make cfg MOD=trimui
 # make MOD=trimui
 ```
 
@@ -777,6 +788,15 @@ $ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
 #### How to delete the build environment (Docker)
 ```
 $ sudo docker image rm mmiyoo
+```
+
+&nbsp;
+
+### Unit Test
+#### How to run unit test
+```
+$ make cfg MOD=unittest
+$ make MOD=unittest
 ```
 
 &nbsp;
