@@ -1429,6 +1429,10 @@ static int read_config(void)
     }
     disp_resize();
 #endif
+
+#ifdef FUNKEYS
+    nds.dis_mode = NDS_DIS_MODE_S0;
+#endif
     return 0;
 }
 
@@ -2250,6 +2254,21 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                 *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
             }
             src+= 8;
+        }
+    }
+    else {
+        int x = 0;
+        int y = 0;
+        uint32_t v = 0;
+        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - 192) >> 1) * FB_W);
+        uint32_t *src = (uint32_t *)pixels;
+
+        for (y = 0; y < srcrect.h; y++) {
+            for (x = 0; x < srcrect.w; x++) {
+                v = *src++;
+                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
+            }
+            dst+= (FB_W - srcrect.w);
         }
     }
 #endif
@@ -3209,8 +3228,9 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#ifndef FUNKEYS
     static int pre_sel = -1;
+
+#ifndef FUNKEYS
     static int pre_mode = -1;
 #endif
 
@@ -3377,6 +3397,57 @@ int reload_bg(void)
             }
         }
         ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
+    }
+#endif
+
+#ifdef FUNKEYS
+    SDL_Surface *t = NULL;
+    char buf[MAX_PATH] = {0};
+
+    if (pre_sel != nds.theme.sel) {
+        pre_sel = nds.theme.sel;
+
+        if (nds.theme.img) {
+            SDL_FreeSurface(nds.theme.img);
+            nds.theme.img = NULL;
+        }
+
+        nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+        if (nds.theme.img) {
+            SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
+
+            if (get_dir_path(nds.theme.path, nds.theme.sel, buf) == 0) {
+                strcat(buf, "/bg_s0.png");
+                printf(PREFIX"wallpaper (%s)\n", buf);
+                t = IMG_Load(buf);
+                if (t) {
+                    SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
+                    SDL_FreeSurface(t);
+                }
+                else {
+                    printf(PREFIX"failed to load wallpaper (%s)\n", buf);
+                }
+            }
+        }
+    }
+
+    if (nds.theme.img) {
+        int x = 0;
+        int y = 0;
+        uint32_t v = 0;
+        uint16_t *dst = (uint16_t *)gfx.hw.mem;
+        uint32_t *src = (uint32_t *)nds.theme.img->pixels;
+
+        for (y = 0; y < FB_H; y++) {
+            src+= ((IMG_W - (FB_W << 1)) >> 1);
+            for (x = 0; x < FB_W; x++) {
+                v = *src;
+                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
+                src+= 2;
+            }
+            src+= ((IMG_W - (FB_W << 1)) >> 1);
+            src+= IMG_W;
+        }
     }
 #endif
     return 0;

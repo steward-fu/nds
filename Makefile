@@ -52,6 +52,7 @@ else
     export LD=${CROSS}ld
     export CXX=${CROSS}g++
     export HOST=arm-linux
+    $(shell cd sdl2 && rm -rf libEGL.so libGLESv2.so)
     $(shell cd sdl2 && ln -s ../drastic/libs/libEGL.so)
     $(shell cd sdl2 && ln -s ../drastic/libs/libGLESv2.so)
 endif
@@ -79,6 +80,7 @@ rel:
 opk:
 	mksquashfs funkeys/opk/* nds_drastic_funkey-s_$(REL_VER).opk
 	cp $(MOD)/readme.txt . && zip -r drastic_$(MOD)_$(REL_VER).zip drastic nds_drastic_funkey-s_$(REL_VER).opk readme.txt -x drastic/system/* && rm -rf readme.txt
+	rm -rf nds_drastic_funkey-s_$(REL_VER).opk
 
 .PHONY: clean
 clean:
