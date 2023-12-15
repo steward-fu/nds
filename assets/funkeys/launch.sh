@@ -27,7 +27,7 @@ export SDL_AUDIODRIVER=alsa
 export EGL_VIDEODRIVER=mmiyoo
 
 rom=`cat rom.txt`
-./drastic "$rom"
+./drastic --color-depth 16 "$rom"
 sync
 
 echo $sv > /proc/sys/vm/swappiness

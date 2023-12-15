@@ -2297,20 +2297,26 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 {
 #ifdef FUNKEYS
     if ((srcrect.w == 256) && (srcrect.h == 192)) {
-        int x = 0;
-        int y = 0;
-        uint32_t v = 0;
         uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - 192) >> 1) * FB_W);
-        uint32_t *src = (uint32_t *)pixels;
+        uint16_t *src = (uint16_t *)pixels;
 
-        for (y = 0; y < 192; y++) {
-            src+= 8;
-            for (x = 0; x < 240; x++) {
-                v = *src++;
-                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
-            }
-            src+= 8;
-        }
+        asm volatile (
+            "1:  add %0, #16            ;"
+            "    vldmia %0!, {q0-q7}    ;"
+            "    vldmia %0!, {q8-q14}   ;"
+            "    vstmia %1!, {q0-q7}    ;"
+            "    vstmia %1!, {q8-q14}   ;"
+            "    vldmia %0!, {q0-q7}    ;"
+            "    vldmia %0!, {q8-q14}   ;"
+            "    vstmia %1!, {q0-q7}    ;"
+            "    vstmia %1!, {q8-q14}   ;"
+            "    add %0, #16            ;"
+            "    subs %2, #1            ;"
+            "    bne 1b                 ;"
+            :
+            : "r"(src), "r"(dst), "r"(192)
+            : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "memory", "cc"
+        );
     }
     else if ((srcrect.w == FB_W) && (srcrect.h == FB_H)) {
         int x = 0;
