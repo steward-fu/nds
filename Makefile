@@ -58,7 +58,7 @@ endif
 
 .PHONY: all
 all:
-	make -C detour
+	make -C detour MOD=$(MOD)
 	cp detour/libdtr.so drastic/libs/
 	make -C alsa MOD=$(MOD)
 	cp alsa/libasound.so.2 drastic/libs/
