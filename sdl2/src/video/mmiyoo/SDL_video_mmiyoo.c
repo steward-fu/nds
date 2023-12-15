@@ -1001,6 +1001,7 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 
 void sdl_savestate_pre(void)
 {
+#ifndef UNITTEST
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #1                 \n"
@@ -1009,10 +1010,12 @@ void sdl_savestate_pre(void)
         "ldr pc, [sp], #4           \n"
         ::"r"(&savestate_busy):
     );
+#endif
 }
 
 void sdl_savestate_post(void)
 {
+#ifndef UNITTEST
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #0                 \n"
@@ -1021,6 +1024,7 @@ void sdl_savestate_post(void)
         "ldr pc, [sp], #4           \n"
         ::"r"(&savestate_busy):
     );
+#endif
 }
 
 void sigterm_handler(int sig)
@@ -1415,7 +1419,7 @@ static int read_config(void)
 #endif
     json_object_put(jfile);
 
-#ifndef FUNKEYS
+#if !defined(FUNKEYS)
     snd_nds_reload_config();
 #endif
 
@@ -1917,6 +1921,7 @@ void disp_resize(void)
 #ifdef MMIYOO
 int fb_init(void)
 {
+#ifndef UNITTEST
     MI_SYS_Init();
     MI_GFX_Open();
 
@@ -1937,11 +1942,13 @@ int fb_init(void)
 
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.overlay.phyAddr);
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
+#endif
     return 0;
 }
 
 int fb_uninit(void)
 {
+#ifndef UNITTEST
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
     MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.tmp.phyAddr);
@@ -1950,6 +1957,7 @@ int fb_uninit(void)
 
     MI_GFX_Close();
     MI_SYS_Exit();
+#endif
     return 0;
 }
 #endif
@@ -2099,7 +2107,7 @@ void GFX_Quit(void)
 
 void GFX_Clear(void)
 {
-#ifdef MMIYOO
+#if defined(MMIYOO) && !defined(UNITTEST)
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
 #endif
@@ -2107,6 +2115,7 @@ void GFX_Clear(void)
 
 int draw_pen(const void *pixels, int width, int pitch)
 {
+#ifndef UNITTEST
     int c0 = 0;
     int c1 = 0;
     int w = 28;
@@ -2220,6 +2229,7 @@ int draw_pen(const void *pixels, int width, int pitch)
             s+= 1;
         }
     }
+#endif
     return 0;
 }
 
@@ -2242,7 +2252,6 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             src+= 8;
         }
     }
-    return 0;
 #endif
 
 #ifdef TRIMUI
@@ -2376,10 +2385,9 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             }
         }
     }
-    return 0;
 #endif
 
-#ifdef MMIYOO
+#if defined(MMIYOO) && !defined(UNITTEST)
     int copy_it = 1;
     MI_U16 u16Fence = 0;
     int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
@@ -2854,7 +2862,6 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                     : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(512 * 4), "r"(192)
                     : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
                 );
-
                 copy_it = 0;
                 srcrect.x = 0;
                 srcrect.y = 0;
@@ -2946,8 +2953,8 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         MI_GFX_BitBlit(&gfx.hw.overlay.surf, &gfx.hw.overlay.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
         MI_GFX_WaitAllDone(FALSE, u16Fence);
     }
-    return 0;
 #endif
+    return 0;
 }
 
 void GFX_Flip(void)
@@ -3401,7 +3408,7 @@ int reload_overlay(void)
                 if (t) {
                     SDL_BlitSurface(t, NULL, nds.overlay.img, NULL);
                     SDL_FreeSurface(t);
-
+#ifndef UNITTEST
                     gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
                     gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
                     gfx.hw.overlay.surf.u32Width = FB_W;
@@ -3413,6 +3420,7 @@ int reload_overlay(void)
                     gfx.hw.overlay.rt.u32Height = FB_H;
                     neon_memcpy(gfx.overlay.virAddr, nds.overlay.img->pixels, FB_W * FB_H * 4);
                     MI_SYS_FlushInvCache(gfx.overlay.virAddr, FB_W * FB_H * FB_BPP);
+#endif
                 }
                 else {
                     printf(PREFIX"failed to load overlay (%s)\n", buf);
@@ -3454,8 +3462,8 @@ int MMIYOO_CreateWindowFrom(_THIS, SDL_Window *window, const void *data)
 
 static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
 {
-    SDL_VideoDevice *device=NULL;
-    SDL_GLDriverData *gldata=NULL;
+    SDL_VideoDevice *device = NULL;
+    SDL_GLDriverData *gldata = NULL;
 
     if(!MMIYOO_Available()) {
         return (0);
@@ -3494,7 +3502,6 @@ static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
         return NULL;
     }
     device->gl_data = gldata;
-
     device->free = MMIYOO_DeleteDevice;
     return device;
 }
@@ -3512,7 +3519,9 @@ int MMIYOO_VideoInit(_THIS)
     SDL_VideoDisplay display={0};
 
     printf(PREFIX"MMIYOO_VideoInit\n");
+#ifndef UNITTEST
     signal(SIGTERM, sigterm_handler);
+#endif
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
@@ -3622,11 +3631,11 @@ int MMIYOO_VideoInit(_THIS)
 
     if (nds.cust_menu) {
         detour_init(sysconf(_SC_PAGESIZE), nds.states.path);
-        detour_hook(FUN_PRINT_STRING, (uint32_t)sdl_print_string);
-        detour_hook(FUN_SAVESTATE_PRE, (uint32_t)sdl_savestate_pre);
-        detour_hook(FUN_SAVESTATE_POST, (uint32_t)sdl_savestate_post);
-        detour_hook(FUN_BLIT_SCREEN_MENU, (uint32_t)sdl_blit_screen_menu);
-        //detour_hook(FUN_UPDATE_SCREEN, (uint32_t)sdl_update_screen);
+        detour_hook(FUN_PRINT_STRING, (intptr_t)sdl_print_string);
+        detour_hook(FUN_SAVESTATE_PRE, (intptr_t)sdl_savestate_pre);
+        detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
+        detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
+        //detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
     }
     return 0;
 }
@@ -4586,5 +4595,29 @@ int handle_menu(int key)
 }
 #endif
 
+#endif
+
+#ifdef UNITTEST
+    #include "unity_fixture.h"
+
+TEST_GROUP(sdl2_video_mmiyoo);
+
+TEST_SETUP(sdl2_video_mmiyoo)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_video_mmiyoo)
+{
+}
+
+TEST(sdl2_video_mmiyoo, get_current_menu_layer)
+{
+    TEST_ASSERT_EQUAL(get_current_menu_layer(), -1);
+}
+
+TEST_GROUP_RUNNER(sdl2_video_mmiyoo)
+{
+    RUN_TEST_CASE(sdl2_video_mmiyoo, get_current_menu_layer);
+}
 #endif
 

@@ -5,6 +5,10 @@
 #include <string.h>
 #include <sys/mman.h>
 
+#ifdef UNITTEST
+    #include "unity_fixture.h"
+#endif
+
 #include "detour.h"
 
 static size_t page_size = 0;
@@ -107,7 +111,7 @@ void detour_init(size_t page, const char *path)
 
 void detour_hook(uint32_t old_func, uint32_t new_func)
 {
-    volatile uint8_t *base = (volatile uint8_t *)old_func;
+    volatile uint8_t *base = (uint8_t *)(intptr_t)old_func;
 
     mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
     base[0] = 0x04;
@@ -123,4 +127,28 @@ void detour_hook(uint32_t old_func, uint32_t new_func)
 void detour_quit(void)
 {
 }
+
+#ifdef UNITTEST
+TEST_GROUP(detour);
+
+TEST_SETUP(detour)
+{
+}
+
+TEST_TEAR_DOWN(detour)
+{
+}
+
+TEST(detour, detour_init)
+{
+    detour_init(0, "/tmp");
+    TEST_ASSERT_EQUAL_INT(page_size, 0);
+    TEST_ASSERT_EQUAL_STRING(states_path, "/tmp");
+}
+
+TEST_GROUP_RUNNER(detour)
+{
+    RUN_TEST_CASE(detour, detour_init);
+}
+#endif
 

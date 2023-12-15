@@ -16,6 +16,10 @@
 #include <alsa/pcm.h>
 #include <linux/soundcard.h>
 
+#ifdef UNITTEST
+    #include "unity_fixture.h"
+#endif
+
 #include "detour.h"
 
 #ifdef MMIYOO
@@ -78,7 +82,9 @@ static int pcm_buf_len = 0;
 static uint8_t *pcm_buf = NULL;
 static struct json_object *jfile = NULL;
 
+#if !defined(UNITTEST)
 void neon_memcpy(void *dest, const void *src, size_t n);
+#endif
 
 #ifdef MMIYOO
 static int set_volume_raw(int value, int add)
@@ -253,12 +259,16 @@ static int queue_put(queue_t *q, uint8_t *buffer, size_t size)
         if ((q->write >= q->read) && ((q->write + size) > QUEUE_SIZE)) {
             tmp = QUEUE_SIZE - q->write;
             size-= tmp;
+#if !defined(UNITTEST)
             neon_memcpy(&q->buffer[q->write], buffer, tmp);
             neon_memcpy(q->buffer, &buffer[tmp], size);
+#endif
             q->write = size;
         }
         else {
+#if !defined(UNITTEST)
             neon_memcpy(&q->buffer[q->write], buffer, size);
+#endif
             q->write += size;
         }
     }
@@ -281,12 +291,16 @@ static size_t queue_get(queue_t *q, uint8_t *buffer, size_t max)
         if ((q->read > q->write) && (q->read + size) > QUEUE_SIZE) {
             tmp = QUEUE_SIZE - q->read;
             size-= tmp;
+#if !defined(UNITTEST)
             neon_memcpy(buffer, &q->buffer[q->read], tmp);
             neon_memcpy(&buffer[tmp], q->buffer, size);
+#endif
             q->read = size;
         }
         else {
+#if !defined(UNITTEST)
             neon_memcpy(buffer, &q->buffer[q->read], size);
+#endif
             q->read+= size;
         }
     }
@@ -309,7 +323,7 @@ static void *audio_handler(void *threadid)
             if (len == 0) {
                 idx = 0;
                 len = pcm_buf_len;
-#ifdef MMIYOO
+#if defined(MMIYOO) && !defined(UNITTEST)
                 aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
                 aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
                 aoTestFrame.u32Len = pcm_buf_len;
@@ -446,7 +460,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
         json_object_put(jfile);
     }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) && !defined(UNITTEST)
     stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
     stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
     stSetAttr.u32FrmNum = 6;
@@ -524,7 +538,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     }
     queue_destroy(&queue);
 
-#ifdef MMIYOO
+#if defined(MMIYOO) && !defined(UNITTEST)
     MI_AO_DisableChn(AoDevId, AoChn);
     MI_AO_Disable(AoDevId);
 #endif
@@ -564,4 +578,26 @@ snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buffer, snd_pcm_ufr
     }
     return size;
 }
+
+#ifdef UNITTEST
+TEST_GROUP(alsa);
+
+TEST_SETUP(alsa)
+{
+}
+
+TEST_TEAR_DOWN(alsa)
+{
+}
+
+TEST(alsa, snd_pcm_writei)
+{
+    TEST_ASSERT_EQUAL_INT(snd_pcm_writei(NULL, NULL, 0), 0);
+}
+
+TEST_GROUP_RUNNER(alsa)
+{
+    RUN_TEST_CASE(alsa, snd_pcm_writei);
+}
+#endif
 

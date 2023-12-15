@@ -266,7 +266,9 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     gfx.thread[idx].drt.w = dstrect->w;
     gfx.thread[idx].drt.h = dstrect->h;
     if (nds.hres_mode > 0) {
+#ifndef UNITTEST
         neon_memcpy(gfx.thread[idx].pixels, get_pixels(texture), get_pitch(texture) * srcrect->h);
+#endif
     }
     return 0;
 }
@@ -849,5 +851,29 @@ SDL_RenderDriver MMIYOO_RenderDriver = {
     }
 };
 
+#endif
+
+#ifdef UNITTEST
+    #include "unity_fixture.h"
+
+TEST_GROUP(sdl2_render_mmiyoo);
+
+TEST_SETUP(sdl2_render_mmiyoo)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_render_mmiyoo)
+{
+}
+
+TEST(sdl2_render_mmiyoo, MMIYOO_SetVSync)
+{
+    TEST_ASSERT_EQUAL(MMIYOO_SetVSync(NULL, 0), 0);
+}
+
+TEST_GROUP_RUNNER(sdl2_render_mmiyoo)
+{
+    RUN_TEST_CASE(sdl2_render_mmiyoo, MMIYOO_SetVSync);
+}
 #endif
 

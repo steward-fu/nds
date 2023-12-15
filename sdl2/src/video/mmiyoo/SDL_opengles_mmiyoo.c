@@ -130,9 +130,11 @@ SDL_GLContext glCreateContext(_THIS, SDL_Window *window)
 
     printf(PREFIX"sdl2 eglMakeCurrent\n");
     eglMakeCurrent(display, surface, surface, context);
-    
+
+#if !defined(UNITTEST)
     printf(PREFIX"sdl2 %s, %p %p %p\n", __func__, ppFunc, pfb_idx, pfb_vaddr);
     eglUpdateBufferSettings(display, surface, ppFunc, pfb_idx, pfb_vaddr);
+#endif
     return context;
 }
 

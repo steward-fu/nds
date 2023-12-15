@@ -240,11 +240,20 @@ fi
 
 AC_MSG_CHECKING(for linker option --no-undefined)
 have_no_undefined=no
+
+case "$MOD" in
+    *unittest*)
+        old_host="$host"
+        host=unittest
+    ;;
+esac
+
 case "$host" in
     dnl Skip this on platforms where it is just simply busted.
     *-*-openbsd*)
         ;;
-
+    *unittest*)
+        ;;
     *)
         save_LDFLAGS="$LDFLAGS"
         LDFLAGS="$LDFLAGS -Wl,--no-undefined"
@@ -254,6 +263,12 @@ case "$host" in
         ],[])
         LDFLAGS="$save_LDFLAGS"
         ;;
+esac
+
+case "$MOD" in
+    *unittest*)
+        host="$old_host"
+    ;;
 esac
 AC_MSG_RESULT($have_no_undefined)
 
@@ -2422,6 +2437,19 @@ CheckFunkeysVideo()
     fi
 }
 
+CheckUnittestVideo()
+{
+    if test x$enable_video = xyes; then
+        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
+        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DUNITTEST -DMMIYOO -fPIC -I../mmiyoo/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2 -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckMMiyooAudio()
 {
     if test x$enable_audio = xyes; then
@@ -2460,6 +2488,17 @@ CheckFunkeysAudio()
             EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
             EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         fi
+        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
+    fi
+}
+
+CheckUnittestAudio()
+{
+    if test x$enable_audio = xyes; then
+        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
+        have_audio=yes
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         SUMMARY_audio="${SUMMARY_audio} mmiyoo"
     fi
 }
@@ -3754,12 +3793,22 @@ case "$host" in
             *trimui*)           ARCH=trimui
                 CheckTrimuiVideo
                 ;;
-            *funkeys*)           ARCH=funkeys
+            *funkeys*)          ARCH=funkeys
                 CheckFunkeysVideo
+                ;;
+            *unittest*)         ARCH=unittest
+                CheckUnittestVideo
                 ;;
         esac
 
-        CheckVisibilityHidden
+        case "$MOD" in
+            *unittest*)
+                ;;
+            *)
+                CheckVisibilityHidden
+                ;;
+        esac
+
         CheckDeclarationAfterStatement
         CheckDummyVideo
         CheckOffscreenVideo
@@ -3872,6 +3921,9 @@ case "$host" in
             funkeys)
                 CheckFunkeysAudio
             ;;
+            unittest)
+                CheckUnittestAudio
+            ;;
           esac
         fi
         # Set up files for the joystick library
@@ -3897,17 +3949,7 @@ case "$host" in
                 SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
                 have_joystick=yes
             ;;
-            mmiyoo)
-                AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
-                SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
-                have_joystick=yes
-            ;;
-            trimui)
-                AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
-                SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
-                have_joystick=yes
-            ;;
-            funkeys)
+            mmiyoo|trimui|funkeys|unittest)
                 AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
                 SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
                 have_joystick=yes

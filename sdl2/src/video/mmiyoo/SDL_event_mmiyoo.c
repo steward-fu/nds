@@ -995,3 +995,27 @@ void MMIYOO_PumpEvents(_THIS)
 
 #endif
 
+#ifdef UNITTEST
+    #include "unity_fixture.h"
+
+TEST_GROUP(sdl2_event_mmiyoo);
+
+TEST_SETUP(sdl2_event_mmiyoo)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_event_mmiyoo)
+{
+}
+
+TEST(sdl2_event_mmiyoo, hit_hotkey)
+{
+    TEST_ASSERT_EQUAL(hit_hotkey(0), 0);
+}
+
+TEST_GROUP_RUNNER(sdl2_event_mmiyoo)
+{
+    RUN_TEST_CASE(sdl2_event_mmiyoo, hit_hotkey);
+}
+#endif
+

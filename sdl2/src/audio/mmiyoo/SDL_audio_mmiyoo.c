@@ -43,7 +43,7 @@
 
 #define MI_AUDIO_SAMPLE_PER_FRAME 768
 
-#if defined(MMIYOO)
+#if defined(MMIYOO) && !defined(UNITTEST)
 #include "mi_sys.h"
 #include "mi_common_datatype.h"
 #include "mi_ao.h"
@@ -58,7 +58,7 @@ static void MMIYOO_CloseDevice(_THIS)
 {
     SDL_free(this->hidden->mixbuf);
     SDL_free(this->hidden);
-#if defined(MMIYOO)
+#if defined(MMIYOO) && !defined(UNITTEST)
     MI_AO_DisableChn(AoDevId, AoChn);
     MI_AO_Disable(AoDevId);
 #endif
@@ -66,7 +66,7 @@ static void MMIYOO_CloseDevice(_THIS)
 
 static int MMIYOO_OpenDevice(_THIS, void *handle, const char *devname, int iscapture)
 {
-#if defined(MMIYOO)
+#if defined(MMIYOO) && !defined(UNITTEST)
     MI_S32 miret = 0;
     MI_S32 s32SetVolumeDb = 0;
     MI_S32 s32GetVolumeDb = 0;
@@ -85,7 +85,7 @@ static int MMIYOO_OpenDevice(_THIS, void *handle, const char *devname, int iscap
         return SDL_OutOfMemory();
     }
 
-#if defined(MMIYOO)
+#if defined(MMIYOO) && !defined(UNITTEST)
     stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
     stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
     stSetAttr.u32FrmNum = 6;
@@ -131,7 +131,7 @@ static int MMIYOO_OpenDevice(_THIS, void *handle, const char *devname, int iscap
 
 static void MMIYOO_PlayDevice(_THIS)
 {
-#if defined(MMIYOO)
+#if defined(MMIYOO) && !defined(UNITTEST)
     MI_AUDIO_Frame_t aoTestFrame;
     MI_S32 s32RetSendStatus = 0;
 
@@ -155,6 +155,10 @@ static Uint8 *MMIYOO_GetDeviceBuf(_THIS)
 
 static int MMIYOO_Init(SDL_AudioDriverImpl *impl)
 {
+    if (impl == NULL) {
+        return -1;
+    }
+
     impl->OpenDevice = MMIYOO_OpenDevice;
     impl->PlayDevice = MMIYOO_PlayDevice;
     impl->GetDeviceBuf = MMIYOO_GetDeviceBuf;
@@ -165,5 +169,29 @@ static int MMIYOO_Init(SDL_AudioDriverImpl *impl)
 
 AudioBootStrap MMIYOOAUDIO_bootstrap = {"MMIYOO", "MMIYOO AUDIO DRIVER", MMIYOO_Init, 0};
 
+#endif
+
+#ifdef UNITTEST
+    #include "unity_fixture.h"
+
+TEST_GROUP(sdl2_audio_mmiyoo);
+
+TEST_SETUP(sdl2_audio_mmiyoo)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_audio_mmiyoo)
+{
+}
+
+TEST(sdl2_audio_mmiyoo, MMIYOO_Init)
+{
+    TEST_ASSERT_EQUAL(MMIYOO_Init(NULL), -1);
+}
+
+TEST_GROUP_RUNNER(sdl2_audio_mmiyoo)
+{
+    RUN_TEST_CASE(sdl2_audio_mmiyoo, MMIYOO_Init);
+}
 #endif
 

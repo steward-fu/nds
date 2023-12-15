@@ -11,5 +11,5 @@ Version: 2.0.20
 Requires:
 Conflicts:
 Libs: -L${libdir}  -lSDL2 
-Libs.private:  -lm -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr -ldl -lpthread -lrt -L../mmiyoo/lib -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx -l:libasound.so.2
+Libs.private:  -lm -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr -ldl -lpthread -lrt -l:libasound.so.2
 Cflags: -I${includedir}/SDL2  -D_REENTRANT

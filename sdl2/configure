@@ -17010,10 +17010,19 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for linker option --no-undefined" >&5
 $as_echo_n "checking for linker option --no-undefined... " >&6; }
 have_no_undefined=no
+
+case "$MOD" in
+    *unittest*)
+        old_host="$host"
+        host=unittest
+    ;;
+esac
+
 case "$host" in
         *-*-openbsd*)
         ;;
-
+    *unittest*)
+        ;;
     *)
         save_LDFLAGS="$LDFLAGS"
         LDFLAGS="$LDFLAGS -Wl,--no-undefined"
@@ -17038,6 +17047,12 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
         LDFLAGS="$save_LDFLAGS"
         ;;
+esac
+
+case "$MOD" in
+    *unittest*)
+        host="$old_host"
+    ;;
 esac
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_no_undefined" >&5
 $as_echo "$have_no_undefined" >&6; }
@@ -23164,6 +23179,23 @@ $as_echo "#define SDL_VIDEO_RENDER_MMIYOO 1" >>confdefs.h
     fi
 }
 
+CheckUnittestVideo()
+{
+    if test x$enable_video = xyes; then
+
+$as_echo "#define SDL_VIDEO_DRIVER_MMIYOO 1" >>confdefs.h
+
+
+$as_echo "#define SDL_VIDEO_RENDER_MMIYOO 1" >>confdefs.h
+
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DUNITTEST -DMMIYOO -fPIC -I../mmiyoo/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2 -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckMMiyooAudio()
 {
     if test x$enable_audio = xyes; then
@@ -23208,6 +23240,19 @@ $as_echo "#define SDL_AUDIO_DRIVER_MMIYOO 1" >>confdefs.h
             EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
             EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         fi
+        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
+    fi
+}
+
+CheckUnittestAudio()
+{
+    if test x$enable_audio = xyes; then
+
+$as_echo "#define SDL_AUDIO_DRIVER_MMIYOO 1" >>confdefs.h
+
+        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
+        have_audio=yes
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         SUMMARY_audio="${SUMMARY_audio} mmiyoo"
     fi
 }
@@ -25855,12 +25900,22 @@ $as_echo "#define SDL_VIDEO_DRIVER_ANDROID 1" >>confdefs.h
             *trimui*)           ARCH=trimui
                 CheckTrimuiVideo
                 ;;
-            *funkeys*)           ARCH=funkeys
+            *funkeys*)          ARCH=funkeys
                 CheckFunkeysVideo
+                ;;
+            *unittest*)         ARCH=unittest
+                CheckUnittestVideo
                 ;;
         esac
 
-        CheckVisibilityHidden
+        case "$MOD" in
+            *unittest*)
+                ;;
+            *)
+                CheckVisibilityHidden
+                ;;
+        esac
+
         CheckDeclarationAfterStatement
         CheckDummyVideo
         CheckOffscreenVideo
@@ -25985,6 +26040,9 @@ $as_echo "#define SDL_AUDIO_DRIVER_AAUDIO 1" >>confdefs.h
             funkeys)
                 CheckFunkeysAudio
             ;;
+            unittest)
+                CheckUnittestAudio
+            ;;
           esac
         fi
         # Set up files for the joystick library
@@ -26016,21 +26074,7 @@ $as_echo "#define SDL_JOYSTICK_ANDROID 1" >>confdefs.h
                 SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
                 have_joystick=yes
             ;;
-            mmiyoo)
-
-$as_echo "#define SDL_JOYSTICK_MMIYOO 1" >>confdefs.h
-
-                SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
-                have_joystick=yes
-            ;;
-            trimui)
-
-$as_echo "#define SDL_JOYSTICK_MMIYOO 1" >>confdefs.h
-
-                SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
-                have_joystick=yes
-            ;;
-            funkeys)
+            mmiyoo|trimui|funkeys|unittest)
 
 $as_echo "#define SDL_JOYSTICK_MMIYOO 1" >>confdefs.h
 
