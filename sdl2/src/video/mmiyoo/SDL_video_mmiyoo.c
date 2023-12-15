@@ -153,27 +153,33 @@ static int draw_drastic_menu_main(void)
     int draw_shot = 0;
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
 #endif
 
     for (cc=0; cc<drastic_menu.cnt; cc++) {
         draw = 0;
-#ifdef MMIYOO
         x = 90 / div;
-#else
-        x = 150 / div;
-#endif
         w = LINE_H / div;
         h = nds.enable_752x560 ? (115 / div) : (100 / div);
-        
+
+#ifdef FUNKEYS
+        x = 30 / div;
+#endif
+
         memset(buf, 0, sizeof(buf));
         p = &drastic_menu.item[cc];
         if (p->y == 201) {
             draw = 1;
+#if defined(MMIYOO) || defined(TRIMUI)
             sprintf(buf, "NDS %s", &p->msg[8]);
             x = FB_W - get_font_width(buf) - 10;
             y = 10 / div;
+#else
+            sprintf(buf, "%s", &p->msg[8]);
+            x = FB_W - get_font_width(buf) - 10;
+            y = 10 / div;
+#endif
         }
         else if (p->y == 280) {
             draw = 1;
@@ -244,7 +250,17 @@ static int draw_drastic_menu_main(void)
         }
     }
 
+#ifdef MMIYOO
     sprintf(buf, "Rel v1.8 Res %s", nds.enable_752x560 ? "752*560" : "640*480");
+#endif
+
+#ifdef TRIMUI
+    sprintf(buf, "Rel v1.8 Res %s", "320*240");
+#endif
+
+#ifdef FUNKEYS
+    sprintf(buf, "Rel v1.8");
+#endif
     draw_info(nds.menu.drastic.main, buf, 10, 10 / div, nds.menu.c1, 0);
 
 #ifdef MMIYOO
@@ -335,7 +351,7 @@ static int draw_drastic_menu_option(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
 #endif
 
@@ -407,7 +423,7 @@ static int draw_drastic_menu_controller(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
 #endif
 
@@ -511,7 +527,7 @@ static int draw_drastic_menu_controller2(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
 #endif
 
@@ -616,7 +632,7 @@ static int draw_drastic_menu_firmware(void)
     char buf[MAX_PATH] = {0};
     char name[MAX_PATH] = {0};
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
 #endif
 
@@ -694,7 +710,7 @@ static int draw_drastic_menu_cheat(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
 #endif
     for (cc=0; cc<drastic_menu.cnt; cc++) {
@@ -798,7 +814,7 @@ static int draw_drastic_menu_rom(void)
     int s0 = 0, s1 = 0;
     CUST_MENU_SUB *p = NULL;
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
 #endif
 
@@ -2256,6 +2272,20 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             src+= 8;
         }
     }
+    else if ((srcrect.w == FB_W) && (srcrect.h == FB_H)) {
+        int x = 0;
+        int y = 0;
+        uint32_t v = 0;
+        uint16_t *dst = (uint16_t *)gfx.hw.mem;
+        uint32_t *src = (uint32_t *)pixels;
+
+        for (y = 0; y < srcrect.h; y++) {
+            for (x = 0; x < srcrect.w; x++) {
+                v = *src++;
+                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
+            }
+        }
+    }
     else {
         int x = 0;
         int y = 0;
@@ -3185,11 +3215,8 @@ int reload_menu(void)
 #ifdef MMIYOO
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-#endif
-#ifdef FUNKEYS
-        SDL_Rect nrt = {0, 0, FB_W, FB_H};
 #endif
         if (nds.menu.drastic.yes) {
             SDL_FreeSurface(nds.menu.drastic.yes);
@@ -3207,11 +3234,8 @@ int reload_menu(void)
 #ifdef MMIYOO
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-#endif
-#ifdef FUNKEYS
-        SDL_Rect nrt = {0, 0, FB_W, FB_H};
 #endif
         if (nds.menu.drastic.no) {
             SDL_FreeSurface(nds.menu.drastic.no);
