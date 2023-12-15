@@ -824,11 +824,6 @@ void MMIYOO_PumpEvents(_THIS)
                     }
 #endif
 
-#ifdef FUNKEYS
-                    if (cc == MYKEY_START) {
-                        continue;
-                    }
-#endif
                     if (changed & bit) {
                         SDL_SendKeyboardKey((evt.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                     }

@@ -144,14 +144,11 @@ static int draw_drastic_menu_main(void)
     int w = 30;
     int h = 100;
     int draw = 0;
+    int draw_shot = 0;
     int x = 0, y = 0;
     SDL_Rect rt = {0};
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
-
-#ifdef MMIYOO
-    int draw_shot = 0;
-#endif
 
 #if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
@@ -163,7 +160,7 @@ static int draw_drastic_menu_main(void)
         w = LINE_H / div;
         h = nds.enable_752x560 ? (115 / div) : (100 / div);
 
-#ifdef FUNKEYS
+#if defined(TRIMUI) || defined(FUNKEYS)
         x = 30 / div;
 #endif
 
@@ -240,11 +237,9 @@ static int draw_drastic_menu_main(void)
                 rt.h = w;
                 SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, 
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
-#ifdef MMIYOO
                 if ((p->y == 320) || (p->y == 328)) {
                     draw_shot = 1;
                 }
-#endif
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
         }
@@ -263,7 +258,6 @@ static int draw_drastic_menu_main(void)
 #endif
     draw_info(nds.menu.drastic.main, buf, 10, 10 / div, nds.menu.c1, 0);
 
-#ifdef MMIYOO
     if (draw_shot) {
         const uint32_t len = 256 * 192 * 2;
         uint16_t *top = malloc(len);
@@ -271,31 +265,78 @@ static int draw_drastic_menu_main(void)
 
         if (top && bottom) {
             SDL_Surface *t = NULL;
+#if defined(TRIMUI) || defined(FUNKEYS)
+            SDL_Surface *sm = NULL;
+#endif
+
+#if defined(FUNKEYS)
+            const int SM_W = 256 >> 1;
+            const int SM_H = 192 >> 1;
+#endif
+
+#if defined(TRIMUI)
+            const int SM_W = 256.0 / 1.35;
+            const int SM_H = 192.0 / 1.35;
+#endif
             uint32_t slot = *((uint32_t *)VAR_SYSTEM_SAVESTATE_NUM);
             load_state_index _func = (load_state_index)FUN_LOAD_STATE_INDEX;
+
+#if defined(TRIMUI) || defined(FUNKEYS)
+            sm = SDL_CreateRGBSurface(0, SM_W, SM_H, 16, 0, 0, 0, 0);
+#endif
 
             memset(top, 0, len);
             memset(bottom, 0, len);
             _func((void*)VAR_SYSTEM, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
             if (t) {
+#ifdef MMIYOO
                 rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? h - 20 : 50;
                 rt.w = 256;
                 rt.h = 192;
                 SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
+#endif
                 SDL_FreeSurface(t);
             }
 
             t = SDL_CreateRGBSurfaceFrom(bottom, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
             if (t) {
+#ifdef MMIYOO
                 rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? (h + 192) - 20 : 50 + 192;
                 rt.w = 256;
                 rt.h = 192;
                 SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
+#endif
+
+#if defined(TRIMUI)
+                SDL_SoftStretch(t, NULL, sm, NULL);
+
+                rt.x = FB_W - (SM_W + 5);
+                rt.y = (FB_H - SM_H) >> 1;
+                rt.w = SM_W;
+                rt.h = SM_H;
+                SDL_BlitSurface(sm, NULL, nds.menu.drastic.main, &rt);
+#endif
+
+#if defined(FUNKEYS)
+                SDL_SoftStretch(t, NULL, sm, NULL);
+
+                rt.x = FB_W - (SM_W + 5);
+                rt.y = 110;
+                rt.w = SM_W;
+                rt.h = SM_H;
+                SDL_BlitSurface(sm, NULL, nds.menu.drastic.main, &rt);
+#endif
                 SDL_FreeSurface(t);
             }
+
+#if defined(TRIMUI) || defined(FUNKEYS)
+            if (sm) {
+                SDL_FreeSurface(sm);
+            }
+#endif
         }
 
         if (top) {
@@ -306,7 +347,6 @@ static int draw_drastic_menu_main(void)
             free(bottom);
         }
     }
-#endif
     return 0;
 }
 
