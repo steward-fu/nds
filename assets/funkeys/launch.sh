@@ -1,4 +1,5 @@
 #!/bin/sh
+USE_CUST_CLOCK=1
 mydir=`dirname "$0"`
 
 export HOME=$mydir
@@ -19,6 +20,10 @@ if [ -f "libs/libasound.so.2" ]; then
     rm -rf libs/libasound.so.2
 fi
 
+if [ "$USE_CUST_CLOCK" == "1" ]; then
+    ./oc 1400
+fi
+
 # 60 by default
 echo 10 > /proc/sys/vm/swappiness
 
@@ -31,3 +36,8 @@ rom=`cat rom.txt`
 sync
 
 echo $sv > /proc/sys/vm/swappiness
+
+if [ "$USE_CUST_CLOCK" == "1" ]; then
+    ./oc 1000
+fi
+
