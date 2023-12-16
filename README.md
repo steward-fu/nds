@@ -1,4 +1,8 @@
-# NDS Emulator (DraStic) for Miyoo Mini (Plus) and TRIMUI SMART
+# NDS Emulator (DraStic) for Miyoo Mini (Plus), TRIMUI SMART and FunKey S
+![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg) ![image](images/trimui_320/trimui.jpg) ![image](images/funkeys_240/funkeys.jpg)  
+
+&nbsp;
+
  - [Miyoo Mini (Plus)](#miyoo-mini-plus)
    - Introduction
    - Terminology
@@ -66,6 +70,23 @@
        - Mode 0 - 256x192
        - Mode 1 - 288x208
        - Mode 2 - 320x240
+     - DraStic Menu
+     - Hotkeys
+   - Build from Scratch
+     - How to prepare the build environment (Docker)
+     - How to build all libraries
+     - How to pack the release build
+     - How to delete the build environment (Docker)
+   - Unit Test
+   - Installation
+   - Limitations
+   - Special Thanks
+ - [FunKey S](#funkey-s)
+   - Introduction
+   - Terminology
+   - New Features
+     - Display Modes
+       - Mode 0 - 240x192
      - DraStic Menu
      - Hotkeys
    - Build from Scratch
@@ -812,6 +833,159 @@ $ make MOD=unittest
 ### Limitations
  - Screen orientation **MUST** be set as **single** in DraStic menu as the following image  
 ![image](images/trimui_320/setting_0.png)
+
+&nbsp;
+
+### Special Thanks
+```
+河馬
+路人乙
+背包胖熊
+雯瑾文曦
+DraStic Development Team
+```
+
+&nbsp;
+
+## FunKey S
+![image](images/funkeys_240/funkeys.jpg)  
+
+### Introduction
+This repository hosts all of resources, which include SDL2, needed for NDS emulator on FunKey S handheld. The NDS emulator I used is DraStic emulator (close-source) that obtained from RetroPie package and the ELF binary is in ARM32 format, not AArch64. The DraStic version is v2.5.0.4 and sha1 is ae9c215bdea88359cbcb3c259ce0d60a1f59986c. In this porting, I focusd on SDL2 library and heavily customized for DraStic emulator on FunKey S handheld. Therefore, there are some hooking points used in this emulator. To make sure it works as expected, please use the correct DraStic emulator. It is welcome to file any suggestion or issue to this GitHub but I must say that I cannot make sure whether it can be fixed. Since this SDL2 porting is heavily customized, it is not recommended for generic use-case on FunKey S handheld. The most important thing is that only single mode is supported on FunKey S handheld. Therefore, the orientation in DraStic menu must be set as single mode.  
+
+&nbsp;
+
+### Terminology
+|  Term             | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| Keypad Mode       | This is the default mode and it is so-called gamepad mode. |
+| Stylus Mode       | It is touch mode. In this mode, the touch pen shows on either top or bottom screen. DPAD is used to move touch pen and A button acts touch point. | 
+| DraStic Menu      | The default DraStic menu. |
+
+&nbsp;
+
+### New Features
+#### Display Modes
+##### Mode 0
+Screen Resolution: 240x192  
+Background Image: bg_s0.png
+| ![image](images/funkeys_240/dis_0.png) |
+|-|
+
+&nbsp;
+
+#### DraStic Menu
+Original Main Menu
+| ![image](images/mmiyoo_640/menu_2.png) |
+|-|
+
+&nbsp;
+
+Refined Main Menu
+| ![image](images/funkeys_240/menu_0.png) |
+|-|
+
+&nbsp;
+
+Original Cheat Menu
+| ![image](images/mmiyoo_640/menu_3.png) |
+|-|
+
+&nbsp;
+
+Refined Cheat Menu
+| ![image](images/funkeys_240/menu_1.png) |
+|-|
+
+&nbsp;
+
+#### Hotkeys
+|  Keys          | Functionality                     |
+| -------------- | --------------------------------- |
+| START + LEFT   | Change Keypad mode / Stylus mode  |
+| START + RIGHT  | Swap screen                       |
+| START + L1     | Quick load state                  |
+| START + R1     | Quick save state                  |
+| START + SELECT | Exit from DraStic emulator        |
+
+&nbsp;
+
+**Keypad mode only**
+| Keys               | Functionality                               |
+| ------------------ | ------------------------------------------- |
+| MENU (Short Press) | Enter DraStic menu                          |
+| START + Y          | Change background image                     |
+
+&nbsp;
+
+**Stylus mode only**
+| Keys      | Functionality                   |
+| --------- | ------------------------------- |
+| DPAD      | Move the stylus pen             |
+| A         | Touch screen                    |
+| R1        | Lower moving speed              |
+| START + Y | Change stylus pen               |
+
+&nbsp;
+
+### Build from Scratch
+#### How to prepare the build environment (Docker)
+```
+$ sudo docker build -t mmiyoo .
+```
+
+#### How to build all libraries
+```
+$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
+# cd /nds_miyoo
+# make cfg MOD=funkeys
+# make MOD=funkeys
+```
+
+#### How to pack the release build
+```
+$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
+# cd /nds_miyoo
+# make rel MOD=funkeys
+```
+
+#### How to delete the build environment (Docker)
+```
+$ sudo docker image rm mmiyoo
+```
+
+&nbsp;
+
+### Unit Test
+#### How to run unit test
+```
+$ make cfg MOD=unittest
+$ make MOD=unittest
+```
+
+&nbsp;
+
+### Installation
+```
+1. Place "nds_drastic_funkey-s*.opk" in Emulators folder.
+2. Place "drastic" folder in the root folder.
+3. Create "NDS" folder in the root folder if not exist.
+4. Place BIOS files in "drastic/system" folder.
+5. Place roms in "NDS" folder.
+
+BIOS files:
+    cd63893f	drastic/system/drastic_bios_arm7.bin
+    f307d77a	drastic/system/drastic_bios_arm9.bin
+    1280f0d5	drastic/system/nds_bios_arm7.bin
+    2ab23573	drastic/system/nds_bios_arm9.bin
+    13046805	drastic/system/nds_firmware.bin
+```
+
+&nbsp;
+
+### Limitations
+ - Screen orientation **MUST** be set as **single** in DraStic menu as the following image  
+![image](images/funkeys_240/setting_0.png)
 
 &nbsp;
 
