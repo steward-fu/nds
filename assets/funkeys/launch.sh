@@ -1,5 +1,5 @@
 #!/bin/sh
-USE_CUST_CLOCK=1
+USE_CUST_CLOCK=0
 mydir=`dirname "$0"`
 
 export HOME=$mydir
