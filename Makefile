@@ -84,6 +84,7 @@ opk:
 
 .PHONY: clean
 clean:
+	rm -rf drastic/cpuclock
 	rm -rf drastic/launch.sh
 	rm -rf drastic/config.json
 	rm -rf drastic/libs/libdtr.so
