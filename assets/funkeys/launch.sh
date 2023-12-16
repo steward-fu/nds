@@ -21,7 +21,7 @@ if [ -f "libs/libasound.so.2" ]; then
 fi
 
 if [ "$USE_CUST_CLOCK" == "1" ]; then
-    ./oc 1400
+    ./cpuclock 1400
 fi
 
 # 60 by default
@@ -38,6 +38,6 @@ sync
 echo $sv > /proc/sys/vm/swappiness
 
 if [ "$USE_CUST_CLOCK" == "1" ]; then
-    ./oc 1000
+    ./cpuclock 1000
 fi
 
