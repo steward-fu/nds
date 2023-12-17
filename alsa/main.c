@@ -69,7 +69,7 @@ static queue_t queue = {0};
     static MI_AUDIO_Attr_t stGetAttr = {0};
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     static int dsp_fd = -1;
 #endif
 
@@ -172,7 +172,7 @@ int volume_dec(void)
 }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
 int volume_inc(void)
 {
     return 0;
@@ -332,7 +332,7 @@ static void *audio_handler(void *threadid)
                 MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
                 write(dsp_fd, pcm_buf, pcm_buf_len);
 #endif
             }
@@ -432,7 +432,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     MI_SYS_ChnPort_t stAoChn0OutputPort0;
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     int arg = 0;
 #endif
 
@@ -501,7 +501,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     set_volume(cur_volume);
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     dsp_fd = open("/dev/dsp", O_RDWR);
     if (dsp_fd < 0) {
         return -1;
@@ -543,7 +543,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     MI_AO_Disable(AoDevId);
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(FUNKEYS)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;

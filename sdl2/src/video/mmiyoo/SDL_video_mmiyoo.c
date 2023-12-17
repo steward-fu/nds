@@ -1227,6 +1227,10 @@ static void lang_enum(void)
 
 static int read_config(void)
 {
+#if defined(TRIMUI) || defined(FUNKEYS)
+    int fd = -1;
+#endif
+
     struct json_object *jval = NULL;
     struct json_object *jfile = NULL;
 
@@ -1475,8 +1479,14 @@ static int read_config(void)
 #endif
     json_object_put(jfile);
 
-#if !defined(FUNKEYS)
-    snd_nds_reload_config();
+#if defined(TRIMUI) || defined(FUNKEYS)
+    fd = open("/dev/dsp", O_RDWR);
+    if (fd > 0) {
+        close(fd);
+#endif
+        snd_nds_reload_config();
+#if defined(TRIMUI) || defined(FUNKEYS)
+    }
 #endif
 
 #ifdef TRIMUI

@@ -16,24 +16,30 @@ cd $mydir
 [ ! -f "system/nds_bios_arm9.bin" ] && exit
 [ ! -f "system/nds_firmware.bin" ] && exit
 
-if [ -f "libs/libasound.so.2" ]; then
-    rm -rf libs/libasound.so.2
+export SDL_VIDEODRIVER=mmiyoo
+export EGL_VIDEODRIVER=mmiyoo
+
+if [ -e "/dev/dsp" ]; then
+    export SDL_AUDIODRIVER=mmiyoo
+else
+    export SDL_AUDIODRIVER=alsa
+    mv libs/libasound.so.2 libs/__libasound.so.2
 fi
 
 if [ "$USE_CUST_CLOCK" == "1" ]; then
-    ./cpuclock 1400
+    ./cpuclock 1250
 fi
 
 # 60 by default
 echo 10 > /proc/sys/vm/swappiness
 
-export SDL_VIDEODRIVER=mmiyoo
-export SDL_AUDIODRIVER=alsa
-export EGL_VIDEODRIVER=mmiyoo
-
 rom=`cat rom.txt`
 ./drastic --color-depth 16 "$rom"
 sync
+
+if [ -f "libs/__libasound.so.2" ]; then
+    mv libs/__libasound.so.2 libs/libasound.so.2
+fi
 
 echo $sv > /proc/sys/vm/swappiness
 
