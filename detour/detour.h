@@ -15,6 +15,7 @@
     #define VAR_SDL_SCREEN1_HRES_MODE   0x0aee9561
     #define VAR_SDL_SCREEN1_TEXTURE     0x0aee9548
     #define VAR_SDL_SCREEN1_PIXELS      0x0aee954c
+    #define VAR_DESMUME_FOOTER_STR      0x0815a740
 
     #define FUN_SCREEN_COPY16           0x080a59d8
     #define FUN_PRINT_STRING            0x080a5398
@@ -28,6 +29,7 @@
     #define FUN_LOAD_STATE              0x080951c0
     #define FUN_SAVE_STATE              0x0809580c
     #define FUN_BLIT_SCREEN_MENU        0x080a62d8
+    #define FUN_INITIALIZE_BACKUP       0x08092f40
     
     #define ALIGN_ADDR(addr)        ((void*)((size_t)(addr) & ~(page_size - 1)))
 
@@ -37,6 +39,32 @@
     typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
     typedef int32_t (*load_state)(void *system, const char *path, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
     typedef int32_t (*save_state)(void *system, const char *dir, char *filename, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
+
+    typedef enum _backup_type_enum {
+        BACKUP_TYPE_NONE   = 0,
+        BACKUP_TYPE_FLASH  = 1,
+        BACKUP_TYPE_EEPROM = 2,
+        BACKUP_TYPE_NAND   = 3
+    } backup_type_enum;
+
+    typedef struct _backup_struct {
+        uint32_t dirty_page_bitmap[2048];
+        char file_path[1024];
+        backup_type_enum type;
+        uint32_t access_address;
+        uint32_t address_mask;
+        uint32_t fix_file_size;
+        uint8_t *data;
+        uint8_t jedec_id[4];
+        uint32_t write_frame_counter;
+        uint16_t mode;
+        uint8_t state;
+        uint8_t status;
+        uint8_t address_bytes;
+        uint8_t state_step;
+        uint8_t firmware;
+        uint8_t footer_written;
+    } backup_struct;
 
     void detour_init(size_t page_size, const char *path);
     void detour_quit(void);
