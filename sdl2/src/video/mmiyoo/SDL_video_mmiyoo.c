@@ -57,10 +57,13 @@
 #include "SDL_mouse.h"
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
-#include "SDL_opengles_mmiyoo.h"
-#include "SDL_framebuffer_mmiyoo.h"
 
 #include "hex_pen.h"
+#include "drastic_bios_arm7.h"
+#include "drastic_bios_arm9.h"
+#include "nds_bios_arm7.h"
+#include "nds_bios_arm9.h"
+#include "nds_firmware.h"
 
 NDS nds = {0};
 GFX gfx = {0};
@@ -3614,7 +3617,6 @@ int MMIYOO_CreateWindowFrom(_THIS, SDL_Window *window, const void *data)
 static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
 {
     SDL_VideoDevice *device = NULL;
-    SDL_GLDriverData *gldata = NULL;
 
     if(!MMIYOO_Available()) {
         return (0);
@@ -3633,26 +3635,6 @@ static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
     device->PumpEvents = MMIYOO_PumpEvents;
     device->CreateSDLWindow = MMIYOO_CreateWindow;
     device->CreateSDLWindowFrom = MMIYOO_CreateWindowFrom;
-    device->CreateWindowFramebuffer = MMIYOO_CreateWindowFramebuffer;
-    device->UpdateWindowFramebuffer = MMIYOO_UpdateWindowFramebuffer;
-    device->DestroyWindowFramebuffer = MMIYOO_DestroyWindowFramebuffer;
-
-    device->GL_LoadLibrary = glLoadLibrary;
-    device->GL_GetProcAddress = glGetProcAddress;
-    device->GL_CreateContext = glCreateContext;
-    device->GL_SetSwapInterval = glSetSwapInterval;
-    device->GL_SwapWindow = glSwapWindow;
-    device->GL_MakeCurrent = glMakeCurrent;
-    device->GL_DeleteContext = glDeleteContext;
-    device->GL_UnloadLibrary = glUnloadLibrary;
-    
-    gldata = (SDL_GLDriverData*)SDL_calloc(1, sizeof(SDL_GLDriverData));
-    if(gldata == NULL) {
-        SDL_OutOfMemory();
-        SDL_free(device);
-        return NULL;
-    }
-    device->gl_data = gldata;
     device->free = MMIYOO_DeleteDevice;
     return device;
 }

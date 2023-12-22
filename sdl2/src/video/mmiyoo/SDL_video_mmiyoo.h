@@ -45,8 +45,6 @@
 #include "SDL_mouse.h"
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
-#include "SDL_framebuffer_mmiyoo.h"
-#include "SDL_opengles_mmiyoo.h"
 
 #include "detour.h"
 
