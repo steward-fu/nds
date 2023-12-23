@@ -539,7 +539,7 @@ int EventUpdate(void *data)
                                 sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
                                 IMG_SavePNG(p, buf);
                                 SDL_FreeSurface(p);
-                                printf(PREFIX"saved \'%s\'\n", buf);
+                                printf(PREFIX"Saved \'%s\'\n", buf);
                             }
                         }
                         nds.shot.take = 1;
@@ -707,10 +707,8 @@ void MMIYOO_EventInit(void)
 #ifdef TRIMUI
     cust_key.gpio = NULL;
     cust_key.fd = open("/dev/mem", O_RDWR);
-    printf(PREFIX"cust_key.fd %d\n", cust_key.fd);
     if (cust_key.fd > 0) {
         cust_key.mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, cust_key.fd, 0x01c20000);
-        printf(PREFIX"cust_key.mem %p\n", cust_key.mem);
         if (cust_key.mem != MAP_FAILED) {
             uint32_t *p = NULL;
 
@@ -722,7 +720,6 @@ void MMIYOO_EventInit(void)
             *p |= 0x01500000;
 
             cust_key.gpio = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
-            printf(PREFIX"cust_key.gpio %p\n", cust_key.gpio);
         }
     }
     evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
@@ -731,7 +728,7 @@ void MMIYOO_EventInit(void)
 
     event_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if(event_fd < 0){
-        printf(PREFIX"failed to open /dev/input/event0\n");
+        printf(PREFIX"Failed to open event0\n");
     }
 
     if((event_sem =  SDL_CreateSemaphore(1)) == NULL) {
@@ -752,7 +749,7 @@ void MMIYOO_EventInit(void)
     }
     else {
         is_stock_os = 1;
-        printf(PREFIX"run on Stock OS\n");
+        printf(PREFIX"Run on Stock OS\n");
     }
 #endif
 }

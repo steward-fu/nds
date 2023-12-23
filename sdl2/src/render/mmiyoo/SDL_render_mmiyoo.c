@@ -121,7 +121,7 @@ static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
     MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData *)SDL_calloc(1, sizeof(*mmiyoo_texture));
 
     if(!mmiyoo_texture) {
-        printf(PREFIX"failed to create texture\n");
+        printf(PREFIX"Failed to create texture\n");
         return SDL_OutOfMemory();
     }
 
@@ -145,7 +145,7 @@ static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
     mmiyoo_texture->data = SDL_calloc(1, mmiyoo_texture->size);
 
     if(!mmiyoo_texture->data) {
-        printf(PREFIX"failed to create texture data\n");
+        printf(PREFIX"Failed to create texture data\n");
         SDL_free(mmiyoo_texture);
         return SDL_OutOfMemory();
     }
@@ -643,7 +643,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     }
 #endif
     else {
-        printf(PREFIX"unsupport resolution src(%dx%d) => dst(%dx%d)\n", src.w, src.h, dst.w, dst.h);
+        printf(PREFIX"Unsupport Res (%dx%d -> %dx%d)\n", src.w, src.h, dst.w, dst.h);
         return 0;
     }
 
@@ -774,14 +774,14 @@ SDL_Renderer *MMIYOO_CreateRenderer(SDL_Window *window, Uint32 flags)
 
     renderer = (SDL_Renderer *) SDL_calloc(1, sizeof(*renderer));
     if(!renderer) {
-        printf(PREFIX"failed to create render\n");
+        printf(PREFIX"Failed to create render\n");
         SDL_OutOfMemory();
         return NULL;
     }
 
     data = (MMIYOO_RenderData *) SDL_calloc(1, sizeof(*data));
     if(!data) {
-        printf(PREFIX"failed to create render data\n");
+        printf(PREFIX"Failed to create render data\n");
         MMIYOO_DestroyRenderer(renderer);
         SDL_OutOfMemory();
         return NULL;

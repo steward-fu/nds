@@ -94,6 +94,7 @@
     #define SHOT_PATH               "/mnt/SDCARD/Screenshots"
 #endif
 
+#define BIOS_PATH                   "system"
 #define CFG_PATH                    "resources/settings.json"
 #define THEME_PATH                  "resources/bg"
 #define PEN_PATH                    "resources/pen"
@@ -302,6 +303,10 @@ typedef struct _NDS {
 
     TTF_Font *font;
     uint32_t state;
+
+    struct _BIOS {
+        char path[MAX_PATH];
+    } bios;
 
     struct _STATES {
         char path[MAX_PATH];

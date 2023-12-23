@@ -192,15 +192,12 @@ void snd_nds_reload_config(void)
 
         json_object_object_get_ex(jfile, JSON_AUTO_STATE, &jval);
         auto_state = json_object_get_int(jval);
-        printf(PREFIX"[json] auto state: %d\n", auto_state);
 
         json_object_object_get_ex(jfile, JSON_AUTO_SLOT, &jval);
         auto_slot = json_object_get_int(jval);
-        printf(PREFIX"[json] auto slot: %d\n", auto_slot);
 
         json_object_object_get_ex(jfile, JSON_HALF_VOL, &jval);
         half_vol = json_object_get_int(jval) ? 1 : 0;
-        printf(PREFIX"[json] half vol: %d\n", half_vol);
 
         json_object_put(jfile);
     }
@@ -471,25 +468,25 @@ int snd_pcm_start(snd_pcm_t *pcm)
 
     miret = MI_AO_SetPubAttr(AoDevId, &stSetAttr);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"failed to set PubAttr\n");
+        printf(PREFIX"Failed to set PubAttr\n");
         return -1;
     }
 
     miret = MI_AO_GetPubAttr(AoDevId, &stGetAttr);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"failed to get PubAttr\n");
+        printf(PREFIX"Failed to get PubAttr\n");
         return -1;
     }
 
     miret = MI_AO_Enable(AoDevId);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"failed to enable AO\n");
+        printf(PREFIX"Failed to enable AO\n");
         return -1;
     }
 
     miret = MI_AO_EnableChn(AoDevId, AoChn);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"failed to enable Channel\n");
+        printf(PREFIX"Failed to enable Channel\n");
         return -1;
     }
 
