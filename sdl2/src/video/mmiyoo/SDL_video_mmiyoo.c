@@ -2031,7 +2031,6 @@ void GFX_Init(void)
     if (getcwd(nds.bios.path, sizeof(nds.bios.path))) {
         strcat(nds.bios.path, "/");
         strcat(nds.bios.path, BIOS_PATH);
-        mkdir(nds.bios.path, 0755);
 
         sprintf(buf, "%s/drastic_bios_arm7.bin", nds.bios.path);
         write_file(buf, drastic_bios_arm7, sizeof(drastic_bios_arm7));
