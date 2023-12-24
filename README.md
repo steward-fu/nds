@@ -1,5 +1,5 @@
 # NDS Emulator (DraStic) for Miyoo Mini (Plus), TRIMUI SMART and FunKey S
-![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg) ![image](images/trimui_320/trimui.jpg) ![image](images/funkeys_240/funkeys.jpg)  
+![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg) ![image](images/trimui_320/trimui.jpg) ![image](images/funkeys_240/funkeys.jpg) ![image](images/funkeys_240/rgnano.jpg)  
 
 &nbsp;
 
@@ -848,7 +848,7 @@ DraStic Development Team
 &nbsp;
 
 ## FunKey S
-![image](images/funkeys_240/funkeys.jpg)  
+![image](images/funkeys_240/funkeys.jpg) ![image](images/funkeys_240/rgnano.jpg)  
 
 ### Introduction
 This repository hosts all of resources, which include SDL2, needed for NDS emulator on FunKey S handheld. The NDS emulator I used is DraStic emulator (close-source) that obtained from RetroPie package and the ELF binary is in ARM32 format, not AArch64. The DraStic version is v2.5.0.4 and sha1 is ae9c215bdea88359cbcb3c259ce0d60a1f59986c. In this porting, I focusd on SDL2 library and heavily customized for DraStic emulator on FunKey S handheld. Therefore, there are some hooking points used in this emulator. To make sure it works as expected, please use the correct DraStic emulator. It is welcome to file any suggestion or issue to this GitHub but I must say that I cannot make sure whether it can be fixed. Since this SDL2 porting is heavily customized, it is not recommended for generic use-case on FunKey S handheld. The most important thing is that only single mode is supported on FunKey S handheld. Therefore, the orientation in DraStic menu must be set as single mode.  
