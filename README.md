@@ -81,7 +81,7 @@
    - Installation
    - Limitations
    - Special Thanks
- - [FunKey S](#funkey-s)
+ - [FunKey S and RG Nano](#funkey-s-and-rg-nano)
    - Introduction
    - Terminology
    - New Features
@@ -847,7 +847,7 @@ DraStic Development Team
 
 &nbsp;
 
-## FunKey S
+## FunKey S and RG Nano
 ![image](images/funkeys_240/funkeys.jpg) ![image](images/funkeys_240/rgnano.jpg)  
 
 ### Introduction
