@@ -100,7 +100,13 @@
 #define PEN_PATH                    "resources/pen"
 #define LANG_PATH                   "resources/lang"
 #define OVERLAY_PATH                "resources/overlay"
-#define MENU_PATH                   "resources/menu/"
+
+#if defined(FUNKEYS)
+    #define MENU_PATH               "resources/menu/240"
+#else
+    #define MENU_PATH               "resources/menu/640"
+#endif
+
 #define MENU_BG_FILE                "bg.png"
 #define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
 #define DRASTIC_MENU_BG1_FILE       "drastic_bg1.png"
