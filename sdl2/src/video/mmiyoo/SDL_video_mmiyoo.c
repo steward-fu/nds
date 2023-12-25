@@ -198,6 +198,10 @@ static int draw_drastic_menu_main(void)
             x = FB_W - get_font_width(buf) - 10;
             y = 10 / div;
 #endif
+
+#if defined(FUNKEYS)
+            y = 4 / div;
+#endif
         }
         else if (p->y == 280) {
             draw = 1;
@@ -266,6 +270,7 @@ static int draw_drastic_menu_main(void)
         }
     }
 
+    y = 10;
 #ifdef MMIYOO
     sprintf(buf, "Rel v1.8 Res %s", nds.enable_752x560 ? "752*560" : "640*480");
 #endif
@@ -275,9 +280,10 @@ static int draw_drastic_menu_main(void)
 #endif
 
 #ifdef FUNKEYS
+    y = 4;
     sprintf(buf, "Rel v1.8");
 #endif
-    draw_info(nds.menu.drastic.main, buf, 10, 10 / div, nds.menu.c1, 0);
+    draw_info(nds.menu.drastic.main, buf, 10, y / div, nds.menu.c1, 0);
 
     if (draw_shot) {
         const uint32_t len = 256 * 192 * 2;
