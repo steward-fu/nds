@@ -79,7 +79,7 @@ rel:
 .PHONY: opk
 opk:
 	mksquashfs funkeys/opk/* nds_drastic_funkey-s_$(REL_VER).opk
-	cp $(MOD)/readme.txt . && zip -r drastic_$(MOD)_$(REL_VER).zip drastic nds_drastic_funkey-s_$(REL_VER).opk readme.txt -x drastic/system/* && rm -rf readme.txt
+	cp $(MOD)/readme.txt . && zip -r drastic_$(MOD)_$(REL_VER).zip drastic nds_drastic_funkey-s_$(REL_VER).opk readme.txt && rm -rf readme.txt
 	rm -rf nds_drastic_funkey-s_$(REL_VER).opk
 
 .PHONY: clean

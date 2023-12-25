@@ -10,12 +10,6 @@ sv=`cat /proc/sys/vm/swappiness`
 
 cd $mydir
 
-[ ! -f "system/drastic_bios_arm7.bin" ] && exit
-[ ! -f "system/drastic_bios_arm9.bin" ] && exit
-[ ! -f "system/nds_bios_arm7.bin" ] && exit
-[ ! -f "system/nds_bios_arm9.bin" ] && exit
-[ ! -f "system/nds_firmware.bin" ] && exit
-
 export SDL_VIDEODRIVER=mmiyoo
 export EGL_VIDEODRIVER=mmiyoo
 
