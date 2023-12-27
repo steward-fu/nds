@@ -226,6 +226,10 @@ void detour_init(size_t page, const char *path)
         detour_hook(FUN_LOAD_STATE_INDEX, (intptr_t)dtr_load_state_index);
         detour_hook(FUN_SAVE_STATE_INDEX, (intptr_t)dtr_save_state_index);
         detour_hook(FUN_INITIALIZE_BACKUP, (intptr_t)dtr_initialize_backup);
+        printf(PREFIX"Enabled hooking\n");
+    }
+    else {
+        printf(PREFIX"Disabled hooking\n");
     }
 }
 
