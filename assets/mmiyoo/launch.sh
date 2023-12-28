@@ -35,9 +35,12 @@ else
 fi
 #purge_devil
 
+if [  -d "/customer/app/skin_large" ]; then
+    USE_752x560_RES=1
+fi
+
 if [ "$USE_752x560_RES" == "1" ]; then
     fbset -g 752 560 752 1120 32
-    fbset > fbset.log
 fi
 
 cd $mydir
@@ -60,6 +63,10 @@ fi
 sync
 
 echo $sv > /proc/sys/vm/swappiness
+
+if [  -d "/customer/app/skin_large" ]; then
+    USE_752x560_RES=0
+fi
 
 if [ "$USE_752x560_RES" == "1" ]; then
     fbset -g 640 480 640 960 32
