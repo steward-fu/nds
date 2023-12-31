@@ -2102,6 +2102,10 @@ void GFX_Init(void)
     }
 #endif
 
+#ifdef MMIYOO
+    gfx.small_screen = malloc(256 * 192 * 4);
+#endif
+
     is_running = 1;
     gfx.action = GFX_ACTION_NONE;
     pthread_create(&thread, NULL, video_handler, (void *)NULL);
@@ -2133,6 +2137,13 @@ void GFX_Quit(void)
         SDL_FreeSurface(cvt);
         cvt = NULL;
     }
+
+#ifdef MMIYOO
+    if (gfx.small_screen) {
+        free(gfx.small_screen);
+        gfx.small_screen = NULL;
+    }
+#endif
 }
 
 void GFX_Clear(void)
@@ -2179,7 +2190,7 @@ int draw_pen(const void *pixels, int width, int pitch)
     case NDS_DIS_MODE_VH_T1:
     //case NDS_DIS_MODE_S0:
     //case NDS_DIS_MODE_S1:
-        sub = sh;
+        //sub = sh;
         break;
     }
 

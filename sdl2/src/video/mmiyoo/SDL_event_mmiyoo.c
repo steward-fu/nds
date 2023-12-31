@@ -935,7 +935,7 @@ void MMIYOO_PumpEvents(_THIS)
                 case NDS_DIS_MODE_VH_T1:
                 //case NDS_DIS_MODE_S0:
                 //case NDS_DIS_MODE_S1:
-                    addy = -120;
+                    //addy = -120;
                     break;
                 }
 

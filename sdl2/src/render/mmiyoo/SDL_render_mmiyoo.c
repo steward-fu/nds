@@ -493,7 +493,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         // x:160.0, y:0.0, w:160.0, h:120.0
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
-            if (screen0) {
+            if (screen1) {
                 dst.x = 0;
                 dst.y = 0;
                 dst.w = FB_W;
@@ -505,10 +505,12 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
                 alpha = 1;
                 need_pen = 0;
                 need_fps = 0;
+                need_update = 0;
+                neon_memcpy(gfx.small_screen, pixels, pitch * src.h);
             }
             break;
         case NDS_DIS_MODE_VH_T1:
-            if (screen0) {
+            if (screen1) {
                 dst.x = 0;
                 dst.y = 0;
                 dst.w = FB_W;
@@ -520,6 +522,8 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
                 alpha = 1;
                 need_pen = 0;
                 need_fps = 0;
+                need_update = 0;
+                neon_memcpy(gfx.small_screen, pixels, pitch * src.h);
             }
             break;
         case NDS_DIS_MODE_S0:
@@ -662,6 +666,25 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         }
 
         GFX_Copy(pixels, src, dst, pitch, alpha, rotate);
+
+#ifdef MMIYOO
+        switch (nds.dis_mode) {
+        case NDS_DIS_MODE_VH_T0:
+            dst.x = 0;
+            dst.y = 0;
+            dst.w = 160;
+            dst.h = 120;
+            GFX_Copy(gfx.small_screen, src, dst, pitch, 1, rotate);
+            break;
+        case NDS_DIS_MODE_VH_T1:
+            dst.x = 0;
+            dst.y = 0;
+            dst.w = 256;
+            dst.h = 192;
+            GFX_Copy(gfx.small_screen, src, dst, pitch, 1, rotate);
+            break;
+        }
+#endif
 
         if (need_fps && show_fps && fps_info) {
             dst.w = fps_info->w;

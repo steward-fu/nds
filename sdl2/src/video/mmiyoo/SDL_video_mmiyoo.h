@@ -246,6 +246,9 @@ typedef struct _GFX {
     int disp_dev;
 #endif
 
+#ifdef MMIYOO
+    void *small_screen;
+#endif
     struct fb_var_screeninfo vinfo;
     struct fb_fix_screeninfo finfo;
 
