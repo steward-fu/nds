@@ -37,7 +37,7 @@ static int32_t dtr_save_state_index(void *system, uint32_t index, uint16_t *snap
 
 static void dtr_initialize_backup(backup_struct *backup, backup_type_enum backup_type, uint8_t *data, uint32_t size, char *path)
 {
-    char data_file_name[255] = {0};
+    char *data_file_name = NULL;
     FILE *__stream = NULL;
     FILE *data_file = NULL;
     size_t sVar1 = 0;
@@ -52,7 +52,11 @@ static void dtr_initialize_backup(backup_struct *backup, backup_type_enum backup
     uint32_t desmume_footer_position = 0;
     uint32_t clean_pages_loaded = 0;
 
-    sprintf(data_file_name, "%s/%s.dsv", states_path, VAR_SYSTEM_GAMECARD_NAME);
+    if (path != NULL) {
+        data_file_name = malloc(255);
+        memset(data_file_name, 0, 255);
+        sprintf(data_file_name, "%s/%s.dsv", states_path, VAR_SYSTEM_GAMECARD_NAME);
+    }
     backup->type = backup_type;
     backup->address_mask = size - 1;
     backup->fix_file_size = 0;
@@ -129,6 +133,10 @@ LAB_08092f94:
         backup->file_path[0x3ff] = 0;
     }
     backup->status = 0;
+
+    if (data_file_name) {
+        free(data_file_name);
+    }
 }
 
 int dtr_savestate(int slot)
