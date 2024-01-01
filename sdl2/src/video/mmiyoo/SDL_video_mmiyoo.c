@@ -1149,11 +1149,7 @@ static void *video_handler(void *threadid)
             }
 #endif
 
-#ifdef TRIMUI
-            My_QueueCopy(gfx.thread[0].texture, get_pixels(gfx.thread[0].texture), &gfx.thread[0].srt, &gfx.thread[0].drt);
-#endif
-
-#ifdef FUNKEYS
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
             My_QueueCopy(gfx.thread[0].texture, get_pixels(gfx.thread[0].texture), &gfx.thread[0].srt, &gfx.thread[0].drt);
 #endif
             GFX_Flip();
@@ -1254,7 +1250,7 @@ static void lang_enum(void)
 
 static int read_config(void)
 {
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     int fd = -1;
 #endif
 
@@ -1433,13 +1429,13 @@ static int read_config(void)
 #endif
     json_object_put(jfile);
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     fd = open("/dev/dsp", O_RDWR);
     if (fd > 0) {
         close(fd);
 #endif
         snd_nds_reload_config();
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     }
 #endif
 
@@ -1745,6 +1741,55 @@ static int get_overlay_count(void)
     return get_file_count(nds.overlay.path);
 }
 
+#ifdef PANDORA
+int fb_init(void)
+{
+    gfx.fb_dev[0] = open("/dev/fb0", O_RDWR);
+    gfx.fb_dev[1] = open("/dev/fb1", O_RDWR);
+    ioctl(gfx.fb_dev[1], OMAPFB_QUERY_PLANE, &gfx.pi);
+    ioctl(gfx.fb_dev[1], OMAPFB_QUERY_MEM, &gfx.mi);
+    if(gfx.pi.enabled){
+        gfx.pi.enabled = 0;
+        ioctl(gfx.fb_dev[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+    }
+    gfx.mi.size = FB_SIZE;
+    ioctl(gfx.fb_dev[1], OMAPFB_SETUP_MEM, &gfx.mi);
+
+    gfx.pi.pos_x = 0;
+    gfx.pi.pos_y = 0;
+    gfx.pi.out_width = FB_W;
+    gfx.pi.out_height = FB_H;
+    gfx.pi.enabled = 1;
+    ioctl(gfx.fb_dev[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+
+    ioctl(gfx.fb_dev[0], FBIOGET_VSCREENINFO, &gfx.vinfo);
+    ioctl(gfx.fb_dev[0], FBIOGET_FSCREENINFO, &gfx.finfo);
+    gfx.hw.mem[0] = mmap(0, FB_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, gfx.fb_dev[0], 0);
+    memset(gfx.hw.mem[0], 0, FB_SIZE);
+
+    ioctl(gfx.fb_dev[1], FBIOGET_VSCREENINFO, &gfx.vinfo);
+    ioctl(gfx.fb_dev[1], FBIOGET_FSCREENINFO, &gfx.finfo);
+    gfx.hw.mem[1] = mmap(0, FB_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, gfx.fb_dev[1], 0);
+    memset(gfx.hw.mem[1], 0, FB_SIZE);
+    return 0;
+}
+
+int fb_uninit(void)
+{
+    munmap(gfx.hw.mem[0], FB_SIZE);
+    munmap(gfx.hw.mem[1], FB_SIZE);
+
+    ioctl(gfx.fb_dev[1], OMAPFB_QUERY_PLANE, &gfx.pi);
+    gfx.pi.enabled = 0;
+    ioctl(gfx.fb_dev[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+    close(gfx.fb_dev[0]);
+    close(gfx.fb_dev[1]);
+    gfx.fb_dev[0] = -1;
+    gfx.fb_dev[1] = -1;
+    return 0;
+}
+#endif
+
 #ifdef FUNKEYS
 int fb_init(void)
 {
@@ -1971,6 +2016,11 @@ int fb_uninit(void)
 
     MI_GFX_Close();
     MI_SYS_Exit();
+
+    gfx.vinfo.yoffset = 0;
+    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    close(gfx.fb_dev);
+    gfx.fb_dev = -1;
 #endif
     return 0;
 }
@@ -2128,11 +2178,6 @@ void GFX_Quit(void)
         }
     }
 
-    gfx.vinfo.yoffset = 0;
-    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
-    close(gfx.fb_dev);
-    gfx.fb_dev = 0;
-
     if (cvt) {
         SDL_FreeSurface(cvt);
         cvt = NULL;
@@ -2276,6 +2321,20 @@ int draw_pen(const void *pixels, int width, int pitch)
 
 int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
+#ifdef PANDORA
+    int x = 0;
+    int y = 0;
+    uint32_t *dst = (uint32_t *)gfx.hw.mem[(gfx.vinfo.yoffset == 0) ? 0 : 1];
+    uint32_t *src = (uint32_t *)pixels;
+
+    for (y = 0; y < srcrect.h; y++) {
+        for (x = 0; x < srcrect.w; x++) {
+            *dst++ = *src++;
+        }
+        dst+= (FB_W - srcrect.w);
+    }
+#endif
+
 #ifdef FUNKEYS
     if ((srcrect.w == 256) && (srcrect.h == 192)) {
         uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - 192) >> 1) * FB_W);
@@ -3035,6 +3094,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 
 void GFX_Flip(void)
 {
+#ifdef PANDORA
+    int arg = 0;
+
+    ioctl(gfx.fb_dev[1], FBIOPAN_DISPLAY, &gfx.vinfo);
+    ioctl(gfx.fb_dev[1], FBIO_WAITFORVSYNC, &arg);
+    gfx.vinfo.yoffset ^= FB_H;
+#endif
+
 #ifdef MMIYOO
     ioctl(gfx.fb_dev, FBIOPAN_DISPLAY, &gfx.vinfo);
     gfx.vinfo.yoffset ^= FB_H;
@@ -3240,7 +3307,7 @@ int reload_menu(void)
 #ifdef MMIYOO
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.yes) {
@@ -3259,7 +3326,7 @@ int reload_menu(void)
 #ifdef MMIYOO
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.no) {

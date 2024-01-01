@@ -1,20 +1,21 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
-#include <json-c/json.h>
-#include <alsa/input.h>
 #include <alsa/output.h>
+#include <alsa/input.h>
 #include <alsa/conf.h>
 #include <alsa/global.h>
 #include <alsa/timer.h>
 #include <alsa/pcm.h>
 #include <linux/soundcard.h>
+#include <json-c/json.h>
 
 #ifdef UNITTEST
     #include "unity_fixture.h"
@@ -32,7 +33,13 @@
 #define FREQ                44100
 #define PERIOD              2048
 #define CHANNELS            2
-#define SAMPLES             8192
+
+#if defined(PANDORA)
+    #define SAMPLES         2048
+#else
+    #define SAMPLES         8192
+#endif
+
 #define QUEUE_SIZE          (2 * 1024 * 1024)
 
 #ifdef MMIYOO
@@ -69,7 +76,7 @@ static queue_t queue = {0};
     static MI_AUDIO_Attr_t stGetAttr = {0};
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     static int dsp_fd = -1;
 #endif
 
@@ -84,6 +91,13 @@ static struct json_object *jfile = NULL;
 
 #if !defined(UNITTEST)
 void neon_memcpy(void *dest, const void *src, size_t n);
+#endif
+
+#if defined(PANDORA)
+int snd_lib_error_set_handler(int handler)
+{
+    return 0;
+}
 #endif
 
 #ifdef MMIYOO
@@ -172,7 +186,7 @@ int volume_dec(void)
 }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
 int volume_inc(void)
 {
     return 0;
@@ -329,7 +343,7 @@ static void *audio_handler(void *threadid)
                 MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                 write(dsp_fd, pcm_buf, pcm_buf_len);
 #endif
             }
@@ -341,7 +355,7 @@ static void *audio_handler(void *threadid)
 
 snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm)
 {
-    return 0; //pcm_buf_len;
+    return 0; // pcm_buf_len;
 }
 
 int snd_pcm_hw_params(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
@@ -401,6 +415,7 @@ int snd_pcm_hw_params_set_rate_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params,
 
 int snd_pcm_open(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode)
 {
+    printf(PREFIX"Use customized ALSA\n");
     if (stream != SND_PCM_STREAM_PLAYBACK) {
         return -1;
     }
@@ -429,7 +444,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     MI_SYS_ChnPort_t stAoChn0OutputPort0;
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     int arg = 0;
 #endif
 
@@ -446,6 +461,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     }
     memset(pcm_buf, 0, pcm_buf_len);
 
+#if !defined(PANDORA)
     jfile = json_object_from_file(JSON_APP_FILE);
     if (jfile != NULL) {
         struct json_object *volume = NULL;
@@ -456,6 +472,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
         //json_object_to_file(JSON_APP_FILE, jfile);
         json_object_put(jfile);
     }
+#endif
 
 #if defined(MMIYOO) && !defined(UNITTEST)
     stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
@@ -498,7 +515,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     set_volume(cur_volume);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     dsp_fd = open("/dev/dsp", O_RDWR);
     if (dsp_fd < 0) {
         return -1;
@@ -540,7 +557,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     MI_AO_Disable(AoDevId);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;

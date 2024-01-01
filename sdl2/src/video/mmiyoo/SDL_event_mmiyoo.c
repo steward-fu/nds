@@ -93,6 +93,22 @@
     #define MENU    16
 #endif
 
+#ifdef PANDORA
+    #define UP      103
+    #define DOWN    108
+    #define LEFT    105
+    #define RIGHT   106
+    #define A       29
+    #define B       42
+    #define X       109
+    #define Y       104
+    #define L1      102
+    #define R1      107
+    #define START   56
+    #define SELECT  29
+    #define MENU    139
+#endif
+
 MMIYOO_EventInfo evt = {0};
 
 extern GFX gfx;
@@ -209,7 +225,7 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU));
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(PANDORA)
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
@@ -226,7 +242,7 @@ static void set_key(uint32_t bit, int val)
         hotkey|= (1 << bit);
         evt.keypad.bitmaps|= (1 << bit);
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(PANDORA)
         if (bit == MYKEY_MENU) {
             hotkey = (1 << MYKEY_MENU);
         }
@@ -437,7 +453,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                         if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
                             evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
 
@@ -464,7 +480,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                         set_key(MYKEY_R2, 1);
 #endif
                         set_key(MYKEY_RIGHT, 0);
@@ -597,7 +613,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(PANDORA)
                         set_key(MYKEY_EXIT, 1);
 #endif
                         set_key(MYKEY_START, 0);
@@ -613,7 +629,7 @@ int EventUpdate(void *data)
                     }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(PANDORA)
                     if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
                         set_key(MYKEY_MENU_ONION, 1);
                         set_key(MYKEY_SELECT, 0);
@@ -632,7 +648,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_FF, 1);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                         set_key(MYKEY_QSAVE, 1);
 #endif
                         set_key(MYKEY_R1, 0);
@@ -643,7 +659,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_EXIT, 1);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                         set_key(MYKEY_QLOAD, 1);
 #endif
                         set_key(MYKEY_L1, 0);
@@ -726,7 +742,11 @@ void MMIYOO_EventInit(void)
 #endif
     evt.mode = MMIYOO_KEYPAD_MODE;
 
+#if defined(PANDORA)
+    event_fd = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+#else
     event_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+#endif
     if(event_fd < 0){
         printf(PREFIX"Failed to open event0\n");
     }
@@ -815,7 +835,7 @@ void MMIYOO_PumpEvents(_THIS)
                     }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI) || defined(PANDORA)
                     if (cc == MYKEY_MENU) {
                         continue;
                     }
@@ -826,7 +846,7 @@ void MMIYOO_PumpEvents(_THIS)
                     }
                 }
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                 if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }
@@ -959,7 +979,7 @@ void MMIYOO_PumpEvents(_THIS)
                 SDL_SendMouseMotion(vid.window, 0, 0, evt.mouse.x + addx, evt.mouse.y + addy);
             }
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                 if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }

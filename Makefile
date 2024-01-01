@@ -26,16 +26,25 @@ REL_VER  = $(shell git rev-parse HEAD | cut -c 1-8)
 ifeq ($(MOD),mmiyoo)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
+    export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
     $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
 endif
 
 ifeq ($(MOD),trimui)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
+    export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
     $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
 endif
 
 ifeq ($(MOD),funkeys)
+    export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
+    $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
+endif
+
+ifeq ($(MOD),pandora)
+    SDL2_CFG+= --disable-oss
+    SDL2_CFG+= --disable-alsa
     $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
 endif
 
@@ -45,7 +54,6 @@ ifeq ($(MOD),unittest)
     export MOD=unittest
     $(shell cd sdl2 && rm -rf libEGL.so libGLESv2.so)
 else
-    export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
     export CC=${CROSS}gcc
     export AR=${CROSS}ar
     export AS=${CROSS}as
@@ -59,6 +67,7 @@ endif
 
 .PHONY: all
 all:
+	make -C launcher MOD=$(MOD)
 	make -C detour MOD=$(MOD)
 	cp detour/libdtr.so drastic/libs/
 	make -C alsa MOD=$(MOD)
@@ -92,6 +101,7 @@ clean:
 	rm -rf drastic/libs/libSDL2-2.0.so.0
 	make -C alsa clean
 	make -C detour clean
+	make -C launcher clean
 	make -C sdl2 distclean
 	sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg
 	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates

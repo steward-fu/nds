@@ -23179,6 +23179,23 @@ $as_echo "#define SDL_VIDEO_RENDER_MMIYOO 1" >>confdefs.h
     fi
 }
 
+CheckPandoraVideo()
+{
+    if test x$enable_video = xyes; then
+
+$as_echo "#define SDL_VIDEO_DRIVER_MMIYOO 1" >>confdefs.h
+
+
+$as_echo "#define SDL_VIDEO_RENDER_MMIYOO 1" >>confdefs.h
+
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA -fPIC -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3 -I../detour -I/usr/local/include/SDL2"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckUnittestVideo()
 {
     if test x$enable_video = xyes; then
@@ -23238,6 +23255,22 @@ $as_echo "#define SDL_AUDIO_DRIVER_MMIYOO 1" >>confdefs.h
         have_audio=yes
         if test x$HOST = xarm-linux; then
             EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
+        fi
+        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
+    fi
+}
+
+CheckPandoraAudio()
+{
+    if test x$enable_audio = xyes; then
+
+$as_echo "#define SDL_AUDIO_DRIVER_MMIYOO 1" >>confdefs.h
+
+        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
+        have_audio=yes
+        if test x$HOST = xarm-linux; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3"
             EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         fi
         SUMMARY_audio="${SUMMARY_audio} mmiyoo"
@@ -25903,6 +25936,9 @@ $as_echo "#define SDL_VIDEO_DRIVER_ANDROID 1" >>confdefs.h
             *funkeys*)          ARCH=funkeys
                 CheckFunkeysVideo
                 ;;
+            *pandora*)          ARCH=pandora
+                CheckPandoraVideo
+                ;;
             *unittest*)         ARCH=unittest
                 CheckUnittestVideo
                 ;;
@@ -26040,6 +26076,9 @@ $as_echo "#define SDL_AUDIO_DRIVER_AAUDIO 1" >>confdefs.h
             funkeys)
                 CheckFunkeysAudio
             ;;
+            pandora)
+                CheckPandoraAudio
+            ;;
             unittest)
                 CheckUnittestAudio
             ;;
@@ -26074,7 +26113,7 @@ $as_echo "#define SDL_JOYSTICK_ANDROID 1" >>confdefs.h
                 SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
                 have_joystick=yes
             ;;
-            mmiyoo|trimui|funkeys|unittest)
+            mmiyoo|trimui|funkeys|pandora|unittest)
 
 $as_echo "#define SDL_JOYSTICK_MMIYOO 1" >>confdefs.h
 

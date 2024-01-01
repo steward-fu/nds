@@ -2437,6 +2437,19 @@ CheckFunkeysVideo()
     fi
 }
 
+CheckPandoraVideo()
+{
+    if test x$enable_video = xyes; then
+        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
+        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA -fPIC -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3 -I../detour -I/usr/local/include/SDL2"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckUnittestVideo()
 {
     if test x$enable_video = xyes; then
@@ -2486,6 +2499,20 @@ CheckFunkeysAudio()
         have_audio=yes
         if test x$HOST = xarm-linux; then
             EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
+        fi
+        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
+    fi
+}
+
+CheckPandoraAudio()
+{
+    if test x$enable_audio = xyes; then
+        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
+        have_audio=yes
+        if test x$HOST = xarm-linux; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3"
             EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         fi
         SUMMARY_audio="${SUMMARY_audio} mmiyoo"
@@ -3796,6 +3823,9 @@ case "$host" in
             *funkeys*)          ARCH=funkeys
                 CheckFunkeysVideo
                 ;;
+            *pandora*)          ARCH=pandora
+                CheckPandoraVideo
+                ;;
             *unittest*)         ARCH=unittest
                 CheckUnittestVideo
                 ;;
@@ -3921,6 +3951,9 @@ case "$host" in
             funkeys)
                 CheckFunkeysAudio
             ;;
+            pandora)
+                CheckPandoraAudio
+            ;;
             unittest)
                 CheckUnittestAudio
             ;;
@@ -3949,7 +3982,7 @@ case "$host" in
                 SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
                 have_joystick=yes
             ;;
-            mmiyoo|trimui|funkeys|unittest)
+            mmiyoo|trimui|funkeys|pandora|unittest)
                 AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
                 SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
                 have_joystick=yes

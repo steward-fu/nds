@@ -29,6 +29,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <linux/fb.h>
+#if defined(PANDORA)
+#include <linux/omapfb.h>
+#endif
 
 #include "../SDL_sysvideo.h"
 #include "../SDL_sysvideo.h"
@@ -83,6 +86,15 @@
     #define FB_BPP                  2
 #endif
 
+#ifdef PANDORA
+    #define DEF_FB_W                800
+    #define DEF_FB_H                480
+    #define FB_BPP                  4
+    #define E_MI_GFX_ROTATE_90      0
+    #define E_MI_GFX_ROTATE_180     0
+    #define E_MI_GFX_ROTATE_270     0
+#endif
+
 #define IMG_W                       640
 #define IMG_H                       480
 
@@ -131,6 +143,10 @@
 #endif
 
 #ifdef FUNKEYS
+    #define DEF_FONT_SIZE           12
+#endif
+
+#ifdef PANDORA
     #define DEF_FONT_SIZE           12
 #endif
 
@@ -238,7 +254,13 @@ typedef struct MMIYOO_VideoInfo {
 } MMIYOO_VideoInfo;
 
 typedef struct _GFX {
+#ifdef PANDORA
+    int fb_dev[2];
+    struct omapfb_mem_info mi;
+    struct omapfb_plane_info pi;
+#else
     int fb_dev;
+#endif
 
 #ifdef TRIMUI
     int ion_dev;
@@ -281,6 +303,10 @@ typedef struct _GFX {
 
 #ifdef FUNKEYS
         uint32_t *mem;
+#endif
+
+#ifdef PANDORA
+        uint32_t *mem[2];
 #endif
     } hw;
 

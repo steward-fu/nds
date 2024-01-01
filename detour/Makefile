@@ -1,25 +1,30 @@
 TARGET  = libdtr.so
-LDFLAGS = -fpic -shared -ljson-c
+LDFLAGS = -fpic -shared
 MOD     = mmiyoo
 SRC     = main.c
 
 ifeq ($(MOD),mmiyoo)
-    CROSS   = /opt/mmiyoo/bin/arm-linux-gnueabihf-
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -Wl,--no-undefined
+    LDFLAGS+= -ljson-c
     LDFLAGS+= -L../mmiyoo/lib -lmi_common -lmi_sys -lmi_gfx -lmi_ao
 endif
 
 ifeq ($(MOD),trimui)
-    CROSS   = /opt/mmiyoo/bin/arm-linux-gnueabihf-
     CFLAGS += -DTRIMUI -I../trimui/inc
     CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -Wl,--no-undefined
+    LDFLAGS+= -ljson-c
 endif
 
 ifeq ($(MOD),funkeys)
-    CROSS   = /opt/mmiyoo/bin/arm-linux-gnueabihf-
     CFLAGS += -DFUNKEYS -I../funkeys/inc
     CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -Wl,--no-undefined
+    LDFLAGS+= -ljson-c
+endif
+
+ifeq ($(MOD),pandora)
+    CFLAGS += -DPANDORA
+    CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -Wl,--no-undefined
 endif
 
 ifeq ($(MOD),unittest)

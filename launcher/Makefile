@@ -1,38 +1,27 @@
-TARGET  = libasound.so.2
-CFLAGS  = -I../detour
-LDFLAGS = -fpic -shared
-LDFLAGS+= -lpthread -lm
-LDFLAGS+= -L../detour -ldtr
+TARGET  = launcher
 MOD     = mmiyoo
 SRC     = main.c
+LDFLAGS = -lSDL -lSDL_image -lSDL_ttf
 
 ifeq ($(MOD),mmiyoo)
-    SRC    += neon.S
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3
-    LDFLAGS+= -Wl,--no-undefined -ljson-c
     LDFLAGS+= -L../mmiyoo/lib -lmi_common -lmi_sys -lmi_gfx -lmi_ao
 endif
 
 ifeq ($(MOD),trimui)
-    SRC    += neon.S
     CFLAGS += -DTRIMUI -I../trimui/inc
     CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3
-    LDFLAGS+= -Wl,--no-undefined -ljson-c
 endif
 
 ifeq ($(MOD),funkeys)
-    SRC    += neon.S
     CFLAGS += -DFUNKEYS -I../funkeys/inc
     CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3
-    LDFLAGS+= -Wl,--no-undefined -ljson-c
 endif
 
 ifeq ($(MOD),pandora)
-    SRC    += neon.S
     CFLAGS += -DPANDORA
     CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3
-    LDFLAGS+= -Wl,--no-undefined -ljson-c
 endif
 
 ifeq ($(MOD),unittest)
