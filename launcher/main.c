@@ -13,20 +13,27 @@
 #include <SDL/SDL_image.h>
 #include <SDL/SDL_ttf.h>
 
-#define PREFIX      "[RUN] "
+#define PREFIX  "[RUN] "
 
 #ifdef MMIYOO
-    #define FB_W    640
-    #define FB_H    480
+    #define FB_W        640
+    #define FB_H        480
+    #define FB_BPP      32
+    #define FONT_SIZE   12
 #endif
 
 #ifdef PANDORA
-    #define FB_W    800
-    #define FB_H    480
+    #define FB_W        800
+    #define FB_H        480
+    #define FB_BPP      16
+    #define FONT_SIZE   20
 #endif
 
+static int cur_sel = 0;
+static int total_file = 0;
 static TTF_Font *font = NULL;
 static SDL_Surface *screen = NULL;
+static char cur_filename[255] = {0};
 
 int get_file_count(const char *path)
 {
@@ -35,37 +42,202 @@ int get_file_count(const char *path)
     struct dirent *ent = NULL;
 
     dir = opendir(path);
-    while ((ent = readdir(dir)) != NULL) {
-        cnt += 1;
-        printf("%s\n", ent->d_name);
+    if (dir) {
+        while ((ent = readdir(dir)) != NULL) {
+            if (!strcmp(ent->d_name, ".")) {
+                continue;
+            }
+            if (!strcmp(ent->d_name, "..")) {
+                continue;
+            }
+            if (ent->d_type & DT_DIR) {
+                continue;
+            }
+            cnt += 1;
+        }
+        closedir(dir);
     }
-    closedir(dir);
+    return cnt;
+}
+
+void draw_text(const char *text, int hl, int x, int y)
+{
+    uint32_t bg = 0;
+    int w = 0, h = 0;
+    SDL_Rect rt = {0};
+    SDL_Color col = {0};
+    SDL_Surface *t1 = NULL;
+
+    if (hl) {
+        col.r = 255;
+        col.g = 255;
+        col.b = 255;
+        bg = SDL_MapRGB(screen->format, 0, 128, 0);
+    }
+    else {
+        col.r = 255;
+        col.g = 255;
+        col.b = 255;
+        bg = SDL_MapRGB(screen->format, 0, 0, 0);
+    }
+
+    TTF_SizeUTF8(font, text, &w, &h);
+    SDL_Surface *t0 = TTF_RenderUTF8_Solid(font, text, col);
+    if (t0) {
+        t1 = SDL_CreateRGBSurface(SDL_SWSURFACE, t0->w, t0->h + 2, FB_BPP, 0, 0, 0, 0);
+        if (t1) {
+            SDL_FillRect(t1, &t1->clip_rect, bg);
+            SDL_BlitSurface(t0, NULL, t1, NULL);
+            rt.x = 0;
+            rt.y = y - 1;
+            rt.w = FB_W - 5;
+            rt.h = t0->h + 2;
+            SDL_FillRect(screen, &rt, bg);
+
+            rt.x = 10;
+            rt.w = 0;
+            rt.h = 0;
+            SDL_BlitSurface(t1, NULL, screen, &rt);
+            SDL_FreeSurface(t1);
+        }
+        SDL_FreeSurface(t0);
+    }
+}
+
+int draw_file(const char *path, int start, int count)
+{
+    int s0 = 0;
+    int s1 = 0;
+    int cnt = 0;
+    DIR *dir = NULL;
+    char buf[255] = {0};
+    struct dirent *ent = NULL;
+
+    if (total_file > 19) {
+        s0 = cur_sel - 9;
+        s1 = cur_sel + 10;
+        if (s0 < 0) {
+            s1 -= s0;
+            s0 = 0;
+        }
+        if (s1 > total_file) {
+            s0 -= (s1 - total_file);
+            s1 = total_file;
+        }
+    }
+    else {
+        s0 = 0;
+        s1 = 19;
+    }
+
+    dir = opendir(path);
+    SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
+    if (dir) {
+        while ((ent = readdir(dir)) != NULL) {
+            if (!strcmp(ent->d_name, ".")) {
+                continue;
+            }
+            if (!strcmp(ent->d_name, "..")) {
+                continue;
+            }
+            if (ent->d_type & DT_DIR) {
+                continue;
+            }
+
+            if (cnt == cur_sel) {
+                strcpy(cur_filename, ent->d_name);
+            }
+
+            if (cnt >= s0) {
+                sprintf(buf, "%d. %s", cnt + 1, ent->d_name);
+                draw_text(buf, cnt == cur_sel, 10, 10 + ((cnt - s0) * (FONT_SIZE + 4)));
+            }
+            cnt += 1;
+            if (cnt >= s1) {
+                break;
+            }
+        }
+        closedir(dir);
+    }
     return cnt;
 }
 
 int main(int argc, char **argv)
 {
-    int w = 0, h = 0;
-    SDL_Color col = {255, 0, 0};
-    SDL_Rect rt = {0, 100, 0, 0};
-    const char *cc = "test";
+    int run = 0;
+    int update = 0;
+    char buf[255] = {0};
+    char path[255] = {0};
 
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
-    screen = SDL_SetVideoMode(FB_W, FB_H, 16, SDL_SWSURFACE | SDL_FULLSCREEN);
-    SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0xff, 0x00, 0x00));
+    screen = SDL_SetVideoMode(FB_W, FB_H, FB_BPP, SDL_SWSURFACE | SDL_FULLSCREEN);
+    SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
+    SDL_ShowCursor(0);
 
-    TTF_SizeUTF8(font, cc, &w, &h);
-    SDL_Surface *msg = TTF_RenderUTF8_Solid(font, cc, col);
-    SDL_BlitSurface(msg, NULL, screen, &rt);
-    SDL_Flip(screen);
-    SDL_FreeSurface(msg);
-    SDL_Delay(3000);
-    get_file_count("/media/Game/roms/nds/");
+    font = TTF_OpenFont("drastic/resources/font/font.ttf", FONT_SIZE);
+    strcpy(path, "/media/steward/Game/roms/nds");
+    total_file = get_file_count(path);
 
-    TTF_CloseFont(font);
+    update = 1;
+    SDL_Event event;
+    while (1) {
+        if (SDL_PollEvent(&event)) {
+            if (event.type == SDL_KEYUP) {
+                if (event.key.keysym.sym == SDLK_UP) {
+                    if (cur_sel > 0) {
+                        update = 1;
+                        cur_sel -= 1;
+                    }
+                }
+                else if (event.key.keysym.sym == SDLK_DOWN) {
+                    if (cur_sel < (total_file - 1)) {
+                        update = 1;
+                        cur_sel += 1;
+                    }
+                }
+                else if (event.key.keysym.sym == SDLK_END) {
+                    update = 1;
+                    cur_sel -= 10;
+                    if (cur_sel < 0) {
+                        cur_sel = 0;
+                    }
+                }
+                else if (event.key.keysym.sym == SDLK_HOME) {
+                    update = 1;
+                    cur_sel += 10;
+                    if (cur_sel >= total_file) {
+                        cur_sel = total_file - 1;
+                    }
+                }
+                else if (event.key.keysym.sym == SDLK_LSHIFT) {
+                    run = 1;
+                    break;
+                }
+                else if (event.key.keysym.sym == SDLK_PAGEDOWN) {
+                    run = 0;
+                    break;
+                }
+            }
+
+            if (update) {
+                update = 0;
+                draw_file(path, cur_sel, cur_sel + 19);
+                SDL_Flip(screen);
+            }
+        }
+        SDL_Delay(30);
+    }
+
+    if (font) {
+        TTF_CloseFont(font);
+    }
     TTF_Quit();
     SDL_Quit();
+
+    if (run) {
+        printf("%s\n", cur_filename);
+    }
     return -1;
 }
 
