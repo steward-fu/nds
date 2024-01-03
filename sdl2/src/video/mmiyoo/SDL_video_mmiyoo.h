@@ -120,10 +120,12 @@
 #endif
 
 #define MENU_BG_FILE                "bg.png"
+#define MENU_CURSOR_FILE            "cursor.png"
 #define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
 #define DRASTIC_MENU_BG1_FILE       "drastic_bg1.png"
 #define DRASTIC_MENU_YES_FILE       "drastic_yes.png"
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
+#define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
 #define MMIYOO_DRIVER_NAME          "mmiyoo"
 #define BASE_REG_RIU_PA             0x1f000000
 #define BASE_REG_MPLL_PA            (BASE_REG_RIU_PA + 0x103000 * 2)
@@ -204,6 +206,7 @@
 #define JSON_NDS_HOTKEY             "hotkey"
 #define JSON_NDS_STATES             "states"
 #define JSON_NDS_MENU_BG            "menu_bg"
+#define JSON_NDS_MENU_CURSOR        "menu_cursor"
 
 #define GFX_ACTION_NONE             0
 #define GFX_ACTION_FLIP             1
@@ -365,6 +368,7 @@ typedef struct _NDS {
         int sel;
         int max;
         int enable;
+        int show_cursor;
         SDL_Surface *bg;
         SDL_Surface *cursor;
         struct _DRASTIC {
@@ -374,6 +378,7 @@ typedef struct _NDS {
             SDL_Surface *main;
             SDL_Surface *yes;
             SDL_Surface *no;
+            SDL_Surface *cursor;
         } drastic;
         uint32_t c0;
         uint32_t c1;

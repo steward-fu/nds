@@ -265,6 +265,14 @@ static int draw_drastic_menu_main(void)
                 if ((p->y == 320) || (p->y == 328)) {
                     draw_shot = 1;
                 }
+
+                if (nds.menu.show_cursor && nds.menu.drastic.cursor) {
+                    rt.x = (5 / div) + (x - nds.menu.drastic.cursor->w) / 2;
+                    rt.y -= ((nds.menu.drastic.cursor->h - LINE_H) / 2);
+                    rt.w = 0;
+                    rt.h = 0;
+                    SDL_BlitSurface(nds.menu.drastic.cursor, NULL, nds.menu.drastic.main, &rt);
+                }
             }
             draw_info(nds.menu.drastic.main, buf, x, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
         }
@@ -1396,6 +1404,12 @@ static int read_config(void)
         nds.hotkey = json_object_get_int(jval);
     }
 
+    nds.menu.show_cursor = 0;
+    json_object_object_get_ex(jfile, JSON_NDS_MENU_CURSOR, &jval);
+    if (jval) {
+        nds.menu.show_cursor = json_object_get_int(jval);
+    }
+
 #ifdef MMIYOO
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
@@ -1478,6 +1492,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_PEN_XV, json_object_new_int(nds.pen.xv));
     json_object_object_add(jfile, JSON_NDS_PEN_YV, json_object_new_int(nds.pen.yv));
     json_object_object_add(jfile, JSON_NDS_MENU_BG, json_object_new_int(nds.menu.sel));
+    json_object_object_add(jfile, JSON_NDS_MENU_CURSOR, json_object_new_int(nds.menu.show_cursor));
 
     json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -3281,6 +3296,9 @@ int reload_menu(void)
         SDL_FreeSurface(t);
     }
 
+    sprintf(buf, "%s/%s", folder, MENU_CURSOR_FILE);
+    nds.menu.cursor = IMG_Load(buf);
+
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_BG0_FILE);
     t = IMG_Load(buf);
     if (t) {
@@ -3300,6 +3318,29 @@ int reload_menu(void)
         nds.menu.drastic.bg1 = SDL_ConvertSurface(t, cvt->format, 0);
         SDL_FreeSurface(t);
     }
+
+#ifdef MMIYOO
+    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
+    nds.menu.drastic.cursor = IMG_Load(buf);
+    if (nds.menu.drastic.cursor) {
+        printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
+    }
+#endif
+
+#ifdef TRIMUI
+    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
+    t = IMG_Load(buf);
+    if (t) {
+        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+        nds.menu.drastic.cursor = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
+        if (nds.menu.drastic.cursor) {
+            SDL_SoftStretch(t, NULL, t, &nrt);
+            SDL_BlitSurface(t, NULL, nds.menu.drastic.cursor, &nrt);
+            printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
+        }
+        SDL_FreeSurface(t);
+    }
+#endif
 
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
     t = IMG_Load(buf);
@@ -3861,6 +3902,11 @@ void MMIYOO_VideoQuit(_THIS)
         nds.menu.drastic.bg1 = NULL;
     }
 
+    if (nds.menu.drastic.cursor) {
+        SDL_FreeSurface(nds.menu.drastic.cursor);
+        nds.menu.drastic.cursor = NULL;
+    }
+
     if (nds.menu.drastic.main) {
         SDL_FreeSurface(nds.menu.drastic.main);
         nds.menu.drastic.main = NULL;
@@ -4016,6 +4062,7 @@ enum {
     MENU_SWAP_R1R2,
     MENU_PEN_XV,
     MENU_PEN_YV,
+    MENU_CURSOR,
     MENU_LAST,
 };
 
@@ -4034,6 +4081,7 @@ static const char *MENU_ITEM[] = {
     "Swap R1-R2",
     "Pen X Speed",
     "Pen Y Speed",
+    "Cursor"
 };
 
 int handle_menu(int key)
@@ -4156,6 +4204,11 @@ int handle_menu(int key)
                 nds.pen.yv-= PEN_YV_DEC;
             }
             break;
+        case MENU_CURSOR:
+            nds.menu.show_cursor = 0;
+            break;
+        default:
+            break;
         }
         break;
     case MYKEY_RIGHT:
@@ -4233,6 +4286,11 @@ int handle_menu(int key)
                 nds.pen.yv+= PEN_YV_INC;
             }
             break;
+        case MENU_CURSOR:
+            nds.menu.show_cursor = 1;
+            break;
+        default:
+            break;
         }
         break;
     case MYKEY_B:
@@ -4248,6 +4306,8 @@ int handle_menu(int key)
         }
         nds.menu.enable = 0;
         return 0;
+    default:
+        break;
     }
 
     if (cur_sel == MENU_DIS) {
@@ -4335,9 +4395,15 @@ int handle_menu(int key)
         }
 
         if (col0 == sel_col) {
-            rt.x = SX - (nds.enable_752x560 ? 83 : 50);
+            if (nds.menu.show_cursor) {
+                rt.x = SX - (nds.enable_752x560 ? 43 : 10);
+                rt.w = 461 + (nds.enable_752x560 ? 41 : -40);
+            }
+            else {
+                rt.x = SX - (nds.enable_752x560 ? 83 : 50);
+                rt.w = 461 + (nds.enable_752x560 ? 81 : 0);
+            }
             rt.y = SY + (h * idx) - 2;
-            rt.w = 461 + (nds.enable_752x560 ? 81 : 0);
             rt.h = FONT_SIZE + 3;
 
             if ((cc == MENU_DIS_ALPHA) || (cc == MENU_KEYS)) {
@@ -4349,6 +4415,14 @@ int handle_menu(int key)
             }
             else {
                 SDL_FillRect(cvt, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
+            }
+
+            if (nds.menu.show_cursor && nds.menu.cursor) {
+                rt.x -= (nds.menu.cursor->w + 5);
+                rt.y -= ((nds.menu.cursor->h - LINE_H) / 2);
+                rt.w = 0;
+                rt.h = 0;
+                SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
             }
 
             if ((cc == MENU_DIS) || (cc == MENU_ALT)) {
@@ -4435,15 +4509,12 @@ int handle_menu(int key)
         case MENU_PEN_YV:
             sprintf(buf, "%d (35000)", nds.pen.yv);
             break;
+        case MENU_CURSOR:
+            sprintf(buf, "%s", to_lang(nds.menu.show_cursor ? "Show" : "Hide"));
+            break;
         }
         draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
         idx+= 1;
-    }
-
-    if (nds.menu.cursor) {
-        rt.x = SX - (nds.enable_752x560 ? 75 : 60);
-        rt.y = SY + (h * (cur_sel - s0)) - (nds.menu.cursor->h / 3) - 2;
-        SDL_BlitSurface(nds.menu.cursor, NULL, cvt, &rt);
     }
 
     sx = nds.enable_752x560 ? 540 : 450;
