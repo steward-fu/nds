@@ -295,7 +295,9 @@ int EventUpdate(void *data)
     uint32_t right = RIGHT;
 
     int hotkey_mask = 0;
+#ifdef TRIMUI
     char buf[MAX_PATH << 1] = {0};
+#endif
 
     while (running) {
         SDL_SemWait(event_sem);
@@ -523,6 +525,10 @@ int EventUpdate(void *data)
                     }
 
                     if (hit_hotkey(MYKEY_X)) {
+#ifdef MMIYOO
+#endif
+
+#ifdef TRIMUI
                         int w = FB_W;
                         int h = FB_H;
                         int pitch = FB_W * FB_BPP;
@@ -531,11 +537,8 @@ int EventUpdate(void *data)
                         time_t t = time(NULL);
                         struct tm tm = *localtime(&t);
 
-#ifdef MMIYOO
-                        dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
-#endif
-
-#ifdef TRIMUI
+                        // for MMIYOO
+                        // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
                         dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
 
                         if (nds.dis_mode == NDS_DIS_MODE_S0) {
@@ -547,7 +550,6 @@ int EventUpdate(void *data)
                             h = 256;
                         }
                         pitch = FB_H * FB_BPP;
-#endif
 
                         if (dst) {
                             p = SDL_CreateRGBSurfaceFrom(dst, w, h, 32, pitch, 0, 0, 0, 0);
@@ -559,6 +561,7 @@ int EventUpdate(void *data)
                             }
                         }
                         nds.shot.take = 1;
+#endif
                         set_key(MYKEY_X, 0);
                     }
 
