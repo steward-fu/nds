@@ -1774,7 +1774,7 @@ int fb_init(void)
     gfx.pi.pos_y = 0;
     gfx.pi.out_width = FB_W;
     gfx.pi.out_height = FB_H;
-    gfx.pi.enabled = 1;
+    gfx.pi.enabled = 0;
     ioctl(gfx.fb_dev[1], OMAPFB_SETUP_PLANE, &gfx.pi);
 
     ioctl(gfx.fb_dev[0], FBIOGET_VSCREENINFO, &gfx.vinfo);
