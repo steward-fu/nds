@@ -15,23 +15,18 @@
 
 #define PREFIX  "[RUN] "
 
-#ifdef MMIYOO
-    #define FB_W        640
-    #define FB_H        480
-    #define FB_BPP      32
-    #define FONT_SIZE   12
-#endif
+#include "bg_800x480.h"
 
-#ifdef PANDORA
-    #define FB_W        800
-    #define FB_H        480
-    #define FB_BPP      16
-    #define FONT_SIZE   20
-#endif
+#define FB_W        800
+#define FB_H        480
+#define FB_BPP      16
+#define FONT_SIZE   20
 
 static int cur_sel = 0;
 static int total_file = 0;
+static char root[255] = {0};
 static TTF_Font *font = NULL;
+static SDL_Surface *bg = NULL;
 static SDL_Surface *screen = NULL;
 static char cur_filename[255] = {0};
 
@@ -84,21 +79,30 @@ void draw_text(const char *text, int hl, int x, int y)
     TTF_SizeUTF8(font, text, &w, &h);
     SDL_Surface *t0 = TTF_RenderUTF8_Solid(font, text, col);
     if (t0) {
-        t1 = SDL_CreateRGBSurface(SDL_SWSURFACE, t0->w, t0->h + 2, FB_BPP, 0, 0, 0, 0);
-        if (t1) {
-            SDL_FillRect(t1, &t1->clip_rect, bg);
-            SDL_BlitSurface(t0, NULL, t1, NULL);
-            rt.x = 0;
-            rt.y = y - 1;
-            rt.w = FB_W - 5;
-            rt.h = t0->h + 2;
-            SDL_FillRect(screen, &rt, bg);
+        if (hl) {
+            t1 = SDL_CreateRGBSurface(SDL_SWSURFACE, t0->w, t0->h + 2, FB_BPP, 0, 0, 0, 0);
+            if (t1) {
+                SDL_FillRect(t1, &t1->clip_rect, bg);
+                SDL_BlitSurface(t0, NULL, t1, NULL);
+                rt.x = 0;
+                rt.y = y - 1;
+                rt.w = FB_W - 5;
+                rt.h = t0->h + 2;
+                SDL_FillRect(screen, &rt, bg);
 
+                rt.x = 10;
+                rt.w = 0;
+                rt.h = 0;
+                SDL_BlitSurface(t1, NULL, screen, &rt);
+                SDL_FreeSurface(t1);
+            }
+        }
+        else {
             rt.x = 10;
+            rt.y = y - 1;
             rt.w = 0;
             rt.h = 0;
-            SDL_BlitSurface(t1, NULL, screen, &rt);
-            SDL_FreeSurface(t1);
+            SDL_BlitSurface(t0, NULL, screen, &rt);
         }
         SDL_FreeSurface(t0);
     }
@@ -131,7 +135,12 @@ int draw_file(const char *path, int start, int count)
     }
 
     dir = opendir(path);
-    SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
+    if (bg) {
+        SDL_BlitSurface(bg, NULL, screen, NULL);
+    }
+    else {
+        SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
+    }
     if (dir) {
         while ((ent = readdir(dir)) != NULL) {
             if (!strcmp(ent->d_name, ".")) {
@@ -145,7 +154,7 @@ int draw_file(const char *path, int start, int count)
             }
 
             if (cnt == cur_sel) {
-                strcpy(cur_filename, ent->d_name);
+                sprintf(cur_filename, "%s/%s", path, ent->d_name);
             }
 
             if (cnt >= s0) {
@@ -166,18 +175,31 @@ int main(int argc, char **argv)
 {
     int run = 0;
     int update = 0;
+    SDL_RWops *rw = NULL;
     char buf[255] = {0};
-    char path[255] = {0};
+
+    if (argc != 3) {
+        printf("usage: %s font_path roms_folder\n", argv[0]);
+        return -1;
+    }
 
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
     screen = SDL_SetVideoMode(FB_W, FB_H, FB_BPP, SDL_SWSURFACE | SDL_FULLSCREEN);
+
+    if (screen == NULL) {
+        printf(PREFIX"Failed to init screen\n");
+        return -1;
+    }
     SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
     SDL_ShowCursor(0);
 
-    font = TTF_OpenFont("drastic/resources/font/font.ttf", FONT_SIZE);
-    strcpy(path, "/media/steward/Game/roms/nds");
-    total_file = get_file_count(path);
+    rw = SDL_RWFromMem(hex_bg, sizeof(hex_bg));
+    bg = IMG_Load_RW(rw, 1);
+
+    font = TTF_OpenFont(argv[1], FONT_SIZE);
+    strcpy(root, argv[2]);
+    total_file = get_file_count(root);
 
     update = 1;
     SDL_Event event;
@@ -196,14 +218,14 @@ int main(int argc, char **argv)
                         cur_sel += 1;
                     }
                 }
-                else if (event.key.keysym.sym == SDLK_END) {
+                else if (event.key.keysym.sym == SDLK_HOME) {
                     update = 1;
                     cur_sel -= 10;
                     if (cur_sel < 0) {
                         cur_sel = 0;
                     }
                 }
-                else if (event.key.keysym.sym == SDLK_HOME) {
+                else if (event.key.keysym.sym == SDLK_END) {
                     update = 1;
                     cur_sel += 10;
                     if (cur_sel >= total_file) {
@@ -222,13 +244,16 @@ int main(int argc, char **argv)
 
             if (update) {
                 update = 0;
-                draw_file(path, cur_sel, cur_sel + 19);
+                draw_file(root, cur_sel, cur_sel + 19);
                 SDL_Flip(screen);
             }
         }
         SDL_Delay(30);
     }
 
+    if (bg) {
+        SDL_FreeSurface(bg);
+    }
     if (font) {
         TTF_CloseFont(font);
     }
@@ -236,7 +261,7 @@ int main(int argc, char **argv)
     SDL_Quit();
 
     if (run) {
-        printf("%s\n", cur_filename);
+        execl("./launch.sh", "launch.sh", cur_filename, NULL);
     }
     return -1;
 }
