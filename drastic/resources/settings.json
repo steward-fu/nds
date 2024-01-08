@@ -27,5 +27,6 @@
   "hotkey":0,
   "states":"",
   "menu_bg":0,
-  "menu_cursor":1
+  "menu_cursor":1,
+  "fastforward":6
 }

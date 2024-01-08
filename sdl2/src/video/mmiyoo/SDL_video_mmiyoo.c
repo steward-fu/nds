@@ -1410,6 +1410,13 @@ static int read_config(void)
         nds.menu.show_cursor = json_object_get_int(jval);
     }
 
+    nds.fast_forward = 6;
+    json_object_object_get_ex(jfile, JSON_NDS_FAST_FORWARD, &jval);
+    if (jval) {
+        nds.fast_forward = json_object_get_int(jval);
+        dtr_set_fastforward(nds.fast_forward);
+    }
+
 #ifdef MMIYOO
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
@@ -1493,6 +1500,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_PEN_YV, json_object_new_int(nds.pen.yv));
     json_object_object_add(jfile, JSON_NDS_MENU_BG, json_object_new_int(nds.menu.sel));
     json_object_object_add(jfile, JSON_NDS_MENU_CURSOR, json_object_new_int(nds.menu.show_cursor));
+    json_object_object_add(jfile, JSON_NDS_FAST_FORWARD, json_object_new_int(nds.fast_forward));
 
     json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -4063,6 +4071,7 @@ enum {
     MENU_PEN_XV,
     MENU_PEN_YV,
     MENU_CURSOR,
+    MENU_FAST_FORWARD,
     MENU_LAST,
 };
 
@@ -4081,12 +4090,14 @@ static const char *MENU_ITEM[] = {
     "Swap R1-R2",
     "Pen X Speed",
     "Pen Y Speed",
-    "Cursor"
+    "Cursor",
+    "Fast Forward"
 };
 
 int handle_menu(int key)
 {
     static int cur_sel = 0;
+    static uint8_t pre_ff = 0;
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
     static char pre_lang[LANG_FILE_LEN] = {0};
@@ -4207,6 +4218,11 @@ int handle_menu(int key)
         case MENU_CURSOR:
             nds.menu.show_cursor = 0;
             break;
+        case MENU_FAST_FORWARD:
+            if (nds.fast_forward > 1) {
+                nds.fast_forward -= 1;
+            }
+            break;
         default:
             break;
         }
@@ -4289,6 +4305,11 @@ int handle_menu(int key)
         case MENU_CURSOR:
             nds.menu.show_cursor = 1;
             break;
+        case MENU_FAST_FORWARD:
+            if (nds.fast_forward < 255) {
+                nds.fast_forward += 1;
+            }
+            break;
         default:
             break;
         }
@@ -4303,6 +4324,11 @@ int handle_menu(int key)
             lang_unload();
             lang_load(nds.lang.trans[DEF_LANG_SLOT]);
             memset(pre_lang, 0, sizeof(pre_lang));
+        }
+
+        if (pre_ff != nds.fast_forward) {
+            dtr_set_fastforward(nds.fast_forward);
+            pre_ff = nds.fast_forward;
         }
         nds.menu.enable = 0;
         return 0;
@@ -4511,6 +4537,9 @@ int handle_menu(int key)
             break;
         case MENU_CURSOR:
             sprintf(buf, "%s", to_lang(nds.menu.show_cursor ? "Show" : "Hide"));
+            break;
+        case MENU_FAST_FORWARD:
+            sprintf(buf, "%d (6)", nds.fast_forward);
             break;
         }
         draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);

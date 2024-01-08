@@ -30,7 +30,9 @@
     #define FUN_SAVE_STATE              0x0809580c
     #define FUN_BLIT_SCREEN_MENU        0x080a62d8
     #define FUN_INITIALIZE_BACKUP       0x08092f40
-    
+
+    #define CODE_FAST_FORWARD           0x08006ad0
+
     #define ALIGN_ADDR(addr)        ((void*)((size_t)(addr) & ~(page_size - 1)))
 
     typedef void (*quit)(void *system);
@@ -69,6 +71,7 @@
     void detour_init(size_t page_size, const char *path);
     void detour_quit(void);
     void detour_hook(uint32_t old_func, uint32_t new_func);
+    uint32_t dtr_set_fastforward(uint8_t v);
 
     int dtr_quit(void);
     int dtr_savestate(int slot);

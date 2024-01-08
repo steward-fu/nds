@@ -207,6 +207,7 @@
 #define JSON_NDS_STATES             "states"
 #define JSON_NDS_MENU_BG            "menu_bg"
 #define JSON_NDS_MENU_CURSOR        "menu_cursor"
+#define JSON_NDS_FAST_FORWARD       "fast_forward"
 
 #define GFX_ACTION_NONE             0
 #define GFX_ACTION_FLIP             1
@@ -338,6 +339,7 @@ typedef struct _NDS {
     int keys_rotate;
     int enable_752x560;
     int defer_update_bg;
+    uint8_t fast_forward;
 
     TTF_Font *font;
     uint32_t state;
