@@ -1414,7 +1414,6 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_FAST_FORWARD, &jval);
     if (jval) {
         nds.fast_forward = json_object_get_int(jval);
-        dtr_set_fastforward(nds.fast_forward);
     }
 
 #ifdef MMIYOO
@@ -4096,8 +4095,8 @@ static const char *MENU_ITEM[] = {
 
 int handle_menu(int key)
 {
+    static int pre_ff = 0;
     static int cur_sel = 0;
-    static uint8_t pre_ff = 0;
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
     static char pre_lang[LANG_FILE_LEN] = {0};
@@ -4327,7 +4326,7 @@ int handle_menu(int key)
         }
 
         if (pre_ff != nds.fast_forward) {
-            dtr_set_fastforward(nds.fast_forward);
+            dtr_fastforward(nds.fast_forward);
             pre_ff = nds.fast_forward;
         }
         nds.menu.enable = 0;

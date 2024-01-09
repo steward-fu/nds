@@ -648,6 +648,12 @@ int EventUpdate(void *data)
 
                     if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
 #ifdef MMIYOO
+                        static int pre_ff = 0;
+
+                        if (pre_ff != nds.fast_forward) {
+                            pre_ff = nds.fast_forward;
+                            dtr_fastforward(nds.fast_forward);
+                        }
                         set_key(MYKEY_FF, 1);
 #endif
 

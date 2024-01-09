@@ -71,10 +71,10 @@
     void detour_init(size_t page_size, const char *path);
     void detour_quit(void);
     void detour_hook(uint32_t old_func, uint32_t new_func);
-    uint32_t dtr_set_fastforward(uint8_t v);
 
     int dtr_quit(void);
     int dtr_savestate(int slot);
     int dtr_loadstate(int slot);
+    int dtr_fastforward(uint8_t v);
 
 #endif

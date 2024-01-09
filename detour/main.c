@@ -17,14 +17,13 @@
 static size_t page_size = 0;
 static char states_path[255] = {0};
 
-uint32_t dtr_set_fastforward(uint8_t v)
+int dtr_fastforward(uint8_t v)
 {
     uint32_t *ff = (uint32_t*)CODE_FAST_FORWARD;
 
     // 0xe3a03006
     mprotect(ALIGN_ADDR(CODE_FAST_FORWARD), page_size, PROT_READ | PROT_WRITE);
     *ff = 0xe3a03000 | v;
-    mprotect(ALIGN_ADDR(CODE_FAST_FORWARD), page_size, PROT_READ);
     return 0;
 }
 
