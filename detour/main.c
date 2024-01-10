@@ -14,6 +14,7 @@
 
 #define PREFIX "[DTR] "
 
+static int is_hooked = 0;
 static size_t page_size = 0;
 static char states_path[255] = {0};
 
@@ -162,7 +163,7 @@ int dtr_savestate(int slot)
         _func0(d0, 0);
         _func0(d1, 1);
 
-        if (states_path[0] == 0) {
+        if (is_hooked == 0) {
             save_state_index _func1 = (save_state_index)FUN_SAVE_STATE_INDEX;
 
             _func1((void*)VAR_SYSTEM, slot, d0, d1);
@@ -208,7 +209,7 @@ int dtr_loadstate(int slot)
 #ifdef MMIYOO
     char buf[255] = {0};
 
-    if (states_path[0] == 0) {
+    if (is_hooked == 0) {
         load_state_index _func = (load_state_index)FUN_LOAD_STATE_INDEX;
 
         _func((void*)VAR_SYSTEM, slot, 0, 0, 0);
@@ -239,15 +240,14 @@ void detour_init(size_t page, const char *path)
 {
     page_size = page;
 
+    is_hooked = 0;
     if ((path != NULL) && (path[0] != 0)) {
+        is_hooked = 1;
         strcpy(states_path, path);
         detour_hook(FUN_LOAD_STATE_INDEX, (intptr_t)dtr_load_state_index);
         detour_hook(FUN_SAVE_STATE_INDEX, (intptr_t)dtr_save_state_index);
         detour_hook(FUN_INITIALIZE_BACKUP, (intptr_t)dtr_initialize_backup);
         printf(PREFIX"Enabled hooking\n");
-    }
-    else {
-        printf(PREFIX"Disabled hooking\n");
     }
 }
 

@@ -3329,9 +3329,6 @@ int reload_menu(void)
 #ifdef MMIYOO
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
     nds.menu.drastic.cursor = IMG_Load(buf);
-    if (nds.menu.drastic.cursor) {
-        printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
-    }
 #endif
 
 #ifdef TRIMUI
@@ -3343,7 +3340,6 @@ int reload_menu(void)
         if (nds.menu.drastic.cursor) {
             SDL_SoftStretch(t, NULL, t, &nrt);
             SDL_BlitSurface(t, NULL, nds.menu.drastic.cursor, &nrt);
-            printf(PREFIX"drastic menu cursor: %p\n", nds.menu.drastic.cursor);
         }
         SDL_FreeSurface(t);
     }
@@ -3845,6 +3841,9 @@ int MMIYOO_VideoInit(_THIS)
         detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
         detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
         //detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
+    }
+    else {
+        printf(PREFIX"Disabled hooking\n");
     }
     return 0;
 }
