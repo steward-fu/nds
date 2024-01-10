@@ -401,9 +401,9 @@ int EventUpdate(void *data)
                             if (ev.value == 0) {
                                 nds.volume = volume_inc();
                             }
-                            else {
-                                nds.defer_update_bg = 180;
-                            }
+                        }
+                        else {
+                            nds.defer_update_bg = 360;
                         }
                         break;
                     case VOLDOWN:
@@ -412,9 +412,9 @@ int EventUpdate(void *data)
                             if (ev.value == 0) {
                                 nds.volume = volume_dec();
                             }
-                            else {
-                                nds.defer_update_bg = 180;
-                            }
+                        }
+                        else {
+                            nds.defer_update_bg = 360;
                         }
                         break;
 #endif
