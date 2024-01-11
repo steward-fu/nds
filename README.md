@@ -528,16 +528,16 @@ $ sudo docker build -t mmiyoo .
 
 #### How to build all libraries
 ```
-$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-# cd /nds_miyoo
+$ sudo docker run -it --rm -u $(id -u ${USER}):$(id -g ${USER}) -v $(pwd):/nds mmiyoo /bin/bash
+# cd /nds
 # make cfg
 # make
 ```
 
 #### How to pack the release build
 ```
-$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-# cd /nds_miyoo
+$ sudo docker run -it --rm -u $(id -u ${USER}):$(id -g ${USER}) -v $(pwd):/nds mmiyoo /bin/bash
+# cd /nds
 # make rel
 ```
 
@@ -793,16 +793,16 @@ $ sudo docker build -t mmiyoo .
 
 #### How to build all libraries
 ```
-$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-# cd /nds_miyoo
+$ sudo docker run -it --rm -u $(id -u ${USER}):$(id -g ${USER}) -v $(pwd):/nds mmiyoo /bin/bash
+# cd /nds
 # make cfg MOD=trimui
 # make MOD=trimui
 ```
 
 #### How to pack the release build
 ```
-$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-# cd /nds_miyoo
+$ sudo docker run -it --rm -u $(id -u ${USER}):$(id -g ${USER}) -v $(pwd):/nds mmiyoo /bin/bash
+# cd /nds
 # make rel MOD=trimui
 ```
 
@@ -936,16 +936,16 @@ $ sudo docker build -t mmiyoo .
 
 #### How to build all libraries
 ```
-$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-# cd /nds_miyoo
+$ sudo docker run -it --rm -u $(id -u ${USER}):$(id -g ${USER}) -v $(pwd):/nds mmiyoo /bin/bash
+# cd /nds
 # make cfg MOD=funkeys
 # make MOD=funkeys
 ```
 
 #### How to pack the release build
 ```
-$ sudo docker run -it --rm -v $(pwd):/nds_miyoo mmiyoo /bin/bash
-# cd /nds_miyoo
+$ sudo docker run -it --rm -u $(id -u ${USER}):$(id -g ${USER}) -v $(pwd):/nds mmiyoo /bin/bash
+# cd /nds
 # make rel MOD=funkeys
 ```
 

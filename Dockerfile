@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian
 
 RUN apt-get update
 RUN apt-get install build-essential make cmake wget autogen autoconf automake -y
