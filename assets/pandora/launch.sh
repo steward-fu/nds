@@ -16,9 +16,9 @@ if [ -f "libs/libpng16.so.16" ]; then
 fi
 
 cd $mydir
-./drastic "$1"
-sync
+./drastic
 ./restore
+sync
 
 if [ -f "libs/__libpng16.so.16" ]; then
     mv libs/__libpng16.so.16 libs/libpng16.so.16
