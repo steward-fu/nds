@@ -8,6 +8,8 @@ export SDL_VIDEODRIVER=mmiyoo
 export SDL_AUDIODRIVER=mmiyoo
 export EGL_VIDEODRIVER=mmiyoo
 
+cd $mydir
+
 if [ -f "libs/libpng16.so.16" ]; then
     mv libs/libpng16.so.16 libs/__libpng16.so.16
     mv libs/libz.so.1 libs/__libz.so.1
@@ -15,7 +17,6 @@ if [ -f "libs/libpng16.so.16" ]; then
     mv libs/libSDL2_ttf-2.0.so.0 libs/__libSDL2_ttf-2.0.so.0
 fi
 
-cd $mydir
 ./drastic
 ./restore
 sync
