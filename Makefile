@@ -45,7 +45,7 @@ endif
 ifeq ($(MOD),pandora)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
-    $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
+    $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
 endif
 
 ifeq ($(MOD),unittest)
