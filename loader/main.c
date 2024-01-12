@@ -218,21 +218,21 @@ int main(int argc, char **argv)
                         cur_sel += 1;
                     }
                 }
-                else if (event.key.keysym.sym == SDLK_HOME) {
+                else if (event.key.keysym.sym == SDLK_LSHIFT) {
                     update = 1;
                     cur_sel -= 10;
                     if (cur_sel < 0) {
                         cur_sel = 0;
                     }
                 }
-                else if (event.key.keysym.sym == SDLK_END) {
+                else if (event.key.keysym.sym == SDLK_LCTRL) {
                     update = 1;
                     cur_sel += 10;
                     if (cur_sel >= total_file) {
                         cur_sel = total_file - 1;
                     }
                 }
-                else if (event.key.keysym.sym == SDLK_LSHIFT) {
+                else if (event.key.keysym.sym == SDLK_END) {
                     run = 1;
                     break;
                 }

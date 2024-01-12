@@ -1,4 +1,4 @@
-TARGET  = launcher
+TARGET  = loader
 MOD     = mmiyoo
 SRC     = main.c
 LDFLAGS = -lSDL -lSDL_image -lSDL_ttf
