@@ -67,7 +67,7 @@ endif
 
 .PHONY: all
 all:
-	make -C launcher MOD=$(MOD)
+	make -C loader MOD=$(MOD)
 	make -C detour MOD=$(MOD)
 	cp detour/libdtr.so drastic/libs/
 	make -C alsa MOD=$(MOD)
@@ -101,7 +101,7 @@ clean:
 	rm -rf drastic/libs/libSDL2-2.0.so.0
 	make -C alsa clean
 	make -C detour clean
-	make -C launcher clean
+	make -C loader clean
 	make -C sdl2 distclean
 	sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg
 	cd drastic && mkdir -p backup scripts slot2 unzip_cache cheats input_record profiles savestates
