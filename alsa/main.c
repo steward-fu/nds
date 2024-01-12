@@ -516,7 +516,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #endif
 
 #if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
-    dsp_fd = open("/dev/dsp", O_RDWR);
+    dsp_fd = open("/dev/dsp", O_WRONLY);
     if (dsp_fd < 0) {
         return -1;
     }
