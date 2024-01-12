@@ -98,12 +98,12 @@
     #define DOWN    108
     #define LEFT    105
     #define RIGHT   106
-    #define A       29
-    #define B       42
-    #define X       109
-    #define Y       104
-    #define L1      102
-    #define R1      107
+    #define A       107
+    #define B       109
+    #define X       104
+    #define Y       102
+    #define L1      54
+    #define R1      97
     #define START   56
     #define SELECT  29
     #define MENU    139
