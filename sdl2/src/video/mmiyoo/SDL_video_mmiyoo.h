@@ -93,10 +93,12 @@
     #define E_MI_GFX_ROTATE_90      0
     #define E_MI_GFX_ROTATE_180     0
     #define E_MI_GFX_ROTATE_270     0
+    #define IMG_W                   FB_W
+    #define IMG_H                   FB_H
+#else
+    #define IMG_W                   640
+    #define IMG_H                   480
 #endif
-
-#define IMG_W                       640
-#define IMG_H                       480
 
 #define PREFIX                      "[SDL] "
 
@@ -140,16 +142,12 @@
     #define DEF_FONT_SIZE           24
 #endif
 
-#ifdef TRIMUI
-    #define DEF_FONT_SIZE           12
-#endif
-
-#ifdef FUNKEYS
+#if defined(TRIMUI) || defined(FUNKEYS)
     #define DEF_FONT_SIZE           12
 #endif
 
 #ifdef PANDORA
-    #define DEF_FONT_SIZE           12
+    #define DEF_FONT_SIZE           24
 #endif
 
 #define NDS_DIS_MODE_VH_T0          0
@@ -214,7 +212,7 @@
 #define GFX_ACTION_COPY0            2
 #define GFX_ACTION_COPY1            3
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(PANDORA)
     #define RELOAD_BG_COUNT         5
 #else
     #define RELOAD_BG_COUNT         1

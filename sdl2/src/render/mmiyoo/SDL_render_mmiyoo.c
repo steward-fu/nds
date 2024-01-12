@@ -372,7 +372,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     }
 
     if (show_info_cnt == 0) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(PANDORA)
         need_reload_bg = RELOAD_BG_COUNT;
 #endif
         show_info_cnt = -1;
@@ -471,7 +471,13 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
             dst.y = (FB_H - dst.h) / 2;
         }
     }
-#ifdef MMIYOO
+#if defined(PANDORA)
+    else if ((dstrect->w == 160.0) && (dstrect->h == 120.0)){
+        dst.x = 0;
+        dst.y = dstrect->x + dstrect->y;
+    }
+#endif
+#if defined(MMIYOO)
     else if ((dstrect->w == 160.0) && (dstrect->h == 120.0)){
         int screen0 = (dstrect->x + dstrect->y) ? 0 : 1;
         int screen1 = (dstrect->x + dstrect->y) ? 1 : 0;
@@ -647,7 +653,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     }
 #endif
     else {
-        printf(PREFIX"Unsupport Res (%dx%d -> %dx%d)\n", src.w, src.h, dst.w, dst.h);
+        printf(PREFIX"Unsupported Res (src:%dx%d -> dst:%dx%d)\n", src.w, src.h, dst.w, dst.h);
         return 0;
     }
 
