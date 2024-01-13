@@ -481,8 +481,14 @@ int EventUpdate(void *data)
 
                             if (evt.mode == MMIYOO_MOUSE_MODE) {
                                 release_all_keys();
-                                evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
-                                evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
+
+                                if ((evt.mouse.x == -1) || (evt.mouse.y == -1)) {
+                                    evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
+                                    evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
+#ifdef MMIYOO
+                                    evt.mouse.y += 120;
+#endif
+                                }
                             }
                             lower_speed = 0;
                         }
@@ -711,8 +717,13 @@ int EventUpdate(void *data)
 
                             if (evt.mode == MMIYOO_MOUSE_MODE) {
                                 release_all_keys();
-                                evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
-                                evt.mouse.y = 120 + (evt.mouse.maxy - evt.mouse.miny) / 2;
+                                if ((evt.mouse.x == -1) || (evt.mouse.y == -1)) {
+                                    evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
+                                    evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
+#ifdef MMIYOO
+                                    evt.mouse.y += 120;
+#endif
+                                }
                             }
                             lower_speed = 0;
                         }
@@ -744,10 +755,8 @@ void MMIYOO_EventInit(void)
     evt.mouse.miny = 0;
     evt.mouse.maxx = 256;
     evt.mouse.maxy = 192;
-    evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
-#ifdef MMIYOO
-    evt.mouse.y = 120 + (evt.mouse.maxy - evt.mouse.miny) / 2;
-#endif
+    evt.mouse.x = -1;
+    evt.mouse.y = -1;
 
 #ifdef TRIMUI
     cust_key.gpio = NULL;
