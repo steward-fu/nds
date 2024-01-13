@@ -55,7 +55,9 @@
     #include "mi_sys.h"
     #include "mi_gfx.h"
 #else
-    #define E_MI_GFX_ROTATE_180 0
+    #define E_MI_GFX_ROTATE_90      0
+    #define E_MI_GFX_ROTATE_180     0
+    #define E_MI_GFX_ROTATE_270     0
 #endif
 
 #ifdef TRIMUI
@@ -90,12 +92,19 @@
     #define DEF_FB_W                800
     #define DEF_FB_H                480
     #define FB_BPP                  4
-    #define E_MI_GFX_ROTATE_90      0
-    #define E_MI_GFX_ROTATE_180     0
-    #define E_MI_GFX_ROTATE_270     0
     #define IMG_W                   FB_W
     #define IMG_H                   FB_H
-#else
+#endif
+
+#ifdef QX1000
+    #define DEF_FB_W                2160
+    #define DEF_FB_H                1080
+    #define FB_BPP                  4
+    #define IMG_W                   FB_W
+    #define IMG_H                   FB_H
+#endif
+
+#if defined(MMIYOO) || defined(TRIMUI) || defined(FUNKEYS)
     #define IMG_W                   640
     #define IMG_H                   480
 #endif
@@ -147,6 +156,10 @@
 #endif
 
 #ifdef PANDORA
+    #define DEF_FONT_SIZE           24
+#endif
+
+#ifdef QX1000
     #define DEF_FONT_SIZE           24
 #endif
 

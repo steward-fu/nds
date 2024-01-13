@@ -1768,6 +1768,16 @@ static int get_overlay_count(void)
     return get_file_count(nds.overlay.path);
 }
 
+#ifdef QX1000
+int fb_init(void)
+{
+}
+
+int fb_quit(void)
+{
+}
+#endif
+
 #ifdef PANDORA
 int fb_init(void)
 {
@@ -3711,7 +3721,7 @@ int reload_menu(void)
 #ifdef MMIYOO
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA) || defined(QX1000)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.yes) {
@@ -3730,7 +3740,7 @@ int reload_menu(void)
 #ifdef MMIYOO
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA) || defined(QX1000)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.no) {

@@ -27,6 +27,11 @@ ifeq ($(MOD),pandora)
     CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -Wl,--no-undefined
 endif
 
+ifeq ($(MOD),qx1000)
+    CFLAGS += -DQX1000
+    CFLAGS += -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon -ffast-math -Wl,--no-undefined
+endif
+
 ifeq ($(MOD),unittest)
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     CFLAGS += -DUNITTEST -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src

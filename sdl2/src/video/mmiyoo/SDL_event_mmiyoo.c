@@ -109,6 +109,22 @@
     #define MENU    139
 #endif
 
+#ifdef QX1000
+    #define UP      103
+    #define DOWN    108
+    #define LEFT    105
+    #define RIGHT   106
+    #define A       107
+    #define B       109
+    #define X       104
+    #define Y       102
+    #define L1      54
+    #define R1      97
+    #define START   56
+    #define SELECT  29
+    #define MENU    139
+#endif
+
 MMIYOO_EventInfo evt = {0};
 
 extern GFX gfx;
@@ -230,6 +246,10 @@ static int hit_hotkey(uint32_t bit)
 #endif
 
 #ifdef FUNKEYS
+    uint32_t mask = (1 << bit) | (1 << MYKEY_START);
+#endif
+
+#ifdef QX1000
     uint32_t mask = (1 << bit) | (1 << MYKEY_START);
 #endif
 

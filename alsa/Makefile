@@ -35,6 +35,13 @@ ifeq ($(MOD),pandora)
     LDFLAGS+= -Wl,--no-undefined -ljson-c
 endif
 
+ifeq ($(MOD),qx1000)
+    SRC    += neon.S
+    CFLAGS += -DQX1000
+    CFLAGS += -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon -ffast-math -O3
+    LDFLAGS+= -Wl,--no-undefined -ljson-c
+endif
+
 ifeq ($(MOD),unittest)
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     CFLAGS += -DUNITTEST -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src
