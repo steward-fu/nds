@@ -48,6 +48,10 @@ ifeq ($(MOD),pandora)
     $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
 endif
 
+ifeq ($(MOD),qx1000)
+    $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
+endif
+
 ifeq ($(MOD),unittest)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
@@ -61,8 +65,10 @@ else
     export CXX=${CROSS}g++
     export HOST=arm-linux
     $(shell cd sdl2 && rm -rf libEGL.so libGLESv2.so)
+ifneq ($(MOD),qx1000)
     $(shell cd sdl2 && ln -s ../drastic/libs/libEGL.so)
     $(shell cd sdl2 && ln -s ../drastic/libs/libGLESv2.so)
+endif
 endif
 
 .PHONY: all

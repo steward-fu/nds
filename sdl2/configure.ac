@@ -2458,7 +2458,7 @@ CheckQX1000Video()
         SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000 -fPIC -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon -ffast-math -O3 -I../detour -I/usr/local/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lwayland-client -lwayland-egl -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
         SUMMARY_video="${SUMMARY_video} mmiyoo"
     fi
 }

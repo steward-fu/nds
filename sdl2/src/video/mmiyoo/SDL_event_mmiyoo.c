@@ -40,6 +40,14 @@
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
 
+#if defined(PANDORA)
+    #define INPUT_DEV "/dev/input/event4"
+#elif defined(QX1000)
+    #define INPUT_DEV "/dev/input/event3"
+#else
+    #define INPUT_DEV "/dev/input/event0"
+#endif
+
 #ifdef MMIYOO
     #define UP      103
     #define DOWN    108
@@ -110,19 +118,23 @@
 #endif
 
 #ifdef QX1000
-    #define UP      103
-    #define DOWN    108
-    #define LEFT    105
-    #define RIGHT   106
-    #define A       107
-    #define B       109
-    #define X       104
-    #define Y       102
-    #define L1      54
-    #define R1      97
-    #define START   56
-    #define SELECT  29
-    #define MENU    139
+    #define UP      16 // 'Q'
+    #define DOWN    30 // 'A'
+    #define LEFT    43 // '\'
+    #define RIGHT   31 // 'S'
+    #define A       40 // '''
+    #define B       38 // 'L'
+    #define X       39 // ';'
+    #define Y       25 // 'P'
+    #define L1      41 // '`'
+    #define R1      17 // 'W'
+    #define SELECT  53 // '/'
+    #define START   29 // 'RCTRL'
+    #define MENU    57 // ' '
+    #define QSAVE   46 // 'C'
+    #define QLOAD   49 // 'N'
+    #define EXIT    1  // 'ESC'
+    #define TOUCH   14 // 'Backspace'
 #endif
 
 MMIYOO_EventInfo evt = {0};
@@ -396,10 +408,6 @@ int EventUpdate(void *data)
                     //printf(PREFIX"code:%d, value:%d\n", ev.code, ev.value);
                     if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
                     if (ev.code == r1)      { set_key(MYKEY_R1,    ev.value); }
-#ifdef MMIYOO
-                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
-                    if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
-#endif
                     if (ev.code == up)      { set_key(MYKEY_UP,    ev.value); }
                     if (ev.code == down)    { set_key(MYKEY_DOWN,  ev.value); }
                     if (ev.code == left)    { set_key(MYKEY_LEFT,  ev.value); }
@@ -408,11 +416,21 @@ int EventUpdate(void *data)
                     if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
                     if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
+#ifdef MMIYOO
+                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
+                    if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
+#endif
 
                     switch (ev.code) {
                     case START:  set_key(MYKEY_START, ev.value);  break;
                     case SELECT: set_key(MYKEY_SELECT, ev.value); break;
                     case MENU:   set_key(MYKEY_MENU, ev.value);   break;
+#ifdef QX1000
+                    case QSAVE:  set_key(MYKEY_QSAVE, ev.value);  break;
+                    case QLOAD:  set_key(MYKEY_QLOAD, ev.value);  break;
+                    case EXIT:   set_key(MYKEY_EXIT, ev.value);   break;
+                    case TOUCH:  set_key(MYKEY_L2, ev.value);     break;
+#endif
 #ifdef MMIYOO
                     case POWER:  set_key(MYKEY_POWER, ev.value);  break;
                     case VOLUP:
@@ -780,11 +798,7 @@ void MMIYOO_EventInit(void)
 #endif
     evt.mode = MMIYOO_KEYPAD_MODE;
 
-#if defined(PANDORA)
-    event_fd = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-#else
-    event_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-#endif
+    event_fd = open(INPUT_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if(event_fd < 0){
         printf(PREFIX"Failed to open event0\n");
     }

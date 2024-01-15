@@ -60,6 +60,55 @@
     #define E_MI_GFX_ROTATE_270     0
 #endif
 
+#ifdef QX1000
+    #include <wayland-client.h>
+    #include <wayland-egl.h>
+
+    #include <EGL/egl.h>
+    #include <GLES2/gl2.h>
+
+    struct _wayland {
+        struct wl_shell *shell;
+        struct wl_region *region;
+        struct wl_display *display;
+        struct wl_surface *surface;
+        struct wl_registry *registry;
+        struct wl_compositor *compositor;
+        struct wl_shell_surface *shell_surface;
+
+        struct _egl {
+            EGLConfig config;
+            EGLContext context;
+            EGLDisplay display;
+            EGLSurface surface;
+
+            GLuint vShader;
+            GLuint fShader;
+            GLuint pObject;
+
+            GLuint textureId;
+            GLint positionLoc;
+            GLint texCoordLoc;
+            GLint samplerLoc;
+            struct wl_egl_window *window;
+        }egl;
+        
+        struct _org {
+            int w;
+            int h;
+            int bpp;
+            int size;
+        }info;
+
+        int init;
+        int ready;
+        int flip;
+        uint8_t *bg;
+        uint8_t *data;
+        uint16_t *pixels[2];
+    };
+#endif
+
 #ifdef TRIMUI
     #include "trimui.h"
 #endif
