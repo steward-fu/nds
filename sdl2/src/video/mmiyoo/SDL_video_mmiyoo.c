@@ -85,6 +85,7 @@ static int is_running = 0;
 static SDL_Surface *cvt = NULL;
 
 extern int need_reload_bg;
+extern int threading_mode;
 extern MMIYOO_EventInfo evt;
 
 static int MMIYOO_VideoInit(_THIS);
@@ -1327,12 +1328,100 @@ int process_drastic_menu(void)
     return 0;
 }
 
+static void process_screen(void)
+{
+    int c0 = 0;
+
+    nds.screen.bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+    nds.screen.init = *((uint32_t *)VAR_SDL_SCREEN_NEED_INIT);
+    nds.screen.render = (SDL_Renderer *)(*(uint32_t *)VAR_SDL_SCREEN_RENDERER);
+
+    for (c0 = 0; c0 < 2; c0++) {
+        nds.screen.pixels[c0] = (c0 == 0) ?
+            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
+            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS));
+
+        nds.screen.hres_mode[c0] = (c0 == 0) ?
+            *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE):
+            *((uint8_t *)VAR_SDL_SCREEN1_HRES_MODE);
+
+        nds.screen.pitch[c0] = (nds.screen.hres_mode[c0] * nds.screen.bpp * 0x100) + (nds.screen.bpp * 0x100);
+
+        nds.screen.show[c0] = (c0 == 0) ?
+            *((uint8_t *)VAR_SDL_SCREEN0_SHOW):
+            *((uint8_t *)VAR_SDL_SCREEN1_SHOW);
+
+        nds.screen.texture[c0] = (c0 == 0) ?
+            (SDL_Texture *)(*((uint32_t *)VAR_SDL_SCREEN0_TEXTURE)):
+            (SDL_Texture *)(*((uint32_t *)VAR_SDL_SCREEN1_TEXTURE));
+
+        if (nds.screen.show[c0]) {
+            nds.screen.rect[c0].w = 256;
+            nds.screen.rect[c0].h = 192;
+            nds.screen.rect[c0].x = (c0 == 0) ? *((uint32_t *)VAR_SDL_SCREEN0_X) : *((uint32_t *)VAR_SDL_SCREEN1_X);
+            nds.screen.rect[c0].y = (c0 == 0) ? *((uint32_t *)VAR_SDL_SCREEN0_Y) : *((uint32_t *)VAR_SDL_SCREEN1_Y);
+            update_texture(nds.screen.texture[c0], nds.screen.texture[c0], nds.screen.pixels[c0], nds.screen.pitch[c0]);
+
+            if (evt.mode == MMIYOO_MOUSE_MODE) {
+                SDL_Rect srt = {0, 0, 256, 192};
+                SDL_FRect drt = {0.0, c0 ? 120.0 : 0.0, 160.0, 120.0};
+
+                threading_mode = 0;
+                My_QueueCopy(nds.screen.texture[c0], nds.screen.pixels[c0], &srt, &drt);
+            }
+            else {
+                threading_mode = 1;
+                gfx.thread[c0].texture = nds.screen.texture[c0];
+                gfx.thread[c0].srt.x = 0;
+                gfx.thread[c0].srt.y = 0;
+                gfx.thread[c0].srt.w = 256;
+                gfx.thread[c0].srt.h = 192;
+                gfx.thread[c0].drt.x = 0;
+                gfx.thread[c0].drt.y = c0 ? 120 : 0;
+                gfx.thread[c0].drt.w = 160;
+                gfx.thread[c0].drt.h = 120;
+                if (nds.hres_mode > 0) {
+                    neon_memcpy(gfx.thread[c0].pixels, nds.screen.pixels[c0], nds.screen.pitch[c0] * (c0 ? 120 : 0));
+                }
+            }
+        }
+    }
+
+    if (nds.screen.show[0] || nds.screen.show[1]) {
+        if (nds.auto_state > 0) {
+            static int need_loadstate = 15;
+
+            if (need_loadstate > 0) {
+                need_loadstate-= 1;
+                if (need_loadstate == 0) {
+                    dtr_loadstate(nds.auto_slot);
+                }
+            }
+        }
+
+        if (nds.menu.enable == 0) {
+            if (threading_mode > 0) {
+                gfx.action = GFX_ACTION_FLIP;
+            }
+            else {
+                GFX_Flip();
+            }
+        }
+    }
+    if (nds.screen.init) {
+        set_screen_menu_off _func = (set_screen_menu_off)FUN_SET_SCREEN_MENU_OFF;
+
+        _func();
+    }
+}
+
 void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
 }
 
 void sdl_update_screen(void)
 {
+    process_screen();
 }
 
 void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
@@ -4494,7 +4583,7 @@ int MMIYOO_VideoInit(_THIS)
 
     printf(PREFIX"MMIYOO_VideoInit\n");
 #ifndef UNITTEST
-    signal(SIGTERM, sigterm_handler);
+    //signal(SIGTERM, sigterm_handler);
 #endif
 
     SDL_zero(mode);
@@ -4609,11 +4698,11 @@ int MMIYOO_VideoInit(_THIS)
         detour_hook(FUN_SAVESTATE_PRE, (intptr_t)sdl_savestate_pre);
         detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
         detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
-        //detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
     }
     else {
         printf(PREFIX"Disabled hooking\n");
     }
+    detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
     return 0;
 }
 

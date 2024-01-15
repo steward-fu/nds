@@ -404,6 +404,19 @@ typedef struct _NDS {
     TTF_Font *font;
     uint32_t state;
 
+    struct _SCREEN {
+        uint32_t bpp;
+        uint32_t init;
+        SDL_Renderer *render;
+
+        SDL_Rect rect[2];
+        uint8_t show[2];
+        uint8_t hres_mode[2];
+        uint32_t pitch[2];
+        uint32_t *pixels[2];
+        SDL_Texture *texture[2];
+    } screen;
+
     struct _BIOS {
         char path[MAX_PATH];
     } bios;
@@ -523,6 +536,7 @@ void disp_resize(void);
 
 int handle_menu(int key);
 int process_drastic_menu(void);
+int update_texture(void *chk, void *new, const void *pixels, int pitch);
 int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcrect, const SDL_FRect *dstrect);
 const void* get_pixels(void *chk);
 const char *to_lang(const char *p);

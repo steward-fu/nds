@@ -70,10 +70,10 @@ extern int show_fps;
 extern int down_scale;
 
 int need_reload_bg = 0;
-static int threading_mode = 0;
+int threading_mode = 0;
 static struct _NDS_TEXTURE ntex[MAX_TEXTURE] = {0};
 
-static int update_texture(void *chk, void *new, const void *pixels, int pitch)
+int update_texture(void *chk, void *new, const void *pixels, int pitch)
 {
     int cc = 0;
 
@@ -237,38 +237,12 @@ static int MMIYOO_QueueFillRects(SDL_Renderer *renderer, SDL_RenderCommand *cmd,
 
 static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_FRect *dstrect)
 {
-    int idx = 0;
-
-    if ((srcrect->w == 32) && (srcrect->h == 32)) {
-        return 0;
-    }
-
-    if ((evt.mode == MMIYOO_MOUSE_MODE) || (srcrect->w == 800)) {
+    if (srcrect->w == 800) {
         threading_mode = 0;
         if (srcrect->w == 800) {
             usleep(100000);
         }
-        return My_QueueCopy(texture, get_pixels(texture), srcrect, dstrect);
-    }
-    
-    threading_mode = 1;
-    if ((dstrect->w == 160.0) && (dstrect->h == 120.0)){
-        idx = (dstrect->x + dstrect->y) ? 1 : 0;
-    }
-
-    gfx.thread[idx].texture = texture;
-    gfx.thread[idx].srt.x = srcrect->x;
-    gfx.thread[idx].srt.y = srcrect->y;
-    gfx.thread[idx].srt.w = srcrect->w;
-    gfx.thread[idx].srt.h = srcrect->h;
-    gfx.thread[idx].drt.x = dstrect->x;
-    gfx.thread[idx].drt.y = dstrect->y;
-    gfx.thread[idx].drt.w = dstrect->w;
-    gfx.thread[idx].drt.h = dstrect->h;
-    if (nds.hres_mode > 0) {
-#ifndef UNITTEST
-        neon_memcpy(gfx.thread[idx].pixels, get_pixels(texture), get_pitch(texture) * srcrect->h);
-#endif
+       return My_QueueCopy(texture, get_pixels(texture), srcrect, dstrect);
     }
     return 0;
 }
@@ -740,25 +714,6 @@ static int MMIYOO_RenderReadPixels(SDL_Renderer *renderer, const SDL_Rect *rect,
 
 static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
 {
-    if (nds.auto_state > 0) {
-        static int need_loadstate = 15;
-
-        if (need_loadstate > 0) {
-            need_loadstate-= 1;
-            if (need_loadstate == 0) {
-                dtr_loadstate(nds.auto_slot);
-            }
-        }
-    }
-
-    if (nds.menu.enable == 0) {
-        if (threading_mode > 0) {
-            gfx.action = GFX_ACTION_FLIP;
-        }
-        else {
-            GFX_Flip();
-        }
-    }
 }
 
 static void MMIYOO_DestroyTexture(SDL_Renderer *renderer, SDL_Texture *texture)

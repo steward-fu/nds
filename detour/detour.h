@@ -7,14 +7,21 @@
     #define VAR_SDL_SCREEN_RENDERER     0x0aee9568
     #define VAR_SDL_SCREEN_BPP          0x0aee957c
     #define VAR_SDL_SCREEN_NEED_INIT    0x0aee95a0
+
     #define VAR_SDL_SCREEN0_SHOW        0x0aee9544
     #define VAR_SDL_SCREEN0_HRES_MODE   0x0aee9545
     #define VAR_SDL_SCREEN0_TEXTURE     0x0aee952c
     #define VAR_SDL_SCREEN0_PIXELS      0x0aee9530
+    #define VAR_SDL_SCREEN0_X           0x0aee9534
+    #define VAR_SDL_SCREEN0_Y           0x0aee9538
+
     #define VAR_SDL_SCREEN1_SHOW        0x0aee9560
     #define VAR_SDL_SCREEN1_HRES_MODE   0x0aee9561
     #define VAR_SDL_SCREEN1_TEXTURE     0x0aee9548
     #define VAR_SDL_SCREEN1_PIXELS      0x0aee954c
+    #define VAR_SDL_SCREEN1_X           0x0aee9550
+    #define VAR_SDL_SCREEN1_Y           0x0aee9554
+
     #define VAR_DESMUME_FOOTER_STR      0x0815a740
 
     #define FUN_SCREEN_COPY16           0x080a59d8
@@ -30,11 +37,13 @@
     #define FUN_SAVE_STATE              0x0809580c
     #define FUN_BLIT_SCREEN_MENU        0x080a62d8
     #define FUN_INITIALIZE_BACKUP       0x08092f40
+    #define FUN_SET_SCREEN_MENU_OFF     0x080a8240
 
     #define CODE_FAST_FORWARD           0x08006ad0
 
     #define ALIGN_ADDR(addr)        ((void*)((size_t)(addr) & ~(page_size - 1)))
 
+    typedef void (*set_screen_menu_off)(void);
     typedef void (*quit)(void *system);
     typedef void (*screen_copy16)(uint16_t *dest, uint32_t screen_number);
     typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
