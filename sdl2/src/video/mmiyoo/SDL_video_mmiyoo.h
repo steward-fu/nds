@@ -255,7 +255,6 @@
 #define JSON_NDS_ALT_MODE           "alt"
 #define JSON_NDS_SWAP_L1L2          "swap_l1l2"
 #define JSON_NDS_SWAP_R1R2          "swap_r1r2"
-#define JSON_NDS_CUST_MENU          "cust_menu"
 #define JSON_NDS_LANG               "lang"
 #define JSON_NDS_KEYS_ROTATE        "keys_rotate"
 #define JSON_NDS_MENU_C0            "menu_c0"
@@ -391,7 +390,6 @@ typedef struct _NDS {
     int dis_mode;
     int alt_mode;
     int hres_mode;
-    int cust_menu;
     int swap_l1l2;
     int swap_r1r2;
     int auto_slot;

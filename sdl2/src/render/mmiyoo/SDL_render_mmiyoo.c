@@ -405,10 +405,8 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         dst.y = 0;
         dst.w = 640;
         dst.h = 480;
-        if (nds.cust_menu) {
-            need_update = 0;
-            process_drastic_menu();
-        }
+        need_update = 0;
+        process_drastic_menu();
     }
     else if ((src.w == 512) && (src.h == 384)) {
         need_fps = 1;

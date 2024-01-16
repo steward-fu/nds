@@ -1742,11 +1742,6 @@ static int read_config(void)
         nds.keys_rotate = json_object_get_int(jval) % 3;
     }
 
-    json_object_object_get_ex(jfile, JSON_NDS_CUST_MENU, &jval);
-    if (jval) {
-        nds.cust_menu = json_object_get_int(jval) ? 1 : 0;
-    }
-
     nds.menu.c0 = 0xffffff;
     json_object_object_get_ex(jfile, JSON_NDS_MENU_C0, &jval);
     if (jval) {
@@ -4692,16 +4687,11 @@ int MMIYOO_VideoInit(_THIS)
     read_config();
     MMIYOO_EventInit();
 
-    if (nds.cust_menu) {
-        detour_init(sysconf(_SC_PAGESIZE), nds.states.path);
-        detour_hook(FUN_PRINT_STRING, (intptr_t)sdl_print_string);
-        detour_hook(FUN_SAVESTATE_PRE, (intptr_t)sdl_savestate_pre);
-        detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
-        detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
-    }
-    else {
-        printf(PREFIX"Disabled hooking\n");
-    }
+    detour_init(sysconf(_SC_PAGESIZE), nds.states.path);
+    detour_hook(FUN_PRINT_STRING, (intptr_t)sdl_print_string);
+    detour_hook(FUN_SAVESTATE_PRE, (intptr_t)sdl_savestate_pre);
+    detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
+    detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
     detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
     return 0;
 }
@@ -4719,11 +4709,7 @@ void MMIYOO_VideoQuit(_THIS)
         usleep(1000000);
     }
     system("sync");
-
-    if (nds.cust_menu) {
-        detour_quit();
-    }
-
+    detour_quit();
     write_config();
 
     if (fps_info) {
