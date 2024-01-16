@@ -237,13 +237,31 @@ static int MMIYOO_QueueFillRects(SDL_Renderer *renderer, SDL_RenderCommand *cmd,
 
 static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_FRect *dstrect)
 {
-    if (srcrect->w == 800) {
-        threading_mode = 0;
-        if (srcrect->w == 800) {
-            usleep(100000);
-        }
-       return My_QueueCopy(texture, get_pixels(texture), srcrect, dstrect);
+    nds.menu.drastic.enable = 1;
+    usleep(100000);
+
+#ifdef TRIMUI
+    if (nds.dis_mode != NDS_DIS_MODE_S0) {
+        need_restore = 1;
+        pre_dismode = nds.dis_mode;
+        pre_downscale = down_scale;
+
+        down_scale = 1;
+        nds.dis_mode = NDS_DIS_MODE_S0;
+        disp_resize();
     }
+    else {
+        if (down_scale == 0) {
+            need_restore = 1;
+            pre_dismode = nds.dis_mode;
+            pre_downscale = down_scale;
+
+            down_scale = 1;
+            disp_resize();
+        }
+    }
+#endif
+    process_drastic_menu();
     return 0;
 }
 
@@ -282,6 +300,11 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
     if (nds.menu.enable) {
         need_reload_bg = RELOAD_BG_COUNT;
         return 0;
+    }
+
+    if (nds.menu.drastic.enable) {
+        nds.menu.drastic.enable = 0;
+        need_reload_bg = RELOAD_BG_COUNT;
     }
 
     pitch = get_pitch(texture);
@@ -378,37 +401,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         }
     }
 
-    if ((src.w == 800) && (src.h == 480)) {
-#ifdef TRIMUI
-        if (nds.dis_mode != NDS_DIS_MODE_S0) {
-            need_restore = 1;
-            pre_dismode = nds.dis_mode;
-            pre_downscale = down_scale;
-
-            down_scale = 1;
-            nds.dis_mode = NDS_DIS_MODE_S0;
-            disp_resize();
-        }
-        else {
-            if (down_scale == 0) {
-                need_restore = 1;
-                pre_dismode = nds.dis_mode;
-                pre_downscale = down_scale;
-
-                down_scale = 1;
-                disp_resize();
-            }
-        }
-#endif
-
-        dst.x = 0;
-        dst.y = 0;
-        dst.w = 640;
-        dst.h = 480;
-        need_update = 0;
-        process_drastic_menu();
-    }
-    else if ((src.w == 512) && (src.h == 384)) {
+    if ((src.w == 512) && (src.h == 384)) {
         need_fps = 1;
         if (nds.dis_mode == NDS_DIS_MODE_HRES0) {
             dst.w = 512;
@@ -677,20 +670,14 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
         }
     }
 
-    if ((src.w == 800) && (src.h == 480)) {
-        nds.menu.drastic.enable = 1;
-    }
-    else {
-        nds.menu.drastic.enable = 0;
 #ifdef TRIMUI
-        if (need_restore) {
-            need_restore = 0;
-            down_scale = pre_downscale;
-            nds.dis_mode = pre_dismode;
-            disp_resize();
-        }
-#endif
+    if (need_restore) {
+        need_restore = 0;
+        down_scale = pre_downscale;
+        nds.dis_mode = pre_dismode;
+        disp_resize();
     }
+#endif
     return 0;
 }
 
