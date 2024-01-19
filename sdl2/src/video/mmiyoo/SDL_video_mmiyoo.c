@@ -1130,7 +1130,8 @@ void sigterm_handler(int sig)
     if (ran == 0) {
         ran = 1;
         printf(PREFIX"Oops sigterm !\n");
-        dtr_quit();
+        set_sigterm_flag(1);
+        //dtr_quit();
     }
 }
 

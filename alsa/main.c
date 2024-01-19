@@ -88,6 +88,13 @@ static int pcm_ready = 0;
 static int pcm_buf_len = 0;
 static uint8_t *pcm_buf = NULL;
 static struct json_object *jfile = NULL;
+static int is_sigterm_called = 0;
+
+void set_sigterm_flag(int v)
+{
+    is_sigterm_called = v;
+    printf(PREFIX"Set sigterm as %d\n", v);
+}
 
 #if !defined(UNITTEST)
 void neon_memcpy(void *dest, const void *src, size_t n);
@@ -540,7 +547,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
 {
     void *ret = NULL;
 
-    if (auto_state > 0) {
+    if ((auto_state > 0) && (is_sigterm_called == 0)) {
         dtr_savestate(auto_slot);
     }
 

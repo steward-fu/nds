@@ -478,5 +478,7 @@ int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcre
 const void* get_pixels(void *chk);
 const char *to_lang(const char *p);
 
+void set_sigterm_flag(int v);
+
 #endif
 
