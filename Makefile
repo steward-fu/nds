@@ -27,29 +27,21 @@ ifeq ($(MOD),mmiyoo)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
     export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
-    $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
 endif
 
 ifeq ($(MOD),trimui)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
     export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
-    $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
 endif
 
 ifeq ($(MOD),funkeys)
     export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
-    $(shell sed -i 's/screen_orientation.*/screen_orientation = 2/g' drastic/config/drastic.cfg)
 endif
 
 ifeq ($(MOD),pandora)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
-    $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
-endif
-
-ifeq ($(MOD),qx1000)
-    $(shell sed -i 's/screen_orientation.*/screen_orientation = 0/g' drastic/config/drastic.cfg)
 endif
 
 ifeq ($(MOD),unittest)

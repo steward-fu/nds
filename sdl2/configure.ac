@@ -2457,7 +2457,7 @@ CheckQX1000Video()
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
         have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000 -fPIC -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon -ffast-math -O3 -I../detour -I/usr/local/include/SDL2"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000 -fPIC -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -O3 -I../detour -I/usr/local/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lwayland-client -lwayland-egl -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
         SUMMARY_video="${SUMMARY_video} mmiyoo"
     fi
@@ -2525,7 +2525,7 @@ CheckPandoraAudio()
         SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
         have_audio=yes
         if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3"
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -O3"
             EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         fi
         SUMMARY_audio="${SUMMARY_audio} mmiyoo"
@@ -2539,7 +2539,7 @@ CheckQX1000Audio()
         SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
         have_audio=yes
         if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon -ffast-math -O3"
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -O3"
             EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         fi
         SUMMARY_audio="${SUMMARY_audio} mmiyoo"

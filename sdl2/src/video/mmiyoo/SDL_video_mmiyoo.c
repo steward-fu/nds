@@ -72,8 +72,8 @@ MMIYOO_VideoInfo vid={0};
 int FB_W = 0;
 int FB_H = 0;
 int FB_SIZE = 0;
-int TMP_SIZE = 0;
 int LINE_H = 0;
+int TMP_SIZE = 0;
 int FONT_SIZE = 0;
 int show_fps = 0;
 int down_scale = 1;
@@ -82,10 +82,9 @@ SDL_Surface *fps_info = NULL;
 
 static pthread_t thread;
 static int is_running = 0;
+static int need_reload_bg = RELOAD_BG_COUNT;
 static SDL_Surface *cvt = NULL;
 
-extern int need_reload_bg;
-extern int threading_mode;
 extern MMIYOO_EventInfo evt;
 
 static int MMIYOO_VideoInit(_THIS);
@@ -116,11 +115,11 @@ EGLint egl_attribs[] = {
     EGL_RENDERABLE_TYPE,
     EGL_OPENGL_ES2_BIT,
     EGL_RED_SIZE,
-    5,
+    8,
     EGL_GREEN_SIZE,
-    6,
+    8,
     EGL_BLUE_SIZE,
-    5,
+    8,
     EGL_NONE
 };
 
@@ -176,7 +175,7 @@ const char *fShaderSrc =
     "    tc -= HALF.xy;                                        \n"
     "    tc = scaleMatInv * rotMat * scaleMat * tc;            \n"
     "    tc += HALF.xy;                                        \n"
-    "    vec3 tex = texture2D(s_texture, tc).rgb;              \n"
+    "    vec3 tex = texture2D(s_texture, tc).bgr;              \n"
     "    gl_FragColor = vec4(tex, 1.0);                        \n"
     "}                                                         \n";
 
@@ -188,16 +187,51 @@ static struct wl_registry_listener cb_global = {
     .global_remove = cb_remove
 };
 
+void update_wayland_res(int w, int h)
+{
+    int c0 = 0;
+    int c1 = 0;
+    int scale = 0;
+    float x0 = 0;
+    float y0 = 0;
+
+    FB_W = w;
+    FB_H = h;
+    wl.info.w = FB_W;
+    wl.info.h = FB_H;
+    wl.info.bpp = 32;
+    wl.info.size = wl.info.w * (wl.info.bpp / 8) * wl.info.h;
+
+    c0 = LCD_H / wl.info.w;
+    c1 = LCD_W / wl.info.h;
+    scale = c0 > c1 ? c1 : c0;
+
+    y0 = ((float)(wl.info.w * scale) / LCD_H);
+    x0 = ((float)(wl.info.h * scale) / LCD_W);
+
+    egl_fb_vertices[0] = -x0;
+    egl_fb_vertices[1] = y0;
+    egl_fb_vertices[5] = -x0;
+    egl_fb_vertices[6] = -y0;
+    egl_fb_vertices[10] =  x0;
+    egl_fb_vertices[11] = -y0;
+    egl_fb_vertices[15] =  x0;
+    egl_fb_vertices[16] =  y0;
+
+    memset(wl.data, 0, LCD_W * LCD_H * 2);
+    wl.pixels[0] = (uint16_t*)wl.data;
+    wl.pixels[1] = (uint16_t*)(wl.data + wl.info.size);
+    printf(PREFIX"Updated Wayland width=%d height=%d scale=%d\n", w, h, scale);
+}
+
 static void* wl_thread(void* pParam)
 {
-    printf(PREFIX"%s++\n", __func__);
     while(thread_run){
         if(wl.init && wl.ready){
             wl_display_dispatch(wl.display);
         }
         usleep(100);
     }
-    printf(PREFIX"%s--\n", __func__);
     return NULL;
 }
 
@@ -275,15 +309,9 @@ void wl_create(void)
     wl_shell_surface_add_listener(wl.shell_surface, &cb_shell_surf, NULL);
     
     wl.region = wl_compositor_create_region(wl.compositor);
-    wl_region_add(wl.region, 0, 0, FB_W, FB_H);
+    wl_region_add(wl.region, 0, 0, LCD_W, LCD_H);
     wl_surface_set_opaque_region(wl.surface, wl.region);
-    wl.egl.window = wl_egl_window_create(wl.surface, FB_W, FB_H);
-    printf(PREFIX"%s, wl.display       %p\n", __func__, wl.display);
-    printf(PREFIX"%s, wl.registry      %p\n", __func__, wl.registry);
-    printf(PREFIX"%s, wl.surface       %p\n", __func__, wl.surface);
-    printf(PREFIX"%s, wl.shell         %p\n", __func__, wl.shell);
-    printf(PREFIX"%s, wl.shell_surface %p\n", __func__, wl.shell_surface);
-    printf(PREFIX"%s, wl.region        %p\n", __func__, wl.region);
+    wl.egl.window = wl_egl_window_create(wl.surface, LCD_W, LCD_H);
 }
 
 void egl_create(void)
@@ -299,10 +327,6 @@ void egl_create(void)
     wl.egl.surface = eglCreateWindowSurface(wl.egl.display, cfg, wl.egl.window, NULL);
     wl.egl.context = eglCreateContext(wl.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
     eglMakeCurrent(wl.egl.display, wl.egl.surface, wl.egl.surface, wl.egl.context);
-    printf(PREFIX"%s, egl_display %p\n", __func__, wl.egl.display);
-    printf(PREFIX"%s, egl_window  %p\n", __func__, wl.egl.window);
-    printf(PREFIX"%s, egl_surface %p\n", __func__, wl.egl.surface);
-    printf(PREFIX"%s, egl_context %p\n", __func__, wl.egl.context);
 
     wl.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(wl.egl.vShader, 1, &vShaderSrc, NULL);
@@ -354,7 +378,7 @@ void egl_create(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glViewport(0, 0, FB_W, FB_H);
+    glViewport(0, 0, LCD_W, LCD_H);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
@@ -363,16 +387,10 @@ void egl_create(void)
     glEnableVertexAttribArray(wl.egl.texCoordLoc);
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(wl.egl.samplerLoc, 0);
-
-    printf(PREFIX"%s, textureId   0x%x\n", __func__, wl.egl.textureId);
-    printf(PREFIX"%s, samplerLoc  0x%x\n", __func__, wl.egl.samplerLoc);
-    printf(PREFIX"%s, positionLoc 0x%x\n", __func__, wl.egl.positionLoc);
-    printf(PREFIX"%s, texCoordLoc 0x%x\n", __func__, wl.egl.texCoordLoc);
 }
 
 static void* draw_thread(void *pParam)
 {
-    printf(PREFIX"%s++\n", __func__);
     wl_create();
     egl_create();
 
@@ -381,14 +399,14 @@ static void* draw_thread(void *pParam)
         if(wl.ready){
             glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
             glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 
-                wl.info.w, wl.info.h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, wl.bg);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.bg);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
 
             glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_fb_vertices);
             glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_fb_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 
-                wl.info.w, wl.info.h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, wl.pixels[wl.flip ^ 1]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.pixels[wl.flip ^ 1]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
             eglSwapBuffers(wl.egl.display, wl.egl.surface);
         }
@@ -397,6 +415,51 @@ static void* draw_thread(void *pParam)
         }
     }
     return NULL;
+}
+#endif
+
+#ifdef MMIYOO
+static void* sdl_malloc(size_t size)
+{
+    static int idx = 0;
+
+    void *r = NULL;
+    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+
+    if ((size == (256 * 192 * bpp)) ||
+        (size == (512 * 384 * bpp)))
+    {
+        r = nds.screen.dma.virAddr[idx];
+        idx += 1;
+        idx %= 2;
+    }
+    else {
+        r = malloc(size);
+    }
+    return r;
+}
+
+static void sdl_free(void *ptr)
+{
+    if ((ptr != nds.screen.dma.virAddr[0]) && (ptr != nds.screen.dma.virAddr[1])) {
+        free(ptr);
+    }
+}
+
+static void* sdl_realloc(void *ptr, size_t size)
+{
+    void *r = NULL;
+    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+
+    if ((size == (256 * 192 * bpp)) ||
+        (size == (512 * 384 * bpp)))
+    {
+        r = sdl_malloc(size);
+    }
+    else {
+        r = realloc(ptr, size);
+    }
+    return r;
 }
 #endif
 
@@ -466,7 +529,7 @@ static int draw_drastic_menu_main(void)
     int x = 0, y = 0;
     SDL_Rect rt = {0};
     CUST_MENU_SUB *p = NULL;
-    char buf[MAX_PATH] = {0};
+    char buf[MAX_PATH << 1] = {0};
 
 #if defined(TRIMUI) || defined(FUNKEYS)
     div = 2;
@@ -593,6 +656,10 @@ static int draw_drastic_menu_main(void)
     sprintf(buf, "Rel v1.8 Res %s", "800*480");
 #endif
 
+#ifdef QX1000
+    sprintf(buf, "Rel v1.8");
+#endif
+
     draw_info(nds.menu.drastic.main, buf, 10, y / div, nds.menu.c1, 0);
 
     if (draw_shot) {
@@ -616,7 +683,7 @@ static int draw_drastic_menu_main(void)
             const int SM_H = 192.0 / 1.35;
 #endif
             uint32_t slot = *((uint32_t *)VAR_SYSTEM_SAVESTATE_NUM);
-            load_state_index _func = (load_state_index)FUN_LOAD_STATE_INDEX;
+            nds_load_state_index _func = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
 
 #if defined(TRIMUI) || defined(FUNKEYS)
             sm = SDL_CreateRGBSurface(0, SM_W, SM_H, 16, 0, 0, 0, 0);
@@ -1328,91 +1395,432 @@ int process_drastic_menu(void)
     return 0;
 }
 
-static void process_screen(void)
+static int process_screen(void)
 {
-    int c0 = 0;
+    static int need_loadstate = 15;
+    static int show_info_cnt = 0;
+    static int cur_fb_w = 0;
+    static int cur_volume = 0;
+    static int cur_dis_mode = 0;
+    static int cur_touchpad = 0;
+    static int cur_theme_sel = 0;
+    static int cur_down_scale = 0;
+    static int pre_dis_mode = NDS_DIS_MODE_VH_S0;
+    static int pre_hres_mode = NDS_DIS_MODE_HRES0;
+    static char show_info_buf[MAX_PATH << 1] = {0};
+
+#ifdef TRIMUI
+    static int need_restore = 0;
+    static int pre_dismode = 0;
+    static int pre_downscale = 0;
+#endif
+
+    int idx = 0;
+    int screen_cnt = 0;
+    char buf[MAX_PATH] = {0};
+
+#if defined(MMIYOO) || defined(PANDORA) || defined(QX1000)
+    screen_cnt = 2;
+#else
+    screen_cnt = 1;
+#endif
+
+    if (nds.auto_state > 0) {
+        if (need_loadstate > 0) {
+            need_loadstate-= 1;
+            if (need_loadstate == 0) {
+                dtr_loadstate(nds.auto_slot);
+            }
+        }
+    }
+
+    if (nds.menu.enable) {
+        need_reload_bg = RELOAD_BG_COUNT;
+        return 0;
+    }
+
+    if (nds.menu.drastic.enable) {
+        nds.menu.drastic.enable = 0;
+        need_reload_bg = RELOAD_BG_COUNT;
+#ifdef QX1000
+        update_wayland_res(512, 192);
+#endif
+    }
+
+    if ((cur_fb_w != FB_W) ||
+        (nds.shot.take) ||
+        (cur_touchpad != nds.pen.pos) ||
+        (cur_dis_mode != nds.dis_mode) ||
+        (cur_theme_sel != nds.theme.sel) ||
+        (cur_down_scale != down_scale) ||
+        (cur_volume != nds.volume))
+    {
+        if (cur_fb_w != FB_W) {
+            show_info_cnt = 150;
+            sprintf(show_info_buf, " %d x %d ", FB_W, FB_H);
+        }
+        else if (cur_volume != nds.volume) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s %d ", to_lang("Volume"), nds.volume);
+        }
+        else if (cur_touchpad != nds.pen.pos) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s %d ", to_lang("Touchpad"), nds.pen.pos);
+        }
+        else if (cur_theme_sel != nds.theme.sel) {
+            show_info_cnt = 50;
+            if ((nds.theme.max > 0) && (nds.theme.sel < nds.theme.max)) {
+                if (get_dir_path(nds.theme.path, nds.theme.sel, buf) == 0) {
+                    int off = strlen(nds.theme.path);
+                    sprintf(show_info_buf, " %s %s ", to_lang("Wallpaper"), &buf[off + 1]);
+                }
+                else {
+                    sprintf(show_info_buf, " %s %d ", to_lang("Wallpaper"), nds.theme.sel);
+                }
+            }
+            else {
+                sprintf(show_info_buf, " %s %s ", to_lang("Wallpaper"), to_lang("None"));
+            }
+        }
+        else if (cur_down_scale != down_scale) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s ", to_lang(down_scale ? "Pixel" : "Blur"));
+        }
+        else if (nds.shot.take) {
+            show_info_cnt = 50;
+            nds.shot.take = 0;
+            sprintf(show_info_buf, " %s ", to_lang("Take Screenshot"));
+        }
+
+        cur_fb_w = FB_W;
+        cur_theme_sel = nds.theme.sel;
+        cur_volume = nds.volume;
+        cur_dis_mode = nds.dis_mode;
+        cur_touchpad = nds.pen.pos;
+        cur_down_scale = down_scale;
+        need_reload_bg = RELOAD_BG_COUNT;
+    }
+
+    if (show_info_cnt == 0) {
+#if defined(MMIYOO) || defined(PANDORA)
+        need_reload_bg = RELOAD_BG_COUNT;
+#endif
+        show_info_cnt = -1;
+    }
+        
+    if (nds.defer_update_bg > 0) {
+        nds.defer_update_bg-= 1;
+    }
+    else if (nds.defer_update_bg == 0) {
+        nds.defer_update_bg = -1;
+        need_reload_bg = RELOAD_BG_COUNT;
+    }
+
+    if (nds.state) {
+        if (nds.state & NDS_STATE_QSAVE) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s ", to_lang("Quick Save"));
+            nds.state&= ~NDS_STATE_QSAVE;
+        }
+        else if (nds.state & NDS_STATE_QLOAD) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s ", to_lang("Quick Load"));
+            nds.state&= ~NDS_STATE_QLOAD;
+        }
+        else if (nds.state & NDS_STATE_FF) {
+            show_info_cnt = 50;
+            sprintf(show_info_buf, " %s ", to_lang("Fast Forward"));
+            nds.state&= ~NDS_STATE_FF;
+        }
+    }
 
     nds.screen.bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
     nds.screen.init = *((uint32_t *)VAR_SDL_SCREEN_NEED_INIT);
-    nds.screen.render = (SDL_Renderer *)(*(uint32_t *)VAR_SDL_SCREEN_RENDERER);
 
-    for (c0 = 0; c0 < 2; c0++) {
-        nds.screen.pixels[c0] = (c0 == 0) ?
-            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
-            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS));
+    if (need_reload_bg) {
+        reload_bg();
+        need_reload_bg -= 1;
+    }
 
-        nds.screen.hres_mode[c0] = (c0 == 0) ?
-            *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE):
-            *((uint8_t *)VAR_SDL_SCREEN1_HRES_MODE);
+    for (idx = 0; idx < screen_cnt; idx++) {
+        int screen0 = 0;
+        int screen1 = 0;
+        int show_pen = 1;
+        int need_update = 1;
+        int rotate = E_MI_GFX_ROTATE_180;
+        SDL_Rect srt = {0, 0, 256, 192};
+        SDL_Rect drt = {0, 0, 160, 120};
 
-        nds.screen.pitch[c0] = (nds.screen.hres_mode[c0] * nds.screen.bpp * 0x100) + (nds.screen.bpp * 0x100);
+        nds.screen.hres_mode[idx] = idx ?
+            *((uint8_t *)VAR_SDL_SCREEN1_HRES_MODE):
+            *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
 
-        nds.screen.show[c0] = (c0 == 0) ?
-            *((uint8_t *)VAR_SDL_SCREEN0_SHOW):
-            *((uint8_t *)VAR_SDL_SCREEN1_SHOW);
+#ifndef MMIYOO
+        nds.screen.pixels[idx] = idx ?
+            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS)):
+            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS));
+#endif
 
-        nds.screen.texture[c0] = (c0 == 0) ?
-            (SDL_Texture *)(*((uint32_t *)VAR_SDL_SCREEN0_TEXTURE)):
-            (SDL_Texture *)(*((uint32_t *)VAR_SDL_SCREEN1_TEXTURE));
+        nds.screen.pitch[idx] = (nds.screen.hres_mode[idx] * nds.screen.bpp * 0x100) + (nds.screen.bpp * 0x100);
 
-        if (nds.screen.show[c0]) {
-            nds.screen.rect[c0].w = 256;
-            nds.screen.rect[c0].h = 192;
-            nds.screen.rect[c0].x = (c0 == 0) ? *((uint32_t *)VAR_SDL_SCREEN0_X) : *((uint32_t *)VAR_SDL_SCREEN1_X);
-            nds.screen.rect[c0].y = (c0 == 0) ? *((uint32_t *)VAR_SDL_SCREEN0_Y) : *((uint32_t *)VAR_SDL_SCREEN1_Y);
-            update_texture(nds.screen.texture[c0], nds.screen.texture[c0], nds.screen.pixels[c0], nds.screen.pitch[c0]);
+        if (nds.screen.hres_mode[idx]) {
+            srt.w = 512;
+            srt.h = 384;
+            if (nds.hres_mode == 0) {
+                nds.pen.pos = 0;
+                nds.hres_mode = 1;
+                pre_dis_mode = nds.dis_mode;
+                nds.dis_mode = pre_hres_mode;
+#ifdef QX1000
+                update_wayland_res(512, 384);
+#endif
+            }
+        }
+        else {
+            srt.w = 256;
+            srt.h = 192;
+            drt.y = idx * 120;
+            screen0 = (idx == 0);
+            screen1 = (idx != 0);
+            show_pen = nds.pen.pos ? screen1 : screen0;
+            if (nds.hres_mode == 1) {
+                nds.hres_mode = 0;
+                pre_hres_mode = nds.dis_mode;
+                nds.dis_mode = pre_dis_mode;
+#ifdef QX1000
+                update_wayland_res(512, 192);
+#endif
+            }
+        }
 
-            if (evt.mode == MMIYOO_MOUSE_MODE) {
-                SDL_Rect srt = {0, 0, 256, 192};
-                SDL_FRect drt = {0.0, c0 ? 120.0 : 0.0, 160.0, 120.0};
-
-                threading_mode = 0;
-                My_QueueCopy(nds.screen.texture[c0], nds.screen.pixels[c0], &srt, &drt);
+#if defined(QX1000)
+#elif defined(MMIYOO)
+        switch (nds.dis_mode) {
+        case NDS_DIS_MODE_VH_T0:
+            if (screen1) {
+                drt.x = 0;
+                drt.y = 0;
+                drt.w = FB_W;
+                drt.h = FB_H;
+                show_pen = 1;
+                nds.pen.pos = 1;
             }
             else {
-                threading_mode = 1;
-                gfx.thread[c0].texture = nds.screen.texture[c0];
-                gfx.thread[c0].srt.x = 0;
-                gfx.thread[c0].srt.y = 0;
-                gfx.thread[c0].srt.w = 256;
-                gfx.thread[c0].srt.h = 192;
-                gfx.thread[c0].drt.x = 0;
-                gfx.thread[c0].drt.y = c0 ? 120 : 0;
-                gfx.thread[c0].drt.w = 160;
-                gfx.thread[c0].drt.h = 120;
-                if (nds.hres_mode > 0) {
-                    neon_memcpy(gfx.thread[c0].pixels, nds.screen.pixels[c0], nds.screen.pitch[c0] * (c0 ? 120 : 0));
-                }
+                show_pen = 0;
+                need_update = 0;
             }
+            break;
+        case NDS_DIS_MODE_VH_T1:
+            if (screen1) {
+                drt.x = 0;
+                drt.y = 0;
+                drt.w = FB_W;
+                drt.h = FB_H;
+                show_pen = 1;
+                nds.pen.pos = 1;
+            }
+            else {
+                show_pen = 0;
+                need_update = 0;
+            }
+            break;
+        case NDS_DIS_MODE_S0:
+            if (screen1) {
+                drt.w = 256 * 2;
+                drt.h = 192 * 2;
+                drt.x = (FB_W - drt.w) / 2;
+                drt.y = (FB_H - drt.h) / 2;
+                show_pen = 1;
+                nds.pen.pos = 1;
+            }
+            else {
+                show_pen = 0;
+                need_update = 0;
+            }
+            break;
+        case NDS_DIS_MODE_S1:
+            if (screen1) {
+                drt.x = 0;
+                drt.y = 0;
+                drt.w = FB_W;
+                drt.h = FB_H;
+                show_pen = 1;
+                nds.pen.pos = 1;
+            }
+            else {
+                show_pen = 0;
+                need_update = 0;
+            }
+            break;
+        case NDS_DIS_MODE_V0:
+            drt.w = 256;
+            drt.h = 192;
+            drt.x = (FB_W - drt.w) / 2;
+            if (nds.enable_752x560 == 0) {
+                drt.y = screen0 ? 48 : 48 + drt.h;
+            }
+            else {
+                drt.y = screen0 ? 88 : 88 + drt.h;
+            }
+            break;
+        case NDS_DIS_MODE_V1:
+            if (nds.enable_752x560 == 0) {
+                drt.w = 320;
+                drt.h = 240;
+            }
+            else {
+                drt.w = 373;
+                drt.h = 280;
+            }
+            drt.x = (FB_W - drt.w) / 2;
+            drt.y = screen0 ? 0 : drt.h;
+            break;
+        case NDS_DIS_MODE_H0:
+            drt.w = 256;
+            drt.h = 192;
+            if (nds.enable_752x560 == 0) {
+                drt.x = screen0 ? 64 : 64 + drt.w;
+            }
+            else {
+                drt.x = screen0 ? 120 : 120 + drt.w;
+            }
+            drt.y = (FB_H - drt.h) / 2;
+            break;
+        case NDS_DIS_MODE_H1:
+            if (nds.enable_752x560 == 0) {
+                drt.w = 320;
+                drt.h = 240;
+                drt.x = screen0 ? 0 : drt.w;
+            }
+            else {
+                drt.w = 373;
+                drt.h = 280;
+                drt.x = screen0 ? 3 : (drt.w + 3);
+            }
+            drt.y = (FB_H - drt.h) / 2;
+            break;
+        case NDS_DIS_MODE_VH_S0:
+            drt.x = screen1 ? 160 : 0;
+            drt.y = screen1 ? 120 : 0;
+            drt.w = screen1 ? (FB_W - 160) : 160;
+            drt.h = screen1 ? (FB_H - 120) : 120;
+            break;
+        case NDS_DIS_MODE_VH_S1:
+            drt.x = screen1 ? 256 : 0;
+            drt.y = screen1 ? 192 : 0;
+            drt.w = screen1 ? (FB_W - 256) : 256;
+            drt.h = screen1 ? (FB_H - 192) : 192;
+            break;
+        case NDS_DIS_MODE_VH_C0:
+            drt.w = screen0 ? 256 : (FB_W - 256);
+            drt.h = screen0 ? 192 : (FB_H - 192);
+            drt.x = screen0 ? ((FB_W - drt.w) / 2) : ((FB_W - drt.w) / 2);
+            drt.y = screen0 ? 0 : 192;
+            break;
+        case NDS_DIS_MODE_VH_C1:
+            drt.w = screen0 ? 256 : (FB_W - 256);
+            drt.h = screen0 ? 192 : (FB_H - 192);
+            drt.x = screen0 ? 0 : 256;
+            drt.y = screen0 ? ((FB_H - drt.h) / 2) : ((FB_H - drt.h) / 2);
+            break;
+        case NDS_DIS_MODE_HH0:
+        case NDS_DIS_MODE_HH1:
+            if (nds.enable_752x560 == 0) {
+                drt.x = screen0 ? 0 : 320;
+                drt.y = 26;
+                drt.w = 427;
+                drt.h = 320;
+            }
+            else {
+                drt.x = screen0 ? 0 : 376;
+                drt.y = 29;
+                drt.w = 501;
+                drt.h = 376;
+            }
+            rotate = (nds.dis_mode == NDS_DIS_MODE_HH0) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
+            break;
+        case NDS_DIS_MODE_HRES0:
+            drt.w = 512;
+            drt.h = 384;
+            drt.x = (FB_W - drt.w) / 2;
+            drt.y = (FB_H - drt.h) / 2;
+            break;
+        case NDS_DIS_MODE_HRES1:
+            drt.x = 0;
+            drt.y = 0;
+            drt.w = FB_W;
+            drt.h = FB_H;
+            break;
+        }
+#else
+        printf(PREFIX"Unsupported platform\n");
+        return 0;
+#endif
+
+        if ((evt.mode == MMIYOO_MOUSE_MODE) && show_pen) {
+            draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
+        }
+
+        if (need_update) {
+#ifdef MMIYOO
+            MI_SYS_FlushInvCache(nds.screen.pixels[idx], nds.screen.pitch[idx] * srt.h);
+#endif
+            GFX_Copy(nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
+
+#ifdef MMIYOO
+            switch (nds.dis_mode) {
+            case NDS_DIS_MODE_VH_T0:
+                drt.x = 0;
+                drt.y = 0;
+                drt.w = 160;
+                drt.h = 120;
+                GFX_Copy(nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                break;
+            case NDS_DIS_MODE_VH_T1:
+                drt.x = 0;
+                drt.y = 0;
+                drt.w = 256;
+                drt.h = 192;
+                GFX_Copy(nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                break;
+            }
+#endif
+        }
+
+        if (nds.screen.hres_mode[idx]) {
+            break;
         }
     }
 
-    if (nds.screen.show[0] || nds.screen.show[1]) {
-        if (nds.auto_state > 0) {
-            static int need_loadstate = 15;
-
-            if (need_loadstate > 0) {
-                need_loadstate-= 1;
-                if (need_loadstate == 0) {
-                    dtr_loadstate(nds.auto_slot);
-                }
-            }
-        }
-
-        if (nds.menu.enable == 0) {
-            if (threading_mode > 0) {
-                gfx.action = GFX_ACTION_FLIP;
-            }
-            else {
-                GFX_Flip();
-            }
-        }
+    if (show_info_cnt > 0) {
+        draw_info(NULL, show_info_buf, FB_W - get_font_width(show_info_buf), 0, 0xe0e000, 0x000000);
+        show_info_cnt-= 1;
     }
+    else if (show_fps && fps_info) {
+        SDL_Rect rt = {0};
+
+        rt.x = FB_W - fps_info->w;
+        rt.y = 0;
+        rt.w = fps_info->w;
+        rt.h = fps_info->h;
+        GFX_Copy(fps_info->pixels, fps_info->clip_rect, rt, fps_info->pitch, 0, E_MI_GFX_ROTATE_180);
+    }
+
+#ifdef TRIMUI
+    if (need_restore) {
+        need_restore = 0;
+        down_scale = pre_downscale;
+        nds.dis_mode = pre_dismode;
+        disp_resize();
+    }
+#endif
+
     if (nds.screen.init) {
-        set_screen_menu_off _func = (set_screen_menu_off)FUN_SET_SCREEN_MENU_OFF;
-
+        nds_set_screen_menu_off _func = (nds_set_screen_menu_off)FUN_SET_SCREEN_MENU_OFF;
         _func();
     }
+    GFX_Flip();
+    return 0;
 }
 
 void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
@@ -1421,7 +1829,54 @@ void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uin
 
 void sdl_update_screen(void)
 {
-    process_screen();
+    static int prepare_time = 30;
+
+    if (prepare_time) {
+        process_screen();
+        prepare_time -= 1;
+    }
+    else if (nds.update_screen == 0) {
+#ifdef MMIYOO
+        int cc = 0;
+        int cnt = 2;
+        uint8_t hres = *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
+        uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+        uint32_t w = hres ? 512 : 256;
+        uint32_t h = hres ? 384 : 192;
+        uint32_t pitch = (hres * bpp * 0x100) + (bpp * 0x100);
+        uint32_t color = ((pitch / w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888);
+
+        MI_U16 u16Fence = 0;
+        MI_GFX_Opt_t opt = {0};
+        MI_GFX_Rect_t srt = {0};
+        MI_GFX_Rect_t drt = {0};
+        MI_GFX_Surface_t ssurf = {0};
+        MI_GFX_Surface_t dsurf = {0};
+
+        opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+
+        ssurf.u32Width = srt.u32Width = w;
+        ssurf.u32Height = srt.u32Height = h;
+        ssurf.u32Stride = pitch;
+        ssurf.eColorFmt = color;
+
+        dsurf.u32Width = drt.u32Width = w;
+        dsurf.u32Height = drt.u32Height = h;
+        dsurf.u32Stride = pitch;
+        dsurf.eColorFmt = color;
+
+        cnt = hres ? 1 : 2;
+        for (cc = 0; cc < cnt; cc++) {
+            ssurf.phyAddr = nds.screen.dma.phyAddr[cc];
+            dsurf.phyAddr = gfx.dup.phyAddr + (cc * h * pitch);
+
+            MI_SYS_FlushInvCache(nds.screen.dma.virAddr[cc], pitch * h);
+            MI_GFX_BitBlit(&ssurf, &srt, &dsurf, &drt, &opt, &u16Fence);
+            MI_GFX_WaitAllDone(FALSE, u16Fence);
+        }
+#endif
+        nds.update_screen = 1;
+    }
 }
 
 void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
@@ -1456,8 +1911,8 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
                 }
             }
 
-            col.r = 0x00;
-            col.g = 0x80;
+            col.r = 0xcc;
+            col.g = 0xcc;
             col.b = 0x00;
             TTF_SizeUTF8(nds.font, p, &w, &h);
             t0 = TTF_RenderUTF8_Solid(nds.font, p, col);
@@ -1475,7 +1930,7 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
                 }
                 SDL_FreeSurface(t0);
             }
-            show_fps = 60;
+            show_fps = 1;
         }
     }
 }
@@ -1534,25 +1989,13 @@ static void strip_newline(char *p)
 static void *video_handler(void *threadid)
 {
     while (is_running) {
-        if (gfx.action == GFX_ACTION_FLIP) {
-            gfx.action = GFX_ACTION_NONE;
-
-#if defined(MMIYOO) || defined(PANDORA)
-            if (((nds.dis_mode != NDS_DIS_MODE_S0) && (nds.dis_mode != NDS_DIS_MODE_S1)) || (nds.hres_mode > 0)) {
-                My_QueueCopy(gfx.thread[0].texture, (nds.hres_mode > 0) ? gfx.thread[0].pixels : get_pixels(gfx.thread[0].texture), 
-                    &gfx.thread[0].srt, &gfx.thread[0].drt);
-            }
-            if ((gfx.thread[1].srt.w == 256) && (gfx.thread[1].srt.h == 192)) {
-                My_QueueCopy(gfx.thread[1].texture, get_pixels(gfx.thread[1].texture), &gfx.thread[1].srt, &gfx.thread[1].drt);
-            }
-#endif
-
-#if defined(TRIMUI) || defined(FUNKEYS)
-            My_QueueCopy(gfx.thread[0].texture, get_pixels(gfx.thread[0].texture), &gfx.thread[0].srt, &gfx.thread[0].drt);
-#endif
-            GFX_Flip();
+        if (nds.update_screen) {
+            process_screen();
+            nds.update_screen = 0;
         }
-        usleep(1);
+        else {
+            usleep(0);
+        }
     }
     pthread_exit(NULL);
 }
@@ -1818,6 +2261,11 @@ static int read_config(void)
     }
 #endif
 
+    if (nds.dis_mode > NDS_DIS_MODE_LAST) {
+        nds.dis_mode = NDS_DIS_MODE_VH_S0;
+        nds.alt_mode = NDS_DIS_MODE_S0;
+    }
+
     nds.menu.sel = 0;
     json_object_object_get_ex(jfile, JSON_NDS_MENU_BG, &jval);
     if (jval) {
@@ -1854,6 +2302,10 @@ static int read_config(void)
 #ifdef FUNKEYS
     nds.dis_mode = NDS_DIS_MODE_S0;
 #endif
+
+#ifdef QX1000
+    nds.dis_mode = NDS_DIS_MODE_H0;
+#endif
     return 0;
 }
 
@@ -1865,6 +2317,11 @@ static int write_config(void)
     if (jfile == NULL) {
         printf(PREFIX"Failed to write settings to json file (%s)\n", nds.cfg.path);
         return -1;
+    }
+
+    if (nds.dis_mode > NDS_DIS_MODE_LAST) {
+        nds.dis_mode = NDS_DIS_MODE_VH_S0;
+        nds.alt_mode = NDS_DIS_MODE_S0;
     }
 
     json_object_object_add(jfile, JSON_NDS_PEN_SEL, json_object_new_int(nds.pen.sel));
@@ -2151,55 +2608,20 @@ static int get_overlay_count(void)
 #ifdef QX1000
 int fb_init(void)
 {
-    int c0 = 0;
-    int c1 = 0;
-    int scale = 0;
-    float x0 = 0;
-    float y0 = 0;
-
-    printf(PREFIX"%s\n", __func__);
     thread_run = 1;
-    wl.bg = SDL_malloc(FB_W * FB_H * 2);
-    memset(wl.bg, 0, FB_W * FB_H * 2);
+    wl.bg = SDL_malloc(LCD_W * LCD_H * 2);
+    memset(wl.bg, 0, LCD_W * LCD_H * 2);
     pthread_create(&thread_id[0], NULL, wl_thread, NULL);
     pthread_create(&thread_id[1], NULL, draw_thread, NULL);
     while(wl.init == 0){
         usleep(100000);
     }
-    printf(PREFIX"%s\n", __func__);
 
-    wl.ready = 0;
-    wl.info.w = FB_W;
-    wl.info.h = FB_H;
-    wl.info.bpp = 4;
-    wl.info.size = wl.info.w * (wl.info.bpp / 8) * wl.info.h;
-    printf(PREFIX"%s, w:%d, h:%d, bpp:%d\n", __func__, wl.info.w, wl.info.h, wl.info.bpp);
-
-    c0 = FB_H / wl.info.w;
-    c1 = FB_W / wl.info.h;
-    scale = c0 > c1 ? c1 : c0;
-    printf(PREFIX"%s, scale:%d\n", __func__, scale);
-
-    y0 = ((float)(wl.info.w * scale) / FB_H);
-    x0 = ((float)(wl.info.h * scale) / FB_W);
-    printf(PREFIX"%s, x0:%f, y0:%f\n", __func__, x0, y0);
-
-    egl_fb_vertices[0] = -x0;
-    egl_fb_vertices[1] = y0;
-    egl_fb_vertices[5] = -x0;
-    egl_fb_vertices[6] = -y0;
-    egl_fb_vertices[10] =  x0;
-    egl_fb_vertices[11] = -y0;
-    egl_fb_vertices[15] =  x0;
-    egl_fb_vertices[16] =  y0;
-   
-    // double buffer
     wl.flip = 0;
-    wl.data = SDL_malloc(wl.info.size * 2);
-    memset(wl.data, 0, wl.info.size *2);
-    wl.pixels[0] = (uint16_t*)wl.data;
-    wl.pixels[1] = (uint16_t*)(wl.data + wl.info.size);
-    printf(PREFIX"%s, pixels:%p\n", __func__, wl.data);
+    wl.ready = 0;
+    wl.data = SDL_malloc(LCD_W * LCD_H * 2);
+    memset(wl.data, 0, LCD_W * LCD_H *2);
+    update_wayland_res(512, 192);
     wl.ready = 1;
     return 0;
 }
@@ -2449,6 +2871,8 @@ void disp_resize(void)
 int fb_init(void)
 {
 #ifndef UNITTEST
+    int cc = 0;
+
     MI_SYS_Init();
     MI_GFX_Open();
 
@@ -2464,11 +2888,22 @@ int fb_init(void)
     MI_SYS_Mmap(gfx.fb.phyAddr, gfx.finfo.smem_len, &gfx.fb.virAddr, TRUE);
     memset(&gfx.hw.opt, 0, sizeof(gfx.hw.opt));
 
+    MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.dup.phyAddr);
+    MI_SYS_Mmap(gfx.dup.phyAddr, TMP_SIZE, &gfx.dup.virAddr, TRUE);
+
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.tmp.phyAddr);
     MI_SYS_Mmap(gfx.tmp.phyAddr, TMP_SIZE, &gfx.tmp.virAddr, TRUE);
 
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.overlay.phyAddr);
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
+
+    for (cc = 0; cc < 2; cc++) {
+        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &nds.screen.dma.phyAddr[cc]);
+        MI_SYS_Mmap(nds.screen.dma.phyAddr[cc], SCREEN_DMA_SIZE, &nds.screen.dma.virAddr[cc], TRUE);
+    }
+
+    nds.screen.pixels[0] = gfx.dup.virAddr;
+    nds.screen.pixels[1] = nds.screen.pixels[0] + (256 * 192);
 #endif
     return 0;
 }
@@ -2476,11 +2911,23 @@ int fb_init(void)
 int fb_quit(void)
 {
 #ifndef UNITTEST
+    int cc = 0;
+
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
+
+    MI_SYS_Munmap(gfx.dup.virAddr, TMP_SIZE);
+    MI_SYS_MMA_Free(gfx.dup.phyAddr);
+
     MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.tmp.phyAddr);
+
     MI_SYS_Munmap(gfx.overlay.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.overlay.phyAddr);
+
+    for (cc = 0; cc < 2; cc++) {
+        MI_SYS_Munmap(nds.screen.dma.virAddr[cc], SCREEN_DMA_SIZE);
+        MI_SYS_MMA_Free(nds.screen.dma.phyAddr[cc]);
+    }
 
     MI_GFX_Close();
     MI_SYS_Exit();
@@ -2496,7 +2943,6 @@ int fb_quit(void)
 
 void GFX_Init(void)
 {
-    int cc = 0;
     struct stat st = {0};
     char buf[MAX_PATH << 1] = {0};
 
@@ -2511,10 +2957,6 @@ void GFX_Init(void)
 #endif
 
     fb_init();
-    for (cc=0; cc<MAX_QUEUE; cc++) {
-        gfx.thread[cc].pixels = malloc(TMP_SIZE);
-    }
-
     memset(nds.pen.path, 0, sizeof(nds.pen.path));
     if (getcwd(nds.pen.path, sizeof(nds.pen.path))) {
         strcat(nds.pen.path, "/");
@@ -2576,7 +3018,11 @@ void GFX_Init(void)
         write_file(buf, nds_firmware, sizeof(nds_firmware));
     }
 
+#ifdef QX1000
+    cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+#else
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
+#endif
 
     nds.pen.sel = 0;
     nds.pen.max = get_pen_count();
@@ -2589,7 +3035,11 @@ void GFX_Init(void)
     nds.menu.sel = 0;
     nds.menu.max = get_menu_count();
 
+#ifdef QX1000
+    nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+#else
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
+#endif
     if (nds.menu.drastic.main) {
         if (nds.menu.drastic.bg0) {
             SDL_SoftStretch(nds.menu.drastic.bg0, NULL, nds.menu.drastic.main, NULL);
@@ -2624,43 +3074,23 @@ void GFX_Init(void)
     }
 #endif
 
-#ifdef MMIYOO
-    gfx.small_screen = malloc(256 * 192 * 4);
-#endif
-
     is_running = 1;
-    gfx.action = GFX_ACTION_NONE;
     pthread_create(&thread, NULL, video_handler, (void *)NULL);
 }
 
 void GFX_Quit(void)
 {
-    int cc = 0;
     void *ret = NULL;
 
     is_running = 0;
     pthread_join(thread, &ret);
     GFX_Clear();
-
     fb_quit();
-    for (cc=0; cc<MAX_QUEUE; cc++) {
-        if (gfx.thread[cc].pixels) {
-            free(gfx.thread[cc].pixels);
-            gfx.thread[cc].pixels = NULL;
-        }
-    }
 
     if (cvt) {
         SDL_FreeSurface(cvt);
         cvt = NULL;
     }
-
-#ifdef MMIYOO
-    if (gfx.small_screen) {
-        free(gfx.small_screen);
-        gfx.small_screen = NULL;
-    }
-#endif
 }
 
 void GFX_Clear(void)
@@ -2668,10 +3098,11 @@ void GFX_Clear(void)
 #if defined(MMIYOO) && !defined(UNITTEST)
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
+    MI_SYS_MemsetPa(gfx.dup.phyAddr, 0, TMP_SIZE);
 #endif
 }
 
-int draw_pen(const void *pixels, int width, int pitch)
+int draw_pen(void *pixels, int width, int pitch)
 {
 #ifndef UNITTEST
     int c0 = 0;
@@ -2684,7 +3115,7 @@ int draw_pen(const void *pixels, int width, int pitch)
     int x0 = 0, y0 = 0;
     int x1 = 0, y1 = 0;
     int x = 0, y = 0, is_565 = 0, scale = 1;
-    uint16_t r = 0, g = 0, b = 0;
+    uint32_t r = 0, g = 0, b = 0;
     uint32_t *s = hex_pen;
     uint16_t *d_565 = (uint16_t*)pixels;
     uint32_t *d_888 = (uint32_t*)pixels;
@@ -2699,35 +3130,9 @@ int draw_pen(const void *pixels, int width, int pitch)
         scale = 2;
     }
 
-    x = ((evt.mouse.x - evt.mouse.minx) * sw) / (evt.mouse.maxx - evt.mouse.minx);
-    y = ((evt.mouse.y - evt.mouse.miny) * sh) / (evt.mouse.maxy - evt.mouse.miny);
+    x = (evt.mouse.x * sw) / evt.mouse.maxx;
+    y = (evt.mouse.y * sh) / evt.mouse.maxy;
 
-    switch (nds.dis_mode) {
-    case NDS_DIS_MODE_VH_T0:
-    case NDS_DIS_MODE_VH_T1:
-    //case NDS_DIS_MODE_S0:
-    //case NDS_DIS_MODE_S1:
-        //sub = sh;
-        break;
-    }
-
-    if (nds.pen.pos == 0) {
-        switch (nds.dis_mode) {
-        case NDS_DIS_MODE_V0:
-        case NDS_DIS_MODE_V1:
-        case NDS_DIS_MODE_H0:
-        case NDS_DIS_MODE_H1:
-        case NDS_DIS_MODE_VH_S0:
-        case NDS_DIS_MODE_VH_S1:
-        case NDS_DIS_MODE_VH_C0:
-        case NDS_DIS_MODE_VH_C1:
-        case NDS_DIS_MODE_HH0:
-        case NDS_DIS_MODE_HH1:
-            sub = sh;
-            break;
-        }
-    }
-    
     if (nds.pen.img) {
         w = nds.pen.img->w;
         h = nds.pen.img->h;
@@ -2758,8 +3163,8 @@ int draw_pen(const void *pixels, int width, int pitch)
             y0 = y1 = (c1 * scale) + (y - sub);
 
             if (scale == 2) {
-                x0+= 1;
-                y0+= 1;
+                x0 += 1;
+                y0 += 1;
             }
             if ((y0 >= 0) && (y0 < sh) && (x0 < sw) && (x0 >= 0)) {
                 if (*s) {
@@ -2777,9 +3182,9 @@ int draw_pen(const void *pixels, int width, int pitch)
                     else {
                         d_888[(y1 * width) + x1] = *s;
                         if (scale == 2) {
-                            d_888[((y1 + 0) * width) + (x1 + 1)] = r | g | b;
-                            d_888[((y1 + 1) * width) + (x1 + 0)] = r | g | b;
-                            d_888[((y1 + 1) * width) + (x1 + 1)] = r | g | b;
+                            d_888[((y1 + 0) * width) + (x1 + 1)] = *s;
+                            d_888[((y1 + 1) * width) + (x1 + 0)] = *s;
+                            d_888[((y1 + 1) * width) + (x1 + 1)] = *s;
                         }
                     }
                 }
@@ -2793,6 +3198,49 @@ int draw_pen(const void *pixels, int width, int pitch)
 
 int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
+#ifdef QX1000
+    int x = 0;
+    int y = 0;
+    const uint32_t *src = pixels;
+    uint32_t *dst = (uint32_t *)wl.pixels[wl.flip];
+
+    if (srcrect.w == 256) {
+        dst += (dstrect.y ? 0 : 256);
+        asm volatile (
+            "0:  vldmia %0!, {q0-q7}    ;"
+            "    vldmia %0!, {q8-q15}   ;"
+            "    vstmia %1!, {q0-q7}    ;"
+            "    vstmia %1!, {q8-q15}   ;"
+            "1:  vldmia %0!, {q0-q7}    ;"
+            "    vldmia %0!, {q8-q15}   ;"
+            "    vstmia %1!, {q0-q7}    ;"
+            "    vstmia %1!, {q8-q15}   ;"
+            "2:  vldmia %0!, {q0-q7}    ;"
+            "    vldmia %0!, {q8-q15}   ;"
+            "    vstmia %1!, {q0-q7}    ;"
+            "    vstmia %1!, {q8-q15}   ;"
+            "3:  vldmia %0!, {q0-q7}    ;"
+            "    vldmia %0!, {q8-q15}   ;"
+            "    vstmia %1!, {q0-q7}    ;"
+            "    vstmia %1!, {q8-q15}   ;"
+            "    add %1, %1, %2         ;"
+            "    subs %3, #1            ;"
+            "    bne 0b                 ;"
+            :
+            : "r"(pixels), "r"(dst), "r"((FB_W - srcrect.w) * 4), "r"(192)
+            : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
+        );
+    }
+    else {
+        for (y = 0; y < srcrect.h; y++) {
+            for (x = 0; x < srcrect.w; x++) {
+                *dst++ = *src++;
+            }
+            dst+= (FB_W - srcrect.w);
+        }
+    }
+#endif
+
 #ifdef PANDORA
     if ((pitch == 1024) && (srcrect.w == 256) && (srcrect.h == 192)) {
         uint32_t *dst = (uint32_t *)gfx.hw.mem[(gfx.vinfo.yoffset == 0) ? 0 : 1];
@@ -3874,10 +4322,6 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     gfx.hw.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
     gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
 
-    gfx.hw.dst.rt.s32Xpos = 0;
-    gfx.hw.dst.rt.s32Ypos = 0;
-    gfx.hw.dst.rt.u32Width = FB_W;
-    gfx.hw.dst.rt.u32Height = FB_H;
     gfx.hw.dst.rt.s32Xpos = dstrect.x;
     gfx.hw.dst.rt.s32Ypos = dstrect.y;
     gfx.hw.dst.rt.u32Width = dstrect.w;
@@ -3918,6 +4362,10 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 
 void GFX_Flip(void)
 {
+#ifdef QX1000
+    wl.flip ^= 1;
+#endif
+
 #ifdef PANDORA
     //int arg = 0;
 
@@ -4150,10 +4598,10 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
     t = IMG_Load(buf);
     if (t) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA) || defined(QX1000)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.yes) {
@@ -4169,10 +4617,10 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
     t = IMG_Load(buf);
     if (t) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA) || defined(QX1000)
+#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.no) {
@@ -4264,17 +4712,19 @@ int reload_bg(void)
                     case NDS_DIS_MODE_HRES0:
                         strcat(buf, "/bg_hres0.png");
                         break;
+                    case NDS_DIS_MODE_HRES1:
+                        return 0;
                     }
                     
                     t = IMG_Load(buf);
                     if (t) {
                         SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
                         SDL_FreeSurface(t);
+                        GFX_Copy(nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
                     }
                     else {
                         printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
                     }
-                    GFX_Copy(nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
                 }
             }
         }
@@ -4578,7 +5028,7 @@ int MMIYOO_VideoInit(_THIS)
 
     printf(PREFIX"MMIYOO_VideoInit\n");
 #ifndef UNITTEST
-    //signal(SIGTERM, sigterm_handler);
+    signal(SIGTERM, sigterm_handler);
 #endif
 
     SDL_zero(mode);
@@ -4688,11 +5138,18 @@ int MMIYOO_VideoInit(_THIS)
     MMIYOO_EventInit();
 
     detour_init(sysconf(_SC_PAGESIZE), nds.states.path);
+    printf(PREFIX"Installed hooking for drastic functions\n");
     detour_hook(FUN_PRINT_STRING, (intptr_t)sdl_print_string);
     detour_hook(FUN_SAVESTATE_PRE, (intptr_t)sdl_savestate_pre);
     detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
     detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
     detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
+#ifdef MMIYOO
+    printf(PREFIX"Installed hooking for libc functions\n");
+    detour_hook(FUN_MALLOC, (intptr_t)sdl_malloc);
+    detour_hook(FUN_REALLOC, (intptr_t)sdl_realloc);
+    detour_hook(FUN_FREE, (intptr_t)sdl_free);
+#endif
     return 0;
 }
 
@@ -4782,7 +5239,7 @@ void MMIYOO_VideoQuit(_THIS)
     lang_unload();
 }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
 static const char *DIS_MODE0_640[] = {
     "640*480",
     "640*480",
@@ -4968,7 +5425,9 @@ int handle_menu(int key)
         strcpy(pre_lang, nds.lang.trans[DEF_LANG_SLOT]);
     }
     if (pre_cpuclock == 0) {
+#ifdef MMIYOO
         cur_cpuclock = pre_cpuclock = get_cpuclock();
+#endif
     }
 
     switch (key) {
@@ -5158,7 +5617,9 @@ int handle_menu(int key)
         break;
     case MYKEY_B:
         if (cur_cpuclock != pre_cpuclock) {
+#ifdef MMIYOO
             set_cpuclock(cur_cpuclock);
+#endif
             pre_cpuclock = cur_cpuclock;
         }
 
@@ -5173,6 +5634,9 @@ int handle_menu(int key)
             pre_ff = nds.fast_forward;
         }
         nds.menu.enable = 0;
+#ifdef QX1000
+        update_wayland_res(512, 192);
+#endif
         return 0;
     default:
         break;
@@ -5323,7 +5787,9 @@ int handle_menu(int key)
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
                 get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
+#ifdef MMIYOO
                 reload_overlay();
+#endif
             }
             else {
                 sprintf(buf, to_lang("None"));

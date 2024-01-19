@@ -51,22 +51,29 @@
 
 #include "detour.h"
 
-#ifdef MMIYOO
-    #include "mi_sys.h"
-    #include "mi_gfx.h"
-#else
+#if defined(MMIYOO)
+#include "mi_sys.h"
+#include "mi_gfx.h"
+#endif
+
+#ifdef QX1000
+#include <wayland-client.h>
+#include <wayland-egl.h>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#endif
+
+#ifdef TRIMUI
+#include "trimui.h"
+#endif
+
+#if !defined(MMIYOO)
     #define E_MI_GFX_ROTATE_90      0
     #define E_MI_GFX_ROTATE_180     0
     #define E_MI_GFX_ROTATE_270     0
 #endif
 
 #ifdef QX1000
-    #include <wayland-client.h>
-    #include <wayland-egl.h>
-
-    #include <EGL/egl.h>
-    #include <GLES2/gl2.h>
-
     struct _wayland {
         struct wl_shell *shell;
         struct wl_region *region;
@@ -91,14 +98,14 @@
             GLint texCoordLoc;
             GLint samplerLoc;
             struct wl_egl_window *window;
-        }egl;
+        } egl;
         
         struct _org {
             int w;
             int h;
             int bpp;
             int size;
-        }info;
+        } info;
 
         int init;
         int ready;
@@ -109,18 +116,17 @@
     };
 #endif
 
-#ifdef TRIMUI
-    #include "trimui.h"
-#endif
-
 #ifndef MAX_PATH
-    #define MAX_PATH 128
+    #define MAX_PATH                128
 #endif
 
 #ifdef MMIYOO
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define SCREEN_DMA_SIZE         (512 * 384 * 4)
 #endif
 
 #ifdef TRIMUI
@@ -129,31 +135,32 @@
     #define ION_W                   512
     #define ION_H                   384
     #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
 #endif
 
 #ifdef FUNKEYS
     #define DEF_FB_W                240
     #define DEF_FB_H                240
     #define FB_BPP                  2
+    #define IMG_W                   640
+    #define IMG_H                   480
 #endif
 
 #ifdef PANDORA
     #define DEF_FB_W                800
     #define DEF_FB_H                480
     #define FB_BPP                  4
-    #define IMG_W                   FB_W
-    #define IMG_H                   FB_H
+    #define IMG_W                   DEF_FB_W
+    #define IMG_H                   DEF_FB_H
 #endif
 
 #ifdef QX1000
-    #define DEF_FB_W                2160
-    #define DEF_FB_H                1080
+    #define LCD_W                   1080
+    #define LCD_H                   2160
+    #define DEF_FB_W                512
+    #define DEF_FB_H                192
     #define FB_BPP                  4
-    #define IMG_W                   FB_W
-    #define IMG_H                   FB_H
-#endif
-
-#if defined(MMIYOO) || defined(TRIMUI) || defined(FUNKEYS)
     #define IMG_W                   640
     #define IMG_H                   480
 #endif
@@ -268,19 +275,7 @@
 #define JSON_NDS_MENU_CURSOR        "menu_cursor"
 #define JSON_NDS_FAST_FORWARD       "fast_forward"
 
-#define GFX_ACTION_NONE             0
-#define GFX_ACTION_FLIP             1
-#define GFX_ACTION_COPY0            2
-#define GFX_ACTION_COPY1            3
-
-#if defined(MMIYOO) || defined(PANDORA)
-    #define RELOAD_BG_COUNT         5
-#else
-    #define RELOAD_BG_COUNT         1
-#endif
-
-#define MAX_QUEUE                   2
-
+#define RELOAD_BG_COUNT             120
 #define DEF_LANG_SLOT               0
 #define DEF_LANG_LANG               "english"
 #define LANG_FILE_LEN               16
@@ -331,9 +326,6 @@ typedef struct _GFX {
     int disp_dev;
 #endif
 
-#ifdef MMIYOO
-    void *small_screen;
-#endif
     struct fb_var_screeninfo vinfo;
     struct fb_fix_screeninfo finfo;
 
@@ -346,7 +338,7 @@ typedef struct _GFX {
 #ifdef TRIMUI
         int flip;
 #endif
-    } fb, tmp, overlay;
+    } fb, tmp, overlay, dup;
 
     struct _HW {
 #ifdef MMIYOO
@@ -372,14 +364,6 @@ typedef struct _GFX {
         uint32_t *mem[2];
 #endif
     } hw;
-
-    int action;
-    struct _THREAD {
-        void *pixels;
-        SDL_Rect srt;
-        SDL_FRect drt;
-        SDL_Texture *texture;
-    } thread[MAX_QUEUE];
 } GFX;
 
 typedef struct _NDS {
@@ -395,6 +379,7 @@ typedef struct _NDS {
     int auto_slot;
     int auto_state;
     int keys_rotate;
+    int update_screen;
     int enable_752x560;
     int defer_update_bg;
     uint8_t fast_forward;
@@ -405,14 +390,16 @@ typedef struct _NDS {
     struct _SCREEN {
         uint32_t bpp;
         uint32_t init;
-        SDL_Renderer *render;
-
-        SDL_Rect rect[2];
-        uint8_t show[2];
-        uint8_t hres_mode[2];
         uint32_t pitch[2];
         uint32_t *pixels[2];
-        SDL_Texture *texture[2];
+        uint8_t hres_mode[2];
+#ifdef MMIYOO
+        struct _NDMA {
+            size_t size;
+            void *virAddr[2];
+            MI_PHY phyAddr[2];
+        } dma;
+#endif
     } screen;
 
     struct _BIOS {
@@ -516,7 +503,7 @@ void GFX_Clear(void);
 void GFX_Flip(void);
 int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate);
 
-int draw_pen(const void *pixels, int width, int pitch);
+int draw_pen(void *pixels, int width, int pitch);
 int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor);
 
 int get_font_width(const char *info);
@@ -532,12 +519,13 @@ int reload_menu(void);
 int reload_overlay(void);
 void disp_resize(void);
 
+int get_pitch(void *chk);
 int handle_menu(int key);
 int process_drastic_menu(void);
 int update_texture(void *chk, void *new, const void *pixels, int pitch);
-int My_QueueCopy(SDL_Texture *texture, const void *pixels, const SDL_Rect *srcrect, const SDL_FRect *dstrect);
 const void* get_pixels(void *chk);
 const char *to_lang(const char *p);
+void update_wayland_res(int w, int h);
 
 #endif
 

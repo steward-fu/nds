@@ -17,16 +17,20 @@
 #include <linux/soundcard.h>
 #include <json-c/json.h>
 
+#ifdef QX1000
+#include <pulse/pulseaudio.h>
+#endif
+
 #ifdef UNITTEST
-    #include "unity_fixture.h"
+#include "unity_fixture.h"
 #endif
 
 #include "detour.h"
 
 #ifdef MMIYOO
-    #include "mi_ao.h"
-    #include "mi_sys.h"
-    #include "mi_common_datatype.h"
+#include "mi_ao.h"
+#include "mi_sys.h"
+#include "mi_common_datatype.h"
 #endif
 
 #define PREFIX              "[SND] "
@@ -69,6 +73,19 @@ typedef struct {
 static pthread_t thread;
 static queue_t queue = {0};
 
+#ifdef QX1000
+typedef struct {
+    pa_threaded_mainloop *mainloop;
+    pa_context *context;
+    pa_mainloop_api *api;
+    pa_stream *stream;
+    pa_sample_spec spec;
+    pa_buffer_attr attr;
+} pa_t;
+
+static pa_t pa = {0};
+#endif
+
 #ifdef MMIYOO
     static MI_AO_CHN AoChn = 0;
     static MI_AUDIO_DEV AoDevId = 0;
@@ -88,6 +105,56 @@ static int pcm_ready = 0;
 static int pcm_buf_len = 0;
 static uint8_t *pcm_buf = NULL;
 static struct json_object *jfile = NULL;
+
+#ifdef QX1000
+static void context_state_cb(pa_context *context, void *userdata)
+{
+    if (context) {
+        switch (pa_context_get_state(context)) {
+        case PA_CONTEXT_READY:
+        case PA_CONTEXT_TERMINATED:
+        case PA_CONTEXT_FAILED:
+            pa_threaded_mainloop_signal(pa.mainloop, 0);
+            break;
+        case PA_CONTEXT_UNCONNECTED:
+        case PA_CONTEXT_CONNECTING:
+        case PA_CONTEXT_AUTHORIZING:
+        case PA_CONTEXT_SETTING_NAME:
+            break;
+        }
+    }
+}
+
+static void stream_state_cb(pa_stream *stream, void *userdata)
+{
+    if (stream) {
+        switch (pa_stream_get_state(stream)) {
+        case PA_STREAM_READY:
+        case PA_STREAM_FAILED:
+        case PA_STREAM_TERMINATED:
+            pa_threaded_mainloop_signal(pa.mainloop, 0);
+            break;
+        case PA_STREAM_UNCONNECTED:
+        case PA_STREAM_CREATING:
+            break;
+        }
+    }
+}
+
+static void stream_latency_update_cb(pa_stream *stream, void *userdata)
+{
+    if (stream) {
+        pa_threaded_mainloop_signal(pa.mainloop, 0);
+    }
+}
+
+static void stream_request_cb(pa_stream *stream, size_t length, void *userdata)
+{
+    if (stream) {
+        pa_threaded_mainloop_signal(pa.mainloop, 0);
+    }
+}
+#endif
 
 #if !defined(UNITTEST)
 void neon_memcpy(void *dest, const void *src, size_t n);
@@ -346,6 +413,14 @@ static void *audio_handler(void *threadid)
 #if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
                 write(dsp_fd, pcm_buf, pcm_buf_len);
 #endif
+
+#ifdef QX1000
+                if (pa.mainloop) {
+                    pa_threaded_mainloop_lock(pa.mainloop);
+                    pa_stream_write(pa.stream, pcm_buf, pcm_buf_len, NULL, 0, PA_SEEK_RELATIVE);
+                    pa_threaded_mainloop_unlock(pa.mainloop);
+                }
+#endif
             }
         }
         usleep(10);
@@ -518,6 +593,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
     dsp_fd = open("/dev/dsp", O_WRONLY);
     if (dsp_fd < 0) {
+        printf(PREFIX"Failed to open /dev/dsp device\n");
         return -1;
     }
 
@@ -529,6 +605,46 @@ int snd_pcm_start(snd_pcm_t *pcm)
 
     arg = FREQ;
     ioctl(dsp_fd, SOUND_PCM_WRITE_RATE, &arg);
+#endif
+
+#ifdef QX1000
+    pa.mainloop = pa_threaded_mainloop_new();
+    if (pa.mainloop == NULL) {
+        printf(PREFIX"Failed to open PulseAudio device\n");
+        return -1;
+    }
+
+    pa.api = pa_threaded_mainloop_get_api(pa.mainloop);
+    pa.context = pa_context_new(pa.api, "DraStic");
+    pa_context_set_state_callback(pa.context, context_state_cb, &pa);
+    pa_context_connect(pa.context, NULL, 0, NULL);
+    pa_threaded_mainloop_lock(pa.mainloop);
+    pa_threaded_mainloop_start(pa.mainloop);
+
+    while (pa_context_get_state(pa.context) != PA_CONTEXT_READY) {
+        pa_threaded_mainloop_wait(pa.mainloop);
+    }
+
+    pa.spec.format = PA_SAMPLE_S16LE;
+    pa.spec.channels = CHANNELS;
+    pa.spec.rate = FREQ;
+    pa.attr.tlength = pa_bytes_per_second(&pa.spec) / 5;
+    pa.attr.maxlength = pa.attr.tlength * 3;
+    pa.attr.minreq = pa.attr.tlength / 3;
+    pa.attr.prebuf = pa.attr.tlength;
+
+    pa.stream = pa_stream_new(pa.context, "DraStic", &pa.spec, NULL);
+    pa_stream_set_state_callback(pa.stream, stream_state_cb, &pa);
+    pa_stream_set_write_callback(pa.stream, stream_request_cb, &pa);
+    pa_stream_set_latency_update_callback(pa.stream, stream_latency_update_cb, &pa);
+    pa_stream_connect_playback(pa.stream, NULL, &pa.attr, 
+        PA_STREAM_ADJUST_LATENCY | PA_STREAM_INTERPOLATE_TIMING | PA_STREAM_AUTO_TIMING_UPDATE, NULL, NULL);
+    
+    while (pa_context_get_state(pa.context) != PA_CONTEXT_READY) {
+        pa_threaded_mainloop_wait(pa.mainloop);
+    }
+
+    pa_threaded_mainloop_unlock(pa.mainloop);
 #endif
 
     pcm_ready = 1;
@@ -561,6 +677,25 @@ int snd_pcm_close(snd_pcm_t *pcm)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;
+    }
+#endif
+
+#ifdef QX1000
+    if (pa.mainloop) {
+        pa_threaded_mainloop_stop(pa.mainloop);
+    }
+    if (pa.stream) {
+        pa_stream_unref(pa.stream);
+        pa.stream = NULL;
+    }
+    if (pa.context) {
+        pa_context_disconnect(pa.context);
+        pa_context_unref(pa.context);
+        pa.context = NULL;
+    }
+    if (pa.mainloop) {
+        pa_threaded_mainloop_stop(pa.mainloop);
+        pa.mainloop = NULL;
     }
 #endif
     return 0;

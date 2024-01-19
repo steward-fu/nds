@@ -24,6 +24,9 @@
 
     #define VAR_DESMUME_FOOTER_STR      0x0815a740
 
+    #define FUN_FREE                    0x08003e58
+    #define FUN_REALLOC                 0x0800435c
+    #define FUN_MALLOC                  0x080046e0
     #define FUN_SCREEN_COPY16           0x080a59d8
     #define FUN_PRINT_STRING            0x080a5398
     #define FUN_LOAD_STATE_INDEX        0x08095ce4
@@ -38,18 +41,23 @@
     #define FUN_BLIT_SCREEN_MENU        0x080a62d8
     #define FUN_INITIALIZE_BACKUP       0x08092f40
     #define FUN_SET_SCREEN_MENU_OFF     0x080a8240
+    #define FUN_GET_SCREEN_PTR          0x080a890c
 
     #define CODE_FAST_FORWARD           0x08006ad0
 
     #define ALIGN_ADDR(addr)        ((void*)((size_t)(addr) & ~(page_size - 1)))
 
-    typedef void (*set_screen_menu_off)(void);
-    typedef void (*quit)(void *system);
-    typedef void (*screen_copy16)(uint16_t *dest, uint32_t screen_number);
-    typedef int32_t (*load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
-    typedef int32_t (*save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
-    typedef int32_t (*load_state)(void *system, const char *path, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
-    typedef int32_t (*save_state)(void *system, const char *dir, char *filename, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
+    typedef void (*nds_free)(void *ptr);
+    typedef void (*nds_set_screen_menu_off)(void);
+    typedef void (*nds_quit)(void *system);
+    typedef void (*nds_screen_copy16)(uint16_t *dest, uint32_t screen_number);
+    typedef int32_t (*nds_load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
+    typedef int32_t (*nds_save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
+    typedef int32_t (*nds_load_state)(void *system, const char *path, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
+    typedef int32_t (*nds_save_state)(void *system, const char *dir, char *filename, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
+    typedef void* (*nds_get_screen_ptr)(uint32_t screen_number);
+    typedef void* (*nds_realloc)(void *ptr, size_t size);
+    typedef void* (*nds_malloc)(size_t size);
 
     typedef enum _backup_type_enum {
         BACKUP_TYPE_NONE   = 0,

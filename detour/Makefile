@@ -24,12 +24,12 @@ endif
 
 ifeq ($(MOD),pandora)
     CFLAGS += -DPANDORA
-    CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -Wl,--no-undefined
+    CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -Wl,--no-undefined
 endif
 
 ifeq ($(MOD),qx1000)
     CFLAGS += -DQX1000
-    CFLAGS += -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon -ffast-math -Wl,--no-undefined
+    CFLAGS += -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -Wl,--no-undefined
 endif
 
 ifeq ($(MOD),unittest)

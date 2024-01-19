@@ -64,8 +64,6 @@ typedef struct _MMIYOO_EventInfo {
     struct _mouse{
         int x;
         int y;
-        int minx;
-        int miny;
         int maxx;
         int maxy;
     } mouse;

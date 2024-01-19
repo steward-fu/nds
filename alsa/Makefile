@@ -31,15 +31,15 @@ endif
 ifeq ($(MOD),pandora)
     SRC    += neon.S
     CFLAGS += -DPANDORA
-    CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3
+    CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -O3
     LDFLAGS+= -Wl,--no-undefined -ljson-c
 endif
 
 ifeq ($(MOD),qx1000)
     SRC    += neon.S
     CFLAGS += -DQX1000
-    CFLAGS += -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon -ffast-math -O3
-    LDFLAGS+= -Wl,--no-undefined -ljson-c
+    CFLAGS += -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -O3
+    LDFLAGS+= -Wl,--no-undefined -ljson-c -lpulse
 endif
 
 ifeq ($(MOD),unittest)

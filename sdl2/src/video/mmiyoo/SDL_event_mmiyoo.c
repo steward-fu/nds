@@ -122,19 +122,22 @@
     #define DOWN    30 // 'A'
     #define LEFT    43 // '\'
     #define RIGHT   31 // 'S'
-    #define A       40 // '''
-    #define B       38 // 'L'
-    #define X       39 // ';'
-    #define Y       25 // 'P'
-    #define L1      41 // '`'
+    #define A       38 // 'L'
+    #define B       37 // 'K'
+    #define X       25 // 'P'
+    #define Y       24 // 'O'
     #define R1      17 // 'W'
+    #define R10     51 // ','
+    #define R2      28 // 'Enter'
+    #define L1      41 // '`'
+    #define L10     50 // 'M'
+    #define L2      15 // 'Tab'
     #define SELECT  53 // '/'
     #define START   29 // 'RCTRL'
     #define MENU    57 // ' '
     #define QSAVE   46 // 'C'
     #define QLOAD   49 // 'N'
     #define EXIT    1  // 'ESC'
-    #define TOUCH   14 // 'Backspace'
 #endif
 
 MMIYOO_EventInfo evt = {0};
@@ -197,17 +200,17 @@ int volume_dec(void);
 
 static void check_mouse_pos(void)
 {
-    if (evt.mouse.y < evt.mouse.miny) {
-        evt.mouse.y = evt.mouse.miny;
-    }
-    if (evt.mouse.y > evt.mouse.maxy) {
-        evt.mouse.y = evt.mouse.maxy;
-    }
-    if (evt.mouse.x < evt.mouse.minx) {
-        evt.mouse.x = evt.mouse.minx;
+    if (evt.mouse.x < 0) {
+        evt.mouse.x = 0;
     }
     if (evt.mouse.x >= evt.mouse.maxx) {
         evt.mouse.x = evt.mouse.maxx;
+    }
+    if (evt.mouse.y < 0) {
+        evt.mouse.y = 0;
+    }
+    if (evt.mouse.y > evt.mouse.maxy) {
+        evt.mouse.y = evt.mouse.maxy;
     }
 }
 
@@ -262,7 +265,7 @@ static int hit_hotkey(uint32_t bit)
 #endif
 
 #ifdef QX1000
-    uint32_t mask = (1 << bit) | (1 << MYKEY_START);
+    uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
     return (hotkey ^ mask) ? 0 : 1;
@@ -274,7 +277,7 @@ static void set_key(uint32_t bit, int val)
         hotkey|= (1 << bit);
         evt.keypad.bitmaps|= (1 << bit);
 
-#if defined(TRIMUI) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
         if (bit == MYKEY_MENU) {
             hotkey = (1 << MYKEY_MENU);
         }
@@ -311,7 +314,7 @@ int EventUpdate(void *data)
 
     uint32_t l1 = L1;
     uint32_t r1 = R1;
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
     uint32_t l2 = L2;
     uint32_t r2 = R2;
 #endif
@@ -370,7 +373,7 @@ int EventUpdate(void *data)
             y = Y;
         }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
         if (nds.swap_l1l2) {
             l1 = L2;
             l2 = L1;
@@ -416,11 +419,14 @@ int EventUpdate(void *data)
                     if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
                     if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
                     if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
                     if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
 #endif
-
+#ifdef QX1000
+                    if (ev.code == L10)     { set_key(MYKEY_L1,    ev.value); }
+                    if (ev.code == R10)     { set_key(MYKEY_R1,    ev.value); }
+#endif
                     switch (ev.code) {
                     case START:  set_key(MYKEY_START, ev.value);  break;
                     case SELECT: set_key(MYKEY_SELECT, ev.value); break;
@@ -429,7 +435,6 @@ int EventUpdate(void *data)
                     case QSAVE:  set_key(MYKEY_QSAVE, ev.value);  break;
                     case QLOAD:  set_key(MYKEY_QLOAD, ev.value);  break;
                     case EXIT:   set_key(MYKEY_EXIT, ev.value);   break;
-                    case TOUCH:  set_key(MYKEY_L2, ev.value);     break;
 #endif
 #ifdef MMIYOO
                     case POWER:  set_key(MYKEY_POWER, ev.value);  break;
@@ -441,7 +446,7 @@ int EventUpdate(void *data)
                             }
                         }
                         else {
-                            nds.defer_update_bg = 360;
+                            nds.defer_update_bg = 60;
                         }
                         break;
                     case VOLDOWN:
@@ -452,7 +457,7 @@ int EventUpdate(void *data)
                             }
                         }
                         else {
-                            nds.defer_update_bg = 360;
+                            nds.defer_update_bg = 60;
                         }
                         break;
 #endif
@@ -464,18 +469,36 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_UP)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
-                            nds.pen.pos = 1;
+                            switch (nds.dis_mode) {
+                            case NDS_DIS_MODE_VH_T0:
+                            case NDS_DIS_MODE_VH_T1:
+                            case NDS_DIS_MODE_S0:
+                            case NDS_DIS_MODE_S1:
+                                break;
+                            default:
+                                nds.pen.pos = 1;
+                                break;
+                            }
                         }
 #endif
                         set_key(MYKEY_UP, 0);
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_DOWN)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
-                            nds.pen.pos = 0;
+                            switch (nds.dis_mode) {
+                            case NDS_DIS_MODE_VH_T0:
+                            case NDS_DIS_MODE_VH_T1:
+                            case NDS_DIS_MODE_S0:
+                            case NDS_DIS_MODE_S1:
+                                break;
+                            default:
+                                nds.pen.pos = 0;
+                                break;
+                            }
                         }
 #endif
                         set_key(MYKEY_DOWN, 0);
@@ -499,14 +522,6 @@ int EventUpdate(void *data)
 
                             if (evt.mode == MMIYOO_MOUSE_MODE) {
                                 release_all_keys();
-
-                                if ((evt.mouse.x == -1) || (evt.mouse.y == -1)) {
-                                    evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
-                                    evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
-#ifdef MMIYOO
-                                    evt.mouse.y += 120;
-#endif
-                                }
                             }
                             lower_speed = 0;
                         }
@@ -650,8 +665,11 @@ int EventUpdate(void *data)
 
 #ifndef FUNKEYS
                     if (hotkey_mask && hit_hotkey(MYKEY_START)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
                         if (nds.menu.enable == 0) {
+#ifdef QX1000
+                            update_wayland_res(640, 480);
+#endif
                             nds.menu.enable = 1;
                             usleep(100000);
                             handle_menu(-1);
@@ -660,7 +678,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
                         set_key(MYKEY_EXIT, 1);
 #endif
                         set_key(MYKEY_START, 0);
@@ -676,7 +694,7 @@ int EventUpdate(void *data)
                     }
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
                     if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
                         set_key(MYKEY_MENU_ONION, 1);
                         set_key(MYKEY_SELECT, 0);
@@ -718,7 +736,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_L1, 0);
                     }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
                     if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
                         set_key(MYKEY_QSAVE, 1);
                         set_key(MYKEY_R2, 0);
@@ -735,13 +753,6 @@ int EventUpdate(void *data)
 
                             if (evt.mode == MMIYOO_MOUSE_MODE) {
                                 release_all_keys();
-                                if ((evt.mouse.x == -1) || (evt.mouse.y == -1)) {
-                                    evt.mouse.x = (evt.mouse.maxx - evt.mouse.minx) / 2;
-                                    evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
-#ifdef MMIYOO
-                                    evt.mouse.y += 120;
-#endif
-                                }
                             }
                             lower_speed = 0;
                         }
@@ -769,12 +780,10 @@ void MMIYOO_EventInit(void)
 
     pre_keypad_bitmaps = 0;
     memset(&evt, 0, sizeof(evt));
-    evt.mouse.minx = 0;
-    evt.mouse.miny = 0;
     evt.mouse.maxx = 256;
     evt.mouse.maxy = 192;
-    evt.mouse.x = -1;
-    evt.mouse.y = -1;
+    evt.mouse.x = evt.mouse.maxx >> 1;
+    evt.mouse.y = evt.mouse.maxy >> 1;
 
 #ifdef TRIMUI
     cust_key.gpio = NULL;
@@ -794,7 +803,6 @@ void MMIYOO_EventInit(void)
             cust_key.gpio = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
         }
     }
-    evt.mouse.y = (evt.mouse.maxy - evt.mouse.miny) / 2;
 #endif
     evt.mode = MMIYOO_KEYPAD_MODE;
 
@@ -855,7 +863,7 @@ void MMIYOO_PumpEvents(_THIS)
 {
     SDL_SemWait(event_sem);
     if (nds.menu.enable) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
         int cc = 0;
         uint32_t bit = 0;
         uint32_t changed = pre_keypad_bitmaps ^ evt.keypad.bitmaps;
@@ -887,7 +895,7 @@ void MMIYOO_PumpEvents(_THIS)
                     }
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
                     if (cc == MYKEY_MENU) {
                         continue;
                     }
@@ -993,42 +1001,12 @@ void MMIYOO_PumpEvents(_THIS)
             check_mouse_pos();
 
             if(updated){
-                int addx = 0, addy = 0;
-#ifdef MMIYOO
-                if ((evt.mouse.minx == 0) && (evt.mouse.miny == 120)) {
-                    addx = 80;
-                }
-                if ((evt.mouse.minx == 160) && (evt.mouse.miny == 0)) {
-                    addy = 60;
-                }
+                int x = 0;
+                int y = 0;
 
-                switch (nds.dis_mode) {
-                case NDS_DIS_MODE_VH_T0:
-                case NDS_DIS_MODE_VH_T1:
-                //case NDS_DIS_MODE_S0:
-                //case NDS_DIS_MODE_S1:
-                    //addy = -120;
-                    break;
-                }
-
-                if (nds.pen.pos == 0) {
-                    switch (nds.dis_mode) {
-                    case NDS_DIS_MODE_V0:
-                    case NDS_DIS_MODE_V1:
-                    case NDS_DIS_MODE_H0:
-                    case NDS_DIS_MODE_H1:
-                    case NDS_DIS_MODE_VH_S0:
-                    case NDS_DIS_MODE_VH_S1:
-                    case NDS_DIS_MODE_VH_C0:
-                    case NDS_DIS_MODE_VH_C1:
-                    case NDS_DIS_MODE_HH0:
-                    case NDS_DIS_MODE_HH1:
-                        addy = -120;
-                        break;
-                    }
-                }
-#endif
-                SDL_SendMouseMotion(vid.window, 0, 0, evt.mouse.x + addx, evt.mouse.y + addy);
+                x = (evt.mouse.x * 160) / evt.mouse.maxx;
+                y = (evt.mouse.y * 120) / evt.mouse.maxy;
+                SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
             }
 
 #if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)

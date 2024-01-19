@@ -7,7 +7,7 @@
 #include <sys/mman.h>
 
 #ifdef UNITTEST
-    #include "unity_fixture.h"
+#include "unity_fixture.h"
 #endif
 
 #include "detour.h"
@@ -31,7 +31,7 @@ int dtr_fastforward(uint8_t v)
 static int32_t dtr_load_state_index(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only)
 {
     char buf[255] = {0};
-    load_state _func = (load_state)FUN_LOAD_STATE;
+    nds_load_state _func = (nds_load_state)FUN_LOAD_STATE;
 
     sprintf(buf, "%s/%s_%d.dss", states_path, VAR_SYSTEM_GAMECARD_NAME, index);
     _func((void*)VAR_SYSTEM, buf, snapshot_top, snapshot_bottom, snapshot_only);
@@ -40,7 +40,7 @@ static int32_t dtr_load_state_index(void *system, uint32_t index, uint16_t *snap
 static int32_t dtr_save_state_index(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom)
 {
     char buf[255] = {0};
-    save_state _func1 = (save_state)FUN_SAVE_STATE;
+    nds_save_state _func1 = (nds_save_state)FUN_SAVE_STATE;
 
     sprintf(buf, "%s_%d.dss", VAR_SYSTEM_GAMECARD_NAME, index);
     _func1((void*)VAR_SYSTEM, states_path, buf, snapshot_top, snapshot_bottom);
@@ -152,9 +152,9 @@ LAB_08092f94:
 
 int dtr_savestate(int slot)
 {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
     char buf[255] = {0};
-    screen_copy16 _func0 = (screen_copy16)FUN_SCREEN_COPY16;
+    nds_screen_copy16 _func0 = (nds_screen_copy16)FUN_SCREEN_COPY16;
 
     void *d0 = malloc(0x18000);
     void *d1 = malloc(0x18000);
@@ -164,12 +164,12 @@ int dtr_savestate(int slot)
         _func0(d1, 1);
 
         if (is_hooked == 0) {
-            save_state_index _func1 = (save_state_index)FUN_SAVE_STATE_INDEX;
+            nds_save_state_index _func1 = (nds_save_state_index)FUN_SAVE_STATE_INDEX;
 
             _func1((void*)VAR_SYSTEM, slot, d0, d1);
         }
         else {
-            save_state _func1 = (save_state)FUN_SAVE_STATE;
+            nds_save_state _func1 = (nds_save_state)FUN_SAVE_STATE;
 
             sprintf(buf, "%s_%d.dss", VAR_SYSTEM_GAMECARD_NAME, slot);
             _func1((void*)VAR_SYSTEM, states_path, buf, d0, d1);
@@ -184,8 +184,8 @@ int dtr_savestate(int slot)
 #endif
 
 #if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
-    screen_copy16 _func0 = (screen_copy16)FUN_SCREEN_COPY16;
-    save_state_index _func1 = (save_state_index)FUN_SAVE_STATE_INDEX;
+    nds_screen_copy16 _func0 = (nds_screen_copy16)FUN_SCREEN_COPY16;
+    nds_save_state_index _func1 = (nds_save_state_index)FUN_SAVE_STATE_INDEX;
 
     void *d0 = malloc(0x18000);
     void *d1 = malloc(0x18000);
@@ -206,16 +206,16 @@ int dtr_savestate(int slot)
 
 int dtr_loadstate(int slot)
 {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(QX1000)
     char buf[255] = {0};
 
     if (is_hooked == 0) {
-        load_state_index _func = (load_state_index)FUN_LOAD_STATE_INDEX;
+        nds_load_state_index _func = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
 
         _func((void*)VAR_SYSTEM, slot, 0, 0, 0);
     }
     else {
-        load_state _func = (load_state)FUN_LOAD_STATE;
+        nds_load_state _func = (nds_load_state)FUN_LOAD_STATE;
 
         sprintf(buf, "%s/%s_%d.dss", states_path, VAR_SYSTEM_GAMECARD_NAME, slot);
         _func((void*)VAR_SYSTEM, buf, 0, 0, 0);
@@ -223,7 +223,7 @@ int dtr_loadstate(int slot)
 #endif
 
 #if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
-    load_state_index _func = (load_state_index)FUN_LOAD_STATE_INDEX;
+    nds_load_state_index _func = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
 
     _func((void*)VAR_SYSTEM, slot, 0, 0, 0);
 #endif
@@ -231,7 +231,7 @@ int dtr_loadstate(int slot)
 
 int dtr_quit(void)
 {
-    quit _func = (quit)FUN_QUIT;
+    nds_quit _func = (nds_quit)FUN_QUIT;
 
     _func((void*)VAR_SYSTEM);
 }
