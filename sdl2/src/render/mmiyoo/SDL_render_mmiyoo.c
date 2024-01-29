@@ -52,6 +52,13 @@ typedef struct {
 
 extern NDS nds;
 extern int show_fps;
+extern int down_scale;
+
+#ifdef TRIMUI
+extern int need_restore;
+extern int pre_dismode;
+extern int pre_downscale;
+#endif
 
 static void MMIYOO_WindowEvent(SDL_Renderer *renderer, const SDL_WindowEvent *event)
 {
@@ -198,6 +205,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
         }
     }
 #endif
+
     process_drastic_menu();
     return 0;
 }

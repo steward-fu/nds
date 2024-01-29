@@ -127,6 +127,7 @@
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (512 * 384 * 4)
+    #define RELOAD_BG_COUNT         120
 #endif
 
 #ifdef TRIMUI
@@ -137,6 +138,7 @@
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
+    #define RELOAD_BG_COUNT         1
 #endif
 
 #ifdef FUNKEYS
@@ -275,7 +277,6 @@
 #define JSON_NDS_MENU_CURSOR        "menu_cursor"
 #define JSON_NDS_FAST_FORWARD       "fast_forward"
 
-#define RELOAD_BG_COUNT             120
 #define DEF_LANG_SLOT               0
 #define DEF_LANG_LANG               "english"
 #define LANG_FILE_LEN               16

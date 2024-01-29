@@ -101,6 +101,10 @@ static uint32_t LUT_256x192_S00_pixel[256 * 192] = {0};
 static uint32_t LUT_256x192_S01_pixel[256 * 192] = {0};
 static uint32_t LUT_256x192_S00_blur[256 * 192] = {0};
 static uint32_t LUT_256x192_S01_blur[256 * 192] = {0};
+
+int need_restore = 0;
+int pre_dismode = 0;
+int pre_downscale = 0;
 #endif
 
 #ifdef QX1000
@@ -1409,12 +1413,6 @@ static int process_screen(void)
     static int pre_hres_mode = NDS_DIS_MODE_HRES0;
     static char show_info_buf[MAX_PATH << 1] = {0};
 
-#ifdef TRIMUI
-    static int need_restore = 0;
-    static int pre_dismode = 0;
-    static int pre_downscale = 0;
-#endif
-
     int idx = 0;
     int screen_cnt = 0;
     char buf[MAX_PATH] = {0};
@@ -1594,6 +1592,8 @@ static int process_screen(void)
         }
 
 #if defined(QX1000)
+#elif defined(TRIMUI)
+#elif defined(PANDORA)
 #elif defined(MMIYOO)
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
@@ -2953,6 +2953,7 @@ void GFX_Init(void)
     int oy = 24;
     int bx = 16;
     int by = 8;
+    int cc = 0;
     uint32_t *dst = NULL;
 #endif
 
@@ -4367,10 +4368,10 @@ void GFX_Flip(void)
 #endif
 
 #ifdef PANDORA
-    //int arg = 0;
+    int arg = 0;
 
     ioctl(gfx.fb_dev[1], FBIOPAN_DISPLAY, &gfx.vinfo);
-    //ioctl(gfx.fb_dev[1], FBIO_WAITFORVSYNC, &arg);
+    ioctl(gfx.fb_dev[1], FBIO_WAITFORVSYNC, &arg);
     gfx.vinfo.yoffset ^= FB_H;
 #endif
 
@@ -4582,17 +4583,7 @@ int reload_menu(void)
 #endif
 
 #ifdef TRIMUI
-    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
-    t = IMG_Load(buf);
-    if (t) {
-        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
-        nds.menu.drastic.cursor = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
-        if (nds.menu.drastic.cursor) {
-            SDL_SoftStretch(t, NULL, t, &nrt);
-            SDL_BlitSurface(t, NULL, nds.menu.drastic.cursor, &nrt);
-        }
-        SDL_FreeSurface(t);
-    }
+    nds.menu.drastic.cursor = NULL;
 #endif
 
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
