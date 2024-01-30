@@ -1,5 +1,6 @@
 #!/bin/sh
 echo "$1" > /mnt/drastic/rom.txt
+mkdir -p mnt
 
 if [ -f "/lib/ld-linux-armhf.so.3" ]; then
     /mnt/drastic/launch.sh

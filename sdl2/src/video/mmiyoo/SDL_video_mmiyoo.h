@@ -147,6 +147,7 @@
     #define FB_BPP                  2
     #define IMG_W                   640
     #define IMG_H                   480
+    #define RELOAD_BG_COUNT         1
 #endif
 
 #ifdef PANDORA
@@ -155,6 +156,7 @@
     #define FB_BPP                  4
     #define IMG_W                   DEF_FB_W
     #define IMG_H                   DEF_FB_H
+    #define RELOAD_BG_COUNT         1
 #endif
 
 #ifdef QX1000
@@ -165,6 +167,7 @@
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
+    #define RELOAD_BG_COUNT         1
 #endif
 
 #define PREFIX                      "[SDL] "

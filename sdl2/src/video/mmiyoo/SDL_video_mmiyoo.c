@@ -1500,9 +1500,7 @@ static int process_screen(void)
     }
 
     if (show_info_cnt == 0) {
-#if defined(MMIYOO) || defined(PANDORA)
         need_reload_bg = RELOAD_BG_COUNT;
-#endif
         show_info_cnt = -1;
     }
         
@@ -1594,6 +1592,7 @@ static int process_screen(void)
 #if defined(QX1000)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
+#elif defined(FUNKEYS)
 #elif defined(MMIYOO)
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
