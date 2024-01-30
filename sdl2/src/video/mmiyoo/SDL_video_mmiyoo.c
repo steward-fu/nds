@@ -4380,11 +4380,11 @@ void GFX_Flip(void)
 #endif
 
 #ifdef TRIMUI
-    //int r = 0;
+    int r = 0;
 
     gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
     gfx.hw.mem[OVL_V_TOP_LADD0 / 4] = gfx.hw.buf.info.fb.addr[0];
-    //ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
     gfx.fb.flip^= 1;
 #endif
 }
