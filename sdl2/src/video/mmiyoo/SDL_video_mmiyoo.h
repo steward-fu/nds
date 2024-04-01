@@ -249,9 +249,6 @@
 #define NDS_STATE_QLOAD             2
 #define NDS_STATE_FF                4
 
-#define NDS_SCALE_BLUR              0
-#define NDS_SCALE_PIXEL             1
-
 #define JSON_NDS_PEN_XV             "xv"
 #define JSON_NDS_PEN_YV             "yv"
 #define JSON_NDS_PEN_SEL            "pen"
@@ -306,10 +303,6 @@
 #define PEN_YV_DEC                      1000
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
-
-#ifdef TRIMUI
-    #define BLUR_OFFSET                 16
-#endif
 
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;

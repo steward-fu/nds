@@ -557,20 +557,7 @@ int EventUpdate(void *data)
 #endif
 
 #ifdef TRIMUI
-                        switch (nds.dis_mode) {
-                        case NDS_DIS_MODE_S0:
-                            if (down_scale == 1) {
-                                down_scale = 0;
-                            }
-                            else {
-                                nds.dis_mode = NDS_DIS_MODE_S1;
-                            }
-                            break;
-                        case NDS_DIS_MODE_S1:
-                            down_scale = 1;
-                            nds.dis_mode = NDS_DIS_MODE_S0;
-                            break;
-                        }
+                        nds.dis_mode = (nds.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
                         disp_resize();
 #endif
                         set_key(MYKEY_A, 0);
@@ -601,12 +588,12 @@ int EventUpdate(void *data)
                         dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
 
                         if (nds.dis_mode == NDS_DIS_MODE_S0) {
-                            w = down_scale ? FB_H : (FB_H - (BLUR_OFFSET << 1));
-                            h = down_scale ? FB_W : (FB_W - (BLUR_OFFSET << 1));
-                        }
-                        else {
                             w = 192;
                             h = 256;
+                        }
+                        else {
+                            w = FB_H;
+                            h = FB_W;
                         }
                         pitch = FB_H * FB_BPP;
 

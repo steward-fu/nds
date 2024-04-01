@@ -57,7 +57,6 @@ extern int down_scale;
 #ifdef TRIMUI
 extern int need_restore;
 extern int pre_dismode;
-extern int pre_downscale;
 #endif
 
 static void MMIYOO_WindowEvent(SDL_Renderer *renderer, const SDL_WindowEvent *event)
@@ -188,22 +187,9 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     if (nds.dis_mode != NDS_DIS_MODE_S0) {
         need_restore = 1;
         pre_dismode = nds.dis_mode;
-        pre_downscale = down_scale;
-
-        down_scale = 1;
-        nds.dis_mode = NDS_DIS_MODE_S0;
-        disp_resize();
     }
-    else {
-        if (down_scale == 0) {
-            need_restore = 1;
-            pre_dismode = nds.dis_mode;
-            pre_downscale = down_scale;
-
-            down_scale = 1;
-            disp_resize();
-        }
-    }
+    nds.dis_mode = NDS_DIS_MODE_S0;
+    disp_resize();
 #endif
 
     process_drastic_menu();

@@ -95,16 +95,13 @@ static CUST_MENU drastic_menu = {0};
 static char *translate[MAX_LANG_LINE] = {0};
 
 #ifdef TRIMUI
+static uint32_t LUT_256x192_S00[256 * 192] = {0};
+static uint32_t LUT_256x192_S01[256 * 192] = {0};
 static uint32_t LUT_256x192_S10[256 * 192] = {0};
 static uint32_t LUT_256x192_S11[256 * 192] = {0};
-static uint32_t LUT_256x192_S00_pixel[256 * 192] = {0};
-static uint32_t LUT_256x192_S01_pixel[256 * 192] = {0};
-static uint32_t LUT_256x192_S00_blur[256 * 192] = {0};
-static uint32_t LUT_256x192_S01_blur[256 * 192] = {0};
 
 int need_restore = 0;
 int pre_dismode = 0;
-int pre_downscale = 0;
 #endif
 
 #ifdef QX1000
@@ -1789,6 +1786,16 @@ static int process_screen(void)
         if (nds.screen.hres_mode[idx]) {
             break;
         }
+
+#if defined(MMIYOO)
+        if ((nds.dis_mode == NDS_DIS_MODE_S0) || (nds.dis_mode == NDS_DIS_MODE_S1)) {
+            break;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(FUNKEYS)
+        break;
+#endif
     }
 
     if (show_info_cnt > 0) {
@@ -1808,7 +1815,6 @@ static int process_screen(void)
 #ifdef TRIMUI
     if (need_restore) {
         need_restore = 0;
-        down_scale = pre_downscale;
         nds.dis_mode = pre_dismode;
         disp_resize();
     }
@@ -2317,6 +2323,12 @@ static int write_config(void)
         printf(PREFIX"Failed to write settings to json file (%s)\n", nds.cfg.path);
         return -1;
     }
+
+#ifdef TRIMUI
+    if (need_restore) {
+        nds.dis_mode = pre_dismode;
+    }
+#endif
 
     if (nds.dis_mode > NDS_DIS_MODE_LAST) {
         nds.dis_mode = NDS_DIS_MODE_VH_S0;
@@ -2850,16 +2862,13 @@ void disp_resize(void)
     uint32_t args[4] = {0, (uintptr_t)&gfx.hw.buf, 1, 0};
 
     ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
-    if (nds.dis_mode == NDS_DIS_MODE_S1) {
-        gfx.hw.buf.info.fb.crop.width  = (uint64_t)192 << 32;
-        gfx.hw.buf.info.fb.crop.height = (uint64_t)256 << 32;
+    if (nds.dis_mode == NDS_DIS_MODE_S0) {
+        gfx.hw.buf.info.fb.crop.width  = ((uint64_t)FB_H) << 32;
+        gfx.hw.buf.info.fb.crop.height = ((uint64_t)FB_W) << 32;
     }
     else {
-        if (down_scale == 0) {
-            r = BLUR_OFFSET << 1;
-        }
-        gfx.hw.buf.info.fb.crop.width  = (uint64_t)(FB_H - r) << 32;
-        gfx.hw.buf.info.fb.crop.height = (uint64_t)(FB_W - r) << 32;
+        gfx.hw.buf.info.fb.crop.width  = ((uint64_t)192) << 32;
+        gfx.hw.buf.info.fb.crop.height = ((uint64_t)256) << 32;
     }
     ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
     ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
@@ -2950,8 +2959,6 @@ void GFX_Init(void)
     int y = 0;
     int ox = 32;
     int oy = 24;
-    int bx = 16;
-    int by = 8;
     int cc = 0;
     uint32_t *dst = NULL;
 #endif
@@ -3061,14 +3068,12 @@ void GFX_Init(void)
     for (y = 0; y < 192; y++) {
         for (x = 0; x < 256; x++) {
             dst = (uint32_t *)gfx.hw.ion.vadd;
+            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
             LUT_256x192_S10[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
-            LUT_256x192_S00_pixel[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
-            LUT_256x192_S00_blur[cc] = (uint32_t)(dst + ((((256 - 1) - x) + bx) * FB_H) + y + by);
 
             dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H);
+            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
             LUT_256x192_S11[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
-            LUT_256x192_S01_pixel[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
-            LUT_256x192_S01_blur[cc] = (uint32_t)(dst + ((((256 - 1) - x) + bx) * FB_H) + y + by);
             cc+= 1;
         }
     }
@@ -3664,8 +3669,8 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 #ifdef TRIMUI
     int x = 0;
     int y = 0;
-    int ox = 32;
-    int oy = 24;
+    int ox = 0;
+    int oy = 0;
     int sw = srcrect.w;
     int sh = srcrect.h;
     uint32_t *dst = NULL;
@@ -3680,25 +3685,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         return -1;
     }
 
-    if (nds.dis_mode == NDS_DIS_MODE_S1) {
-        ox = 0;
-        oy = 0;
-    }
-    else {
-        if (down_scale == 0) {
-            ox = 16;
-            oy = 8;
-        }
+    if (nds.dis_mode == NDS_DIS_MODE_S0) {
+        ox = 32;
+        oy = 24;
     }
 
     if((srcrect.w == 256) && (srcrect.h == 192)) {
         if (nds.dis_mode == NDS_DIS_MODE_S0) {
-            if (down_scale) {
-                dst = gfx.fb.flip ? LUT_256x192_S01_pixel : LUT_256x192_S00_pixel;
-            }
-            else {
-                dst = gfx.fb.flip ? LUT_256x192_S01_blur : LUT_256x192_S00_blur;
-            }
+            dst = gfx.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
         }
         else {
             dst = gfx.fb.flip ? LUT_256x192_S11 : LUT_256x192_S10;
@@ -4774,27 +4768,21 @@ int reload_bg(void)
     }
     
     if (nds.theme.img) {
-        int ox = 0, oy = 0;
-        int x = 0, y = 0, z = 0;
+        int x = 0;
+        int y = 0;
+        int z = 0;
         uint32_t *dst = NULL;
         uint32_t *src = NULL;
 
-        if (down_scale == 0) {
-            ox = 16;
-            oy = 8;
-        }
-
         ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
         for (z=0; z<2; z++) {
-            src = (uint32_t *)nds.theme.img->pixels + ((oy << 1) * (nds.theme.img->w << 1));
+            src = (uint32_t *)nds.theme.img->pixels;
             dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * z);
-            for (y = 0; y < (FB_H - (oy << 1)); y++) {
-                src+= (ox << 1);
-                for (x = 0; x < (FB_W - (ox << 1)); x++) {
-                    dst[(((FB_W - 1 - (ox << 1)) - x) * FB_H) + y] = *src;
+            for (y = 0; y < FB_H; y++) {
+                for (x = 0; x < FB_W; x++) {
+                    dst[(((FB_W - 1) - x) * FB_H) + y] = *src;
                     src+= 2;
                 }
-                src+= (ox << 1);
                 src+= IMG_W;
             }
         }
