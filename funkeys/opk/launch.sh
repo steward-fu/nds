@@ -2,6 +2,13 @@
 echo "$1" > /mnt/drastic/rom.txt
 mkdir -p mnt
 
+insmod zsmalloc.ko
+insmod zram.ko
+
+echo 128M > /sys/block/zram0/disksize
+mkswap /dev/zram0
+swapon /dev/zram0
+
 if [ -f "/lib/ld-linux-armhf.so.3" ]; then
     /mnt/drastic/launch.sh
 else
@@ -19,3 +26,8 @@ else
     umount mnt/dev
     umount mnt
 fi
+
+swapoff swapon /dev/zram0
+echo 1 > /sys/block/zram0/reset
+rmmod zram.ko
+rmmod zsmalloc.ko
