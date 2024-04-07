@@ -3734,6 +3734,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 
 #ifdef MMIYOO
     int copy_it = 1;
+    int is_dma_buf = 0;
     MI_U16 u16Fence = 0;
     int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
 
@@ -3742,9 +3743,11 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     }
 
     if (pixels == gfx.dup.virAddr[0]) {
+        is_dma_buf = 1;
         MI_SYS_FlushInvCache(gfx.dup.virAddr[0], pitch * srcrect.h);
     }
     else if(pixels == gfx.dup.virAddr[1]) {
+        is_dma_buf = 2;
         MI_SYS_FlushInvCache(gfx.dup.virAddr[1], pitch * srcrect.h);
     }
 
@@ -4252,7 +4255,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     }
 
     if (copy_it) {
-        neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
+        if (is_dma_buf) {
+            gfx.hw.src.surf.phyAddr = gfx.dup.phyAddr[is_dma_buf - 1];
+        }
+        else {
+            neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
+            gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
+            MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
+        }
     }
 
     gfx.hw.opt.u32GlobalSrcConstColor = 0;
@@ -4269,7 +4279,6 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     gfx.hw.src.surf.u32Height = srcrect.h;
     gfx.hw.src.surf.u32Stride = pitch;
     gfx.hw.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
-    gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
 
     gfx.hw.dst.rt.s32Xpos = dstrect.x;
     gfx.hw.dst.rt.s32Ypos = dstrect.y;
@@ -4281,7 +4290,6 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     gfx.hw.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
     gfx.hw.dst.surf.phyAddr = gfx.fb.phyAddr + (FB_W * gfx.vinfo.yoffset * FB_BPP);
 
-    MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
     MI_GFX_BitBlit(&gfx.hw.src.surf, &gfx.hw.src.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
     MI_GFX_WaitAllDone(FALSE, u16Fence);
 
