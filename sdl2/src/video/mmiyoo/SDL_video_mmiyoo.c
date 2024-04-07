@@ -76,7 +76,7 @@ int LINE_H = 0;
 int TMP_SIZE = 0;
 int FONT_SIZE = 0;
 int show_fps = 0;
-int down_scale = 0;
+int pixel_filter = 0;
 int savestate_busy = 0;
 SDL_Surface *fps_info = NULL;
 
@@ -428,9 +428,9 @@ static void* sdl_malloc(size_t size)
     uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
-        (size == (NDS_HiW * NDS_HiH * bpp)))
+        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
     {
-        r = gfx.dup.virAddr[idx];
+        r = gfx.lcd.virAddr[idx];
         idx += 1;
         idx %= 2;
     }
@@ -442,7 +442,7 @@ static void* sdl_malloc(size_t size)
 
 static void sdl_free(void *ptr)
 {
-    if ((ptr != gfx.dup.virAddr[0]) && (ptr != gfx.dup.virAddr[1])) {
+    if ((ptr != gfx.lcd.virAddr[0]) && (ptr != gfx.lcd.virAddr[1])) {
         free(ptr);
     }
 }
@@ -453,7 +453,7 @@ static void* sdl_realloc(void *ptr, size_t size)
     uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
-        (size == (NDS_HiW * NDS_HiH * bpp)))
+        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
     {
         r = sdl_malloc(size);
     }
@@ -609,7 +609,7 @@ static int draw_drastic_menu_main(void)
             y = h + (8 * w);
             strcpy(buf, to_lang("Return to game"));
         }
-        else if (p->y == NDS_HiH) {
+        else if (p->y == NDS_Hx2) {
             draw = 1;
             y = h + (9 * w);
             strcpy(buf, to_lang("Exit DraStic"));
@@ -838,7 +838,7 @@ static int draw_drastic_menu_option(void)
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
             }
 
-            if (p->y <= NDS_HiH) {
+            if (p->y <= NDS_Hx2) {
                 strcpy(buf, to_lang(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
                 draw_info(nds.menu.drastic.main, buf, FB_W - w - (ww / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
@@ -978,7 +978,7 @@ static int draw_drastic_menu_controller2(void)
 
     cursor = 0;
     for (cc=0; cc<drastic_menu.cnt;) {
-        if ((drastic_menu.item[cc].y >= 240) && (drastic_menu.item[cc].y <= NDS_HiH)) {
+        if ((drastic_menu.item[cc].y >= 240) && (drastic_menu.item[cc].y <= NDS_Hx2)) {
             if ((drastic_menu.item[cc + 1].bg > 0) || (drastic_menu.item[cc + 2].bg > 0)) {
                 break;
             }
@@ -1019,7 +1019,7 @@ static int draw_drastic_menu_controller2(void)
         if ((cnt >= s0) && (cnt < s1)) {
             y = (25 / div) + ((cnt - s0) * w);
 
-            if ((p->y >= 240) && (p->y <= NDS_HiH)) {
+            if ((p->y >= 240) && (p->y <= NDS_Hx2)) {
                 if (drastic_menu.item[cc + 1].bg || drastic_menu.item[cc + 2].bg) {
                     int sum = drastic_menu.item[cc + 1].bg + drastic_menu.item[cc + 2].bg;
                     uint32_t c = sum > 500 ? 0xff0000 : nds.menu.c2;
@@ -1031,7 +1031,7 @@ static int draw_drastic_menu_controller2(void)
                     SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff));
                 }
                 draw_info(nds.menu.drastic.main, p->msg, 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
-                if ((p->y >= 240) && (p->y <= NDS_HiH)) {
+                if ((p->y >= 240) && (p->y <= NDS_Hx2)) {
                     if (nds.enable_752x560) {
                         draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 320 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
                         draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 550 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
@@ -1056,7 +1056,7 @@ static int draw_drastic_menu_controller2(void)
         }
 
         cnt+= 1;
-        if ((p->y >= 240) && (p->y <= NDS_HiH)) {
+        if ((p->y >= 240) && (p->y <= NDS_Hx2)) {
             cc+= 2;
         }
     }
@@ -1405,7 +1405,7 @@ static int process_screen(void)
     static int cur_dis_mode = 0;
     static int cur_touchpad = 0;
     static int cur_theme_sel = 0;
-    static int cur_down_scale = 0;
+    static int cur_pixel_filter = 0;
     static int pre_dis_mode = NDS_DIS_MODE_VH_S0;
     static int pre_hres_mode = NDS_DIS_MODE_HRES0;
     static char show_info_buf[MAX_PATH << 1] = {0};
@@ -1447,7 +1447,7 @@ static int process_screen(void)
         (cur_touchpad != nds.pen.pos) ||
         (cur_dis_mode != nds.dis_mode) ||
         (cur_theme_sel != nds.theme.sel) ||
-        (cur_down_scale != down_scale) ||
+        (cur_pixel_filter != pixel_filter) ||
         (cur_volume != nds.volume))
     {
         if (cur_fb_w != FB_W) {
@@ -1477,9 +1477,9 @@ static int process_screen(void)
                 sprintf(show_info_buf, " %s %s ", to_lang("Wallpaper"), to_lang("None"));
             }
         }
-        else if (cur_down_scale != down_scale) {
+        else if (cur_pixel_filter != pixel_filter) {
             show_info_cnt = 50;
-            sprintf(show_info_buf, " %s ", to_lang(down_scale ? "Pixel" : "Blur"));
+            sprintf(show_info_buf, " %s ", to_lang(pixel_filter ? "Pixel" : "Blur"));
         }
         else if (nds.shot.take) {
             show_info_cnt = 50;
@@ -1492,7 +1492,7 @@ static int process_screen(void)
         cur_volume = nds.volume;
         cur_dis_mode = nds.dis_mode;
         cur_touchpad = nds.pen.pos;
-        cur_down_scale = down_scale;
+        cur_pixel_filter = pixel_filter;
         need_reload_bg = RELOAD_BG_COUNT;
     }
 
@@ -1549,29 +1549,30 @@ static int process_screen(void)
             *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
 
 #ifndef MMIYOO
-        nds.screen.pixels[idx] = idx ?
-            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS)):
-            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS));
+        nds.screen.pixels[idx] = (idx == 0) ?
+            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
+            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS));
 #endif
 
-        nds.screen.pitch[idx] = (nds.screen.hres_mode[idx] * nds.screen.bpp * 0x100) + (nds.screen.bpp * 0x100);
-
         if (nds.screen.hres_mode[idx]) {
-            srt.w = NDS_HiW;
-            srt.h = NDS_HiH;
+            srt.w = NDS_Wx2;
+            srt.h = NDS_Hx2;
+            nds.screen.pitch[idx] = nds.screen.bpp * srt.w;
             if (nds.hres_mode == 0) {
                 nds.pen.pos = 0;
                 nds.hres_mode = 1;
                 pre_dis_mode = nds.dis_mode;
                 nds.dis_mode = pre_hres_mode;
 #ifdef QX1000
-                update_wayland_res(NDS_HiW, NDS_HiH);
+                update_wayland_res(NDS_Wx2, NDS_Hx2);
 #endif
             }
         }
         else {
             srt.w = NDS_W;
             srt.h = NDS_H;
+            nds.screen.pitch[idx] = nds.screen.bpp * srt.w;
+
             drt.y = idx * 120;
             screen0 = (idx == 0);
             screen1 = (idx != 0);
@@ -1736,8 +1737,8 @@ static int process_screen(void)
             rotate = (nds.dis_mode == NDS_DIS_MODE_HH0) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
             break;
         case NDS_DIS_MODE_HRES0:
-            drt.w = NDS_HiW;
-            drt.h = NDS_HiH;
+            drt.w = NDS_Wx2;
+            drt.h = NDS_Hx2;
             drt.x = (FB_W - drt.w) / 2;
             drt.y = (FB_H - drt.h) / 2;
             break;
@@ -1761,6 +1762,7 @@ static int process_screen(void)
 #ifdef MMIYOO
             MI_SYS_FlushInvCache(nds.screen.pixels[idx], nds.screen.pitch[idx] * srt.h);
 #endif
+
             GFX_Copy(nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
 
 #ifdef MMIYOO
@@ -2854,9 +2856,9 @@ int fb_init(void)
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
 
     for (cc = 0; cc < 2; cc++) {
-        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.dup.phyAddr[cc]);
-        MI_SYS_Mmap(gfx.dup.phyAddr[cc], TMP_SIZE, &gfx.dup.virAddr[cc], TRUE);
-        nds.screen.pixels[cc] = gfx.dup.virAddr[cc];
+        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[cc]);
+        MI_SYS_Mmap(gfx.lcd.phyAddr[cc], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[cc], TRUE);
+        nds.screen.pixels[cc] = gfx.lcd.virAddr[cc];
     }
 #endif
     return 0;
@@ -2876,8 +2878,8 @@ int fb_quit(void)
     MI_SYS_MMA_Free(gfx.overlay.phyAddr);
 
     for (cc = 0; cc < 2; cc++) {
-        MI_SYS_Munmap(gfx.dup.virAddr[cc], SCREEN_DMA_SIZE);
-        MI_SYS_MMA_Free(gfx.dup.phyAddr[cc]);
+        MI_SYS_Munmap(gfx.lcd.virAddr[cc], SCREEN_DMA_SIZE);
+        MI_SYS_MMA_Free(gfx.lcd.phyAddr[cc]);
     }
 
     MI_GFX_Close();
@@ -3044,10 +3046,13 @@ void GFX_Quit(void)
 void GFX_Clear(void)
 {
 #if defined(MMIYOO) && !defined(UNITTEST)
+    int cc = 0;
+
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
-    MI_SYS_MemsetPa(gfx.dup.phyAddr[0], 0, TMP_SIZE);
-    MI_SYS_MemsetPa(gfx.dup.phyAddr[1], 0, TMP_SIZE);
+    for (cc = 0; cc < 2; cc++) {
+        MI_SYS_MemsetPa(gfx.lcd.phyAddr[cc], 0, SCREEN_DMA_SIZE);
+    }
 #endif
 }
 
@@ -3073,9 +3078,9 @@ int draw_pen(void *pixels, int width, int pitch)
         is_565 = 1;
     }
 
-    if (width == NDS_HiW) {
-        sw = NDS_HiW;
-        sh = NDS_HiH;
+    if (width == NDS_Wx2) {
+        sw = NDS_Wx2;
+        sh = NDS_Hx2;
         scale = 2;
     }
 
@@ -3196,7 +3201,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 
         if (dstrect.y == 0) {
             dst += 16;
-            dst += (((FB_H - NDS_HiH) >> 1) * FB_W);
+            dst += (((FB_H - NDS_Hx2) >> 1) * FB_W);
             asm volatile (
                 "0:  add r8, %1, %2         ;"
                 "1:  vldmia %0!, {q0-q3}    ;"
@@ -3742,13 +3747,11 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         return -1;
     }
 
-    if (pixels == gfx.dup.virAddr[0]) {
+    if (pixels == gfx.lcd.virAddr[0]) {
         is_dma_buf = 1;
-        MI_SYS_FlushInvCache(gfx.dup.virAddr[0], pitch * srcrect.h);
     }
-    else if(pixels == gfx.dup.virAddr[1]) {
+    else if(pixels == gfx.lcd.virAddr[1]) {
         is_dma_buf = 2;
-        MI_SYS_FlushInvCache(gfx.dup.virAddr[1], pitch * srcrect.h);
     }
 
     if (alpha != 0) {
@@ -3893,17 +3896,13 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         }
     }
 
-    if (copy_it && down_scale) {
+    if (copy_it && pixel_filter) {
         do {
             if (nds.hres_mode != 0) {
                 break;
             }
 
             if ((srcrect.w != NDS_W) || (srcrect.h != NDS_H)) {
-                break;
-            }
-
-            if (dstrect.w < (NDS_W << 1)) {
                 break;
             }
 
@@ -4218,14 +4217,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                     "    subs %3, #1            ;"
                     "    bne 0b                 ;"
                     :
-                    : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(NDS_HiW * 4), "r"(NDS_H)
+                    : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(NDS_Wx2 * 4), "r"(NDS_H)
                     : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
                 );
                 copy_it = 0;
                 srcrect.x = 0;
                 srcrect.y = 0;
-                srcrect.w = NDS_HiW;
-                srcrect.h = NDS_HiH;
+                srcrect.w = NDS_Wx2;
+                srcrect.h = NDS_Hx2;
                 pitch = srcrect.w * 4;
             }
             else {
@@ -4241,14 +4240,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                         *d++ = *s1++;
                     }
                     neon_memcpy(d, s0, 1024);
-                    d+= NDS_HiW;
+                    d+= NDS_Wx2;
                 }
 
                 copy_it = 0;
                 srcrect.x = 0;
                 srcrect.y = 0;
-                srcrect.w = NDS_HiW;
-                srcrect.h = NDS_HiH;
+                srcrect.w = NDS_Wx2;
+                srcrect.h = NDS_Hx2;
                 pitch = srcrect.w * 2;
             }
         } while(0);
@@ -4256,13 +4255,17 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 
     if (copy_it) {
         if (is_dma_buf) {
-            gfx.hw.src.surf.phyAddr = gfx.dup.phyAddr[is_dma_buf - 1];
+            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[is_dma_buf - 1];
         }
         else {
             neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
             gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
             MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
         }
+    }
+    else {
+        gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
+        MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
     }
 
     gfx.hw.opt.u32GlobalSrcConstColor = 0;
@@ -4293,7 +4296,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     MI_GFX_BitBlit(&gfx.hw.src.surf, &gfx.hw.src.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
     MI_GFX_WaitAllDone(FALSE, u16Fence);
 
-    if ((nds.menu.enable == 0) && (srcrect.w != 800) && ((srcrect.w == NDS_W) || (srcrect.w == NDS_HiW)) && (nds.overlay.sel < nds.overlay.max)) {
+    if ((nds.menu.enable == 0) && (srcrect.w != 800) && ((srcrect.w == NDS_W) || (srcrect.w == NDS_Wx2)) && (nds.overlay.sel < nds.overlay.max)) {
         gfx.hw.src.rt.s32Xpos = 0;
         gfx.hw.src.rt.s32Ypos = 0;
         gfx.hw.src.rt.u32Width = FB_W;
@@ -4830,11 +4833,11 @@ int reload_bg(void)
 
                     r0.x = 16 - 1;
                     r0.y = 48 - 1;
-                    r0.w = NDS_HiW + 2;
-                    r0.h = NDS_HiH + 2;
+                    r0.w = NDS_Wx2 + 2;
+                    r0.h = NDS_Hx2 + 2;
                     SDL_FillRect(nds.theme.img, &r0, SDL_MapRGB(nds.theme.img->format, 0, 0, 0));
 
-                    r0.x = (NDS_HiW + 16) - 0;
+                    r0.x = (NDS_Wx2 + 16) - 0;
                     r0.y = ((FB_H - NDS_H) >> 1) - 1;
                     r0.w = NDS_W + 2;
                     r0.h = NDS_H + 2;

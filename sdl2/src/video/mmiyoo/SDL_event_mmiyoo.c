@@ -145,7 +145,7 @@ MMIYOO_EventInfo evt = {0};
 extern GFX gfx;
 extern NDS nds;
 extern MMIYOO_VideoInfo vid;
-extern int down_scale;
+extern int pixel_filter;
 
 static int running = 0;
 static int event_fd = -1;
@@ -565,7 +565,7 @@ int EventUpdate(void *data)
 
                     if (hotkey_mask && hit_hotkey(MYKEY_B)) {
 #ifdef MMIYOO
-                        down_scale = down_scale ? 0 : 1;
+                        pixel_filter = pixel_filter ? 0 : 1;
 #endif
                         set_key(MYKEY_B, 0);
                     }

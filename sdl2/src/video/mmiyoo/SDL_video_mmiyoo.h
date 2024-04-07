@@ -118,8 +118,8 @@
 
 #define NDS_W                       256
 #define NDS_H                       192
-#define NDS_HiW                     512
-#define NDS_HiH                     384
+#define NDS_Wx2                     (NDS_W << 1)
+#define NDS_Hx2                     (NDS_H << 1)
 
 #ifndef MAX_PATH
     #define MAX_PATH                128
@@ -131,15 +131,15 @@
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_HiW * NDS_HiH * 4)
+    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define RELOAD_BG_COUNT         120
 #endif
 
 #ifdef TRIMUI
     #define DEF_FB_W                320
     #define DEF_FB_H                240
-    #define ION_W                   NDS_HiW
-    #define ION_H                   NDS_HiH
+    #define ION_W                   NDS_Wx2
+    #define ION_H                   NDS_Hx2
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
@@ -346,7 +346,7 @@ typedef struct _GFX {
     struct {
         void *virAddr[2];
         MI_PHY phyAddr[2];
-    } dup;
+    } lcd;
 #endif
 
     struct _HW {

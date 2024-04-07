@@ -52,7 +52,6 @@ typedef struct {
 
 extern NDS nds;
 extern int show_fps;
-extern int down_scale;
 
 #ifdef TRIMUI
 extern int need_restore;
