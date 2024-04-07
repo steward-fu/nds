@@ -106,6 +106,73 @@ static int pcm_buf_len = 0;
 static uint8_t *pcm_buf = NULL;
 static struct json_object *jfile = NULL;
 
+static int16_t *adpcm_step_table = (int16_t *)VAR_ADPCM_STEP_TABLE;
+static int8_t *adpcm_index_step_table = (int8_t *)VAR_ADPCM_INDEX_STEP_TABLE;
+
+void snd_spu_adpcm_decode_block(spu_channel_struct *channel)
+{
+    uint32_t uVar1;
+    uint32_t current_index;
+    uint32_t adpcm_data_x8;
+    uint32_t uVar2;
+    uint32_t uVar3;
+    uint32_t adpcm_cache_block_offset;
+    uint32_t sample_delta;
+    uint32_t uVar4;
+    int32_t sample;
+    uint32_t adpcm_step;
+    uint32_t uVar5;
+    int16_t *psVar6;
+    int16_t *psVar7;
+
+    uVar3 = channel->adpcm_cache_block_offset;
+    uVar1 = (uint32_t)channel->adpcm_current_index;
+    sample_delta = (uint32_t)channel->adpcm_sample;
+    uVar2 = *(uint32_t *)(channel->samples + (uVar3 >> 1));
+    channel->adpcm_cache_block_offset = uVar3 + 8;
+    psVar7 = channel->adpcm_sample_cache + (uVar3 & 0x3f);
+    do {
+        uVar5 = (uint32_t)adpcm_step_table[uVar1];
+        uVar4 = uVar5 >> 3;
+        if ((uVar2 & 1) != 0) {
+            uVar4 = uVar4 + (uVar5 >> 2);
+        }
+        if ((uVar2 & 2) != 0) {
+            uVar4 = uVar4 + (uVar5 >> 1);
+        }
+        if ((uVar2 & 4) != 0) {
+            uVar4 = uVar4 + uVar5;
+        }
+        if ((uVar2 & 8) == 0) {
+            sample_delta = sample_delta - uVar4;
+            if ((int)sample_delta < -0x7fff) {
+                sample_delta = 0xffff8001;
+            }
+        }
+        else {
+            sample_delta = sample_delta + uVar4;
+            if (0x7ffe < (int)sample_delta) {
+                sample_delta = 0x7fff;
+            }
+        }
+        uVar1 = uVar1 + (int)adpcm_index_step_table[uVar2 & 7];
+        if (0x58 < uVar1) {
+            if ((int)uVar1 < 0) {
+                uVar1 = 0;
+            }
+            else {
+                uVar1 = 0x58;
+            }
+        }
+        uVar2 = uVar2 >> 4;
+        psVar6 = psVar7 + 1;
+        *psVar7 = (int16_t)sample_delta;
+        psVar7 = psVar6;
+    } while (channel->adpcm_sample_cache + (uVar3 & 0x3f) + 8 != psVar6);
+    channel->adpcm_sample = (int16_t)sample_delta;
+    channel->adpcm_current_index = (uint8_t)uVar1;
+}
+
 #ifdef QX1000
 static void context_state_cb(pa_context *context, void *userdata)
 {
@@ -646,6 +713,9 @@ int snd_pcm_start(snd_pcm_t *pcm)
 
     pa_threaded_mainloop_unlock(pa.mainloop);
 #endif
+
+    detour_hook(FUN_SPU_ADPCM_DECODE_BLOCK, (intptr_t)snd_spu_adpcm_decode_block);
+    printf(PREFIX"Enabled spu hooking\n");
 
     pcm_ready = 1;
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);
