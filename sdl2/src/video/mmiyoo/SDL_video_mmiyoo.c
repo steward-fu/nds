@@ -76,7 +76,7 @@ int LINE_H = 0;
 int TMP_SIZE = 0;
 int FONT_SIZE = 0;
 int show_fps = 0;
-int down_scale = 1;
+int down_scale = 0;
 int savestate_busy = 0;
 SDL_Surface *fps_info = NULL;
 
@@ -1786,16 +1786,6 @@ static int process_screen(void)
         if (nds.screen.hres_mode[idx]) {
             break;
         }
-
-#if defined(MMIYOO)
-        if ((nds.dis_mode == NDS_DIS_MODE_S0) || (nds.dis_mode == NDS_DIS_MODE_S1)) {
-            break;
-        }
-#endif
-
-#if defined(TRIMUI) || defined(FUNKEYS)
-        break;
-#endif
     }
 
     if (show_info_cnt > 0) {
@@ -3907,6 +3897,10 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             }
 
             if ((srcrect.w != NDS_W) || (srcrect.h != NDS_H)) {
+                break;
+            }
+
+            if (dstrect.w < (NDS_W << 1)) {
                 break;
             }
 

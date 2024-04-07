@@ -565,7 +565,16 @@ int EventUpdate(void *data)
 
                     if (hotkey_mask && hit_hotkey(MYKEY_B)) {
 #ifdef MMIYOO
-                        down_scale = down_scale ? 0 : 1;
+                        switch (nds.dis_mode) {
+                            case NDS_DIS_MODE_VH_T0:
+                            case NDS_DIS_MODE_VH_T1:
+                            case NDS_DIS_MODE_S0:
+                            case NDS_DIS_MODE_S1:
+                            case NDS_DIS_MODE_HRES0:
+                            case NDS_DIS_MODE_HRES1:
+                                down_scale = down_scale ? 0 : 1;
+                            break;
+                        }
 #endif
                         set_key(MYKEY_B, 0);
                     }
