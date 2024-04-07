@@ -430,7 +430,7 @@ static void* sdl_malloc(size_t size)
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_HiW * NDS_HiH * bpp)))
     {
-        r = nds.screen.dma.virAddr[idx];
+        r = gfx.dup.virAddr[idx];
         idx += 1;
         idx %= 2;
     }
@@ -442,7 +442,7 @@ static void* sdl_malloc(size_t size)
 
 static void sdl_free(void *ptr)
 {
-    if ((ptr != nds.screen.dma.virAddr[0]) && (ptr != nds.screen.dma.virAddr[1])) {
+    if ((ptr != gfx.dup.virAddr[0]) && (ptr != gfx.dup.virAddr[1])) {
         free(ptr);
     }
 }
@@ -1841,45 +1841,6 @@ void sdl_update_screen(void)
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
-#ifdef MMIYOO
-        int cc = 0;
-        int cnt = 2;
-        uint8_t hres = *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
-        uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
-        uint32_t w = hres ? NDS_HiW : NDS_W;
-        uint32_t h = hres ? NDS_HiH : NDS_H;
-        uint32_t pitch = (hres * bpp * 0x100) + (bpp * 0x100);
-        uint32_t color = ((pitch / w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888);
-
-        MI_U16 u16Fence = 0;
-        MI_GFX_Opt_t opt = {0};
-        MI_GFX_Rect_t srt = {0};
-        MI_GFX_Rect_t drt = {0};
-        MI_GFX_Surface_t ssurf = {0};
-        MI_GFX_Surface_t dsurf = {0};
-
-        opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
-
-        ssurf.u32Width = srt.u32Width = w;
-        ssurf.u32Height = srt.u32Height = h;
-        ssurf.u32Stride = pitch;
-        ssurf.eColorFmt = color;
-
-        dsurf.u32Width = drt.u32Width = w;
-        dsurf.u32Height = drt.u32Height = h;
-        dsurf.u32Stride = pitch;
-        dsurf.eColorFmt = color;
-
-        cnt = hres ? 1 : 2;
-        for (cc = 0; cc < cnt; cc++) {
-            ssurf.phyAddr = nds.screen.dma.phyAddr[cc];
-            dsurf.phyAddr = gfx.dup.phyAddr + (cc * h * pitch);
-
-            MI_SYS_FlushInvCache(nds.screen.dma.virAddr[cc], pitch * h);
-            MI_GFX_BitBlit(&ssurf, &srt, &dsurf, &drt, &opt, &u16Fence);
-            MI_GFX_WaitAllDone(FALSE, u16Fence);
-        }
-#endif
         nds.update_screen = 1;
     }
 }
@@ -2896,9 +2857,6 @@ int fb_init(void)
     MI_SYS_Mmap(gfx.fb.phyAddr, gfx.finfo.smem_len, &gfx.fb.virAddr, TRUE);
     memset(&gfx.hw.opt, 0, sizeof(gfx.hw.opt));
 
-    MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.dup.phyAddr);
-    MI_SYS_Mmap(gfx.dup.phyAddr, TMP_SIZE, &gfx.dup.virAddr, TRUE);
-
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.tmp.phyAddr);
     MI_SYS_Mmap(gfx.tmp.phyAddr, TMP_SIZE, &gfx.tmp.virAddr, TRUE);
 
@@ -2906,12 +2864,10 @@ int fb_init(void)
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
 
     for (cc = 0; cc < 2; cc++) {
-        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &nds.screen.dma.phyAddr[cc]);
-        MI_SYS_Mmap(nds.screen.dma.phyAddr[cc], SCREEN_DMA_SIZE, &nds.screen.dma.virAddr[cc], TRUE);
+        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.dup.phyAddr[cc]);
+        MI_SYS_Mmap(gfx.dup.phyAddr[cc], TMP_SIZE, &gfx.dup.virAddr[cc], TRUE);
+        nds.screen.pixels[cc] = gfx.dup.virAddr[cc];
     }
-
-    nds.screen.pixels[0] = gfx.dup.virAddr;
-    nds.screen.pixels[1] = nds.screen.pixels[0] + (NDS_W * NDS_H);
 #endif
     return 0;
 }
@@ -2923,9 +2879,6 @@ int fb_quit(void)
 
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
 
-    MI_SYS_Munmap(gfx.dup.virAddr, TMP_SIZE);
-    MI_SYS_MMA_Free(gfx.dup.phyAddr);
-
     MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.tmp.phyAddr);
 
@@ -2933,8 +2886,8 @@ int fb_quit(void)
     MI_SYS_MMA_Free(gfx.overlay.phyAddr);
 
     for (cc = 0; cc < 2; cc++) {
-        MI_SYS_Munmap(nds.screen.dma.virAddr[cc], SCREEN_DMA_SIZE);
-        MI_SYS_MMA_Free(nds.screen.dma.phyAddr[cc]);
+        MI_SYS_Munmap(gfx.dup.virAddr[cc], SCREEN_DMA_SIZE);
+        MI_SYS_MMA_Free(gfx.dup.phyAddr[cc]);
     }
 
     MI_GFX_Close();
@@ -3103,7 +3056,8 @@ void GFX_Clear(void)
 #if defined(MMIYOO) && !defined(UNITTEST)
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
-    MI_SYS_MemsetPa(gfx.dup.phyAddr, 0, TMP_SIZE);
+    MI_SYS_MemsetPa(gfx.dup.phyAddr[0], 0, TMP_SIZE);
+    MI_SYS_MemsetPa(gfx.dup.phyAddr[1], 0, TMP_SIZE);
 #endif
 }
 
@@ -3795,6 +3749,13 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 
     if (pixels == NULL) {
         return -1;
+    }
+
+    if (pixels == gfx.dup.virAddr[0]) {
+        MI_SYS_FlushInvCache(gfx.dup.virAddr[0], pitch * srcrect.h);
+    }
+    else if(pixels == gfx.dup.virAddr[1]) {
+        MI_SYS_FlushInvCache(gfx.dup.virAddr[1], pitch * srcrect.h);
     }
 
     if (alpha != 0) {

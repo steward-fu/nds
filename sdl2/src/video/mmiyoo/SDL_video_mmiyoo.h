@@ -331,7 +331,7 @@ typedef struct _GFX {
     struct fb_var_screeninfo vinfo;
     struct fb_fix_screeninfo finfo;
 
-    struct _DMA {
+    struct {
 #ifdef MMIYOO
         void *virAddr;
         MI_PHY phyAddr;
@@ -340,7 +340,14 @@ typedef struct _GFX {
 #ifdef TRIMUI
         int flip;
 #endif
-    } fb, tmp, overlay, dup;
+    } fb, tmp, overlay;
+
+#ifdef MMIYOO
+    struct {
+        void *virAddr[2];
+        MI_PHY phyAddr[2];
+    } dup;
+#endif
 
     struct _HW {
 #ifdef MMIYOO
@@ -395,13 +402,6 @@ typedef struct _NDS {
         uint32_t pitch[2];
         uint32_t *pixels[2];
         uint8_t hres_mode[2];
-#ifdef MMIYOO
-        struct _NDMA {
-            size_t size;
-            void *virAddr[2];
-            MI_PHY phyAddr[2];
-        } dma;
-#endif
     } screen;
 
     struct _BIOS {
