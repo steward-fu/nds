@@ -116,6 +116,11 @@
     };
 #endif
 
+#define NDS_W                       256
+#define NDS_H                       192
+#define NDS_HiW                     512
+#define NDS_HiH                     384
+
 #ifndef MAX_PATH
     #define MAX_PATH                128
 #endif
@@ -126,15 +131,15 @@
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (512 * 384 * 4)
+    #define SCREEN_DMA_SIZE         (NDS_HiW * NDS_HiH * 4)
     #define RELOAD_BG_COUNT         120
 #endif
 
 #ifdef TRIMUI
     #define DEF_FB_W                320
     #define DEF_FB_H                240
-    #define ION_W                   512
-    #define ION_H                   384
+    #define ION_W                   NDS_HiW
+    #define ION_H                   NDS_HiH
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
@@ -162,8 +167,8 @@
 #ifdef QX1000
     #define LCD_W                   1080
     #define LCD_H                   2160
-    #define DEF_FB_W                512
-    #define DEF_FB_H                192
+    #define DEF_FB_W                (NDS_W * 2)
+    #define DEF_FB_H                NDS_H
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480

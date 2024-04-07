@@ -95,10 +95,10 @@ static CUST_MENU drastic_menu = {0};
 static char *translate[MAX_LANG_LINE] = {0};
 
 #ifdef TRIMUI
-static uint32_t LUT_256x192_S00[256 * 192] = {0};
-static uint32_t LUT_256x192_S01[256 * 192] = {0};
-static uint32_t LUT_256x192_S10[256 * 192] = {0};
-static uint32_t LUT_256x192_S11[256 * 192] = {0};
+static uint32_t LUT_256x192_S00[NDS_W * NDS_H] = {0};
+static uint32_t LUT_256x192_S01[NDS_W * NDS_H] = {0};
+static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = {0};
+static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = {0};
 
 int need_restore = 0;
 int pre_dismode = 0;
@@ -427,8 +427,8 @@ static void* sdl_malloc(size_t size)
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
 
-    if ((size == (256 * 192 * bpp)) ||
-        (size == (512 * 384 * bpp)))
+    if ((size == (NDS_W * NDS_H * bpp)) ||
+        (size == (NDS_HiW * NDS_HiH * bpp)))
     {
         r = nds.screen.dma.virAddr[idx];
         idx += 1;
@@ -452,8 +452,8 @@ static void* sdl_realloc(void *ptr, size_t size)
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
 
-    if ((size == (256 * 192 * bpp)) ||
-        (size == (512 * 384 * bpp)))
+    if ((size == (NDS_W * NDS_H * bpp)) ||
+        (size == (NDS_HiW * NDS_HiH * bpp)))
     {
         r = sdl_malloc(size);
     }
@@ -609,7 +609,7 @@ static int draw_drastic_menu_main(void)
             y = h + (8 * w);
             strcpy(buf, to_lang("Return to game"));
         }
-        else if (p->y == 384) {
+        else if (p->y == NDS_HiH) {
             draw = 1;
             y = h + (9 * w);
             strcpy(buf, to_lang("Exit DraStic"));
@@ -664,7 +664,7 @@ static int draw_drastic_menu_main(void)
     draw_info(nds.menu.drastic.main, buf, 10, y / div, nds.menu.c1, 0);
 
     if (draw_shot) {
-        const uint32_t len = 256 * 192 * 2;
+        const uint32_t len = NDS_W * NDS_H * 2;
         uint16_t *top = malloc(len);
         uint16_t *bottom = malloc(len);
 
@@ -675,13 +675,13 @@ static int draw_drastic_menu_main(void)
 #endif
 
 #if defined(FUNKEYS)
-            const int SM_W = 256 >> 1;
-            const int SM_H = 192 >> 1;
+            const int SM_W = NDS_W >> 1;
+            const int SM_H = NDS_H >> 1;
 #endif
 
 #if defined(TRIMUI)
-            const int SM_W = 256.0 / 1.35;
-            const int SM_H = 192.0 / 1.35;
+            const int SM_W = (float)NDS_W / 1.35;
+            const int SM_H = (float)NDS_H / 1.35;
 #endif
             uint32_t slot = *((uint32_t *)VAR_SYSTEM_SAVESTATE_NUM);
             nds_load_state_index _func = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
@@ -693,25 +693,25 @@ static int draw_drastic_menu_main(void)
             memset(top, 0, len);
             memset(bottom, 0, len);
             _func((void*)VAR_SYSTEM, slot, top, bottom, 1);
-            t = SDL_CreateRGBSurfaceFrom(top, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
+            t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
 #ifdef MMIYOO
-                rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
+                rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? h - 20 : 50;
-                rt.w = 256;
-                rt.h = 192;
+                rt.w = NDS_W;
+                rt.h = NDS_H;
                 SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
 #endif
                 SDL_FreeSurface(t);
             }
 
-            t = SDL_CreateRGBSurfaceFrom(bottom, 256, 192, 16, 256 * 2, 0, 0, 0, 0);
+            t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
 #ifdef MMIYOO
-                rt.x = FB_W - (256 + (nds.enable_752x560 ? 30 : 10));
-                rt.y = nds.enable_752x560 ? (h + 192) - 20 : 50 + 192;
-                rt.w = 256;
-                rt.h = 192;
+                rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
+                rt.y = nds.enable_752x560 ? (h + NDS_H) - 20 : 50 + NDS_H;
+                rt.w = NDS_W;
+                rt.h = NDS_H;
                 SDL_BlitSurface(t, NULL, nds.menu.drastic.main, &rt);
 #endif
 
@@ -838,7 +838,7 @@ static int draw_drastic_menu_option(void)
                     (nds.menu.c2 >> 16) & 0xff, (nds.menu.c2 >> 8) & 0xff, nds.menu.c2 & 0xff));
             }
 
-            if (p->y <= 384) {
+            if (p->y <= NDS_HiH) {
                 strcpy(buf, to_lang(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
                 draw_info(nds.menu.drastic.main, buf, FB_W - w - (ww / div), y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
@@ -978,7 +978,7 @@ static int draw_drastic_menu_controller2(void)
 
     cursor = 0;
     for (cc=0; cc<drastic_menu.cnt;) {
-        if ((drastic_menu.item[cc].y >= 240) && (drastic_menu.item[cc].y <= 384)) {
+        if ((drastic_menu.item[cc].y >= 240) && (drastic_menu.item[cc].y <= NDS_HiH)) {
             if ((drastic_menu.item[cc + 1].bg > 0) || (drastic_menu.item[cc + 2].bg > 0)) {
                 break;
             }
@@ -1019,7 +1019,7 @@ static int draw_drastic_menu_controller2(void)
         if ((cnt >= s0) && (cnt < s1)) {
             y = (25 / div) + ((cnt - s0) * w);
 
-            if ((p->y >= 240) && (p->y <= 384)) {
+            if ((p->y >= 240) && (p->y <= NDS_HiH)) {
                 if (drastic_menu.item[cc + 1].bg || drastic_menu.item[cc + 2].bg) {
                     int sum = drastic_menu.item[cc + 1].bg + drastic_menu.item[cc + 2].bg;
                     uint32_t c = sum > 500 ? 0xff0000 : nds.menu.c2;
@@ -1031,7 +1031,7 @@ static int draw_drastic_menu_controller2(void)
                     SDL_FillRect(nds.menu.drastic.main, &rt, SDL_MapRGB(nds.menu.drastic.main->format, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff));
                 }
                 draw_info(nds.menu.drastic.main, p->msg, 20 / div, y, p->bg ? nds.menu.c0 : nds.menu.c1, 0);
-                if ((p->y >= 240) && (p->y <= 384)) {
+                if ((p->y >= 240) && (p->y <= NDS_HiH)) {
                     if (nds.enable_752x560) {
                         draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 1].msg), 320 / div, y, drastic_menu.item[cc + 1].bg ? nds.menu.c0 : nds.menu.c1, 0);
                         draw_info(nds.menu.drastic.main, to_lang(drastic_menu.item[cc + 2].msg), 550 / div, y, drastic_menu.item[cc + 2].bg ? nds.menu.c0 : nds.menu.c1, 0);
@@ -1056,7 +1056,7 @@ static int draw_drastic_menu_controller2(void)
         }
 
         cnt+= 1;
-        if ((p->y >= 240) && (p->y <= 384)) {
+        if ((p->y >= 240) && (p->y <= NDS_HiH)) {
             cc+= 2;
         }
     }
@@ -1438,7 +1438,7 @@ static int process_screen(void)
         nds.menu.drastic.enable = 0;
         need_reload_bg = RELOAD_BG_COUNT;
 #ifdef QX1000
-        update_wayland_res(512, 192);
+        update_wayland_res(NDS_W * 2, NDS_H);
 #endif
     }
 
@@ -1541,7 +1541,7 @@ static int process_screen(void)
         int show_pen = 1;
         int need_update = 1;
         int rotate = E_MI_GFX_ROTATE_180;
-        SDL_Rect srt = {0, 0, 256, 192};
+        SDL_Rect srt = {0, 0, NDS_W, NDS_H};
         SDL_Rect drt = {0, 0, 160, 120};
 
         nds.screen.hres_mode[idx] = idx ?
@@ -1557,21 +1557,21 @@ static int process_screen(void)
         nds.screen.pitch[idx] = (nds.screen.hres_mode[idx] * nds.screen.bpp * 0x100) + (nds.screen.bpp * 0x100);
 
         if (nds.screen.hres_mode[idx]) {
-            srt.w = 512;
-            srt.h = 384;
+            srt.w = NDS_HiW;
+            srt.h = NDS_HiH;
             if (nds.hres_mode == 0) {
                 nds.pen.pos = 0;
                 nds.hres_mode = 1;
                 pre_dis_mode = nds.dis_mode;
                 nds.dis_mode = pre_hres_mode;
 #ifdef QX1000
-                update_wayland_res(512, 384);
+                update_wayland_res(NDS_HiW, NDS_HiH);
 #endif
             }
         }
         else {
-            srt.w = 256;
-            srt.h = 192;
+            srt.w = NDS_W;
+            srt.h = NDS_H;
             drt.y = idx * 120;
             screen0 = (idx == 0);
             screen1 = (idx != 0);
@@ -1581,7 +1581,7 @@ static int process_screen(void)
                 pre_hres_mode = nds.dis_mode;
                 nds.dis_mode = pre_dis_mode;
 #ifdef QX1000
-                update_wayland_res(512, 192);
+                update_wayland_res(NDS_W * 2, NDS_H);
 #endif
             }
         }
@@ -1622,8 +1622,8 @@ static int process_screen(void)
             break;
         case NDS_DIS_MODE_S0:
             if (screen1) {
-                drt.w = 256 * 2;
-                drt.h = 192 * 2;
+                drt.w = NDS_W * 2;
+                drt.h = NDS_H * 2;
                 drt.x = (FB_W - drt.w) / 2;
                 drt.y = (FB_H - drt.h) / 2;
                 show_pen = 1;
@@ -1649,8 +1649,8 @@ static int process_screen(void)
             }
             break;
         case NDS_DIS_MODE_V0:
-            drt.w = 256;
-            drt.h = 192;
+            drt.w = NDS_W;
+            drt.h = NDS_H;
             drt.x = (FB_W - drt.w) / 2;
             if (nds.enable_752x560 == 0) {
                 drt.y = screen0 ? 48 : 48 + drt.h;
@@ -1672,8 +1672,8 @@ static int process_screen(void)
             drt.y = screen0 ? 0 : drt.h;
             break;
         case NDS_DIS_MODE_H0:
-            drt.w = 256;
-            drt.h = 192;
+            drt.w = NDS_W;
+            drt.h = NDS_H;
             if (nds.enable_752x560 == 0) {
                 drt.x = screen0 ? 64 : 64 + drt.w;
             }
@@ -1702,21 +1702,21 @@ static int process_screen(void)
             drt.h = screen1 ? (FB_H - 120) : 120;
             break;
         case NDS_DIS_MODE_VH_S1:
-            drt.x = screen1 ? 256 : 0;
-            drt.y = screen1 ? 192 : 0;
-            drt.w = screen1 ? (FB_W - 256) : 256;
-            drt.h = screen1 ? (FB_H - 192) : 192;
+            drt.x = screen1 ? NDS_W : 0;
+            drt.y = screen1 ? NDS_H : 0;
+            drt.w = screen1 ? (FB_W - NDS_W) : NDS_W;
+            drt.h = screen1 ? (FB_H - NDS_H) : NDS_H;
             break;
         case NDS_DIS_MODE_VH_C0:
-            drt.w = screen0 ? 256 : (FB_W - 256);
-            drt.h = screen0 ? 192 : (FB_H - 192);
+            drt.w = screen0 ? NDS_W : (FB_W - NDS_W);
+            drt.h = screen0 ? NDS_H : (FB_H - NDS_H);
             drt.x = screen0 ? ((FB_W - drt.w) / 2) : ((FB_W - drt.w) / 2);
-            drt.y = screen0 ? 0 : 192;
+            drt.y = screen0 ? 0 : NDS_H;
             break;
         case NDS_DIS_MODE_VH_C1:
-            drt.w = screen0 ? 256 : (FB_W - 256);
-            drt.h = screen0 ? 192 : (FB_H - 192);
-            drt.x = screen0 ? 0 : 256;
+            drt.w = screen0 ? NDS_W : (FB_W - NDS_W);
+            drt.h = screen0 ? NDS_H : (FB_H - NDS_H);
+            drt.x = screen0 ? 0 : NDS_W;
             drt.y = screen0 ? ((FB_H - drt.h) / 2) : ((FB_H - drt.h) / 2);
             break;
         case NDS_DIS_MODE_HH0:
@@ -1736,8 +1736,8 @@ static int process_screen(void)
             rotate = (nds.dis_mode == NDS_DIS_MODE_HH0) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
             break;
         case NDS_DIS_MODE_HRES0:
-            drt.w = 512;
-            drt.h = 384;
+            drt.w = NDS_HiW;
+            drt.h = NDS_HiH;
             drt.x = (FB_W - drt.w) / 2;
             drt.y = (FB_H - drt.h) / 2;
             break;
@@ -1775,8 +1775,8 @@ static int process_screen(void)
             case NDS_DIS_MODE_VH_T1:
                 drt.x = 0;
                 drt.y = 0;
-                drt.w = 256;
-                drt.h = 192;
+                drt.w = NDS_W;
+                drt.h = NDS_H;
                 GFX_Copy(nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
                 break;
             }
@@ -1846,8 +1846,8 @@ void sdl_update_screen(void)
         int cnt = 2;
         uint8_t hres = *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
         uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
-        uint32_t w = hres ? 512 : 256;
-        uint32_t h = hres ? 384 : 192;
+        uint32_t w = hres ? NDS_HiW : NDS_W;
+        uint32_t h = hres ? NDS_HiH : NDS_H;
         uint32_t pitch = (hres * bpp * 0x100) + (bpp * 0x100);
         uint32_t color = ((pitch / w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888);
 
@@ -2632,7 +2632,7 @@ int fb_init(void)
     wl.ready = 0;
     wl.data = SDL_malloc(LCD_W * LCD_H * 2);
     memset(wl.data, 0, LCD_W * LCD_H *2);
-    update_wayland_res(512, 192);
+    update_wayland_res(NDS_W * 2, NDS_H);
     wl.ready = 1;
     return 0;
 }
@@ -2867,8 +2867,8 @@ void disp_resize(void)
         gfx.hw.buf.info.fb.crop.height = ((uint64_t)FB_W) << 32;
     }
     else {
-        gfx.hw.buf.info.fb.crop.width  = ((uint64_t)192) << 32;
-        gfx.hw.buf.info.fb.crop.height = ((uint64_t)256) << 32;
+        gfx.hw.buf.info.fb.crop.width  = ((uint64_t)NDS_H) << 32;
+        gfx.hw.buf.info.fb.crop.height = ((uint64_t)NDS_W) << 32;
     }
     ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
     ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
@@ -2911,7 +2911,7 @@ int fb_init(void)
     }
 
     nds.screen.pixels[0] = gfx.dup.virAddr;
-    nds.screen.pixels[1] = nds.screen.pixels[0] + (256 * 192);
+    nds.screen.pixels[1] = nds.screen.pixels[0] + (NDS_W * NDS_H);
 #endif
     return 0;
 }
@@ -3065,15 +3065,15 @@ void GFX_Init(void)
 
 #ifdef TRIMUI
     cc = 0;
-    for (y = 0; y < 192; y++) {
-        for (x = 0; x < 256; x++) {
+    for (y = 0; y < NDS_H; y++) {
+        for (x = 0; x < NDS_W; x++) {
             dst = (uint32_t *)gfx.hw.ion.vadd;
-            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
-            LUT_256x192_S10[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
+            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * FB_H) + y + oy);
+            LUT_256x192_S10[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * FB_H) + y);
 
             dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H);
-            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((256 - 1) - x) + ox) * FB_H) + y + oy);
-            LUT_256x192_S11[cc] = (uint32_t)(dst + ((((256 - 1) - x)) * FB_H) + y);
+            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * FB_H) + y + oy);
+            LUT_256x192_S11[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * FB_H) + y);
             cc+= 1;
         }
     }
@@ -3115,8 +3115,8 @@ int draw_pen(void *pixels, int width, int pitch)
     int w = 28;
     int h = 28;
     int sub = 0;
-    int sw = 256;
-    int sh = 192;
+    int sw = NDS_W;
+    int sh = NDS_H;
     int x0 = 0, y0 = 0;
     int x1 = 0, y1 = 0;
     int x = 0, y = 0, is_565 = 0, scale = 1;
@@ -3129,9 +3129,9 @@ int draw_pen(void *pixels, int width, int pitch)
         is_565 = 1;
     }
 
-    if (width == 512) {
-        sw = 512;
-        sh = 384;
+    if (width == NDS_HiW) {
+        sw = NDS_HiW;
+        sh = NDS_HiH;
         scale = 2;
     }
 
@@ -3209,8 +3209,8 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     const uint32_t *src = pixels;
     uint32_t *dst = (uint32_t *)wl.pixels[wl.flip];
 
-    if (srcrect.w == 256) {
-        dst += (dstrect.y ? 0 : 256);
+    if (srcrect.w == NDS_W) {
+        dst += (dstrect.y ? 0 : NDS_W);
         asm volatile (
             "0:  vldmia %0!, {q0-q7}    ;"
             "    vldmia %0!, {q8-q15}   ;"
@@ -3232,7 +3232,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             "    subs %3, #1            ;"
             "    bne 0b                 ;"
             :
-            : "r"(pixels), "r"(dst), "r"((FB_W - srcrect.w) * 4), "r"(192)
+            : "r"(pixels), "r"(dst), "r"((FB_W - srcrect.w) * 4), "r"(NDS_H)
             : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
         );
     }
@@ -3247,12 +3247,12 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 #endif
 
 #ifdef PANDORA
-    if ((pitch == 1024) && (srcrect.w == 256) && (srcrect.h == 192)) {
+    if ((pitch == 1024) && (srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
         uint32_t *dst = (uint32_t *)gfx.hw.mem[(gfx.vinfo.yoffset == 0) ? 0 : 1];
 
         if (dstrect.y == 0) {
             dst += 16;
-            dst += (((FB_H - 384) >> 1) * FB_W);
+            dst += (((FB_H - NDS_HiH) >> 1) * FB_W);
             asm volatile (
                 "0:  add r8, %1, %2         ;"
                 "1:  vldmia %0!, {q0-q3}    ;"
@@ -3564,12 +3564,12 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                 "    subs %3, #1            ;"
                 "    bne 0b                 ;"
                 :
-                : "r"(pixels), "r"(dst), "r"(800 * 4), "r"(192)
+                : "r"(pixels), "r"(dst), "r"(800 * 4), "r"(NDS_H)
                 : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
             );
         }
         else {
-            dst += (((FB_H - 192) >> 1) * FB_W) + 1;
+            dst += (((FB_H - NDS_H) >> 1) * FB_W) + 1;
             asm volatile (
                 "0:  add %1, %1, #2112      ;"
                 "1:  vldmia %0!, {q0-q7}    ;"
@@ -3592,7 +3592,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                 "    subs %2, #1            ;"
                 "    bne 0b                 ;"
                 :
-                : "r"(pixels), "r"(dst), "r"(192)
+                : "r"(pixels), "r"(dst), "r"(NDS_H)
                 : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
             );
         }
@@ -3613,8 +3613,8 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 #endif
 
 #ifdef FUNKEYS
-    if ((srcrect.w == 256) && (srcrect.h == 192)) {
-        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - 192) >> 1) * FB_W);
+    if ((srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
+        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - NDS_H) >> 1) * FB_W);
         uint16_t *src = (uint16_t *)pixels;
 
         asm volatile (
@@ -3631,7 +3631,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             "    subs %2, #1            ;"
             "    bne 1b                 ;"
             :
-            : "r"(src), "r"(dst), "r"(192)
+            : "r"(src), "r"(dst), "r"(NDS_H)
             : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "memory", "cc"
         );
     }
@@ -3653,7 +3653,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         int x = 0;
         int y = 0;
         uint32_t v = 0;
-        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - 192) >> 1) * FB_W);
+        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - NDS_H) >> 1) * FB_W);
         uint32_t *src = (uint32_t *)pixels;
 
         for (y = 0; y < srcrect.h; y++) {
@@ -3690,7 +3690,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         oy = 24;
     }
 
-    if((srcrect.w == 256) && (srcrect.h == 192)) {
+    if((srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
         if (nds.dis_mode == NDS_DIS_MODE_S0) {
             dst = gfx.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
         }
@@ -3767,7 +3767,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             "    subs %2, #1            ;"
             "    bne 1b                 ;"
             :
-            : "r"(src), "r"(dst), "r"(8 * 192)
+            : "r"(src), "r"(dst), "r"(8 * NDS_H)
             : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "memory", "cc"
         );
     }
@@ -3788,7 +3788,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     }
 #endif
 
-#if defined(MMIYOO) && !defined(UNITTEST)
+#ifdef MMIYOO
     int copy_it = 1;
     MI_U16 u16Fence = 0;
     int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
@@ -3909,8 +3909,8 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
             }
             break;
         case NDS_DIS_MODE_VH_T1:
-            dstrect.w = 256;
-            dstrect.h = 192;
+            dstrect.w = NDS_W;
+            dstrect.h = NDS_H;
             if (nds.alpha.val > 0) {
                 srcrect.w = dstrect.w;
                 srcrect.h = dstrect.h;
@@ -3945,7 +3945,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                 break;
             }
 
-            if ((srcrect.w != 256) || (srcrect.h != 192)) {
+            if ((srcrect.w != NDS_W) || (srcrect.h != NDS_H)) {
                 break;
             }
 
@@ -4260,14 +4260,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                     "    subs %3, #1            ;"
                     "    bne 0b                 ;"
                     :
-                    : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(512 * 4), "r"(192)
+                    : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(NDS_HiW * 4), "r"(NDS_H)
                     : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
                 );
                 copy_it = 0;
                 srcrect.x = 0;
                 srcrect.y = 0;
-                srcrect.w = 512;
-                srcrect.h = 384;
+                srcrect.w = NDS_HiW;
+                srcrect.h = NDS_HiH;
                 pitch = srcrect.w * 4;
             }
             else {
@@ -4283,14 +4283,14 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
                         *d++ = *s1++;
                     }
                     neon_memcpy(d, s0, 1024);
-                    d+= 512;
+                    d+= NDS_HiW;
                 }
 
                 copy_it = 0;
                 srcrect.x = 0;
                 srcrect.y = 0;
-                srcrect.w = 512;
-                srcrect.h = 384;
+                srcrect.w = NDS_HiW;
+                srcrect.h = NDS_HiH;
                 pitch = srcrect.w * 2;
             }
         } while(0);
@@ -4330,7 +4330,7 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     MI_GFX_BitBlit(&gfx.hw.src.surf, &gfx.hw.src.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
     MI_GFX_WaitAllDone(FALSE, u16Fence);
 
-    if ((nds.menu.enable == 0) && (srcrect.w != 800) && ((srcrect.w == 256) || (srcrect.w == 512)) && (nds.overlay.sel < nds.overlay.max)) {
+    if ((nds.menu.enable == 0) && (srcrect.w != 800) && ((srcrect.w == NDS_W) || (srcrect.w == NDS_HiW)) && (nds.overlay.sel < nds.overlay.max)) {
         gfx.hw.src.rt.s32Xpos = 0;
         gfx.hw.src.rt.s32Ypos = 0;
         gfx.hw.src.rt.u32Width = FB_W;
@@ -4867,14 +4867,14 @@ int reload_bg(void)
 
                     r0.x = 16 - 1;
                     r0.y = 48 - 1;
-                    r0.w = 512 + 2;
-                    r0.h = 384 + 2;
+                    r0.w = NDS_HiW + 2;
+                    r0.h = NDS_HiH + 2;
                     SDL_FillRect(nds.theme.img, &r0, SDL_MapRGB(nds.theme.img->format, 0, 0, 0));
 
-                    r0.x = (512 + 16) - 0;
-                    r0.y = ((FB_H - 192) >> 1) - 1;
-                    r0.w = 256 + 2;
-                    r0.h = 192 + 2;
+                    r0.x = (NDS_HiW + 16) - 0;
+                    r0.y = ((FB_H - NDS_H) >> 1) - 1;
+                    r0.w = NDS_W + 2;
+                    r0.h = NDS_H + 2;
                     SDL_FillRect(nds.theme.img, &r0, SDL_MapRGB(nds.theme.img->format, 0, 0, 0));
                 }
                 else {
@@ -5613,7 +5613,7 @@ int handle_menu(int key)
         }
         nds.menu.enable = 0;
 #ifdef QX1000
-        update_wayland_res(512, 192);
+        update_wayland_res(NDS_W * 2, NDS_H);
 #endif
         return 0;
     default:

@@ -588,8 +588,8 @@ int EventUpdate(void *data)
                         dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
 
                         if (nds.dis_mode == NDS_DIS_MODE_S0) {
-                            w = 192;
-                            h = 256;
+                            w = NDS_H;
+                            h = NDS_W;
                         }
                         else {
                             w = FB_H;
@@ -767,8 +767,8 @@ void MMIYOO_EventInit(void)
 
     pre_keypad_bitmaps = 0;
     memset(&evt, 0, sizeof(evt));
-    evt.mouse.maxx = 256;
-    evt.mouse.maxy = 192;
+    evt.mouse.maxx = NDS_W;
+    evt.mouse.maxy = NDS_H;
     evt.mouse.x = evt.mouse.maxx >> 1;
     evt.mouse.y = evt.mouse.maxy >> 1;
 
