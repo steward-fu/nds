@@ -641,24 +641,24 @@ static int draw_drastic_menu_main(void)
 
     y = 10;
 #ifdef MMIYOO
-    sprintf(buf, "Rel v1.8 Res %s", nds.enable_752x560 ? "752*560" : "640*480");
+    sprintf(buf, "Rel "NDS_VER" Res %s", nds.enable_752x560 ? "752*560" : "640*480");
 #endif
 
 #ifdef TRIMUI
-    sprintf(buf, "Rel v1.8 Res %s", "320*240");
+    sprintf(buf, "Rel "NDS_VER" Res %s", "320*240");
 #endif
 
 #ifdef FUNKEYS
     y = 4;
-    sprintf(buf, "Rel v1.8");
+    sprintf(buf, "Rel "NDS_VER);
 #endif
 
 #ifdef PANDORA
-    sprintf(buf, "Rel v1.8 Res %s", "800*480");
+    sprintf(buf, "Rel "NDS_VER" Res %s", "800*480");
 #endif
 
 #ifdef QX1000
-    sprintf(buf, "Rel v1.8");
+    sprintf(buf, "Rel "NDS_VER);
 #endif
 
     draw_info(nds.menu.drastic.main, buf, 10, y / div, nds.menu.c1, 0);

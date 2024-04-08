@@ -116,6 +116,7 @@
     };
 #endif
 
+#define NDS_VER                     "v1.9"
 #define NDS_W                       256
 #define NDS_H                       192
 #define NDS_Wx2                     (NDS_W << 1)
