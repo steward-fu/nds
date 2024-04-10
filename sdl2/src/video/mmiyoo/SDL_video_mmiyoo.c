@@ -1708,6 +1708,12 @@ static int process_screen(void)
             drt.w = screen1 ? (FB_W - NDS_W) : NDS_W;
             drt.h = screen1 ? (FB_H - NDS_H) : NDS_H;
             break;
+        case NDS_DIS_MODE_VH_S2:
+            drt.w = screen1 ? (FB_W - 160) : 160;
+            drt.h = screen1 ? (FB_H - 120) : 120;
+            drt.x = screen1 ? ((FB_W - drt.w) / 2) : ((FB_W - drt.w) / 2);
+            drt.y = screen1 ? 120 : 0;
+            break;
         case NDS_DIS_MODE_VH_C0:
             drt.w = screen0 ? NDS_W : (FB_W - NDS_W);
             drt.h = screen0 ? NDS_H : (FB_H - NDS_H);
@@ -4649,6 +4655,9 @@ int reload_bg(void)
                     case NDS_DIS_MODE_VH_S1:
                         strcat(buf, "/bg_vh_s1.png");
                         break;
+                    case NDS_DIS_MODE_VH_S2:
+                        strcat(buf, "/bg_vh_s2.png");
+                        break;
                     case NDS_DIS_MODE_VH_C0:
                         strcat(buf, "/bg_vh_c0.png");
                         break;
@@ -5997,8 +6006,27 @@ int handle_menu(int key)
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy + (96 - rt.h);
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - rt.h) / 2);
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+            break;
+        case NDS_DIS_MODE_VH_S2:
+            rt.x = sx;
+            rt.y = sy;
+            rt.w = 128;
+            rt.h = 96;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
+            
+            rt.w = 96;
+            rt.h = 72;
+            rt.x = sx;
+            rt.y = sy;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
+            
+            rt.w = 32;
+            rt.h = 24;
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + ((96 - rt.h) / 2);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_VH_C0:
