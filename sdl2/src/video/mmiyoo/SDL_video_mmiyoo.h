@@ -348,7 +348,7 @@ typedef struct _GFX {
     struct {
         void *virAddr[2];
         MI_PHY phyAddr[2];
-    } lcd;
+    } lcd, dup;
 #endif
 
     struct _HW {

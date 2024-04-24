@@ -1839,6 +1839,45 @@ void sdl_update_screen(void)
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
+#ifdef MMIYOO
+        int cc = 0;
+        int cnt = 2;
+        uint8_t hres = *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
+        uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+        uint32_t w = hres ? NDS_Wx2 : NDS_W;
+        uint32_t h = hres ? NDS_Hx2 : NDS_H;
+        uint32_t pitch = (hres * bpp * 0x100) + (bpp * 0x100);
+        uint32_t color = ((pitch / w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888);
+
+        MI_U16 u16Fence = 0;
+        MI_GFX_Opt_t opt = {0};
+        MI_GFX_Rect_t srt = {0};
+        MI_GFX_Rect_t drt = {0};
+        MI_GFX_Surface_t ssurf = {0};
+        MI_GFX_Surface_t dsurf = {0};
+
+        opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+
+        ssurf.u32Width = srt.u32Width = w;
+        ssurf.u32Height = srt.u32Height = h;
+        ssurf.u32Stride = pitch;
+        ssurf.eColorFmt = color;
+
+        dsurf.u32Width = drt.u32Width = w;
+        dsurf.u32Height = drt.u32Height = h;
+        dsurf.u32Stride = pitch;
+        dsurf.eColorFmt = color;
+
+        cnt = hres ? 1 : 2;
+        for (cc = 0; cc < cnt; cc++) {
+            ssurf.phyAddr = gfx.lcd.phyAddr[cc];
+            dsurf.phyAddr = gfx.dup.phyAddr[cc];
+
+            MI_SYS_FlushInvCache(gfx.lcd.virAddr[cc], pitch * h);
+            MI_GFX_BitBlit(&ssurf, &srt, &dsurf, &drt, &opt, &u16Fence);
+            MI_GFX_WaitAllDone(FALSE, u16Fence);
+        }
+#endif
         nds.update_screen = 1;
     }
 }
@@ -2864,7 +2903,11 @@ int fb_init(void)
     for (cc = 0; cc < 2; cc++) {
         MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[cc]);
         MI_SYS_Mmap(gfx.lcd.phyAddr[cc], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[cc], TRUE);
-        nds.screen.pixels[cc] = gfx.lcd.virAddr[cc];
+
+        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.dup.phyAddr[cc]);
+        MI_SYS_Mmap(gfx.dup.phyAddr[cc], SCREEN_DMA_SIZE, &gfx.dup.virAddr[cc], TRUE);
+
+        nds.screen.pixels[cc] = gfx.dup.virAddr[cc];
     }
 #endif
     return 0;
@@ -2886,6 +2929,9 @@ int fb_quit(void)
     for (cc = 0; cc < 2; cc++) {
         MI_SYS_Munmap(gfx.lcd.virAddr[cc], SCREEN_DMA_SIZE);
         MI_SYS_MMA_Free(gfx.lcd.phyAddr[cc]);
+
+        MI_SYS_Munmap(gfx.dup.virAddr[cc], SCREEN_DMA_SIZE);
+        MI_SYS_MMA_Free(gfx.dup.phyAddr[cc]);
     }
 
     MI_GFX_Close();
@@ -3051,13 +3097,14 @@ void GFX_Quit(void)
 
 void GFX_Clear(void)
 {
-#if defined(MMIYOO) && !defined(UNITTEST)
+#if defined(MMIYOO)
     int cc = 0;
 
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
     for (cc = 0; cc < 2; cc++) {
         MI_SYS_MemsetPa(gfx.lcd.phyAddr[cc], 0, SCREEN_DMA_SIZE);
+        MI_SYS_MemsetPa(gfx.dup.phyAddr[cc], 0, SCREEN_DMA_SIZE);
     }
 #endif
 }
@@ -3744,8 +3791,9 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
 #endif
 
 #ifdef MMIYOO
+    int cc = 0;
     int copy_it = 1;
-    int is_dma_buf = 0;
+    int is_dma_buf = -1;
     MI_U16 u16Fence = 0;
     int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
 
@@ -3753,11 +3801,11 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         return -1;
     }
 
-    if (pixels == gfx.lcd.virAddr[0]) {
-        is_dma_buf = 1;
-    }
-    else if(pixels == gfx.lcd.virAddr[1]) {
-        is_dma_buf = 2;
+    for (cc = 0; cc < 2; cc++) {
+        if (pixels == gfx.dup.virAddr[cc]) {
+            is_dma_buf = cc;
+            break;
+        }
     }
 
     if (alpha != 0) {
@@ -4260,8 +4308,8 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
     }
 
     if (copy_it) {
-        if (is_dma_buf) {
-            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[is_dma_buf - 1];
+        if (is_dma_buf >= 0) {
+            gfx.hw.src.surf.phyAddr = gfx.dup.phyAddr[is_dma_buf];
         }
         else {
             neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
