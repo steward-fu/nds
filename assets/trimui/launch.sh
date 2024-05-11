@@ -22,7 +22,14 @@ export SDL_VIDEODRIVER=mmiyoo
 export SDL_AUDIODRIVER=mmiyoo
 export EGL_VIDEODRIVER=mmiyoo
 
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
 cd $mydir
+
+if [ -f 'libs/libasound.so.2' ]; then
+    rm -rf libs/libasound.so.2
+fi
+
 ./drastic "$1"
 sync
 
