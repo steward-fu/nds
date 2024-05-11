@@ -1,5 +1,5 @@
-# NDS Emulator (DraStic) for Miyoo Mini (Plus), TRIMUI SMART, FunKey S, RG Nano and F(x)tec Pro1 (QX1000)
-![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg) ![image](images/mmiyoo_752/mm.jpg) ![image](images/trimui_320/trimui.jpg) ![image](images/funkeys_240/funkeys.jpg) ![image](images/funkeys_240/rgnano.jpg) ![image](images/qx1000_1080/pro1.jpg)  
+# NDS Emulator (DraStic) for Miyoo Mini (Plus), TRIMUI SMART and F(x)tec Pro1 (QX1000)
+![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg) ![image](images/mmiyoo_752/mm.jpg) ![image](images/trimui_320/trimui.jpg) ![image](images/qx1000_1080/pro1.jpg)  
 
 &nbsp;
 
@@ -12,7 +12,6 @@
    -  [Miyoo Mini (Plus)](#miyoo-mini-plus)
    -  [Miyoo Mini v4](#miyoo-mini-v4)
    -  [TRIMUI SMART](#trimui-smart)
-   -  [FunKey S and RG Nano](#funkey-s-and-rg-nano)
    -  [F(x)tec Pro1 (QX1000)](#fxtec-pro1-qx1000)
 
 &nbsp;
@@ -62,15 +61,6 @@ $ cd /nds
 $ make cfg MOD=trimui
 $ make
 $ make rel MOD=trimui
-```
-
-### How to build code for FunKey S and RG Nano
-```
-$ sudo docker run -it --rm -u $(id -u ${USER}):$(id -g ${USER}) -v $(pwd):/nds mmiyoo /bin/bash
-$ cd /nds
-$ make cfg MOD=funkeys
-$ make
-$ make rel MOD=funkeys
 ```
 
 ### How to build code for F(x)tec Pro1 (QX1000)
@@ -591,76 +581,6 @@ Go to DraStic menu and then select "Restart Game".
 ```
 1. Place drastic folder in Emus folder
 2. Place NDS roms in Roms/NDS folder
-```
-
-&nbsp;
-
-### FunKey S and RG Nano
-![image](images/funkeys_240/funkeys.jpg) ![image](images/funkeys_240/rgnano.jpg)  
-
-##### Layout 0, Screen0: 240x192, Image: bg_s0.png  
-| ![image](images/funkeys_240/dis_0.png) |
-|-|
-
-&nbsp;
-
-#### DraStic Menu: Original  
-| ![image](images/mmiyoo_640/menu_2.png) |
-|-|
-
-&nbsp;
-
-#### DraStic Menu: Refined  
-| ![image](images/funkeys_240/menu_0.png) |
-|-|
-
-&nbsp;
-
-#### Cheat Menu: Original  
-| ![image](images/mmiyoo_640/menu_3.png) |
-|-|
-
-&nbsp;
-
-#### Cheat Menu: Refined  
-| ![image](images/funkeys_240/menu_1.png) |
-|-|
-
-&nbsp;
-
-#### Hotkeys
-|  Keys              | Description                      |
-| ------------------ | -------------------------------- |
-| START + LEFT       | Change Keypad mode / Stylus mode |
-| START + RIGHT      | Swap screen                      |
-| START + L1         | Quick load state                 |
-| START + R1         | Quick save state                 |
-| START + SELECT     | Exit from DraStic emulator       |
-| **Keypad Mode**    |                                  |
-| MENU (Short Press) | Enter DraStic menu               |
-| START + Y          | Change background image          |
-| **Stylus Mode**    |                                  |
-| DPAD               | Move the pen                     |
-| A                  | Touch screen                     |
-| R1                 | Lower moving speed               |
-| START + Y          | Change stylus pen                |
-
-&nbsp;
-
-### Installation
-```
-1. Place "nds_drastic_funkey-s*.opk" in Emulators folder.
-2. Place "drastic" folder in the root folder.
-3. Create "NDS" folder in the root folder if not exist.
-4. Place BIOS files in "drastic/system" folder.
-5. Place roms in "NDS" folder.
-
-BIOS files:
-    cd63893f	drastic/system/drastic_bios_arm7.bin
-    f307d77a	drastic/system/drastic_bios_arm9.bin
-    1280f0d5	drastic/system/nds_bios_arm7.bin
-    2ab23573	drastic/system/nds_bios_arm9.bin
-    13046805	drastic/system/nds_firmware.bin
 ```
 
 &nbsp;

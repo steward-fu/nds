@@ -532,7 +532,7 @@ static int draw_drastic_menu_main(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH << 1] = {0};
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     div = 2;
 #endif
 
@@ -542,7 +542,7 @@ static int draw_drastic_menu_main(void)
         w = LINE_H / div;
         h = nds.enable_752x560 ? (115 / div) : (100 / div);
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
         x = 30 / div;
 #endif
 
@@ -558,10 +558,6 @@ static int draw_drastic_menu_main(void)
             sprintf(buf, "%s", &p->msg[8]);
             x = FB_W - get_font_width(buf) - 10;
             y = 10 / div;
-#endif
-
-#if defined(FUNKEYS)
-            y = 4 / div;
 #endif
         }
         else if (p->y == 280) {
@@ -648,11 +644,6 @@ static int draw_drastic_menu_main(void)
     sprintf(buf, "Rel "NDS_VER" Res %s", "320*240");
 #endif
 
-#ifdef FUNKEYS
-    y = 4;
-    sprintf(buf, "Rel "NDS_VER);
-#endif
-
 #ifdef PANDORA
     sprintf(buf, "Rel "NDS_VER" Res %s", "800*480");
 #endif
@@ -670,13 +661,8 @@ static int draw_drastic_menu_main(void)
 
         if (top && bottom) {
             SDL_Surface *t = NULL;
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
             SDL_Surface *sm = NULL;
-#endif
-
-#if defined(FUNKEYS)
-            const int SM_W = NDS_W >> 1;
-            const int SM_H = NDS_H >> 1;
 #endif
 
 #if defined(TRIMUI)
@@ -686,7 +672,7 @@ static int draw_drastic_menu_main(void)
             uint32_t slot = *((uint32_t *)VAR_SYSTEM_SAVESTATE_NUM);
             nds_load_state_index _func = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
             sm = SDL_CreateRGBSurface(0, SM_W, SM_H, 16, 0, 0, 0, 0);
 #endif
 
@@ -724,20 +710,10 @@ static int draw_drastic_menu_main(void)
                 rt.h = SM_H;
                 SDL_BlitSurface(sm, NULL, nds.menu.drastic.main, &rt);
 #endif
-
-#if defined(FUNKEYS)
-                SDL_SoftStretch(t, NULL, sm, NULL);
-
-                rt.x = FB_W - (SM_W + 5);
-                rt.y = 110;
-                rt.w = SM_W;
-                rt.h = SM_H;
-                SDL_BlitSurface(sm, NULL, nds.menu.drastic.main, &rt);
-#endif
                 SDL_FreeSurface(t);
             }
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
             if (sm) {
                 SDL_FreeSurface(sm);
             }
@@ -796,7 +772,7 @@ static int draw_drastic_menu_option(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     div = 2;
 #endif
 
@@ -868,7 +844,7 @@ static int draw_drastic_menu_controller(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     div = 2;
 #endif
 
@@ -972,7 +948,7 @@ static int draw_drastic_menu_controller2(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     div = 2;
 #endif
 
@@ -1077,7 +1053,7 @@ static int draw_drastic_menu_firmware(void)
     char buf[MAX_PATH] = {0};
     char name[MAX_PATH] = {0};
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     div = 2;
 #endif
 
@@ -1155,7 +1131,7 @@ static int draw_drastic_menu_cheat(void)
     CUST_MENU_SUB *p = NULL;
     char buf[MAX_PATH] = {0};
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     div = 2;
 #endif
     for (cc=0; cc<drastic_menu.cnt; cc++) {
@@ -1259,7 +1235,7 @@ static int draw_drastic_menu_rom(void)
     int s0 = 0, s1 = 0;
     CUST_MENU_SUB *p = NULL;
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     div = 2;
 #endif
 
@@ -1590,7 +1566,6 @@ static int process_screen(void)
 #if defined(QX1000)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
-#elif defined(FUNKEYS)
 #elif defined(MMIYOO)
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
@@ -2094,7 +2069,7 @@ static void lang_enum(void)
 
 static int read_config(void)
 {
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     int fd = -1;
 #endif
 
@@ -2285,13 +2260,13 @@ static int read_config(void)
 #endif
     json_object_put(jfile);
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     fd = open("/dev/dsp", O_RDWR);
     if (fd > 0) {
         close(fd);
 #endif
         snd_nds_reload_config();
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     }
 #endif
 
@@ -2300,10 +2275,6 @@ static int read_config(void)
         nds.dis_mode = NDS_DIS_MODE_S0;
     }
     disp_resize();
-#endif
-
-#ifdef FUNKEYS
-    nds.dis_mode = NDS_DIS_MODE_S0;
 #endif
 
 #ifdef QX1000
@@ -2685,34 +2656,6 @@ int fb_quit(void)
     close(gfx.fb_dev[1]);
     gfx.fb_dev[0] = -1;
     gfx.fb_dev[1] = -1;
-    return 0;
-}
-#endif
-
-#ifdef FUNKEYS
-int fb_init(void)
-{
-    gfx.fb_dev = open("/dev/fb0", O_RDWR);
-    if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open fb0\n");
-        return -1;
-    }
-
-    gfx.hw.mem = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fb_dev, 0);
-    if (gfx.hw.mem == (void *)-1) {
-        close(gfx.fb_dev);
-        printf(PREFIX"Failed to mmap fb0\n");
-        return -1;
-    }
-    memset(gfx.hw.mem, 0 , FB_SIZE);
-    return 0;
-}
-
-int fb_quit(void)
-{
-    munmap(gfx.hw.mem, FB_SIZE);
-    close(gfx.fb_dev);
-    gfx.fb_dev = -1;
     return 0;
 }
 #endif
@@ -3608,60 +3551,6 @@ int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, 
         for (y = 0; y < srcrect.h; y++) {
             for (x = 0; x < srcrect.w; x++) {
                 *dst++ = *src++;
-            }
-            dst+= (FB_W - srcrect.w);
-        }
-    }
-#endif
-
-#ifdef FUNKEYS
-    if ((srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
-        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - NDS_H) >> 1) * FB_W);
-        uint16_t *src = (uint16_t *)pixels;
-
-        asm volatile (
-            "1:  add %0, #16            ;"
-            "    vldmia %0!, {q0-q7}    ;"
-            "    vldmia %0!, {q8-q14}   ;"
-            "    vstmia %1!, {q0-q7}    ;"
-            "    vstmia %1!, {q8-q14}   ;"
-            "    vldmia %0!, {q0-q7}    ;"
-            "    vldmia %0!, {q8-q14}   ;"
-            "    vstmia %1!, {q0-q7}    ;"
-            "    vstmia %1!, {q8-q14}   ;"
-            "    add %0, #16            ;"
-            "    subs %2, #1            ;"
-            "    bne 1b                 ;"
-            :
-            : "r"(src), "r"(dst), "r"(NDS_H)
-            : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "memory", "cc"
-        );
-    }
-    else if ((srcrect.w == FB_W) && (srcrect.h == FB_H)) {
-        int x = 0;
-        int y = 0;
-        uint32_t v = 0;
-        uint16_t *dst = (uint16_t *)gfx.hw.mem;
-        uint32_t *src = (uint32_t *)pixels;
-
-        for (y = 0; y < srcrect.h; y++) {
-            for (x = 0; x < srcrect.w; x++) {
-                v = *src++;
-                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
-            }
-        }
-    }
-    else {
-        int x = 0;
-        int y = 0;
-        uint32_t v = 0;
-        uint16_t *dst = (uint16_t *)gfx.hw.mem + (((FB_H - NDS_H) >> 1) * FB_W);
-        uint32_t *src = (uint32_t *)pixels;
-
-        for (y = 0; y < srcrect.h; y++) {
-            for (x = 0; x < srcrect.w; x++) {
-                v = *src++;
-                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
             }
             dst+= (FB_W - srcrect.w);
         }
@@ -4605,7 +4494,7 @@ int reload_menu(void)
 #if defined(MMIYOO) || defined(QX1000)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.yes) {
@@ -4624,7 +4513,7 @@ int reload_menu(void)
 #if defined(MMIYOO) || defined(QX1000)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
         SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
 #endif
         if (nds.menu.drastic.no) {
@@ -4646,7 +4535,7 @@ int reload_bg(void)
     static int pre_sel = -1;
 #endif
 
-#if !defined(FUNKEYS) && !defined(PANDORA) && !defined(QX1000)
+#if !defined(PANDORA) && !defined(QX1000)
     static int pre_mode = -1;
 #endif
 
@@ -4810,56 +4699,6 @@ int reload_bg(void)
             }
         }
         ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
-    }
-#endif
-
-#ifdef FUNKEYS
-    SDL_Surface *t = NULL;
-    char buf[MAX_PATH] = {0};
-
-    if (pre_sel != nds.theme.sel) {
-        pre_sel = nds.theme.sel;
-
-        if (nds.theme.img) {
-            SDL_FreeSurface(nds.theme.img);
-            nds.theme.img = NULL;
-        }
-
-        nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
-        if (nds.theme.img) {
-            SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
-
-            if (get_dir_path(nds.theme.path, nds.theme.sel, buf) == 0) {
-                strcat(buf, "/bg_s0.png");
-                t = IMG_Load(buf);
-                if (t) {
-                    SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
-                    SDL_FreeSurface(t);
-                }
-                else {
-                    printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
-                }
-            }
-        }
-    }
-
-    if (nds.theme.img) {
-        int x = 0;
-        int y = 0;
-        uint32_t v = 0;
-        uint16_t *dst = (uint16_t *)gfx.hw.mem;
-        uint32_t *src = (uint32_t *)nds.theme.img->pixels;
-
-        for (y = 0; y < FB_H; y++) {
-            src+= ((IMG_W - (FB_W << 1)) >> 1);
-            for (x = 0; x < FB_W; x++) {
-                v = *src;
-                *dst++ = ((v & 0xf80000) >> 8) | ((v & 0xfc00) >> 5) | ((v & 0xf8) >> 3);
-                src+= 2;
-            }
-            src+= ((IMG_W - (FB_W << 1)) >> 1);
-            src+= IMG_W;
-        }
     }
 #endif
 
@@ -5110,10 +4949,6 @@ int MMIYOO_VideoInit(_THIS)
     FB_H = DEF_FB_H;
     FB_SIZE = FB_W * FB_H * FB_BPP * 2;
     TMP_SIZE = FB_W * FB_H * FB_BPP;
-
-#ifdef FUNKEYS
-    FB_SIZE = FB_W * FB_H * FB_BPP;
-#endif
 
 #ifdef MMIYOO
     fd = popen("fbset | grep \"mode \"", "r");

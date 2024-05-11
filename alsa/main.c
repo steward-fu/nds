@@ -93,7 +93,7 @@ static pa_t pa = {0};
     static MI_AUDIO_Attr_t stGetAttr = {0};
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     static int dsp_fd = -1;
 #endif
 
@@ -477,7 +477,7 @@ static void *audio_handler(void *threadid)
                 MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
                 write(dsp_fd, pcm_buf, pcm_buf_len);
 #endif
 
@@ -586,7 +586,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     MI_SYS_ChnPort_t stAoChn0OutputPort0;
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     int arg = 0;
 #endif
 
@@ -657,7 +657,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     set_volume(cur_volume);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     dsp_fd = open("/dev/dsp", O_WRONLY);
     if (dsp_fd < 0) {
         printf(PREFIX"Failed to open /dev/dsp device\n");
@@ -743,7 +743,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     MI_AO_Disable(AoDevId);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;

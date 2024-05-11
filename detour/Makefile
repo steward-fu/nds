@@ -16,12 +16,6 @@ ifeq ($(MOD),trimui)
     LDFLAGS+= -ljson-c
 endif
 
-ifeq ($(MOD),funkeys)
-    CFLAGS += -DFUNKEYS -I../funkeys/inc
-    CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -Wl,--no-undefined
-    LDFLAGS+= -ljson-c
-endif
-
 ifeq ($(MOD),pandora)
     CFLAGS += -DPANDORA
     CFLAGS += -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -Wl,--no-undefined

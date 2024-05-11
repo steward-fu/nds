@@ -183,7 +183,7 @@ int dtr_savestate(int slot)
     }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     nds_screen_copy16 _func0 = (nds_screen_copy16)FUN_SCREEN_COPY16;
     nds_save_state_index _func1 = (nds_save_state_index)FUN_SAVE_STATE_INDEX;
 
@@ -222,7 +222,7 @@ int dtr_loadstate(int slot)
     }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
     nds_load_state_index _func = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
 
     _func((void*)VAR_SYSTEM, slot, 0, 0, 0);

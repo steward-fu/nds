@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=DraStic
-Comment=Nintendo DS emulator
-Icon=nds
-Exec=launch.sh %f
-Categories=emulators
-SelectorDir=/mnt/NDS
-SelectorFilter=nds,NDS,zip,ZIP,7z,7Z,rar,RAR

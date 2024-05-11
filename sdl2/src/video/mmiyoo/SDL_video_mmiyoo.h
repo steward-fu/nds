@@ -147,15 +147,6 @@
     #define RELOAD_BG_COUNT         1
 #endif
 
-#ifdef FUNKEYS
-    #define DEF_FB_W                240
-    #define DEF_FB_H                240
-    #define FB_BPP                  2
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define RELOAD_BG_COUNT         1
-#endif
-
 #ifdef PANDORA
     #define DEF_FB_W                800
     #define DEF_FB_H                480
@@ -177,26 +168,14 @@
 #endif
 
 #define PREFIX                      "[SDL] "
-
-#ifdef FUNKEYS
-    #define SHOT_PATH               "/mnt/Screenshots"
-#else
-    #define SHOT_PATH               "/mnt/SDCARD/Screenshots"
-#endif
-
+#define SHOT_PATH                   "/mnt/SDCARD/Screenshots"
 #define BIOS_PATH                   "system"
 #define CFG_PATH                    "resources/settings.json"
 #define THEME_PATH                  "resources/bg"
 #define PEN_PATH                    "resources/pen"
 #define LANG_PATH                   "resources/lang"
 #define OVERLAY_PATH                "resources/overlay"
-
-#if defined(FUNKEYS)
-    #define MENU_PATH               "resources/menu/240"
-#else
-    #define MENU_PATH               "resources/menu/640"
-#endif
-
+#define MENU_PATH                   "resources/menu/640"
 #define MENU_BG_FILE                "bg.png"
 #define MENU_CURSOR_FILE            "cursor.png"
 #define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
@@ -218,7 +197,7 @@
     #define DEF_FONT_SIZE           24
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS)
+#if defined(TRIMUI)
     #define DEF_FONT_SIZE           12
 #endif
 
@@ -365,10 +344,6 @@ typedef struct _GFX {
         disp_layer_config disp;
         disp_layer_config buf;
         ion_alloc_info_t ion;
-#endif
-
-#ifdef FUNKEYS
-        uint32_t *mem;
 #endif
 
 #ifdef PANDORA

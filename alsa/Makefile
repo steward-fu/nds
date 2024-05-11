@@ -21,13 +21,6 @@ ifeq ($(MOD),trimui)
     LDFLAGS+= -Wl,--no-undefined -ljson-c
 endif
 
-ifeq ($(MOD),funkeys)
-    SRC    += neon.S
-    CFLAGS += -DFUNKEYS -I../funkeys/inc
-    CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3
-    LDFLAGS+= -Wl,--no-undefined -ljson-c
-endif
-
 ifeq ($(MOD),pandora)
     SRC    += neon.S
     CFLAGS += -DPANDORA

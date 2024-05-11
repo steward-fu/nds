@@ -85,22 +85,6 @@
     #define MENU    1
 #endif
 
-#ifdef FUNKEYS
-    #define UP      22
-    #define DOWN    32
-    #define LEFT    38
-    #define RIGHT   19
-    #define A       30
-    #define B       48
-    #define X       45
-    #define Y       21
-    #define L1      50
-    #define R1      49
-    #define START   31
-    #define SELECT  37
-    #define MENU    16
-#endif
-
 #ifdef PANDORA
     #define UP      103
     #define DOWN    108
@@ -260,10 +244,6 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
-#ifdef FUNKEYS
-    uint32_t mask = (1 << bit) | (1 << MYKEY_START);
-#endif
-
 #ifdef QX1000
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
@@ -280,12 +260,6 @@ static void set_key(uint32_t bit, int val)
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
         if (bit == MYKEY_MENU) {
             hotkey = (1 << MYKEY_MENU);
-        }
-#endif
-
-#ifdef FUNKEYS
-        if (bit == MYKEY_START) {
-            hotkey = (1 << MYKEY_START);
         }
 #endif
 
@@ -516,7 +490,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
                         if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
                             evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
 
@@ -541,7 +515,7 @@ int EventUpdate(void *data)
                         }
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
                         set_key(MYKEY_R2, 1);
 #endif
                         set_key(MYKEY_RIGHT, 0);
@@ -650,7 +624,6 @@ int EventUpdate(void *data)
                         set_key(MYKEY_Y, 0);
                     }
 
-#ifndef FUNKEYS
                     if (hotkey_mask && hit_hotkey(MYKEY_START)) {
 #if defined(MMIYOO) || defined(QX1000)
                         if (nds.menu.enable == 0) {
@@ -670,7 +643,6 @@ int EventUpdate(void *data)
 #endif
                         set_key(MYKEY_START, 0);
                     }
-#endif
 
 #ifdef MMIYOO
                     if (nds.hotkey == HOTKEY_BIND_MENU) {
@@ -688,13 +660,6 @@ int EventUpdate(void *data)
                     }
 #endif
 
-#ifdef FUNKEYS
-                    if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
-                        set_key(MYKEY_EXIT, 1);
-                        set_key(MYKEY_SELECT, 0);
-                    }
-#endif
-
                     if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
 #ifdef MMIYOO
                         static int pre_ff = 0;
@@ -706,7 +671,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_FF, 1);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
                         set_key(MYKEY_QSAVE, 1);
 #endif
                         set_key(MYKEY_R1, 0);
@@ -717,7 +682,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_EXIT, 1);
 #endif
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
                         set_key(MYKEY_QLOAD, 1);
 #endif
                         set_key(MYKEY_L1, 0);
@@ -893,7 +858,7 @@ void MMIYOO_PumpEvents(_THIS)
                     }
                 }
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
                 if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }
@@ -996,7 +961,7 @@ void MMIYOO_PumpEvents(_THIS)
                 SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
             }
 
-#if defined(TRIMUI) || defined(FUNKEYS) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA)
                 if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }

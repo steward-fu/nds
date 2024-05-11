@@ -35,10 +35,6 @@ ifeq ($(MOD),trimui)
     export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
 endif
 
-ifeq ($(MOD),funkeys)
-    export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
-endif
-
 ifeq ($(MOD),pandora)
     SDL2_CFG+= --disable-oss
     SDL2_CFG+= --disable-alsa
@@ -82,12 +78,6 @@ cfg:
 .PHONY: rel
 rel:
 	zip -r drastic_$(MOD)_$(REL_VER).zip drastic
-
-.PHONY: opk
-opk:
-	mksquashfs funkeys/opk/* nds_drastic_funkey-s_$(REL_VER).opk
-	cp $(MOD)/readme.txt . && zip -r drastic_$(MOD)_$(REL_VER).zip drastic nds_drastic_funkey-s_$(REL_VER).opk readme.txt && rm -rf readme.txt
-	rm -rf nds_drastic_funkey-s_$(REL_VER).opk
 
 .PHONY: clean
 clean:
