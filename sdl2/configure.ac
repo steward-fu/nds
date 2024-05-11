@@ -2403,7 +2403,7 @@ CheckMMiyooVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMMIYOO -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../mmiyoo/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
@@ -2416,7 +2416,7 @@ CheckTrimuiVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../trimui/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
@@ -2429,7 +2429,7 @@ CheckPandoraVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA -fPIC -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3 -I../detour -I/usr/local/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
@@ -2442,7 +2442,7 @@ CheckQX1000Video()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000 -fPIC -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -O3 -I../detour -I/usr/local/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lwayland-client -lwayland-egl -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"

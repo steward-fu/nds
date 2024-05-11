@@ -26,29 +26,30 @@
     #define VAR_ADPCM_INDEX_STEP_TABLE  0x0815a6b8
     #define VAR_DESMUME_FOOTER_STR      0x0815a740
 
-    #define FUN_FREE                    0x08003e58
-    #define FUN_REALLOC                 0x0800435c
-    #define FUN_MALLOC                  0x080046e0
-    #define FUN_SCREEN_COPY16           0x080a59d8
-    #define FUN_PRINT_STRING            0x080a5398
-    #define FUN_LOAD_STATE_INDEX        0x08095ce4
-    #define FUN_SAVE_STATE_INDEX        0x08095c10
-    #define FUN_QUIT                    0x08006444
-    #define FUN_SAVESTATE_PRE           0x08095a80
-    #define FUN_SAVESTATE_POST          0x08095154
-    #define FUN_UPDATE_SCREEN           0x080a83c0
-    #define FUN_SET_SCREEN_MENU_OFF     0x080a8240
-    #define FUN_LOAD_STATE              0x080951c0
-    #define FUN_SAVE_STATE              0x0809580c
-    #define FUN_BLIT_SCREEN_MENU        0x080a62d8
-    #define FUN_INITIALIZE_BACKUP       0x08092f40
-    #define FUN_SET_SCREEN_MENU_OFF     0x080a8240
-    #define FUN_GET_SCREEN_PTR          0x080a890c
-    #define FUN_SPU_ADPCM_DECODE_BLOCK  0x0808d268
+    #define FUN_FREE                                    0x08003e58
+    #define FUN_REALLOC                                 0x0800435c
+    #define FUN_MALLOC                                  0x080046e0
+    #define FUN_SCREEN_COPY16                           0x080a59d8
+    #define FUN_PRINT_STRING                            0x080a5398
+    #define FUN_LOAD_STATE_INDEX                        0x08095ce4
+    #define FUN_SAVE_STATE_INDEX                        0x08095c10
+    #define FUN_QUIT                                    0x08006444
+    #define FUN_SAVESTATE_PRE                           0x08095a80
+    #define FUN_SAVESTATE_POST                          0x08095154
+    #define FUN_UPDATE_SCREEN                           0x080a83c0
+    #define FUN_SET_SCREEN_MENU_OFF                     0x080a8240
+    #define FUN_LOAD_STATE                              0x080951c0
+    #define FUN_SAVE_STATE                              0x0809580c
+    #define FUN_BLIT_SCREEN_MENU                        0x080a62d8
+    #define FUN_INITIALIZE_BACKUP                       0x08092f40
+    #define FUN_SET_SCREEN_MENU_OFF                     0x080a8240
+    #define FUN_GET_SCREEN_PTR                          0x080a890c
+    #define FUN_SPU_ADPCM_DECODE_BLOCK                  0x0808d268
+    #define FUN_RENDER_SCANLINE_TILED_4BPP              0x080bcf74
+    #define FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS  0x080c1cd4
 
-    #define CODE_FAST_FORWARD           0x08006ad0
-
-    #define ALIGN_ADDR(addr)        ((void*)((size_t)(addr) & ~(page_size - 1)))
+    #define CODE_FAST_FORWARD   0x08006ad0
+    #define ALIGN_ADDR(addr)    ((void*)((size_t)(addr) & ~(page_size - 1)))
 
     typedef enum _backup_type_enum {
         BACKUP_TYPE_NONE   = 0,

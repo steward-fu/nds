@@ -506,5 +506,8 @@ const void* get_pixels(void *chk);
 const char *to_lang(const char *p);
 void update_wayland_res(int w, int h);
 
+void render_scanline_tiled_4bpp(void);
+void render_polygon_setup_perspective_steps(void);
+
 #endif
 

@@ -4980,6 +4980,7 @@ int MMIYOO_VideoInit(_THIS)
     detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
     detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
     detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
+    detour_hook(FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS, (intptr_t)render_polygon_setup_perspective_steps);
 #ifdef MMIYOO
     printf(PREFIX"Installed hooking for libc functions\n");
     detour_hook(FUN_MALLOC, (intptr_t)sdl_malloc);
