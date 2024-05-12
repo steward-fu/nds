@@ -2398,6 +2398,19 @@ CheckQNXAudio()
     fi
 }
 
+CheckA30Video()
+{
+    if test x$enable_video = xyes; then
+        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
+        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30 -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/a30/arm-a30-linux-gnueabihf/sysroot/usr/include/SDL2"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lMali -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckMMiyooVideo()
 {
     if test x$enable_video = xyes; then
@@ -2460,6 +2473,20 @@ CheckUnittestVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUNITTEST -DMMIYOO -fPIC -I../mmiyoo/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2 -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
         SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
+CheckA30Audio()
+{
+    if test x$enable_audio = xyes; then
+        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
+        have_audio=yes
+        if test x$HOST = xarm-linux; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
+        fi
+        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
     fi
 }
 
@@ -3814,6 +3841,9 @@ case "$host" in
         esac
 
         case "$MOD" in
+            *a30*)              ARCH=a30
+                CheckA30Video
+                ;;
             *mmiyoo*)           ARCH=mmiyoo
                 CheckMMiyooVideo
                 ;;
@@ -3942,6 +3972,9 @@ case "$host" in
             nto)
                 CheckQNXAudio
             ;;
+            a30)
+                CheckA30Audio
+            ;;
             mmiyoo)
                 CheckMMiyooAudio
             ;;
@@ -3982,7 +4015,7 @@ case "$host" in
                 SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
                 have_joystick=yes
             ;;
-            mmiyoo|trimui|pandora|unittest)
+            a30|mmiyoo|trimui|pandora|unittest)
                 AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
                 SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
                 have_joystick=yes

@@ -1,9 +1,9 @@
 /*
-  Customized version for Miyoo-Mini handheld.
-  Only tested under Miyoo-Mini stock OS (original firmware) with Parasyte compatible layer.
+  Special customized version for the DraStic emulator that runs on
+  Miyoo Mini (Plus), TRIMUI-SMART and Miyoo A30 handhelds.
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
-  Copyright (C) 2022-2022 Steward Fu <steward.fu@gmail.com>
+  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -21,17 +21,15 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "../../SDL_internal.h"
-
-#if SDL_VIDEO_RENDER_MMIYOO
 
 #include <unistd.h>
 #include <stdbool.h>
 
-#include "SDL_hints.h"
-#include "../SDL_sysrender.h"
+#include "../../SDL_internal.h"
 #include "../../video/mmiyoo/SDL_video_mmiyoo.h"
 #include "../../video/mmiyoo/SDL_event_mmiyoo.h"
+#include "../SDL_sysrender.h"
+#include "SDL_hints.h"
 
 typedef struct MMIYOO_TextureData {
     void *data;
@@ -333,10 +331,8 @@ SDL_RenderDriver MMIYOO_RenderDriver = {
     }
 };
 
-#endif
-
 #ifdef UNITTEST
-    #include "unity_fixture.h"
+#include "unity_fixture.h"
 
 TEST_GROUP(sdl2_render_mmiyoo);
 

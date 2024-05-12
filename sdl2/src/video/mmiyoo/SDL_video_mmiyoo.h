@@ -1,9 +1,9 @@
 /*
-  Customized version for Miyoo-Mini handheld.
-  Only tested under Miyoo-Mini stock OS (original firmware) with Parasyte compatible layer.
+  Special customized version for the DraStic emulator that runs on
+  Miyoo Mini (Plus), TRIMUI-SMART and Miyoo A30 handhelds.
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
-  Copyright (C) 2022-2022 Steward Fu <steward.fu@gmail.com>
+  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -21,7 +21,6 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "../../SDL_internal.h"
 
 #ifndef __SDL_VIDEO_MMIYOO_H__
 #define __SDL_VIDEO_MMIYOO_H__
@@ -29,14 +28,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <linux/fb.h>
-#if defined(PANDORA)
+#ifdef PANDORA
 #include <linux/omapfb.h>
 #endif
 
+#ifdef A30
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#endif
+
+#include "../../SDL_internal.h"
+#include "../../events/SDL_events_c.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_pixels_c.h"
-#include "../../events/SDL_events_c.h"
 
 #include "SDL_ttf.h"
 #include "SDL_image.h"
@@ -126,6 +131,16 @@
     #define MAX_PATH                128
 #endif
 
+#ifdef A30
+    #define DEF_FB_W                640
+    #define DEF_FB_H                480
+    #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+    #define RELOAD_BG_COUNT         120
+#endif
+
 #ifdef MMIYOO
     #define DEF_FB_W                640
     #define DEF_FB_H                480
@@ -193,20 +208,12 @@
 #define PEN_RB                      3
 #define FONT_PATH                   "resources/font/font.ttf"
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30) || defined(PANDORA) || defined(QX1000)
     #define DEF_FONT_SIZE           24
 #endif
 
 #if defined(TRIMUI)
     #define DEF_FONT_SIZE           12
-#endif
-
-#ifdef PANDORA
-    #define DEF_FONT_SIZE           24
-#endif
-
-#ifdef QX1000
-    #define DEF_FONT_SIZE           24
 #endif
 
 #define NDS_DIS_MODE_VH_T0          0
@@ -292,6 +299,14 @@
 
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
+
+#ifdef A30
+    EGLSurface surface;
+    struct fbdev_window display;
+    SDL_Surface *screen;
+    SDL_Texture *texture;
+    SDL_Renderer *renderer;
+#endif
 } MMIYOO_VideoInfo;
 
 typedef struct _GFX {
@@ -313,6 +328,10 @@ typedef struct _GFX {
     struct fb_fix_screeninfo finfo;
 
     struct {
+#ifdef A30
+        void *virAddr;
+#endif
+
 #ifdef MMIYOO
         void *virAddr;
         MI_PHY phyAddr;

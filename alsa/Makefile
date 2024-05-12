@@ -6,6 +6,13 @@ LDFLAGS+= -L../detour -ldtr
 MOD     = mmiyoo
 SRC     = main.c
 
+ifeq ($(MOD),a30)
+    SRC    += neon.S
+    CFLAGS += -DA30
+    CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3
+    LDFLAGS+= -Wl,--no-undefined -ljson-c
+endif
+
 ifeq ($(MOD),mmiyoo)
     SRC    += neon.S
     CFLAGS += -DMMIYOO -I../mmiyoo/inc

@@ -1,4 +1,4 @@
-export MOD=mmiyoo
+export MOD=trimui
 export PATH=/opt/mmiyoo/bin:$(shell echo $$PATH)
 export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
 export CC=${CROSS}gcc

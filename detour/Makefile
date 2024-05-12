@@ -3,6 +3,12 @@ LDFLAGS = -fpic -shared
 MOD     = mmiyoo
 SRC     = main.c
 
+ifeq ($(MOD),a30)
+    CFLAGS += -DA30
+    CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -Wl,--no-undefined
+    LDFLAGS+= -ljson-c
+endif
+
 ifeq ($(MOD),mmiyoo)
     CFLAGS += -DMMIYOO -I../mmiyoo/inc
     CFLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -Wl,--no-undefined

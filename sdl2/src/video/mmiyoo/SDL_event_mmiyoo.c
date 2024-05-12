@@ -1,9 +1,9 @@
 /*
-  Customized version for Miyoo-Mini handheld.
-  Only tested under Miyoo-Mini stock OS (original firmware) with Parasyte compatible layer.
+  Special customized version for the DraStic emulator that runs on
+  Miyoo Mini (Plus), TRIMUI-SMART and Miyoo A30 handhelds.
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
-  Copyright (C) 2022-2022 Steward Fu <steward.fu@gmail.com>
+  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -21,9 +21,6 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "../../SDL_internal.h"
-
-#if SDL_VIDEO_DRIVER_MMIYOO
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +30,7 @@
 #include <dirent.h>
 #include <linux/input.h>
 
+#include "../../SDL_internal.h"
 #include "../../events/SDL_events_c.h"
 #include "../../core/linux/SDL_evdev.h"
 #include "../../thread/SDL_systhread.h"
@@ -42,10 +40,30 @@
 
 #if defined(PANDORA)
     #define INPUT_DEV "/dev/input/event4"
-#elif defined(QX1000)
+#elif defined(QX1000) || defined(A30)
     #define INPUT_DEV "/dev/input/event3"
 #else
     #define INPUT_DEV "/dev/input/event0"
+#endif
+
+#ifdef A30
+    #define UP      103
+    #define DOWN    108
+    #define LEFT    105
+    #define RIGHT   106
+    #define A       57
+    #define B       29
+    #define X       42
+    #define Y       56
+    #define L1      15
+    #define L2      18
+    #define R1      14
+    #define R2      20
+    #define START   28
+    #define SELECT  97
+    #define MENU    1
+    #define VOLUP   115
+    #define VOLDOWN 114
 #endif
 
 #ifdef MMIYOO
@@ -236,7 +254,7 @@ static void release_all_keys(void)
 
 static int hit_hotkey(uint32_t bit)
 {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU));
 #endif
 
@@ -263,7 +281,7 @@ static void set_key(uint32_t bit, int val)
         }
 #endif
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
         if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == MYKEY_SELECT) {
                 hotkey = (1 << MYKEY_SELECT);
@@ -288,7 +306,7 @@ int EventUpdate(void *data)
 
     uint32_t l1 = L1;
     uint32_t r1 = R1;
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
     uint32_t l2 = L2;
     uint32_t r2 = R2;
 #endif
@@ -347,7 +365,7 @@ int EventUpdate(void *data)
             y = Y;
         }
 
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
         if (nds.swap_l1l2) {
             l1 = L2;
             l2 = L1;
@@ -393,7 +411,7 @@ int EventUpdate(void *data)
                     if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
                     if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
                     if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
                     if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
 #endif
@@ -443,7 +461,7 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_UP)) {
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             switch (nds.dis_mode) {
                             case NDS_DIS_MODE_VH_T0:
@@ -461,7 +479,7 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_DOWN)) {
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
                         if (evt.mode == MMIYOO_MOUSE_MODE) {
                             switch (nds.dis_mode) {
                             case NDS_DIS_MODE_VH_T0:
@@ -479,7 +497,7 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                         if (nds.hres_mode == 0) {
                             if (nds.dis_mode > 0) {
                                 nds.dis_mode-= 1;
@@ -504,7 +522,7 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_RIGHT)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                         if (nds.hres_mode == 0) {
                             if (nds.dis_mode < NDS_DIS_MODE_LAST) {
                                 nds.dis_mode+= 1;
@@ -522,7 +540,7 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_A)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                         if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
                             uint32_t tmp = nds.alt_mode;
                             nds.alt_mode = nds.dis_mode;
@@ -538,16 +556,13 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_B)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                         pixel_filter = pixel_filter ? 0 : 1;
 #endif
                         set_key(MYKEY_B, 0);
                     }
 
                     if (hit_hotkey(MYKEY_X)) {
-#ifdef MMIYOO
-#endif
-
 #ifdef TRIMUI
                         int w = FB_W;
                         int h = FB_H;
@@ -625,7 +640,7 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_START)) {
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
                         if (nds.menu.enable == 0) {
 #ifdef QX1000
                             update_wayland_res(640, 480);
@@ -644,7 +659,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_START, 0);
                     }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                     if (nds.hotkey == HOTKEY_BIND_MENU) {
                         if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
                             set_key(MYKEY_MENU_ONION, 1);
@@ -661,7 +676,7 @@ int EventUpdate(void *data)
 #endif
 
                     if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                         static int pre_ff = 0;
 
                         if (pre_ff != nds.fast_forward) {
@@ -678,7 +693,7 @@ int EventUpdate(void *data)
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_L1)) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                         set_key(MYKEY_EXIT, 1);
 #endif
 
@@ -688,7 +703,7 @@ int EventUpdate(void *data)
                         set_key(MYKEY_L1, 0);
                     }
 
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
                     if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
                         set_key(MYKEY_QSAVE, 1);
                         set_key(MYKEY_R2, 0);
@@ -815,7 +830,7 @@ void MMIYOO_PumpEvents(_THIS)
 {
     SDL_SemWait(event_sem);
     if (nds.menu.enable) {
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
         int cc = 0;
         uint32_t bit = 0;
         uint32_t changed = pre_keypad_bitmaps ^ evt.keypad.bitmaps;
@@ -841,7 +856,7 @@ void MMIYOO_PumpEvents(_THIS)
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                     if ((nds.hotkey == HOTKEY_BIND_MENU) && (cc == MYKEY_MENU)) {
                         continue;
                     }
@@ -987,10 +1002,8 @@ void MMIYOO_PumpEvents(_THIS)
     SDL_SemPost(event_sem);
 }
 
-#endif
-
 #ifdef UNITTEST
-    #include "unity_fixture.h"
+#include "unity_fixture.h"
 
 TEST_GROUP(sdl2_event_mmiyoo);
 

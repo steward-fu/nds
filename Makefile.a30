@@ -1,0 +1,28 @@
+export MOD=a30
+export PATH=/opt/a30/bin:$(shell echo $$PATH)
+export CROSS=/opt/a30/bin/arm-linux-
+export CC=${CROSS}gcc
+export AR=${CROSS}ar
+export AS=${CROSS}as
+export LD=${CROSS}ld
+export CXX=${CROSS}g++
+export HOST=arm-linux
+    
+$(shell cd sdl2 && rm -rf libEGL.so libGLESv2.so)
+
+#SDL2_CFG+= --enable-oss
+#SDL2_CFG+= --enable-alsa
+#SDL2_CFG+= --enable-sensor
+#SDL2_CFG+= --enable-shared
+#SDL2_CFG+= --enable-static
+SDL2_CFG+= --enable-loadso
+SDL2_CFG+= --enable-joystick
+SDL2_CFG+= --enable-video-opengl
+SDL2_CFG+= --enable-video-opengles
+SDL2_CFG+= --enable-video-opengles2
+
+include Makefile.mk
+
+.PHONY: push
+push:
+	adb push drastic/libs/* /mnt/SDCARD/Emu/drastic/libs/

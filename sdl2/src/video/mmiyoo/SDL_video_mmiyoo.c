@@ -1,9 +1,9 @@
 /*
-  Customized version for Miyoo-Mini handheld.
-  Only tested under Miyoo-Mini stock OS (original firmware) with Parasyte compatible layer.
+  Special customized version for the DraStic emulator that runs on
+  Miyoo Mini (Plus), TRIMUI-SMART and Miyoo A30 handhelds.
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
-  Copyright (C) 2022-2022 Steward Fu <steward.fu@gmail.com>
+  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -21,9 +21,6 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "../../SDL_internal.h"
-
-#if SDL_VIDEO_DRIVER_MMIYOO
 
 #include <time.h>
 #include <dirent.h>
@@ -42,11 +39,14 @@
 #include <sys/time.h>
 #include <time.h>
 #include <json-c/json.h>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
 
-#include "../../events/SDL_events_c.h"
+#include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_pixels_c.h"
+#include "../../events/SDL_events_c.h"
 
 #include "SDL_image.h"
 #include "SDL_version.h"
@@ -57,6 +57,10 @@
 #include "SDL_mouse.h"
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
+
+#ifdef A30
+#include "SDL_opengles_mmiyoo.h"
+#endif
 
 #include "hex_pen.h"
 #include "drastic_bios_arm7.h"
@@ -78,6 +82,7 @@ int FONT_SIZE = 0;
 int show_fps = 0;
 int pixel_filter = 0;
 int savestate_busy = 0;
+int need_screen_rotation_helper = 0;
 SDL_Surface *fps_info = NULL;
 
 static pthread_t thread;
@@ -550,15 +555,13 @@ static int draw_drastic_menu_main(void)
         p = &drastic_menu.item[cc];
         if (p->y == 201) {
             draw = 1;
-#if defined(MMIYOO) || defined(TRIMUI)
+#if defined(MMIYOO) || defined(TRIMUI) || defined(A30)
             sprintf(buf, "NDS %s", &p->msg[8]);
-            x = FB_W - get_font_width(buf) - 10;
-            y = 10 / div;
 #else
             sprintf(buf, "%s", &p->msg[8]);
+#endif
             x = FB_W - get_font_width(buf) - 10;
             y = 10 / div;
-#endif
         }
         else if (p->y == 280) {
             draw = 1;
@@ -636,6 +639,10 @@ static int draw_drastic_menu_main(void)
     }
 
     y = 10;
+#ifdef A30
+    sprintf(buf, "Rel "NDS_VER" Res %s", "640*480");
+#endif
+
 #ifdef MMIYOO
     sprintf(buf, "Rel "NDS_VER" Res %s", nds.enable_752x560 ? "752*560" : "640*480");
 #endif
@@ -681,7 +688,7 @@ static int draw_drastic_menu_main(void)
             _func((void*)VAR_SYSTEM, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? h - 20 : 50;
                 rt.w = NDS_W;
@@ -693,7 +700,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? (h + NDS_H) - 20 : 50 + NDS_H;
                 rt.w = NDS_W;
@@ -1390,7 +1397,7 @@ static int process_screen(void)
     int screen_cnt = 0;
     char buf[MAX_PATH] = {0};
 
-#if defined(MMIYOO) || defined(PANDORA) || defined(QX1000)
+#if defined(MMIYOO) || defined(PANDORA) || defined(QX1000) || defined(A30)
     screen_cnt = 2;
 #else
     screen_cnt = 1;
@@ -1563,7 +1570,8 @@ static int process_screen(void)
             }
         }
 
-#if defined(QX1000)
+#if defined(A30)
+#elif defined(QX1000)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
 #elif defined(MMIYOO)
@@ -1746,7 +1754,7 @@ static int process_screen(void)
 
             GFX_Copy(nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
                 drt.x = 0;
@@ -2069,7 +2077,7 @@ static void lang_enum(void)
 
 static int read_config(void)
 {
-#if defined(TRIMUI) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
     int fd = -1;
 #endif
 
@@ -2222,7 +2230,7 @@ static int read_config(void)
         nds.fast_forward = json_object_get_int(jval);
     }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
         struct stat st = {0};
@@ -2255,18 +2263,18 @@ static int read_config(void)
     reload_menu();
 
     reload_pen();
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
     reload_overlay();
 #endif
     json_object_put(jfile);
 
-#if defined(TRIMUI) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
     fd = open("/dev/dsp", O_RDWR);
     if (fd > 0) {
         close(fd);
 #endif
         snd_nds_reload_config();
-#if defined(TRIMUI) || defined(PANDORA)
+#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
     }
 #endif
 
@@ -2816,10 +2824,53 @@ void disp_resize(void)
 }
 #endif
 
+#ifdef A30
+int fb_init(void)
+{
+    gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
+    if (gfx.fb_dev < 0) {
+        printf(PREFIX"Failed to open framebuffer device\n");
+        return -1;
+    }
+
+    if (ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo) < 0) {
+        printf(PREFIX"Failed to get framebuffer information\n");
+        return -1;
+    }
+
+    gfx.fb.virAddr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fb_dev, 0);
+    if (gfx.fb.virAddr == (void *)-1) {
+        close(gfx.fb_dev);
+        gfx.fb_dev = -1;
+        printf(PREFIX"Failed to mmap /dev/fb0\n");
+        return -1;
+    }
+    printf(PREFIX"FB virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
+    memset(gfx.fb.virAddr, 0 , FB_SIZE);
+
+    gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
+    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    return 0;
+}
+
+int fb_quit(void)
+{
+    if (gfx.fb.virAddr) {
+        munmap(gfx.fb.virAddr, FB_SIZE);
+        gfx.fb.virAddr = NULL;
+    }
+
+    if (gfx.fb_dev > 0) {
+        close(gfx.fb_dev);
+        gfx.fb_dev = -1;
+    }
+    return 0;
+}
+#endif
+
 #ifdef MMIYOO
 int fb_init(void)
 {
-#ifndef UNITTEST
     int cc = 0;
 
     MI_SYS_Init();
@@ -2852,13 +2903,11 @@ int fb_init(void)
 
         nds.screen.pixels[cc] = gfx.dup.virAddr[cc];
     }
-#endif
     return 0;
 }
 
 int fb_quit(void)
 {
-#ifndef UNITTEST
     int cc = 0;
 
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
@@ -2884,7 +2933,6 @@ int fb_quit(void)
     ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
     close(gfx.fb_dev);
     gfx.fb_dev = -1;
-#endif
     return 0;
 }
 #endif
@@ -3040,7 +3088,7 @@ void GFX_Quit(void)
 
 void GFX_Clear(void)
 {
-#if defined(MMIYOO)
+#ifdef MMIYOO
     int cc = 0;
 
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
@@ -3148,6 +3196,9 @@ int draw_pen(void *pixels, int width, int pitch)
 
 int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
+#ifdef A30
+#endif
+
 #ifdef QX1000
     int x = 0;
     int y = 0;
@@ -4479,7 +4530,7 @@ int reload_menu(void)
         SDL_FreeSurface(t);
     }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
     nds.menu.drastic.cursor = IMG_Load(buf);
 #endif
@@ -4491,7 +4542,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -4510,7 +4561,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -4531,11 +4582,11 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#if !defined(QX1000)
+#if !defined(QX1000) && !defined(A30)
     static int pre_sel = -1;
 #endif
 
-#if !defined(PANDORA) && !defined(QX1000)
+#if !defined(PANDORA) && !defined(QX1000) && !defined(A30)
     static int pre_mode = -1;
 #endif
 
@@ -4753,7 +4804,7 @@ int reload_bg(void)
     return 0;
 }
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
 int reload_overlay(void)
 {
     static int pre_sel = -1;
@@ -4778,7 +4829,8 @@ int reload_overlay(void)
                 if (t) {
                     SDL_BlitSurface(t, NULL, nds.overlay.img, NULL);
                     SDL_FreeSurface(t);
-#ifndef UNITTEST
+
+#ifdef MMIYOO
                     gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
                     gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
                     gfx.hw.overlay.surf.u32Width = FB_W;
@@ -4818,8 +4870,31 @@ static void MMIYOO_DeleteDevice(SDL_VideoDevice *device)
 
 int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
 {
-    SDL_SetMouseFocus(window);
+#ifdef A30
+    need_screen_rotation_helper = 0;
+    if (!(window->flags & SDL_WINDOW_OPENGL)) {
+        need_screen_rotation_helper = 1;
+        window->flags |= SDL_WINDOW_OPENGL;
+    }
+    printf(PREFIX"%s Screen Rotation Helper\n", need_screen_rotation_helper ? "Enabled" : "Disabled");
+
+    if (SDL_GL_LoadLibrary(NULL) < 0) {
+        printf(PREFIX"Failed to load GL library\n");
+        return -1;
+    }
+
+    vid.display.width = REAL_W;
+    vid.display.height = REAL_H;
+    vid.surface = SDL_EGL_CreateSurface(_this, (NativeWindowType)&vid.display);
+    if (vid.surface == EGL_NO_SURFACE) {
+        MMIYOO_VideoQuit(_this);
+        return printf(PREFIX"Failed to create EGL window surface\n");
+    }
+#endif
+
     vid.window = window;
+    SDL_SetMouseFocus(window);
+    SDL_SetKeyboardFocus(window);
     printf(PREFIX"Width:%d, Height:%d\n", window->w, window->h);
     return 0;
 }
@@ -4847,10 +4922,24 @@ static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
     device->VideoInit = MMIYOO_VideoInit;
     device->VideoQuit = MMIYOO_VideoQuit;
     device->SetDisplayMode = MMIYOO_SetDisplayMode;
-    device->PumpEvents = MMIYOO_PumpEvents;
     device->CreateSDLWindow = MMIYOO_CreateWindow;
     device->CreateSDLWindowFrom = MMIYOO_CreateWindowFrom;
     device->free = MMIYOO_DeleteDevice;
+
+#ifdef A30
+    device->GL_LoadLibrary = MMIYOO_GLES_LoadLibrary;
+    device->GL_GetProcAddress = MMIYOO_GLES_GetProcAddress;
+    device->GL_UnloadLibrary = MMIYOO_GLES_UnloadLibrary;
+    device->GL_CreateContext = MMIYOO_GLES_CreateContext;
+    device->GL_MakeCurrent = MMIYOO_GLES_MakeCurrent;
+    device->GL_SetSwapInterval = MMIYOO_GLES_SetSwapInterval;
+    device->GL_GetSwapInterval = MMIYOO_GLES_GetSwapInterval;
+    device->GL_SwapWindow = MMIYOO_GLES_SwapWindow;
+    device->GL_DeleteContext = MMIYOO_GLES_DeleteContext;
+    device->GL_DefaultProfileConfig = MMIYOO_GLES_DefaultProfileConfig;
+#endif
+
+    device->PumpEvents = MMIYOO_PumpEvents;
     return device;
 }
 
@@ -4863,28 +4952,22 @@ int MMIYOO_VideoInit(_THIS)
     char buf[MAX_PATH] = {0};
 #endif
 
-    SDL_DisplayMode mode={0};
-    SDL_VideoDisplay display={0};
+    SDL_DisplayMode mode = {0};
+    SDL_VideoDisplay display = {0};
 
     printf(PREFIX"MMIYOO_VideoInit\n");
 #ifndef UNITTEST
     signal(SIGTERM, sigterm_handler);
 #endif
 
-    SDL_zero(mode);
-    mode.format = SDL_PIXELFORMAT_RGB565;
-    mode.w = 640;
-    mode.h = 480;
-    mode.refresh_rate = 60;
-    SDL_AddDisplayMode(&display, &mode);
-
+#ifdef A30
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_ARGB8888;
-    mode.w = 640;
-    mode.h = 480;
+    mode.w = REAL_W;
+    mode.h = REAL_H;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
-
+#else
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
     mode.w = 800;
@@ -4939,7 +5022,7 @@ int MMIYOO_VideoInit(_THIS)
     mode.h = 272;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
-
+#endif
     SDL_AddVideoDisplay(&display, SDL_FALSE);
 
     LINE_H = 30;
@@ -5005,6 +5088,28 @@ void MMIYOO_VideoQuit(_THIS)
     system("sync");
     detour_quit();
     write_config();
+
+#ifdef A30
+    if (vid.surface != EGL_NO_SURFACE) {
+        SDL_EGL_DestroySurface(_this, vid.surface);
+        vid.surface = EGL_NO_SURFACE;
+    }
+
+    if (vid.screen) {
+        SDL_FreeSurface(vid.screen);
+        vid.screen = NULL;
+    }
+
+    if (vid.texture) {
+        SDL_DestroyTexture(vid.texture);
+        vid.texture = NULL;
+    }
+
+    if (vid.renderer) {
+        SDL_DestroyRenderer(vid.renderer);
+        vid.renderer = NULL;
+    }
+#endif
 
     if (fps_info) {
         SDL_FreeSurface(fps_info);
@@ -5076,7 +5181,7 @@ void MMIYOO_VideoQuit(_THIS)
     lang_unload();
 }
 
-#if defined(MMIYOO) || defined(QX1000)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
 static const char *DIS_MODE0_640[] = {
     "640*480",
     "640*480",
@@ -5624,7 +5729,7 @@ int handle_menu(int key)
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
                 get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
                 reload_overlay();
 #endif
             }
@@ -6019,10 +6124,8 @@ int handle_menu(int key)
 }
 #endif
 
-#endif
-
 #ifdef UNITTEST
-    #include "unity_fixture.h"
+#include "unity_fixture.h"
 
 TEST_GROUP(sdl2_video_mmiyoo);
 
