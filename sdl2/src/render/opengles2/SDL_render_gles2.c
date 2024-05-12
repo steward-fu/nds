@@ -858,9 +858,13 @@ SetDrawState(GLES2_RenderData *data, const SDL_RenderCommand *cmd, const GLES2_I
 
     if(data->drawstate.viewport_dirty) {
         const SDL_Rect *viewport = &data->drawstate.viewport;
+#ifdef A30
+        data->glViewport(0, 0, 480, 640);
+#else
         data->glViewport(viewport->x,
                          data->drawstate.target ? viewport->y : (data->drawstate.drawableh - viewport->y - viewport->h),
                          viewport->w, viewport->h);
+#endif
         if(viewport->w && viewport->h) {
             data->drawstate.projection[0][0] = 2.0f / viewport->w;
             data->drawstate.projection[1][1] = (data->drawstate.target ? 2.0f : -2.0f) / viewport->h;
