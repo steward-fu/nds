@@ -141,8 +141,6 @@ int MMIYOO_GLES_SwapWindow(_THIS, SDL_Window *window)
     int h = need_screen_rotation_helper ? REAL_H : LCD_H;
 #endif
 
-    printf("%s\n", __func__);
-    glFinish();
     eglSwapBuffers(eglDisplay, eglSurface);
 
 #if EGL_USE_PBUF

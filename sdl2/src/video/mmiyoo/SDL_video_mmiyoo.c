@@ -71,7 +71,7 @@
 
 NDS nds = {0};
 GFX gfx = {0};
-MMIYOO_VideoInfo vid={0};
+MMIYOO_VideoInfo vid = {0};
 
 int FB_W = 0;
 int FB_H = 0;
@@ -91,6 +91,10 @@ static int need_reload_bg = RELOAD_BG_COUNT;
 static SDL_Surface *cvt = NULL;
 
 extern MMIYOO_EventInfo evt;
+extern EGLConfig eglConfig;
+extern EGLDisplay eglDisplay;
+extern EGLContext eglContext;
+extern EGLSurface eglSurface;
 
 static int MMIYOO_VideoInit(_THIS);
 static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
@@ -1403,6 +1407,16 @@ static int process_screen(void)
     screen_cnt = 1;
 #endif
 
+#ifdef A30
+    vid.window = (SDL_Window *)(*((uint32_t *)VAR_SDL_SCREEN_WINDOW));
+    vid.renderer = (SDL_Renderer *)(*((uint32_t *)VAR_SDL_SCREEN_RENDERER));
+
+    if (vid.texture == NULL) {
+        vid.screen = SDL_CreateRGBSurface(0, LCD_W, LCD_H, FB_BPP * 8, 0, 0, 0, 0);
+        vid.texture = SDL_CreateTexture(vid.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, LCD_W, LCD_H);
+    }
+#endif
+
     if (nds.auto_state > 0) {
         if (need_loadstate > 0) {
             need_loadstate-= 1;
@@ -1815,6 +1829,9 @@ void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uin
 
 void sdl_update_screen(void)
 {
+#ifdef A30
+    process_screen();
+#else
     static int prepare_time = 30;
 
     if (prepare_time) {
@@ -1863,6 +1880,7 @@ void sdl_update_screen(void)
 #endif
         nds.update_screen = 1;
     }
+#endif
 }
 
 void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
@@ -4895,7 +4913,7 @@ int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
     vid.window = window;
     SDL_SetMouseFocus(window);
     SDL_SetKeyboardFocus(window);
-    printf(PREFIX"Width:%d, Height:%d\n", window->w, window->h);
+    printf(PREFIX"Window:%p, Width:%d, Height:%d\n", window, window->w, window->h);
     return 0;
 }
 
@@ -5103,11 +5121,6 @@ void MMIYOO_VideoQuit(_THIS)
     if (vid.texture) {
         SDL_DestroyTexture(vid.texture);
         vid.texture = NULL;
-    }
-
-    if (vid.renderer) {
-        SDL_DestroyRenderer(vid.renderer);
-        vid.renderer = NULL;
     }
 #endif
 

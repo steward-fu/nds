@@ -7,6 +7,8 @@
     #define VAR_SDL_SCREEN_RENDERER     0x0aee9568
     #define VAR_SDL_SCREEN_BPP          0x0aee957c
     #define VAR_SDL_SCREEN_NEED_INIT    0x0aee95a0
+    #define VAR_SDL_SCREEN_WINDOW       0x0aee9564
+    #define VAR_SDL_SCREEN_RENDERER     0x0aee9568
 
     #define VAR_SDL_SCREEN0_SHOW        0x0aee9544
     #define VAR_SDL_SCREEN0_HRES_MODE   0x0aee9545
