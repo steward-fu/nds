@@ -4908,6 +4908,8 @@ int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
         MMIYOO_VideoQuit(_this);
         return printf(PREFIX"Failed to create EGL window surface\n");
     }
+
+    vid.renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 #endif
 
     vid.window = window;
@@ -5111,6 +5113,11 @@ void MMIYOO_VideoQuit(_THIS)
     if (vid.surface != EGL_NO_SURFACE) {
         SDL_EGL_DestroySurface(_this, vid.surface);
         vid.surface = EGL_NO_SURFACE;
+    }
+
+    if (vid.renderer) {
+        SDL_DestroyRenderer(vid.renderer);
+        vid.renderer = NULL;
     }
 
     if (vid.screen) {
