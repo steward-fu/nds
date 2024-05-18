@@ -56,6 +56,12 @@
 
 #include "detour.h"
 
+#ifdef A30
+#define USE_MYJOY           1
+#define MYJOY_MODE_KEYPAD   1
+#define MYJOY_MODE_MOUSE    0
+#endif
+
 #if defined(MMIYOO)
 #include "mi_sys.h"
 #include "mi_gfx.h"
@@ -527,6 +533,7 @@ void update_wayland_res(int w, int h);
 
 void render_scanline_tiled_4bpp(void);
 void render_polygon_setup_perspective_steps(void);
+void MMIYOO_JoystickUpdate(SDL_Joystick *joystick);
 
 #endif
 

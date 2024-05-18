@@ -144,6 +144,10 @@
 
 MMIYOO_EventInfo evt = {0};
 
+#ifdef A30
+int myjoy_mode = MYJOY_MODE_KEYPAD;
+#endif
+
 extern GFX gfx;
 extern NDS nds;
 extern MMIYOO_VideoInfo vid;
@@ -734,6 +738,10 @@ int EventUpdate(void *data)
         }
         SDL_SemPost(event_sem);
         usleep(1000000 / 60);
+
+#if USE_MYJOY
+        MMIYOO_JoystickUpdate((SDL_Joystick *)myjoy_mode);
+#endif
     }
     
     return 0;
