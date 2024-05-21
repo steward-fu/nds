@@ -46,18 +46,11 @@ this should probably be removed at some point in the future.  --ryan. */
 
 #define SDL_WINDOWRENDERDATA    "_SDL_WindowRenderData"
 
-#ifdef A30
-#define CHECK_RENDERER_MAGIC(renderer, retval) \
-    if (!renderer || renderer->magic != &renderer_magic) { \
-        return retval; \
-    }
-#else
 #define CHECK_RENDERER_MAGIC(renderer, retval) \
     if (!renderer || renderer->magic != &renderer_magic) { \
         SDL_SetError("Invalid renderer"); \
         return retval; \
     }
-#endif
 
 #define CHECK_TEXTURE_MAGIC(texture, retval) \
     if (!texture || texture->magic != &texture_magic) { \

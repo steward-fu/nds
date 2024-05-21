@@ -496,10 +496,10 @@ static int MMIYOO_JoystickSetSensorsEnabled(SDL_Joystick *joystick, SDL_bool ena
 void MMIYOO_JoystickUpdate(SDL_Joystick *joystick)
 {
 #ifdef A30
-    const int LTH = -50;
-    const int RTH = 50;
-    const int UTH = -50;
-    const int DTH = 50;
+    const int LTH = -70;
+    const int RTH = 70;
+    const int UTH = -70;
+    const int DTH = 70;
 
     static int pre_x = -1;
     static int pre_y = -1;

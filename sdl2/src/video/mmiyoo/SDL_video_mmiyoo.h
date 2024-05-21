@@ -80,8 +80,10 @@
 
 #if !defined(MMIYOO)
     #define E_MI_GFX_ROTATE_90      0
-    #define E_MI_GFX_ROTATE_180     0
-    #define E_MI_GFX_ROTATE_270     0
+    #define E_MI_GFX_ROTATE_180     1
+    #define E_MI_GFX_ROTATE_270     2
+    #define E_MI_GFX_FMT_RGB565     0
+    #define E_MI_GFX_FMT_ARGB8888   1
 #endif
 
 #ifdef QX1000
@@ -237,7 +239,11 @@
 #define NDS_DIS_MODE_VH_C1          12
 #define NDS_DIS_MODE_HH0            13
 #define NDS_DIS_MODE_HH1            14
+#ifdef A30
+#define NDS_DIS_MODE_LAST           12
+#else
 #define NDS_DIS_MODE_LAST           14
+#endif
 #define NDS_DIS_MODE_HRES0          15
 #define NDS_DIS_MODE_HRES1          16
 
@@ -303,15 +309,41 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
+#ifdef A30
+
+#define DAC_BASE                        0x1c22000
+#define CCU_BASE                        0x01C20000
+
+enum _TEX_TYPE {
+    TEX_SCR0 = 0,
+    TEX_SCR1,
+    TEX_BG,
+    TEX_TMP,
+    TEX_MAX
+};
+#endif
+
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
 
 #ifdef A30
-    EGLSurface surface;
-    struct fbdev_window display;
-    SDL_Surface *screen;
-    SDL_Texture *texture;
-    SDL_Renderer *renderer;
+    EGLConfig eglConfig;
+    EGLDisplay eglDisplay;
+    EGLContext eglContext;
+    EGLSurface eglSurface;
+    GLuint vShader;
+    GLuint fShader;
+    GLuint pObject;
+    GLuint texID[TEX_MAX];
+    GLint posLoc;
+    GLint texLoc;
+    GLint samLoc;
+
+    int mem_fd;
+    uint8_t* ccu_mem;
+    uint8_t* dac_mem;
+    uint32_t *vol_ptr;
+    uint32_t *cpu_ptr;
 #endif
 } MMIYOO_VideoInfo;
 
@@ -390,6 +422,7 @@ typedef struct _NDS {
     int auto_slot;
     int auto_state;
     int keys_rotate;
+    int update_menu;
     int update_screen;
     int enable_752x560;
     int defer_update_bg;
@@ -499,13 +532,20 @@ typedef struct _CUST_MENU {
     CUST_MENU_SUB item[MAX_MENU_LINE];
 } CUST_MENU;
 
+#ifdef A30
+struct _cpu_clock {
+    int clk;
+    uint32_t reg;
+};
+#endif
+
 int snd_nds_savestate(int slot);
 void snd_nds_reload_config(void);
 void neon_memcpy(void *dest, const void *src, size_t n);
 
 void GFX_Clear(void);
 void GFX_Flip(void);
-int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate);
+int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate);
 
 int draw_pen(void *pixels, int width, int pitch);
 int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor);

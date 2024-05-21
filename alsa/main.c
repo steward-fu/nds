@@ -16,6 +16,7 @@
 #include <alsa/pcm.h>
 #include <linux/soundcard.h>
 #include <json-c/json.h>
+#include <sys/mman.h>
 
 #ifdef QX1000
 #include <pulse/pulseaudio.h>
@@ -39,23 +40,28 @@
 #define CHANNELS            2
 
 #if defined(PANDORA)
-    #define SAMPLES         2048
+#define SAMPLES             2048
 #else
-    #define SAMPLES         8192
+#define SAMPLES             8192
 #endif
 
 #define QUEUE_SIZE          (2 * 1024 * 1024)
 
 #ifdef MMIYOO
-    #define MAX_VOLUME      20
-    #define MIN_RAW_VALUE   -60
-    #define MAX_RAW_VALUE   30
-    #define MI_AO_SETVOLUME 0x4008690b
-    #define MI_AO_GETVOLUME 0xc008690c
-    #define MI_AO_SETMUTE   0x4008690d
+#define MAX_VOLUME          20
+#define MIN_RAW_VALUE       -60
+#define MAX_RAW_VALUE       30
+#define MI_AO_SETVOLUME     0x4008690b
+#define MI_AO_GETVOLUME     0xc008690c
+#define MI_AO_SETMUTE       0x4008690d
 #endif
 
+#ifdef A30
+#define JSON_APP_FILE       "/config/system.json"
+#else
 #define JSON_APP_FILE       "/appconfigs/system.json"
+#endif
+
 #define JSON_CFG_FILE       "resources/settings.json"
 #define JSON_VOL_KEY        "vol"
 #define JSON_AUTO_STATE     "auto_state"
@@ -91,6 +97,12 @@ static pa_t pa = {0};
     static MI_AUDIO_DEV AoDevId = 0;
     static MI_AUDIO_Attr_t stSetAttr = {0};
     static MI_AUDIO_Attr_t stGetAttr = {0};
+#endif
+
+#ifdef A30
+    int mem_fd = -1;
+    uint8_t *mem_ptr = NULL;
+    uint32_t *vol_ptr = NULL;
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30)
@@ -613,6 +625,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
         //json_object_object_add(jfile, JSON_VOL_KEY, json_object_new_int(2));
         //json_object_to_file(JSON_APP_FILE, jfile);
         json_object_put(jfile);
+        printf(PREFIX"Vol %d\n", cur_volume);
     }
 #endif
 
@@ -655,6 +668,13 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
     set_volume(cur_volume);
+#endif
+
+#ifdef A30
+    mem_fd = open("/dev/mem", O_RDWR);
+    mem_ptr = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, 0x1c22000);
+    vol_ptr = (uint32_t *)(&mem_ptr[0xc00 + 0x258]);
+    *vol_ptr = ((160 - (cur_volume << 1)) << 8) | (160 - (cur_volume << 1));
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30)
@@ -767,6 +787,12 @@ int snd_pcm_close(snd_pcm_t *pcm)
         pa_threaded_mainloop_stop(pa.mainloop);
         pa.mainloop = NULL;
     }
+#endif
+
+#ifdef A30
+    *vol_ptr = (160 << 8) | 160;
+    munmap(mem_ptr, 4096);
+    close(mem_fd);
 #endif
     return 0;
 }

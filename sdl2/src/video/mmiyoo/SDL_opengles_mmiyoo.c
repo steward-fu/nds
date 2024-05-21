@@ -40,12 +40,6 @@
 #include "SDL_opengles_mmiyoo.h"
 #include "SDL_video_mmiyoo.h"
 
-#if 0
-SDL_EGL_CreateContext_impl(MMIYOO)
-SDL_EGL_SwapWindow_impl(MMIYOO)
-SDL_EGL_MakeCurrent_impl(MMIYOO)
-#endif
-
 #define EGL_USE_PBUF 0
 
 EGLConfig eglConfig = 0;
@@ -55,7 +49,6 @@ EGLSurface eglSurface = 0;
 
 extern int fb_flip;
 extern uint32_t *gl_mem;
-extern int need_screen_rotation_helper;
 extern SDL_Window *win;
 
 int MMIYOO_GLES_LoadLibrary(_THIS, const char *path)
@@ -135,20 +128,7 @@ SDL_GLContext MMIYOO_GLES_CreateContext(_THIS, SDL_Window *window)
 
 int MMIYOO_GLES_SwapWindow(_THIS, SDL_Window *window)
 {
-    static int fps = 0;
-#if EGL_USE_PBUF
-    int w = need_screen_rotation_helper ? REAL_W : LCD_W;
-    int h = need_screen_rotation_helper ? REAL_H : LCD_H;
-#endif
-
     eglSwapBuffers(eglDisplay, eglSurface);
-
-#if EGL_USE_PBUF
-    if ((fps % 3) == 0) {
-        //glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, gl_mem);
-    }
-#endif
-    fps += 1;
     return 0;
 }
 

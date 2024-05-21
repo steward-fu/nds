@@ -56,9 +56,9 @@
     #define X       42
     #define Y       56
     #define L1      15
-    #define L2      18
+    #define L2      20 //18
     #define R1      14
-    #define R2      20
+    #define R2      18 //20
     #define START   28
     #define SELECT  97
     #define MENU    1

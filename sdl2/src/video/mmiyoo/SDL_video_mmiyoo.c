@@ -82,7 +82,6 @@ int FONT_SIZE = 0;
 int show_fps = 0;
 int pixel_filter = 1;
 int savestate_busy = 0;
-int need_screen_rotation_helper = 0;
 SDL_Surface *fps_info = NULL;
 
 static pthread_t thread;
@@ -91,10 +90,6 @@ static int need_reload_bg = RELOAD_BG_COUNT;
 static SDL_Surface *cvt = NULL;
 
 extern MMIYOO_EventInfo evt;
-extern EGLConfig eglConfig;
-extern EGLDisplay eglDisplay;
-extern EGLContext eglContext;
-extern EGLSurface eglSurface;
 
 static int MMIYOO_VideoInit(_THIS);
 static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
@@ -111,6 +106,116 @@ static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = {0};
 
 int need_restore = 0;
 int pre_dismode = 0;
+#endif
+
+#ifdef A30
+GLfloat bgVertices[] = {
+   -1.0f,  1.0f, 0.0f, 0.0f,  0.0f,
+   -1.0f, -1.0f, 0.0f, 0.0f,  1.0f,
+    1.0f, -1.0f, 0.0f, 1.0f,  1.0f,
+    1.0f,  1.0f, 0.0f, 1.0f,  0.0f
+};
+
+GLfloat vVertices[] = {
+   -1.0f,  1.0f, 0.0f, 0.0f,  0.0f,
+   -1.0f, -1.0f, 0.0f, 0.0f,  1.0f,
+    1.0f, -1.0f, 0.0f, 1.0f,  1.0f,
+    1.0f,  1.0f, 0.0f, 1.0f,  0.0f
+};
+GLushort indices[] = {0, 1, 2, 0, 2, 3};
+
+const char *vShaderSrc =
+    "attribute vec4 a_position;   \n"
+    "attribute vec2 a_texCoord;   \n"
+    "varying vec2 v_texCoord;     \n"
+    "void main()                  \n"
+    "{                            \n"
+    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;                                                                            \n"
+    "    mat4 rot = mat4(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); \n"
+    "    gl_Position = a_position * rot; \n"
+    "    v_texCoord = a_texCoord;        \n"
+    "}                                   \n";
+    
+const char *fShaderSrc =
+    "precision mediump float;                                  \n"
+    "varying vec2 v_texCoord;                                  \n"
+    "uniform sampler2D s_texture;                              \n"
+    "void main()                                               \n"
+    "{                                                         \n"
+    "    vec3 tex = texture2D(s_texture, v_texCoord).bgr;      \n"
+    "    gl_FragColor = vec4(tex, 1.0);                        \n"
+    "}                                                         \n";
+
+static struct _cpu_clock cpu_clock[] = {
+    {96, 0x80000110},
+    {144, 0x80000120},
+    {192, 0x80000130},
+    {216, 0x80000220},
+    {240, 0x80000410},
+    {288, 0x80000230},
+    {336, 0x80000610},
+    {360, 0x80000420},
+    {384, 0x80000330},
+    {432, 0x80000520},
+    {480, 0x80000430},
+    {504, 0x80000620},
+    {528, 0x80000a10},
+    {576, 0x80000530},
+    {624, 0x80000c10},
+    {648, 0x80000820},
+    {672, 0x80000630},
+    {720, 0x80000920},
+    {768, 0x80000730},
+    {792, 0x80000a20},
+    {816, 0x80001010},
+    {864, 0x80000830},
+    {864, 0x80001110},
+    {912, 0x80001210},
+    {936, 0x80000c20},
+    {960, 0x80000930},
+    {1008, 0x80000d20},
+    {1056, 0x80000a30},
+    {1080, 0x80000e20},
+    {1104, 0x80001610},
+    {1152, 0x80000b30},
+    {1200, 0x80001810},
+    {1224, 0x80001020},
+    {1248, 0x80000c30},
+    {1296, 0x80001120},
+    {1344, 0x80000d30},
+    {1368, 0x80001220},
+    {1392, 0x80001c10},
+    {1440, 0x80000e30},
+    {1488, 0x80001e10},
+    {1512, 0x80001420},
+    {1536, 0x80000f30},
+    {1584, 0x80001520},
+    {1632, 0x80001030},
+    {1656, 0x80001620},
+    {1728, 0x80001130},
+    {1800, 0x80001820},
+    {1824, 0x80001230},
+    {1872, 0x80001920},
+    {1920, 0x80001330},
+    {1944, 0x80001a20},
+    {2016, 0x80001430},
+    {2088, 0x80001c20},
+    {2112, 0x80001530},
+    {2160, 0x80001d20},
+    {2208, 0x80001630},
+    {2232, 0x80001e20},
+    {2304, 0x80001730},
+    {2400, 0x80001830},
+    {2496, 0x80001930},
+    {2592, 0x80001a30},
+    {2688, 0x80001b30},
+    {2784, 0x80001c30},
+    {2880, 0x80001d30},
+    {2976, 0x80001e30},
+    {3072, 0x80001f30},
+};
+
+static int max_cpu_item = sizeof(cpu_clock) / sizeof(struct _cpu_clock);
 #endif
 
 #ifdef QX1000
@@ -391,6 +496,7 @@ void egl_create(void)
     glViewport(0, 0, LCD_W, LCD_H);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
     glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
     glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
     glEnableVertexAttribArray(wl.egl.positionLoc);
@@ -1375,10 +1481,14 @@ int process_drastic_menu(void)
         memset(&drastic_menu, 0, sizeof(drastic_menu));
         return 0;
     }
-    GFX_Copy(nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
+#ifdef A30
+    nds.update_menu = 1;
+#else
+    GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
     GFX_Flip();
-    GFX_Copy(nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
+    GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
     GFX_Flip();
+#endif
     memset(&drastic_menu, 0, sizeof(drastic_menu));
     return 0;
 }
@@ -1405,16 +1515,6 @@ static int process_screen(void)
     screen_cnt = 2;
 #else
     screen_cnt = 1;
-#endif
-
-#ifdef A30
-    vid.window = (SDL_Window *)(*((uint32_t *)VAR_SDL_SCREEN_WINDOW));
-    vid.renderer = (SDL_Renderer *)(*((uint32_t *)VAR_SDL_SCREEN_RENDERER));
-
-    if (vid.texture == NULL) {
-        vid.screen = SDL_CreateRGBSurface(0, LCD_W, LCD_H, FB_BPP * 8, 0, 0, 0, 0);
-        vid.texture = SDL_CreateTexture(vid.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, LCD_W, LCD_H);
-    }
 #endif
 
     if (nds.auto_state > 0) {
@@ -1584,11 +1684,10 @@ static int process_screen(void)
             }
         }
 
-#if defined(A30)
-#elif defined(QX1000)
+#if defined(QX1000)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
-#elif defined(MMIYOO)
+#elif defined(MMIYOO) || defined(A30)
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
             if (screen1) {
@@ -1757,6 +1856,13 @@ static int process_screen(void)
         return 0;
 #endif
 
+#ifdef A30
+        if (rotate == E_MI_GFX_ROTATE_180) {
+            drt.y = (DEF_FB_H - drt.y) - drt.h;
+            drt.x = (DEF_FB_W - drt.x) - drt.w;
+        }
+#endif
+
         if ((evt.mode == MMIYOO_MOUSE_MODE) && show_pen) {
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
         }
@@ -1766,7 +1872,11 @@ static int process_screen(void)
             MI_SYS_FlushInvCache(nds.screen.pixels[idx], nds.screen.pitch[idx] * srt.h);
 #endif
 
-            GFX_Copy(nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
+#ifdef A30
+            GFX_Copy(idx, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
+#else
+            GFX_Copy(-1, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
+#endif
 
 #if defined(MMIYOO) || defined(A30)
             switch (nds.dis_mode) {
@@ -1775,14 +1885,22 @@ static int process_screen(void)
                 drt.y = 0;
                 drt.w = 160;
                 drt.h = 120;
-                GFX_Copy(nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+#ifdef A30
+                GFX_Copy(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+#else
+                GFX_Copy(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+#endif
                 break;
             case NDS_DIS_MODE_VH_T1:
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = NDS_W;
                 drt.h = NDS_H;
-                GFX_Copy(nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+#ifdef A30
+                GFX_Copy(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+#else 
+                GFX_Copy(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+#endif
                 break;
             }
 #endif
@@ -1804,7 +1922,7 @@ static int process_screen(void)
         rt.y = 0;
         rt.w = fps_info->w;
         rt.h = fps_info->h;
-        GFX_Copy(fps_info->pixels, fps_info->clip_rect, rt, fps_info->pitch, 0, E_MI_GFX_ROTATE_180);
+        GFX_Copy(-1, fps_info->pixels, fps_info->clip_rect, rt, fps_info->pitch, 0, E_MI_GFX_ROTATE_180);
     }
 
 #ifdef TRIMUI
@@ -1829,9 +1947,6 @@ void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uin
 
 void sdl_update_screen(void)
 {
-#ifdef A30
-    process_screen();
-#else
     static int prepare_time = 30;
 
     if (prepare_time) {
@@ -1839,7 +1954,7 @@ void sdl_update_screen(void)
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
-#ifdef MMIYOO
+#if defined(MMIYOO)
         int cc = 0;
         int cnt = 2;
         uint8_t hres = *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
@@ -1880,7 +1995,6 @@ void sdl_update_screen(void)
 #endif
         nds.update_screen = 1;
     }
-#endif
 }
 
 void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
@@ -1900,7 +2014,7 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
             strcpy(drastic_menu.item[drastic_menu.cnt].msg, p);
             drastic_menu.cnt+= 1;
         }
-        //printf(PREFIX"x:%d, y:%d, fg:0x%x, bg:0x%x, \'%s\'\n", x, y, fg, bg, p);
+        printf(PREFIX"x:%d, y:%d, fg:0x%x, bg:0x%x, \'%s\'\n", x, y, fg, bg, p);
     }
 
     if ((x == 0) && (y == 0) && (fg == 0xffff) && (bg == 0x0000)) {
@@ -1992,8 +2106,112 @@ static void strip_newline(char *p)
 
 static void *video_handler(void *threadid)
 {
+#ifdef A30
+    EGLint egl_major = 0;
+    EGLint egl_minor = 0;
+    EGLint num_configs = 0;
+    EGLint config_attribs[] = {
+        EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RED_SIZE,   8,  
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE,  8,  
+        EGL_ALPHA_SIZE, 8,
+        EGL_NONE
+    };
+    EGLint window_attributes[] = { 
+        EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
+        EGL_NONE
+    };
+    EGLint const context_attributes[] = {
+        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_NONE,
+    };
+  
+    vid.eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    eglInitialize(vid.eglDisplay, &egl_major, &egl_minor);
+    eglChooseConfig(vid.eglDisplay, config_attribs, &vid.eglConfig, 1, &num_configs);
+    vid.eglSurface = eglCreateWindowSurface(vid.eglDisplay, vid.eglConfig, 0, window_attributes);
+    vid.eglContext = eglCreateContext(vid.eglDisplay, vid.eglConfig, EGL_NO_CONTEXT, context_attributes);
+    eglMakeCurrent(vid.eglDisplay, vid.eglSurface, vid.eglSurface, vid.eglContext);
+  
+    vid.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vid.vShader, 1, &vShaderSrc, NULL);
+    glCompileShader(vid.vShader);
+  
+    vid.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(vid.fShader, 1, &fShaderSrc, NULL);
+    glCompileShader(vid.fShader);
+   
+    vid.pObject = glCreateProgram();
+    glAttachShader(vid.pObject, vid.vShader);
+    glAttachShader(vid.pObject, vid.fShader);
+    glLinkProgram(vid.pObject);
+    glUseProgram(vid.pObject);
+  
+    vid.posLoc = glGetAttribLocation(vid.pObject, "a_position");
+    vid.texLoc = glGetAttribLocation(vid.pObject, "a_texCoord");
+    vid.samLoc = glGetUniformLocation(vid.pObject, "s_texture");
+  
+    glGenTextures(TEX_MAX, vid.texID);
+
+    glViewport(0, 0, REAL_W, REAL_H);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glEnableVertexAttribArray(vid.posLoc);
+    glEnableVertexAttribArray(vid.texLoc);
+    glUniform1i(vid.samLoc, 0);
+
+    pixel_filter = 0;
+    gfx.tmp.virAddr = malloc(FB_SIZE);
+    printf(PREFIX"TMP virAddr %p (size:%d)\n", gfx.tmp.virAddr, FB_SIZE);
+    memset(gfx.tmp.virAddr, 0 , FB_SIZE);
+#endif
+
     while (is_running) {
+#ifdef A30
+        if (nds.menu.enable) {
+            if (nds.update_menu) {
+                nds.update_menu = 0;
+                GFX_Copy(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
+                GFX_Flip();
+            }
+        }
+        else if (nds.menu.drastic.enable) {
+            if (nds.update_menu) {
+                nds.update_menu = 0;
+                GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, 0);
+                GFX_Flip();
+                GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, 0);
+                GFX_Flip();
+            }
+        }
+        else if (nds.update_screen) {
+            int cc = 0;
+            int hres = (*((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE) > 0) ? 1 : 0;
+            int w = hres ? NDS_Wx2 : NDS_W;
+            int h = hres ? NDS_Hx2 : NDS_H;
+
+            for (cc = 0; cc < 2; cc++) {
+                glBindTexture(GL_TEXTURE_2D, vid.texID[cc]);
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                if (pixel_filter) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                }
+                else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (cc == 0) ?
+                    (void *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
+                    (void *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS)));
+            }
+#else
         if (nds.update_screen) {
+#endif
+
             process_screen();
             nds.update_screen = 0;
         }
@@ -2001,6 +2219,19 @@ static void *video_handler(void *threadid)
             usleep(0);
         }
     }
+
+#ifdef A30
+    glDeleteTextures(TEX_MAX, vid.texID);
+    eglMakeCurrent(vid.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(vid.eglDisplay, vid.eglContext);
+    eglDestroySurface(vid.eglDisplay, vid.eglSurface);
+    eglTerminate(vid.eglDisplay);
+
+    if (gfx.tmp.virAddr) {
+        free(gfx.tmp.virAddr);
+        gfx.tmp.virAddr = NULL;
+    }
+#endif
     pthread_exit(NULL);
 }
 
@@ -2291,7 +2522,11 @@ static int read_config(void)
     if (fd > 0) {
         close(fd);
 #endif
+
+#ifndef A30
         snd_nds_reload_config();
+#endif
+
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30)
     }
 #endif
@@ -2843,6 +3078,77 @@ void disp_resize(void)
 #endif
 
 #ifdef A30
+static int get_core(int index)
+{
+    FILE *fd = NULL;
+    char buf[255] = {0};
+
+    sprintf(buf, "cat /sys/devices/system/cpu/cpu%d/online", index % 4); 
+    fd = popen(buf, "r");
+    if (fd == NULL) {
+        return -1;
+    }       
+    fgets(buf, sizeof(buf), fd);
+    pclose(fd);
+    return atoi(buf);
+}
+
+static void check_before_set(int num, int v)
+{
+    char buf[255] = {0};
+
+    if (get_core(num) != v) {
+        sprintf(buf, "echo %d > /sys/devices/system/cpu/cpu%d/online", v ? 1 : 0, num);
+        system(buf);
+    }       
+}   
+
+static void set_core(int n)
+{           
+    if (n <= 1) {
+        printf(PREFIX"New CPU Core: 1\n");
+        check_before_set(0, 1);
+        check_before_set(1, 0);
+        check_before_set(2, 0);
+        check_before_set(3, 0);
+    }       
+    else if (n == 2) {
+        printf(PREFIX"New CPU Core: 2\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 0);
+        check_before_set(3, 0);
+    }       
+    else if (n == 3) {
+        printf(PREFIX"New CPU Core: 3\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 1);
+        check_before_set(3, 0);
+    }
+    else {
+        printf(PREFIX"New CPU Core: 4\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 1);
+        check_before_set(3, 1);
+    }
+}
+
+static int set_best_match_cpu_clock(int clk)
+{
+    int cc = 0;
+        
+    for (cc = 0; cc < max_cpu_item; cc++) {
+        if (cpu_clock[cc].clk >= clk) {
+            printf(PREFIX"Set Best Match CPU %dMHz (0x%08x)\n", cpu_clock[cc].clk, cpu_clock[cc].reg);
+            *vid.cpu_ptr = cpu_clock[cc].reg;
+            return cc;
+        }
+    }
+    return -1;
+}
+
 int fb_init(void)
 {
     gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
@@ -2868,11 +3174,40 @@ int fb_init(void)
 
     gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
     ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+
+    vid.mem_fd = open("/dev/mem", O_RDWR);
+    if (vid.mem_fd < 0) { 
+        printf("Failed to open /dev/mem\n");
+        return -1;
+    }    
+    vid.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, CCU_BASE);
+    if (vid.ccu_mem == MAP_FAILED) {
+        printf("Failed to map memory\n");
+        return -1;
+    }    
+    printf(PREFIX"CCU MMap %p\n", vid.ccu_mem);
+    vid.cpu_ptr = (uint32_t *)&vid.ccu_mem[0x00];
+
+    vid.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, DAC_BASE);
+    if (vid.dac_mem == MAP_FAILED) {
+        printf("Failed to map memory\n");
+        return -1;
+    }    
+    printf(PREFIX"DAC MMap %p\n", vid.dac_mem);
+    vid.vol_ptr = (uint32_t *)(&vid.dac_mem[0xc00 + 0x258]);
+
+    system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+    set_best_match_cpu_clock(1350);
+    set_core(4);
     return 0;
 }
 
 int fb_quit(void)
 {
+    set_best_match_cpu_clock(648);
+    set_core(2);
+    system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+
     if (gfx.fb.virAddr) {
         munmap(gfx.fb.virAddr, FB_SIZE);
         gfx.fb.virAddr = NULL;
@@ -2881,6 +3216,21 @@ int fb_quit(void)
     if (gfx.fb_dev > 0) {
         close(gfx.fb_dev);
         gfx.fb_dev = -1;
+    }
+
+    if (vid.ccu_mem != MAP_FAILED) {
+        munmap(vid.ccu_mem, 4096);
+        vid.ccu_mem = NULL;
+    }
+
+    if (vid.dac_mem != MAP_FAILED) {
+        munmap(vid.dac_mem, 4096);
+        vid.dac_mem = NULL;
+    }
+
+    if (vid.mem_fd > 0) {
+        close(vid.mem_fd);
+        vid.mem_fd = -1;
     }
     return 0;
 }
@@ -3212,9 +3562,42 @@ int draw_pen(void *pixels, int width, int pitch)
     return 0;
 }
 
-int GFX_Copy(const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
+int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
 #ifdef A30
+    int tex = (id >= 0) ? id : TEX_TMP;
+
+    vVertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+    vVertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+
+    vVertices[5] = vVertices[0];
+    vVertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
+
+    vVertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
+    vVertices[11] = vVertices[6];
+
+    vVertices[15] = vVertices[10];
+    vVertices[16] = vVertices[1];
+
+    if (tex == TEX_TMP) {
+        glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        if (pixel_filter) {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
+        else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srcrect.w, srcrect.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
+    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
+    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
 #endif
 
 #ifdef QX1000
@@ -4346,6 +4729,18 @@ void GFX_Flip(void)
     gfx.vinfo.yoffset ^= FB_H;
 #endif
 
+#ifdef A30
+    eglSwapBuffers(vid.eglDisplay, vid.eglSurface);
+
+    if (nds.theme.img) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
+        glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bgVertices);
+        glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bgVertices[3]);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    }
+#endif
+
 #ifdef MMIYOO
     ioctl(gfx.fb_dev, FBIOPAN_DISPLAY, &gfx.vinfo);
     gfx.vinfo.yoffset ^= FB_H;
@@ -4446,7 +4841,7 @@ int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor
                     rt.y = y;
                     rt.w = t2->w;
                     rt.h = t2->h;
-                    GFX_Copy(t2->pixels, t2->clip_rect, rt, t2->pitch, 0, E_MI_GFX_ROTATE_180);
+                    GFX_Copy(-1, t2->pixels, t2->clip_rect, rt, t2->pitch, 0, E_MI_GFX_ROTATE_180);
                     SDL_FreeSurface(t2);
                 }
                 SDL_FreeSurface(t1);
@@ -4600,15 +4995,15 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#if !defined(QX1000) && !defined(A30)
+#if !defined(PANDORA) && !defined(QX1000)
     static int pre_sel = -1;
 #endif
 
-#if !defined(PANDORA) && !defined(QX1000) && !defined(A30)
+#if !defined(PANDORA) && !defined(QX1000)
     static int pre_mode = -1;
 #endif
 
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
     SDL_Rect srt = {0, 0, IMG_W, IMG_H};
@@ -4685,7 +5080,9 @@ int reload_bg(void)
                     if (t) {
                         SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
                         SDL_FreeSurface(t);
-                        GFX_Copy(nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#ifndef A30
+                        GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#endif
                     }
                     else {
                         printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
@@ -4695,7 +5092,15 @@ int reload_bg(void)
         }
         else {
             if (nds.theme.img) {
-                GFX_Copy(nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#ifndef A30
+                GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#else
+                glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, nds.theme.img->w, nds.theme.img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nds.theme.img->pixels);
+#endif
             }
         }
     }
@@ -4703,7 +5108,7 @@ int reload_bg(void)
         t = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
         if (t) {
             SDL_FillRect(t, &t->clip_rect, SDL_MapRGB(t->format, 0x00, 0x00, 0x00));
-            GFX_Copy(t->pixels, t->clip_rect, drt, t->pitch, 0, E_MI_GFX_ROTATE_180);
+            GFX_Copy(-1, t->pixels, t->clip_rect, drt, t->pitch, 0, E_MI_GFX_ROTATE_180);
             SDL_FreeSurface(t);
         }
     }
@@ -4888,30 +5293,6 @@ static void MMIYOO_DeleteDevice(SDL_VideoDevice *device)
 
 int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
 {
-#ifdef A30
-    need_screen_rotation_helper = 0;
-    if (!(window->flags & SDL_WINDOW_OPENGL)) {
-        need_screen_rotation_helper = 1;
-        window->flags |= SDL_WINDOW_OPENGL;
-    }
-    printf(PREFIX"%s Screen Rotation Helper\n", need_screen_rotation_helper ? "Enabled" : "Disabled");
-
-    if (SDL_GL_LoadLibrary(NULL) < 0) {
-        printf(PREFIX"Failed to load GL library\n");
-        return -1;
-    }
-
-    vid.display.width = REAL_W;
-    vid.display.height = REAL_H;
-    vid.surface = SDL_EGL_CreateSurface(_this, (NativeWindowType)&vid.display);
-    if (vid.surface == EGL_NO_SURFACE) {
-        MMIYOO_VideoQuit(_this);
-        return printf(PREFIX"Failed to create EGL window surface\n");
-    }
-
-    vid.renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-#endif
-
     vid.window = window;
     SDL_SetMouseFocus(window);
     SDL_SetKeyboardFocus(window);
@@ -4980,14 +5361,6 @@ int MMIYOO_VideoInit(_THIS)
     signal(SIGTERM, sigterm_handler);
 #endif
 
-#ifdef A30
-    SDL_zero(mode);
-    mode.format = SDL_PIXELFORMAT_ARGB8888;
-    mode.w = REAL_W;
-    mode.h = REAL_H;
-    mode.refresh_rate = 60;
-    SDL_AddDisplayMode(&display, &mode);
-#else
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
     mode.w = 800;
@@ -5042,7 +5415,6 @@ int MMIYOO_VideoInit(_THIS)
     mode.h = 272;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
-#endif
     SDL_AddVideoDisplay(&display, SDL_FALSE);
 
     LINE_H = 30;
@@ -5108,28 +5480,6 @@ void MMIYOO_VideoQuit(_THIS)
     system("sync");
     detour_quit();
     write_config();
-
-#ifdef A30
-    if (vid.surface != EGL_NO_SURFACE) {
-        SDL_EGL_DestroySurface(_this, vid.surface);
-        vid.surface = EGL_NO_SURFACE;
-    }
-
-    if (vid.renderer) {
-        SDL_DestroyRenderer(vid.renderer);
-        vid.renderer = NULL;
-    }
-
-    if (vid.screen) {
-        SDL_FreeSurface(vid.screen);
-        vid.screen = NULL;
-    }
-
-    if (vid.texture) {
-        SDL_DestroyTexture(vid.texture);
-        vid.texture = NULL;
-    }
-#endif
 
     if (fps_info) {
         SDL_FreeSurface(fps_info);
@@ -6137,8 +6487,12 @@ int handle_menu(int key)
         }
     }
 
-    GFX_Copy(cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
+#ifdef A30
+    nds.update_menu = 1;
+#else
+    GFX_Copy(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
     GFX_Flip();
+#endif
     need_reload_bg = RELOAD_BG_COUNT;
     return 0;
 }
