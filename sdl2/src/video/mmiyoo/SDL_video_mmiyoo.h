@@ -57,7 +57,7 @@
 #include "detour.h"
 
 #ifdef A30
-#define USE_MYJOY           1
+#define USE_MYJOY           0
 #define MYJOY_MODE_KEYPAD   1
 #define MYJOY_MODE_MOUSE    0
 #endif

@@ -39,7 +39,7 @@
 #define PERIOD              2048
 #define CHANNELS            2
 
-#if defined(PANDORA)
+#ifdef PANDORA
 #define SAMPLES             2048
 #else
 #define SAMPLES             8192
@@ -239,7 +239,7 @@ static void stream_request_cb(pa_stream *stream, size_t length, void *userdata)
 void neon_memcpy(void *dest, const void *src, size_t n);
 #endif
 
-#if defined(PANDORA)
+#ifdef PANDORA
 int snd_lib_error_set_handler(int handler)
 {
     return 0;
@@ -332,7 +332,7 @@ int volume_dec(void)
 }
 #endif
 
-#if defined(TRIMUI)
+#ifdef TRIMUI
 int volume_inc(void)
 {
     return 0;
@@ -341,6 +341,31 @@ int volume_inc(void)
 int volume_dec(void)
 {
     return 0;
+}
+#endif
+
+#ifdef A30
+int volume_inc(void)
+{
+    if (cur_volume < 20) {
+        cur_volume += 1;
+        *vol_ptr = ((120 + (cur_volume << 1)) << 8) | (120 + (cur_volume << 1));
+    }
+    return cur_volume;
+}
+
+int volume_dec(void)
+{
+    if (cur_volume > 0) {
+        cur_volume -= 1;
+        if (cur_volume == 0) {
+            *vol_ptr = 0;
+        }
+        else {
+            *vol_ptr = ((120 + (cur_volume << 1)) << 8) | (120 + (cur_volume << 1));
+        }
+    }
+    return cur_volume;
 }
 #endif
 

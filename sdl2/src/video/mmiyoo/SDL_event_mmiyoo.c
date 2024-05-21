@@ -457,6 +457,21 @@ int EventUpdate(void *data)
                         }
                         break;
 #endif
+
+#ifdef A30
+                    case VOLUP:
+                        set_key(MYKEY_VOLUP, ev.value);
+                        if (ev.value == 0) {
+                            nds.volume = volume_inc();
+                        }
+                        break;
+                    case VOLDOWN:
+                        set_key(MYKEY_VOLDOWN, ev.value);
+                        if (ev.value == 0) {
+                            nds.volume = volume_dec();
+                        }
+                        break;
+#endif
                     }
 
                     hotkey_mask = 1;
