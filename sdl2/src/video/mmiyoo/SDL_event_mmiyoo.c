@@ -416,8 +416,10 @@ int EventUpdate(void *data)
                     if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
-                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
                     if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
+#ifndef A30
+                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
+#endif
 #endif
 #ifdef QX1000
                     if (ev.code == L10)     { set_key(MYKEY_L1,    ev.value); }
@@ -518,8 +520,12 @@ int EventUpdate(void *data)
                     if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
 #if defined(MMIYOO) || defined(A30)
                         if (nds.hres_mode == 0) {
+#ifdef A30
+                            if (nds.dis_mode > NDS_DIS_MODE_S0) {
+#else
                             if (nds.dis_mode > 0) {
-                                nds.dis_mode-= 1;
+#endif
+                                nds.dis_mode -= 1;
                             }
                         }
                         else {
@@ -544,7 +550,7 @@ int EventUpdate(void *data)
 #if defined(MMIYOO) || defined(A30)
                         if (nds.hres_mode == 0) {
                             if (nds.dis_mode < NDS_DIS_MODE_LAST) {
-                                nds.dis_mode+= 1;
+                                nds.dis_mode += 1;
                             }
                         }
                         else {
@@ -681,8 +687,12 @@ int EventUpdate(void *data)
 #if defined(MMIYOO) || defined(A30)
                     if (nds.hotkey == HOTKEY_BIND_MENU) {
                         if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
+#ifdef A30
+                            set_key(MYKEY_EXIT, 1);
+#else
                             set_key(MYKEY_MENU_ONION, 1);
                             set_key(MYKEY_SELECT, 0);
+#endif
                         }
                     }
 #endif
