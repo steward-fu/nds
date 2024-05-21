@@ -2212,11 +2212,12 @@ static void *video_handler(void *threadid)
     glAttachShader(vid.pObject, vid.fShader);
     glLinkProgram(vid.pObject);
     glUseProgram(vid.pObject);
-  
+
+    eglSwapInterval(vid.eglDisplay, 1);
     vid.posLoc = glGetAttribLocation(vid.pObject, "a_position");
     vid.texLoc = glGetAttribLocation(vid.pObject, "a_texCoord");
     vid.samLoc = glGetUniformLocation(vid.pObject, "s_texture");
-  
+
     glGenTextures(TEX_MAX, vid.texID);
 
     glViewport(0, 0, REAL_W, REAL_H);
