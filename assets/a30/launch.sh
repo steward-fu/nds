@@ -1,11 +1,11 @@
 #!/bin/sh
 mydir=`dirname "$0"`
 
-#cd $mydir
-#if [ ! -f "/tmp/.show_hotkeys" ]; then
-#    touch /tmp/.show_hotkeys
-#    LD_LIBRARY_PATH=./libs:/customer/lib:/config/lib ./show_hotkeys
-#fi
+cd $mydir
+if [ ! -f "/tmp/.show_hotkeys" ]; then
+    touch /tmp/.show_hotkeys
+    LD_LIBRARY_PATH=libs2:/usr/miyoo/lib ./show_hotkeys
+fi
 
 export HOME=$mydir
 export LD_LIBRARY_PATH=libs:/usr/miyoo/lib:/usr/lib
