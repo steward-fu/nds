@@ -380,6 +380,13 @@ typedef struct _GFX {
 #endif
     } fb, tmp, overlay;
 
+#ifdef A30
+    struct {
+        int cur_sel;
+        void *virAddr[2][2];
+    } lcd;
+#endif
+
 #ifdef MMIYOO
     struct {
         void *virAddr[2];

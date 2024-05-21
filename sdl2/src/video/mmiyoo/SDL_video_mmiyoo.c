@@ -534,6 +534,64 @@ static void* draw_thread(void *pParam)
 }
 #endif
 
+#ifdef A30
+static void* sdl_malloc(size_t size)
+{
+    static int idx = 0;
+
+    void *r = NULL;
+    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+
+    if ((size == (NDS_W * NDS_H * bpp)) ||
+        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
+    {
+        r = gfx.lcd.virAddr[0][idx];
+        idx += 1;
+        idx %= 2;
+    }
+    else {
+        r = malloc(size);
+    }
+    return r;
+}
+
+static void sdl_free(void *ptr)
+{
+    int c0 = 0;
+    int c1 = 0;
+    int found = 0;
+
+    for (c0 = 0; c0 < 2; c0++) {
+        for (c1 = 0; c1 < 2; c1++) {
+            if (ptr == gfx.lcd.virAddr[c0][c1]) {
+                found = 1;
+                break;
+            }
+        }
+    }
+
+    if (found == 0) {
+        free(ptr);
+    }
+}
+
+static void* sdl_realloc(void *ptr, size_t size)
+{
+    void *r = NULL;
+    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+
+    if ((size == (NDS_W * NDS_H * bpp)) ||
+        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
+    {
+        r = sdl_malloc(size);
+    }
+    else {
+        r = realloc(ptr, size);
+    }
+    return r;
+}
+#endif
+
 #ifdef MMIYOO
 static void* sdl_malloc(size_t size)
 {
@@ -1993,6 +2051,12 @@ void sdl_update_screen(void)
             MI_GFX_WaitAllDone(FALSE, u16Fence);
         }
 #endif
+
+#ifdef A30
+        gfx.lcd.cur_sel ^= 1;
+        *((uint32_t *)VAR_SDL_SCREEN0_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
+        *((uint32_t *)VAR_SDL_SCREEN1_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
+#endif
         nds.update_screen = 1;
     }
 }
@@ -2014,7 +2078,7 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
             strcpy(drastic_menu.item[drastic_menu.cnt].msg, p);
             drastic_menu.cnt+= 1;
         }
-        printf(PREFIX"x:%d, y:%d, fg:0x%x, bg:0x%x, \'%s\'\n", x, y, fg, bg, p);
+        //printf(PREFIX"x:%d, y:%d, fg:0x%x, bg:0x%x, \'%s\'\n", x, y, fg, bg, p);
     }
 
     if ((x == 0) && (y == 0) && (fg == 0xffff) && (bg == 0x0000)) {
@@ -2164,9 +2228,14 @@ static void *video_handler(void *threadid)
     glUniform1i(vid.samLoc, 0);
 
     pixel_filter = 0;
-    gfx.tmp.virAddr = malloc(FB_SIZE);
-    printf(PREFIX"TMP virAddr %p (size:%d)\n", gfx.tmp.virAddr, FB_SIZE);
-    memset(gfx.tmp.virAddr, 0 , FB_SIZE);
+    gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
+    gfx.lcd.virAddr[0][1] = malloc(SCREEN_DMA_SIZE);
+    gfx.lcd.virAddr[1][0] = malloc(SCREEN_DMA_SIZE);
+    gfx.lcd.virAddr[1][1] = malloc(SCREEN_DMA_SIZE);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][0]);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][1]);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][0]);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
 #endif
 
     while (is_running) {
@@ -2189,6 +2258,7 @@ static void *video_handler(void *threadid)
         }
         else if (nds.update_screen) {
             int cc = 0;
+            int idx = gfx.lcd.cur_sel ^ 1;
             int hres = (*((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE) > 0) ? 1 : 0;
             int w = hres ? NDS_Wx2 : NDS_W;
             int h = hres ? NDS_Hx2 : NDS_H;
@@ -2204,9 +2274,7 @@ static void *video_handler(void *threadid)
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 }
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (cc == 0) ?
-                    (void *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
-                    (void *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS)));
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx.lcd.virAddr[idx][cc]);
             }
 #else
         if (nds.update_screen) {
@@ -2227,10 +2295,10 @@ static void *video_handler(void *threadid)
     eglDestroySurface(vid.eglDisplay, vid.eglSurface);
     eglTerminate(vid.eglDisplay);
 
-    if (gfx.tmp.virAddr) {
-        free(gfx.tmp.virAddr);
-        gfx.tmp.virAddr = NULL;
-    }
+    free(gfx.lcd.virAddr[0][0]);
+    free(gfx.lcd.virAddr[0][1]);
+    free(gfx.lcd.virAddr[1][0]);
+    free(gfx.lcd.virAddr[1][1]);
 #endif
     pthread_exit(NULL);
 }
@@ -5456,7 +5524,7 @@ int MMIYOO_VideoInit(_THIS)
     detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
     detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
     detour_hook(FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS, (intptr_t)render_polygon_setup_perspective_steps);
-#ifdef MMIYOO
+#if defined(MMIYOO) || defined(A30)
     printf(PREFIX"Installed hooking for libc functions\n");
     detour_hook(FUN_MALLOC, (intptr_t)sdl_malloc);
     detour_hook(FUN_REALLOC, (intptr_t)sdl_realloc);
