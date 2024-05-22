@@ -687,12 +687,8 @@ int EventUpdate(void *data)
 #if defined(MMIYOO) || defined(A30)
                     if (nds.hotkey == HOTKEY_BIND_MENU) {
                         if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
-#ifdef A30
-                            set_key(MYKEY_EXIT, 1);
-#else
                             set_key(MYKEY_MENU_ONION, 1);
                             set_key(MYKEY_SELECT, 0);
-#endif
                         }
                     }
 #endif

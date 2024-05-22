@@ -10,16 +10,11 @@ export HOST=arm-linux
     
 $(shell cd sdl2 && rm -rf libEGL.so libGLESv2.so)
 
-#SDL2_CFG+= --enable-oss
-#SDL2_CFG+= --enable-alsa
-#SDL2_CFG+= --enable-sensor
-#SDL2_CFG+= --enable-shared
-#SDL2_CFG+= --enable-static
 SDL2_CFG+= --enable-loadso
 SDL2_CFG+= --enable-joystick
-SDL2_CFG+= --enable-video-opengl
-SDL2_CFG+= --enable-video-opengles
-SDL2_CFG+= --enable-video-opengles2
+SDL2_CFG+= --disable-video-opengl
+SDL2_CFG+= --disable-video-opengles
+SDL2_CFG+= --disable-video-opengles2
 
 include Makefile.mk
 

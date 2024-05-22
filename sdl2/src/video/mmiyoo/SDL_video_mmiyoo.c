@@ -58,10 +58,6 @@
 #include "SDL_video_mmiyoo.h"
 #include "SDL_event_mmiyoo.h"
 
-#ifdef A30
-#include "SDL_opengles_mmiyoo.h"
-#endif
-
 #include "hex_pen.h"
 #include "drastic_bios_arm7.h"
 #include "drastic_bios_arm9.h"
@@ -2056,6 +2052,7 @@ void sdl_update_screen(void)
         gfx.lcd.cur_sel ^= 1;
         *((uint32_t *)VAR_SDL_SCREEN0_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
         *((uint32_t *)VAR_SDL_SCREEN1_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
+        nds.menu.drastic.enable = 0;
 #endif
         nds.update_screen = 1;
     }
@@ -2220,7 +2217,7 @@ static void *video_handler(void *threadid)
 
     glGenTextures(TEX_MAX, vid.texID);
 
-    glViewport(0, 0, REAL_W, REAL_H);
+    glViewport(0, 0, DEF_FB_H, DEF_FB_W);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -2251,8 +2248,6 @@ static void *video_handler(void *threadid)
         else if (nds.menu.drastic.enable) {
             if (nds.update_menu) {
                 nds.update_menu = 0;
-                GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, 0);
-                GFX_Flip();
                 GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, 0);
                 GFX_Flip();
             }
@@ -5395,20 +5390,6 @@ static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
     device->CreateSDLWindow = MMIYOO_CreateWindow;
     device->CreateSDLWindowFrom = MMIYOO_CreateWindowFrom;
     device->free = MMIYOO_DeleteDevice;
-
-#ifdef A30
-    device->GL_LoadLibrary = MMIYOO_GLES_LoadLibrary;
-    device->GL_GetProcAddress = MMIYOO_GLES_GetProcAddress;
-    device->GL_UnloadLibrary = MMIYOO_GLES_UnloadLibrary;
-    device->GL_CreateContext = MMIYOO_GLES_CreateContext;
-    device->GL_MakeCurrent = MMIYOO_GLES_MakeCurrent;
-    device->GL_SetSwapInterval = MMIYOO_GLES_SetSwapInterval;
-    device->GL_GetSwapInterval = MMIYOO_GLES_GetSwapInterval;
-    device->GL_SwapWindow = MMIYOO_GLES_SwapWindow;
-    device->GL_DeleteContext = MMIYOO_GLES_DeleteContext;
-    device->GL_DefaultProfileConfig = MMIYOO_GLES_DefaultProfileConfig;
-#endif
-
     device->PumpEvents = MMIYOO_PumpEvents;
     return device;
 }
