@@ -81,7 +81,7 @@ int savestate_busy = 0;
 SDL_Surface *fps_info = NULL;
 
 static pthread_t thread;
-static int is_running = 0;
+static volatile int is_running = 0;
 static int need_reload_bg = RELOAD_BG_COUNT;
 static SDL_Surface *cvt = NULL;
 
@@ -3507,9 +3507,12 @@ void GFX_Quit(void)
 {
     void *ret = NULL;
 
+    printf(PREFIX"Wait for video_handler exit\n");
     is_running = 0;
     pthread_join(thread, &ret);
+
     GFX_Clear();
+    printf(PREFIX"Free FB resources\n");
     fb_quit();
 
     if (cvt) {
@@ -5595,9 +5598,17 @@ void MMIYOO_VideoQuit(_THIS)
         TTF_CloseFont(nds.font);
         nds.font = NULL;
     }
+
+    printf(PREFIX"Free TTF resources\n");
     TTF_Quit();
+
+    printf(PREFIX"Free GFX resources\n");
     GFX_Quit();
+
+    printf(PREFIX"Free Event resources\n");
     MMIYOO_EventDeinit();
+
+    printf(PREFIX"Free Lang resources\n");
     lang_unload();
 }
 
