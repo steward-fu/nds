@@ -100,6 +100,8 @@ static pa_t pa = {0};
 #endif
 
 #ifdef A30
+    int vol_base = 100;
+    int vol_mul = 1;
     int mem_fd = -1;
     uint8_t *mem_ptr = NULL;
     uint32_t *vol_ptr = NULL;
@@ -349,7 +351,7 @@ int volume_inc(void)
 {
     if (cur_volume < 20) {
         cur_volume += 1;
-        *vol_ptr = ((120 + (cur_volume << 1)) << 8) | (120 + (cur_volume << 1));
+        *vol_ptr = ((vol_base + (cur_volume << vol_mul)) << 8) | (vol_base + (cur_volume << vol_mul));
     }
     return cur_volume;
 }
@@ -362,7 +364,7 @@ int volume_dec(void)
             *vol_ptr = 0;
         }
         else {
-            *vol_ptr = ((120 + (cur_volume << 1)) << 8) | (120 + (cur_volume << 1));
+            *vol_ptr = ((vol_base + (cur_volume << vol_mul)) << 8) | (vol_base + (cur_volume << vol_mul));
         }
     }
     return cur_volume;
@@ -699,7 +701,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     mem_fd = open("/dev/mem", O_RDWR);
     mem_ptr = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, 0x1c22000);
     vol_ptr = (uint32_t *)(&mem_ptr[0xc00 + 0x258]);
-    *vol_ptr = ((160 - (cur_volume << 1)) << 8) | (160 - (cur_volume << 1));
+    *vol_ptr = ((vol_base + (cur_volume << vol_mul)) << 8) | (vol_base + (cur_volume << vol_mul));
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30)
