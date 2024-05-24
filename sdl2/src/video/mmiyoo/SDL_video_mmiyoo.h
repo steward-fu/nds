@@ -57,9 +57,13 @@
 #include "detour.h"
 
 #ifdef A30
-#define USE_MYJOY           0
+#define USE_MYJOY           1
 #define MYJOY_MODE_KEYPAD   1
 #define MYJOY_MODE_MOUSE    0
+#define INIT_CPU_CORE       4
+#define INIT_CPU_CLOCK      1350
+#define DEINIT_CPU_CORE     2
+#define DEINIT_CPU_CLOCK    648
 #endif
 
 #if defined(MMIYOO)
@@ -259,6 +263,8 @@
 #define JSON_NDS_ALPHA_VALUE        "alpha"
 #define JSON_NDS_ALPHA_POSITION     "position"
 #define JSON_NDS_ALPHA_BORDER       "border"
+#define JSON_NDS_MAX_CORE           "maxcore"
+#define JSON_NDS_MIN_CORE           "mincore"
 #define JSON_NDS_MAX_CPU            "maxcpu"
 #define JSON_NDS_MIN_CPU            "mincpu"
 #define JSON_NDS_OVERLAY            "overlay"
@@ -415,6 +421,8 @@ typedef struct _GFX {
 } GFX;
 
 typedef struct _NDS {
+    int mincore;
+    int maxcore;
     int mincpu;
     int maxcpu;
     int volume;

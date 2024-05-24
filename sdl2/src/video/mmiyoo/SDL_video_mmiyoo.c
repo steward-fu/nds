@@ -2498,6 +2498,16 @@ static int read_config(void)
         nds.mincpu = json_object_get_int(jval);
     }
 
+    json_object_object_get_ex(jfile, JSON_NDS_MAX_CORE, &jval);
+    if (jval) {
+        nds.maxcore = json_object_get_int(jval);
+    }
+
+    json_object_object_get_ex(jfile, JSON_NDS_MIN_CORE, &jval);
+    if (jval) {
+        nds.mincore = json_object_get_int(jval);
+    }
+
     json_object_object_get_ex(jfile, JSON_NDS_OVERLAY, &jval);
     if (jval) {
         nds.overlay.sel = json_object_get_int(jval);
@@ -3236,7 +3246,8 @@ static void set_core(int n)
 static int set_best_match_cpu_clock(int clk)
 {
     int cc = 0;
-        
+
+    system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
     for (cc = 0; cc < max_cpu_item; cc++) {
         if (cpu_clock[cc].clk >= clk) {
             printf(PREFIX"Set Best Match CPU %dMHz (0x%08x)\n", cpu_clock[cc].clk, cpu_clock[cc].reg);
@@ -3294,16 +3305,15 @@ int fb_init(void)
     printf(PREFIX"DAC MMap %p\n", vid.dac_mem);
     vid.vol_ptr = (uint32_t *)(&vid.dac_mem[0xc00 + 0x258]);
 
-    system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-    set_best_match_cpu_clock(1350);
-    set_core(4);
+    set_best_match_cpu_clock(INIT_CPU_CLOCK);
+    set_core(INIT_CPU_CORE);
     return 0;
 }
 
 int fb_quit(void)
 {
-    set_best_match_cpu_clock(648);
-    set_core(2);
+    set_best_match_cpu_clock(DEINIT_CPU_CLOCK);
+    set_core(DEINIT_CPU_CORE);
     system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
 
     if (gfx.fb.virAddr) {
@@ -5835,7 +5845,12 @@ static int lang_prev(void)
 
 enum {
     MENU_LANG = 0,
+#ifdef A30
+    MENU_CPU_CORE,
+    MENU_CPU_CLOCK,
+#else
     MENU_CPU,
+#endif
     MENU_OVERLAY,
     MENU_DIS,
     MENU_DIS_ALPHA,
@@ -5855,7 +5870,12 @@ enum {
 
 static const char *MENU_ITEM[] = {
     "Language",
+#ifdef A30
+    "CPU Core",
+    "CPU Clock",
+#else
     "CPU",
+#endif
     "Overlay",
     "Display",
     "Alpha",
@@ -5876,8 +5896,15 @@ int handle_menu(int key)
 {
     static int pre_ff = 0;
     static int cur_sel = 0;
+#ifdef A30
+    static uint32_t cur_cpucore = INIT_CPU_CORE;
+    static uint32_t pre_cpucore = INIT_CPU_CORE;
+    static uint32_t cur_cpuclock = INIT_CPU_CLOCK;
+    static uint32_t pre_cpuclock = INIT_CPU_CLOCK;
+#else
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
+#endif
     static char pre_lang[LANG_FILE_LEN] = {0};
 
     const int SX = nds.enable_752x560 ? 200 : 150;
@@ -5925,11 +5952,24 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_prev();
             break;
+#ifdef A30
+        case MENU_CPU_CORE:
+            if (cur_cpucore > nds.mincore) {
+                cur_cpucore-= 1;
+            }
+            break;
+        case MENU_CPU_CLOCK:
+            if (cur_cpuclock > nds.mincpu) {
+                cur_cpuclock-= 50;
+            }
+            break;
+#else
         case MENU_CPU:
             if (cur_cpuclock > nds.mincpu) {
                 cur_cpuclock-= 50;
             }
             break;
+#endif
         case MENU_HOTKEY:
             nds.hotkey = HOTKEY_BIND_MENU;
             break;
@@ -6012,11 +6052,24 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_next();
             break;
+#ifdef A30
+        case MENU_CPU_CORE:
+            if (cur_cpucore < nds.maxcore) {
+                cur_cpucore+= 1;
+            }
+            break;
+        case MENU_CPU_CLOCK:
+            if (cur_cpuclock < nds.maxcpu) {
+                cur_cpuclock+= 50;
+            }
+            break;
+#else
         case MENU_CPU:
             if (cur_cpuclock < nds.maxcpu) {
                 cur_cpuclock+= 50;
             }
             break;
+#endif
         case MENU_HOTKEY:
             nds.hotkey = HOTKEY_BIND_SELECT;
             break;
@@ -6099,8 +6152,19 @@ int handle_menu(int key)
 #ifdef MMIYOO
             set_cpuclock(cur_cpuclock);
 #endif
+
+#ifdef A30
+            set_best_match_cpu_clock(cur_cpuclock);
+#endif
             pre_cpuclock = cur_cpuclock;
         }
+
+#ifdef A30
+        if (cur_cpucore != pre_cpucore) {
+            set_core(cur_cpucore);
+            pre_cpucore = cur_cpucore;
+        }
+#endif
 
         if (strcmp(pre_lang, nds.lang.trans[DEF_LANG_SLOT])) {
             lang_unload();
@@ -6251,9 +6315,18 @@ int handle_menu(int key)
         case MENU_LANG:
             sprintf(buf, "%s", nds.lang.trans[DEF_LANG_SLOT]);
             break;
+#ifdef A30
+        case MENU_CPU_CORE:
+            sprintf(buf, "%d", cur_cpucore);
+            break;
+        case MENU_CPU_CLOCK:
+            sprintf(buf, "%dMHz", cur_cpuclock);
+            break;
+#else
         case MENU_CPU:
             sprintf(buf, "%dMHz", cur_cpuclock);
             break;
+#endif
         case MENU_HOTKEY:
             sprintf(buf, "%s", to_lang(HOTKEY[nds.hotkey]));
             break;
