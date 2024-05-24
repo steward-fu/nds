@@ -318,6 +318,7 @@ enum _TEX_TYPE {
     TEX_SCR0 = 0,
     TEX_SCR1,
     TEX_BG,
+    TEX_PEN,
     TEX_TMP,
     TEX_MAX
 };
@@ -338,6 +339,7 @@ typedef struct MMIYOO_VideoInfo {
     GLint posLoc;
     GLint texLoc;
     GLint samLoc;
+    GLint alphaLoc;
 
     int mem_fd;
     uint8_t* ccu_mem;

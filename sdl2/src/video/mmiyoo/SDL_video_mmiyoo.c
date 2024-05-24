@@ -106,23 +106,24 @@ int pre_dismode = 0;
 
 #ifdef A30
 GLfloat bgVertices[] = {
-   -1.0f,  1.0f, 0.0f, 0.0f,  0.0f,
-   -1.0f, -1.0f, 0.0f, 0.0f,  1.0f,
-    1.0f, -1.0f, 0.0f, 1.0f,  1.0f,
-    1.0f,  1.0f, 0.0f, 1.0f,  0.0f
+   -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+   -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+    1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  0.0f,  1.0f,  0.0f
 };
 
 GLfloat vVertices[] = {
-   -1.0f,  1.0f, 0.0f, 0.0f,  0.0f,
-   -1.0f, -1.0f, 0.0f, 0.0f,  1.0f,
-    1.0f, -1.0f, 0.0f, 1.0f,  1.0f,
-    1.0f,  1.0f, 0.0f, 1.0f,  0.0f
+   -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+   -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+    1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  0.0f,  1.0f,  0.0f
 };
 GLushort indices[] = {0, 1, 2, 0, 2, 3};
 
 const char *vShaderSrc =
     "attribute vec4 a_position;   \n"
     "attribute vec2 a_texCoord;   \n"
+    "attribute float a_alpha;     \n"
     "varying vec2 v_texCoord;     \n"
     "void main()                  \n"
     "{                            \n"
@@ -135,11 +136,17 @@ const char *vShaderSrc =
 const char *fShaderSrc =
     "precision mediump float;                                  \n"
     "varying vec2 v_texCoord;                                  \n"
+    "uniform float s_alpha;                                    \n"
     "uniform sampler2D s_texture;                              \n"
     "void main()                                               \n"
     "{                                                         \n"
-    "    vec3 tex = texture2D(s_texture, v_texCoord).bgr;      \n"
-    "    gl_FragColor = vec4(tex, 1.0);                        \n"
+    "    if (s_alpha > 0.0) {                                  \n"
+    "        gl_FragColor = texture2D(s_texture, v_texCoord);  \n"
+    "    }                                                     \n"
+    "    else {                                                \n"
+    "        vec3 tex = texture2D(s_texture, v_texCoord).bgr;  \n"
+    "        gl_FragColor = vec4(tex, 1.0);                    \n"
+    "    }                                                     \n"
     "}                                                         \n";
 
 static struct _cpu_clock cpu_clock[] = {
@@ -1564,6 +1571,9 @@ static int process_screen(void)
     int idx = 0;
     int screen_cnt = 0;
     char buf[MAX_PATH] = {0};
+#ifdef A30
+    int cur_sel = gfx.lcd.cur_sel ^ 1;
+#endif
 
 #if defined(MMIYOO) || defined(PANDORA) || defined(QX1000) || defined(A30)
     screen_cnt = 2;
@@ -1700,9 +1710,13 @@ static int process_screen(void)
             *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
 
 #ifndef MMIYOO
+#ifdef A30
+        nds.screen.pixels[idx] = gfx.lcd.virAddr[cur_sel][idx];
+#else
         nds.screen.pixels[idx] = (idx == 0) ?
             (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
             (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS));
+#endif
 #endif
 
         if (nds.screen.hres_mode[idx]) {
@@ -1920,6 +1934,22 @@ static int process_screen(void)
         if ((evt.mode == MMIYOO_MOUSE_MODE) && show_pen) {
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
         }
+#ifdef A30
+
+        if (evt.mode == MMIYOO_MOUSE_MODE) {
+            glBindTexture(GL_TEXTURE_2D, vid.texID[idx]);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            if (pixel_filter) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            }
+            else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx.lcd.virAddr[cur_sel][idx]);
+        }
+#endif
 
         if (need_update) {
 #ifdef MMIYOO
@@ -2214,6 +2244,7 @@ static void *video_handler(void *threadid)
     vid.posLoc = glGetAttribLocation(vid.pObject, "a_position");
     vid.texLoc = glGetAttribLocation(vid.pObject, "a_texCoord");
     vid.samLoc = glGetUniformLocation(vid.pObject, "s_texture");
+    vid.alphaLoc = glGetUniformLocation(vid.pObject, "s_alpha");
 
     glGenTextures(TEX_MAX, vid.texID);
 
@@ -2224,6 +2255,7 @@ static void *video_handler(void *threadid)
     glEnableVertexAttribArray(vid.posLoc);
     glEnableVertexAttribArray(vid.texLoc);
     glUniform1i(vid.samLoc, 0);
+    glUniform1f(vid.alphaLoc, 0.0);
 
     pixel_filter = 0;
     gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
@@ -2253,24 +2285,26 @@ static void *video_handler(void *threadid)
             }
         }
         else if (nds.update_screen) {
-            int cc = 0;
-            int idx = gfx.lcd.cur_sel ^ 1;
-            int hres = (*((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE) > 0) ? 1 : 0;
-            int w = hres ? NDS_Wx2 : NDS_W;
-            int h = hres ? NDS_Hx2 : NDS_H;
+            if (evt.mode == MMIYOO_KEYPAD_MODE) {
+                int cc = 0;
+                int idx = gfx.lcd.cur_sel ^ 1;
+                int hres = (*((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE) > 0) ? 1 : 0;
+                int w = hres ? NDS_Wx2 : NDS_W;
+                int h = hres ? NDS_Hx2 : NDS_H;
 
-            for (cc = 0; cc < 2; cc++) {
-                glBindTexture(GL_TEXTURE_2D, vid.texID[cc]);
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                if (pixel_filter) {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                for (cc = 0; cc < 2; cc++) {
+                    glBindTexture(GL_TEXTURE_2D, vid.texID[cc]);
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    if (pixel_filter) {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    }
+                    else {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    }
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx.lcd.virAddr[idx][cc]);
                 }
-                else {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                }
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx.lcd.virAddr[idx][cc]);
             }
 #else
         if (nds.update_screen) {
@@ -3537,7 +3571,6 @@ void GFX_Clear(void)
 
 int draw_pen(void *pixels, int width, int pitch)
 {
-#ifndef UNITTEST
     int c0 = 0;
     int c1 = 0;
     int w = 28;
@@ -3587,6 +3620,31 @@ int draw_pen(void *pixels, int width, int pitch)
         break;
     }
 
+#if 0
+    vVertices[0] = ((((float)x) / NDS_W) - 0.5) * 2.0;
+    vVertices[1] = ((((float)y) / NDS_H) - 0.5) * -2.0;
+
+    vVertices[5] = vVertices[0];
+    vVertices[6] = ((((float)(y + nds.pen.img->h)) / NDS_H) - 0.5) * -2.0;
+
+    vVertices[10] = ((((float)(x + nds.pen.img->w)) / NDS_W) - 0.5) * 2.0;
+    vVertices[11] = vVertices[6];
+
+    vVertices[15] = vVertices[10];
+    vVertices[16] = vVertices[1];
+
+    glUniform1f(vid.alphaLoc, 1.0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_PEN]);
+    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
+    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    glDisable(GL_BLEND);
+    glUniform1f(vid.alphaLoc, 0.0);
+#endif
+
     asm ("PLD [%0, #128]"::"r" (s));
     for (c1=0; c1<h; c1++) {
         asm ("PLD [%0, #128]"::"r" (d_565));
@@ -3625,7 +3683,6 @@ int draw_pen(void *pixels, int width, int pitch)
             s+= 1;
         }
     }
-#endif
     return 0;
 }
 
@@ -4943,6 +5000,27 @@ int reload_pen(void)
         if (get_file_path(nds.pen.path, nds.pen.sel, buf, 1) == 0) {
             t = IMG_Load(buf);
             if (t) {
+#ifdef A30
+                int x = 0;
+                int y = 0;
+                uint32_t *p = malloc(t->pitch * t->h);
+                uint32_t *src = t->pixels;
+                uint32_t *dst = p;
+
+                for (y = 0; y < t->h; y++) {
+                    for (x = 0; x < t->w; x++) {
+                        *dst++ = *src++;
+                    }
+                }
+                glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_PEN]);
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, p);
+                free(p);
+#endif
                 nds.pen.img = SDL_ConvertSurface(t, cvt->format, 0);
                 SDL_FreeSurface(t);
 

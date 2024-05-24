@@ -56,9 +56,9 @@
     #define X       42
     #define Y       56
     #define L1      15
-    #define L2      20 //18
+    #define L2      18
     #define R1      14
-    #define R2      18 //20
+    #define R2      20
     #define START   28
     #define SELECT  97
     #define MENU    1
@@ -416,11 +416,15 @@ int EventUpdate(void *data)
                     if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#ifdef A30
+                    if (ev.code == r2)      { set_key(MYKEY_L2,    ev.value); }
+                    if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
+#else
                     if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
-#ifndef A30
                     if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
 #endif
 #endif
+
 #ifdef QX1000
                     if (ev.code == L10)     { set_key(MYKEY_L1,    ev.value); }
                     if (ev.code == R10)     { set_key(MYKEY_R1,    ev.value); }
@@ -730,12 +734,20 @@ int EventUpdate(void *data)
 
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
                     if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
+#ifdef A30
+                        set_key(MYKEY_QLOAD, 1);
+#else
                         set_key(MYKEY_QSAVE, 1);
+#endif
                         set_key(MYKEY_R2, 0);
                     }
 
                     if (hotkey_mask && hit_hotkey(MYKEY_L2)) {
+#ifdef A30
+                        set_key(MYKEY_QSAVE, 1);
+#else
                         set_key(MYKEY_QLOAD, 1);
+#endif
                         set_key(MYKEY_L2, 0);
                     }
                     else if (evt.keypad.bitmaps & (1 << MYKEY_L2)) {
@@ -749,6 +761,10 @@ int EventUpdate(void *data)
                             lower_speed = 0;
                         }
                     }
+#endif
+
+#ifdef A30
+                    //set_key(MYKEY_L2, 0);
 #endif
                 }
             
