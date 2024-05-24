@@ -524,11 +524,7 @@ int EventUpdate(void *data)
                     if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
 #if defined(MMIYOO) || defined(A30)
                         if (nds.hres_mode == 0) {
-#ifdef A30
-                            if (nds.dis_mode > NDS_DIS_MODE_S0) {
-#else
                             if (nds.dis_mode > 0) {
-#endif
                                 nds.dis_mode -= 1;
                             }
                         }

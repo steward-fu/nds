@@ -140,8 +140,12 @@ const char *fShaderSrc =
     "uniform sampler2D s_texture;                              \n"
     "void main()                                               \n"
     "{                                                         \n"
-    "    if (s_alpha > 0.0) {                                  \n"
+    "    if (s_alpha >= 2.0) {                                 \n"
     "        gl_FragColor = texture2D(s_texture, v_texCoord);  \n"
+    "    }                                                     \n"
+    "    else if (s_alpha > 0.0) {                             \n"
+    "        vec3 tex = texture2D(s_texture, v_texCoord).bgr;  \n"
+    "        gl_FragColor = vec4(tex, s_alpha);                \n"
     "    }                                                     \n"
     "    else {                                                \n"
     "        vec3 tex = texture2D(s_texture, v_texCoord).bgr;  \n"
@@ -1934,21 +1938,41 @@ static int process_screen(void)
         if ((evt.mode == MMIYOO_MOUSE_MODE) && show_pen) {
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
         }
-#ifdef A30
 
-        if (evt.mode == MMIYOO_MOUSE_MODE) {
-            glBindTexture(GL_TEXTURE_2D, vid.texID[idx]);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            if (pixel_filter) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#ifdef A30
+        if ((idx == 0) && (nds.alpha.border > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
+            int c0 = 0;
+            uint32_t *p0 = NULL;
+            uint32_t *p1 = NULL;
+            uint32_t col[] = { 0, 0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0x000000, 0xffff00, 0x00ffff };
+
+            p0 = (uint32_t *)nds.screen.pixels[idx];
+            p1 = (uint32_t *)nds.screen.pixels[idx] + ((srt.h - 1) * srt.w);
+            for (c0 = 0; c0 < srt.w; c0++) {
+                *p0++ = col[nds.alpha.border];
+                *p1++ = col[nds.alpha.border];
             }
-            else {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            p0 = (uint32_t *)nds.screen.pixels[idx];
+            p1 = (uint32_t *)nds.screen.pixels[idx] + (srt.w - 1);
+            for (c0 = 0; c0 < srt.h; c0++) {
+                *p0 = col[nds.alpha.border];
+                *p1 = col[nds.alpha.border];
+                p0 += srt.w;
+                p1 += srt.w;
             }
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx.lcd.virAddr[cur_sel][idx]);
         }
+        glBindTexture(GL_TEXTURE_2D, vid.texID[idx]);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        if (pixel_filter) {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
+        else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nds.screen.pixels[idx]);
 #endif
 
         if (need_update) {
@@ -1970,6 +1994,24 @@ static int process_screen(void)
                 drt.w = 160;
                 drt.h = 120;
 #ifdef A30
+                switch (nds.alpha.pos) {
+                case 0:
+                    drt.x = DEF_FB_W - drt.w;
+                    drt.y = 0;
+                    break;
+                case 1:
+                    drt.x = 0;
+                    drt.y = 0;
+                    break;
+                case 2:
+                    drt.x = 0;
+                    drt.y = DEF_FB_H - drt.h;
+                    break;
+                case 3:
+                    drt.x = DEF_FB_W - drt.w;
+                    drt.y = DEF_FB_H - drt.h;
+                    break;
+                }
                 GFX_Copy(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else
                 GFX_Copy(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
@@ -1981,6 +2023,24 @@ static int process_screen(void)
                 drt.w = NDS_W;
                 drt.h = NDS_H;
 #ifdef A30
+                switch (nds.alpha.pos) {
+                case 0:
+                    drt.x = DEF_FB_W - drt.w;
+                    drt.y = 0;
+                    break;
+                case 1:
+                    drt.x = 0;
+                    drt.y = 0;
+                    break;
+                case 2:
+                    drt.x = 0;
+                    drt.y = DEF_FB_H - drt.h;
+                    break;
+                case 3:
+                    drt.x = DEF_FB_W - drt.w;
+                    drt.y = DEF_FB_H - drt.h;
+                    break;
+                }
                 GFX_Copy(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else 
                 GFX_Copy(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
@@ -2285,27 +2345,6 @@ static void *video_handler(void *threadid)
             }
         }
         else if (nds.update_screen) {
-            if (evt.mode == MMIYOO_KEYPAD_MODE) {
-                int cc = 0;
-                int idx = gfx.lcd.cur_sel ^ 1;
-                int hres = (*((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE) > 0) ? 1 : 0;
-                int w = hres ? NDS_Wx2 : NDS_W;
-                int h = hres ? NDS_Hx2 : NDS_H;
-
-                for (cc = 0; cc < 2; cc++) {
-                    glBindTexture(GL_TEXTURE_2D, vid.texID[cc]);
-                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                    if (pixel_filter) {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                    }
-                    else {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                    }
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx.lcd.virAddr[idx][cc]);
-                }
-            }
 #else
         if (nds.update_screen) {
 #endif
@@ -3755,11 +3794,21 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srcrect.w, srcrect.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
+    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
+        glUniform1f(vid.alphaLoc, 1.0 - ((float)nds.alpha.val / 10.0));
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+    }
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
     glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
     glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+
+    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
+        glUniform1f(vid.alphaLoc, 0.0);
+        glDisable(GL_BLEND);
+    }
 #endif
 
 #ifdef QX1000
