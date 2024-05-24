@@ -3691,17 +3691,45 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
 #ifdef A30
     int tex = (id >= 0) ? id : TEX_TMP;
 
-    vVertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-    vVertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+    if ((id != -1) && (nds.dis_mode == NDS_DIS_MODE_HH1)) {
+        vVertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        vVertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
-    vVertices[5] = vVertices[0];
-    vVertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
+        vVertices[10] = vVertices[5];
+        vVertices[11] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
 
-    vVertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
-    vVertices[11] = vVertices[6];
+        vVertices[15] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        vVertices[16] = vVertices[11];
 
-    vVertices[15] = vVertices[10];
-    vVertices[16] = vVertices[1];
+        vVertices[0] = vVertices[15];
+        vVertices[1] = vVertices[6];
+    }
+    else if ((id != -1) && (nds.dis_mode == NDS_DIS_MODE_HH0)) {
+        vVertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        vVertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+
+        vVertices[0] = vVertices[15];
+        vVertices[1] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
+
+        vVertices[5] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        vVertices[6] = vVertices[1];
+
+        vVertices[10] = vVertices[5];
+        vVertices[11] = vVertices[16];
+    }
+    else {
+        vVertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        vVertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+
+        vVertices[5] = vVertices[0];
+        vVertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
+
+        vVertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
+        vVertices[11] = vVertices[6];
+
+        vVertices[15] = vVertices[10];
+        vVertices[16] = vVertices[1];
+    }
 
     if (tex == TEX_TMP) {
         glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);

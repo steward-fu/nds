@@ -239,11 +239,7 @@
 #define NDS_DIS_MODE_VH_C1          12
 #define NDS_DIS_MODE_HH0            13
 #define NDS_DIS_MODE_HH1            14
-#ifdef A30
-#define NDS_DIS_MODE_LAST           12
-#else
 #define NDS_DIS_MODE_LAST           14
-#endif
 #define NDS_DIS_MODE_HRES0          15
 #define NDS_DIS_MODE_HRES1          16
 
