@@ -5898,6 +5898,12 @@ static const char *HOTKEY[] = {
     "MENU", "SELECT"
 };
 
+#ifdef A30
+static const char *JOY_MODE[] = {
+    "Disable", "D-Pad", "Stylus"
+};
+#endif
+
 static int lang_next(void)
 {
     int cc = 0;
@@ -6138,7 +6144,9 @@ int handle_menu(int key)
             break;
 #ifdef A30
         case MENU_JOYSTICK_MODE:
-            nds.joy.mode = MYJOY_MODE_KEYPAD;
+            if (nds.joy.mode > 0) {
+                nds.joy.mode -= 1;
+            }
             break;
         case MENU_JOYSTICK_DZONE:
             if (nds.joy.dzone > 0) {
@@ -6248,7 +6256,9 @@ int handle_menu(int key)
             break;
 #ifdef A30
         case MENU_JOYSTICK_MODE:
-            nds.joy.mode = MYJOY_MODE_MOUSE;
+            if (nds.joy.mode < MYJOY_MODE_MOUSE) {
+                nds.joy.mode += 1;
+            }
             if (evt.mode == MMIYOO_MOUSE_MODE) {
                 evt.mode = MMIYOO_KEYPAD_MODE;
             }
@@ -6519,7 +6529,7 @@ int handle_menu(int key)
             break;
 #ifdef A30
         case MENU_JOYSTICK_MODE:
-            sprintf(buf, "%s", to_lang((nds.joy.mode == MYJOY_MODE_KEYPAD) ? "D-Pad" : "Mouse"));
+            sprintf(buf, "%s", to_lang(JOY_MODE[nds.joy.mode]));
             break;
         case MENU_JOYSTICK_DZONE:
             sprintf(buf, "%d (65)", nds.joy.dzone);

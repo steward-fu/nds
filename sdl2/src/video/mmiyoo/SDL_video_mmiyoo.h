@@ -59,8 +59,9 @@
 #ifdef A30
 #define USE_MYJOY           1
 
+#define MYJOY_MODE_DISABLE  0
 #define MYJOY_MODE_KEYPAD   1
-#define MYJOY_MODE_MOUSE    0
+#define MYJOY_MODE_MOUSE    2
 #define MYJOY_SHOW_CNT      300
 #define MYJOY_MOVE_SPEED    4
 

@@ -157,7 +157,7 @@ static int is_stock_os = 0;
 #endif
 static SDL_sem *event_sem = NULL;
 static SDL_Thread *thread = NULL;
-static uint32_t hotkey = 0;
+static uint32_t cur_keypad_bitmaps = 0;
 static uint32_t pre_keypad_bitmaps = 0;
 
 extern int FB_W;
@@ -268,37 +268,37 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
-    return (hotkey ^ mask) ? 0 : 1;
+    return (cur_keypad_bitmaps ^ mask) ? 0 : 1;
 }
 
 static void set_key(uint32_t bit, int val)
 {
     if (val) {
-        hotkey|= (1 << bit);
+        cur_keypad_bitmaps|= (1 << bit);
         evt.keypad.bitmaps|= (1 << bit);
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
         if (bit == MYKEY_MENU) {
-            hotkey = (1 << MYKEY_MENU);
+            cur_keypad_bitmaps = (1 << MYKEY_MENU);
         }
 #endif
 
 #if defined(MMIYOO) || defined(A30)
         if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == MYKEY_SELECT) {
-                hotkey = (1 << MYKEY_SELECT);
+                cur_keypad_bitmaps = (1 << MYKEY_SELECT);
             }
         }
         else {
             if (bit == MYKEY_MENU) {
-                hotkey = (1 << MYKEY_MENU);
+                cur_keypad_bitmaps = (1 << MYKEY_MENU);
             }
         }
 #endif
     }
     else {
-        hotkey&= ~(1 << bit);
-        evt.keypad.bitmaps&= ~(1 << bit);
+        cur_keypad_bitmaps &= ~(1 << bit);
+        evt.keypad.bitmaps &= ~(1 << bit);
     }
 }
 
@@ -437,19 +437,21 @@ static int update_joystick(void)
         }
 
         if (pre_up || pre_down || pre_left || pre_right) {
-            if (hotkey) {
-                static int cc = 0;
+            if (cur_keypad_bitmaps &  (1 << MYKEY_Y)) {
+                if (pre_right) {
+                    static int cc = 0;
 
-                if (cc == 0) {
-                    nds.pen.sel+= 1;
-                    if (nds.pen.sel >= nds.pen.max) {
-                        nds.pen.sel = 0;
+                    if (cc == 0) {
+                        nds.pen.sel+= 1;
+                        if (nds.pen.sel >= nds.pen.max) {
+                            nds.pen.sel = 0;
+                        }
+                        reload_pen();
+                        cc = 30;
                     }
-                    reload_pen();
-                    cc = 30;
-                }
-                else {
-                    cc -= 1;
+                    else {
+                        cc -= 1;
+                    }
                 }
             }
             else {
@@ -686,7 +688,7 @@ static int handle_hotkey(void)
             nds.menu.enable = 1;
             usleep(100000);
             handle_menu(-1);
-            hotkey = 0;
+            cur_keypad_bitmaps = 0;
             pre_keypad_bitmaps = evt.keypad.bitmaps = 0;
         }
 #endif
@@ -895,11 +897,11 @@ int EventUpdate(void *data)
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
 #ifdef A30
                     if (ev.code == r2) {
-                        if (hotkey) {
-                            set_key(MYKEY_L2, ev.value);
-                        }
-                        else {
-                            if (nds.joy.mode == MYJOY_MODE_MOUSE) {
+                        if (nds.joy.mode == MYJOY_MODE_MOUSE) {
+                            if (cur_keypad_bitmaps & (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU))) {
+                                set_key(MYKEY_L2, ev.value);
+                            }
+                            else {
                                 int x = 0;
                                 int y = 0;
 
@@ -909,9 +911,9 @@ int EventUpdate(void *data)
                                 SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
                                 SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
                             }
-                            else {
-                                set_key(MYKEY_L2, ev.value);
-                            }
+                        }
+                        else {
+                            set_key(MYKEY_L2, ev.value);
                         }
                     }
                     if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
