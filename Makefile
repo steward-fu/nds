@@ -14,6 +14,7 @@ $(shell cd sdl2 && ln -s ../drastic/libs/libGLESv2.so)
 
 $(shell sed -i 's/"xv":80000/"xv":30000/g' drastic/resources/settings.json)
 $(shell sed -i 's/"yv":85000/"yv":35000/g' drastic/resources/settings.json)
+$(shell sed -i 's/"maxcpu":1500/"maxcpu":1550/g' drastic/resources/settings.json)
 
 SDL2_CFG+= --disable-video-opengl
 SDL2_CFG+= --disable-video-opengles
