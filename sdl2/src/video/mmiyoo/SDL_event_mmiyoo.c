@@ -457,17 +457,33 @@ static int update_joystick(void)
             else {
                 const int v = MYJOY_MOVE_SPEED;
 
-                if (pre_left) {
-                    evt.mouse.x -= v; //get_move_interval(0);
+                if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_rotate == 0)) {
+                    if (pre_down) {
+                        evt.mouse.x -= v;
+                    }
+                    if (pre_up) {
+                        evt.mouse.x += v;
+                    }
+                    if (pre_left) {
+                        evt.mouse.y -= v;
+                    }
+                    if (pre_right) {
+                        evt.mouse.y += v;
+                    }
                 }
-                if (pre_right) {
-                    evt.mouse.x += v; //get_move_interval(0);
-                }
-                if (pre_up) {
-                    evt.mouse.y -= v; //get_move_interval(1);
-                }
-                if (pre_down) {
-                    evt.mouse.y += v; //get_move_interval(1);
+                else {
+                    if (pre_left) {
+                        evt.mouse.x -= v;
+                    }
+                    if (pre_right) {
+                        evt.mouse.x += v;
+                    }
+                    if (pre_up) {
+                        evt.mouse.y -= v;
+                    }
+                    if (pre_down) {
+                        evt.mouse.y += v;
+                    }
                 }
                 check_mouse_pos();
             }
