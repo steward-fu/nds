@@ -2,8 +2,8 @@
   "pen":3,
   "theme":0,
   "mode":10,
-  "xv":30000,
-  "yv":35000,
+  "xv":80000,
+  "yv":85000,
   "alpha":3,
   "position":0,
   "border":1,
@@ -29,5 +29,7 @@
   "states":"",
   "menu_bg":0,
   "menu_cursor":1,
-  "fast_forward":6
+  "fast_forward":6,
+  "joy_mode":0,
+  "joy_dzone":65
 }

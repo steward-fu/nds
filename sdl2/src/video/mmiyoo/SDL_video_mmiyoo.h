@@ -58,8 +58,8 @@
 
 #ifdef A30
 #define USE_MYJOY           1
-#define MYJOY_MODE_KEYPAD   1
-#define MYJOY_MODE_MOUSE    0
+#define MYJOY_MODE_KEYPAD   0
+#define MYJOY_MODE_MOUSE    1
 #define INIT_CPU_CORE       4
 #define INIT_CPU_CLOCK      1350
 #define DEINIT_CPU_CORE     2
@@ -283,6 +283,8 @@
 #define JSON_NDS_MENU_BG            "menu_bg"
 #define JSON_NDS_MENU_CURSOR        "menu_cursor"
 #define JSON_NDS_FAST_FORWARD       "fast_forward"
+#define JSON_NDS_JOY_MODE           "joy_mode"
+#define JSON_NDS_JOY_DZONE          "joy_dzone"
 
 #define DEF_LANG_SLOT               0
 #define DEF_LANG_LANG               "english"
@@ -528,6 +530,21 @@ typedef struct _NDS {
         clock_t pre_ticks;
         char path[MAX_PATH];
     } pen;
+
+#ifdef A30
+    struct _JOY {
+        int max_x;
+        int zero_x;
+        int min_x;
+
+        int max_y;
+        int zero_y;
+        int min_y;
+
+        int mode;
+        int dzone;
+    } joy;
+#endif
 } NDS;
 
 typedef struct _CUST_MENU_SUB {

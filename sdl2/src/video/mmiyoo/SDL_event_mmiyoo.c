@@ -144,10 +144,6 @@
 
 MMIYOO_EventInfo evt = {0};
 
-#ifdef A30
-int myjoy_mode = MYJOY_MODE_KEYPAD;
-#endif
-
 extern GFX gfx;
 extern NDS nds;
 extern MMIYOO_VideoInfo vid;
@@ -319,7 +315,7 @@ static int update_joystick(void)
 
     int r = 0;
 
-    if (myjoy_mode == MYJOY_MODE_KEYPAD) {
+    if (nds.joy.mode == MYJOY_MODE_KEYPAD) {
         static int pre_up = 0;
         static int pre_down = 0;
         static int pre_left = 0;
@@ -390,7 +386,7 @@ static int update_joystick(void)
             }
         }
     }
-    else if (myjoy_mode == MYJOY_MODE_MOUSE) {
+    else if (nds.joy.mode == MYJOY_MODE_MOUSE) {
         const int XRES = 320;
         const int YRES = 240;
         const int INTV = 3;

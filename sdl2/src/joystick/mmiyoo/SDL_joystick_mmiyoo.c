@@ -64,20 +64,10 @@ struct MIYOO_PAD_FRAME {
     uint8_t magicEnd;
 };
 
-static int s_fd = -1;
 int g_lastX = 0;
 int g_lastY = 0;
 
-static int MIYOO_ADC_MAX_X  = 200;
-static int MIYOO_ADC_ZERO_X = 137;
-static int MIYOO_ADC_MIN_X  = 76;
-
-static int MIYOO_ADC_MAX_Y  = 200;
-static int MIYOO_ADC_ZERO_Y = 135;
-static int MIYOO_ADC_MIN_Y  = 72;
-
-static int MIYOO_ADC_DEAD_ZONE = 10;
-
+static int s_fd = -1;
 static struct MIYOO_PAD_FRAME s_frame = {0};
 static int32_t s_miyoo_axis[MIYOO_AXIS_MAX_COUNT] = {0};
 static int32_t s_miyoo_axis_last[MIYOO_AXIS_MAX_COUNT] = {0};
@@ -85,6 +75,7 @@ static int32_t s_miyoo_axis_last[MIYOO_AXIS_MAX_COUNT] = {0};
 static int running = 0;
 static SDL_Thread *thread = NULL;
 
+extern NDS nds;
 extern MMIYOO_VideoInfo vid;
 
 int uart_open(const char *port)
@@ -239,7 +230,7 @@ static int uart_read(int fd, char *rcv_buf, int data_len)
 
 static int filterDeadzone(int newAxis, int oldAxis)
 {
-    if (abs(newAxis - oldAxis) < MIYOO_ADC_DEAD_ZONE) {
+    if (abs(newAxis - oldAxis) < nds.joy.dzone) {
         return 1;
     }
     return 0;
@@ -281,19 +272,19 @@ static int miyoo_frame_to_axis_x(uint8_t rawX)
 {
     int value = 0;
 
-    if (rawX > MIYOO_ADC_ZERO_X) {
-        value = (rawX - MIYOO_ADC_ZERO_X) * 126 / (MIYOO_ADC_MAX_X - MIYOO_ADC_ZERO_X);
+    if (rawX > nds.joy.zero_x) {
+        value = (rawX - nds.joy.zero_x) * 126 / (nds.joy.max_x - nds.joy.zero_x);
     }
 
-    if (rawX < MIYOO_ADC_ZERO_X) {
-        value = (rawX - MIYOO_ADC_ZERO_X) * 126 / (MIYOO_ADC_ZERO_X - MIYOO_ADC_MIN_X);
+    if (rawX < nds.joy.zero_x) {
+        value = (rawX - nds.joy.zero_x) * 126 / (nds.joy.zero_x - nds.joy.min_x);
     }
 
-    if (value > 0 && value < MIYOO_ADC_DEAD_ZONE) {
+    if (value > 0 && value < nds.joy.dzone) {
         return 0;
     }
 
-    if (value < 0 && value > -(MIYOO_ADC_DEAD_ZONE)) {
+    if (value < 0 && value > -(nds.joy.dzone)) {
         return 0;
     }
     return value;
@@ -303,19 +294,19 @@ static int miyoo_frame_to_axis_y(uint8_t rawY)
 {
     int value = 0;
 
-    if (rawY > MIYOO_ADC_ZERO_Y) {
-        value = (rawY - MIYOO_ADC_ZERO_Y) * 126 / (MIYOO_ADC_MAX_Y - MIYOO_ADC_ZERO_Y);
+    if (rawY > nds.joy.zero_y) {
+        value = (rawY - nds.joy.zero_y) * 126 / (nds.joy.max_y - nds.joy.zero_y);
     }
 
-    if (rawY < MIYOO_ADC_ZERO_Y) {
-        value = (rawY - MIYOO_ADC_ZERO_Y) * 126 / (MIYOO_ADC_ZERO_Y - MIYOO_ADC_MIN_Y);
+    if (rawY < nds.joy.zero_y) {
+        value = (rawY - nds.joy.zero_y) * 126 / (nds.joy.zero_y - nds.joy.min_y);
     }
 
-    if (value > 0 && value < MIYOO_ADC_DEAD_ZONE) {
+    if (value > 0 && value < nds.joy.dzone) {
         return 0;
     }
 
-    if (value < 0 && value > -(MIYOO_ADC_DEAD_ZONE)) {
+    if (value < 0 && value > -(nds.joy.dzone)) {
         return 0;
     }
     return value;
@@ -364,6 +355,45 @@ static void miyoo_close_serial_input(void)
 {
 }
 
+static int chk_str(const char *src, const char *dst)
+{
+    int len = strlen(dst);
+    return (memcmp(src, dst, len) == 0) ? 1 : 0;
+}
+
+static int miyoo_read_joystick_config(void)
+{
+    FILE *f = NULL;
+    char buf[255] = {0};
+    const char *path = "/config/joypad.config";
+
+    f = fopen(path, "r");
+    if (f) {
+        while (fgets(buf, sizeof(buf), f)) {
+            if (chk_str(buf, "x_min=")) {
+                printf(PREFIX"X_MIN %d\n", atoi(&buf[6]));
+            }
+            else if (chk_str(buf, "x_max=")) {
+                printf(PREFIX"X_MAX %d\n", atoi(&buf[6]));
+            }
+            else if (chk_str(buf, "x_zero=")) {
+                printf(PREFIX"X_ZERO %d\n", atoi(&buf[7]));
+            }
+            else if (chk_str(buf, "y_min=")) {
+                printf(PREFIX"Y_MIN %d\n", atoi(&buf[6]));
+            }
+            else if (chk_str(buf, "y_max=")) {
+                printf(PREFIX"Y_MAX %d\n", atoi(&buf[6]));
+            }
+            else if (chk_str(buf, "y_zero=")) {
+                printf(PREFIX"Y_ZERO %d\n", atoi(&buf[7]));
+            }
+        }
+        fclose(f);
+    }
+    return 0;
+}
+
 int joystick_handler(void *param)
 {
     int len = 0;
@@ -387,6 +417,7 @@ int MMIYOO_JoystickInit(void)
 
 #ifdef A30
     running = 1;
+    miyoo_read_joystick_config();
     miyoo_init_serial_input();
     if((thread = SDL_CreateThreadInternal(joystick_handler, "a30_joystick_thread", 4096, NULL)) == NULL) {
         printf(PREFIX"Failed to create joystick thread");

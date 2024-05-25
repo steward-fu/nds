@@ -105,8 +105,6 @@ int pre_dismode = 0;
 #endif
 
 #ifdef A30
-extern int myjoy_mode;
-
 GLfloat bgVertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
@@ -2569,6 +2567,18 @@ static int read_config(void)
         nds.keys_rotate = json_object_get_int(jval) % 3;
     }
 
+#ifdef A30
+    json_object_object_get_ex(jfile, JSON_NDS_JOY_MODE, &jval);
+    if (jval) {
+        nds.joy.mode = json_object_get_int(jval);
+    }
+
+    json_object_object_get_ex(jfile, JSON_NDS_JOY_DZONE, &jval);
+    if (jval) {
+        nds.joy.dzone = json_object_get_int(jval);
+    }
+#endif
+
     nds.menu.c0 = 0xffffff;
     json_object_object_get_ex(jfile, JSON_NDS_MENU_C0, &jval);
     if (jval) {
@@ -2690,6 +2700,15 @@ static int read_config(void)
 #ifdef QX1000
     nds.dis_mode = NDS_DIS_MODE_H0;
 #endif
+
+#ifdef A30
+    nds.joy.max_x = 200;
+    nds.joy.zero_x = 135;
+    nds.joy.min_x = 75;
+    nds.joy.max_y = 200;
+    nds.joy.zero_y = 135;
+    nds.joy.min_y = 75;
+#endif
     return 0;
 }
 
@@ -2732,6 +2751,11 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_MENU_BG, json_object_new_int(nds.menu.sel));
     json_object_object_add(jfile, JSON_NDS_MENU_CURSOR, json_object_new_int(nds.menu.show_cursor));
     json_object_object_add(jfile, JSON_NDS_FAST_FORWARD, json_object_new_int(nds.fast_forward));
+
+#ifdef A30
+    json_object_object_add(jfile, JSON_NDS_JOY_MODE, json_object_new_int(nds.joy.mode));
+    json_object_object_add(jfile, JSON_NDS_JOY_DZONE, json_object_new_int(nds.joy.dzone));
+#endif
 
     json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -5917,7 +5941,8 @@ enum {
     MENU_CURSOR,
     MENU_FAST_FORWARD,
 #ifdef A30
-    MENU_JOYSTICK,
+    MENU_JOYSTICK_MODE,
+    MENU_JOYSTICK_DZONE,
 #endif
     MENU_LAST,
 };
@@ -5945,7 +5970,8 @@ static const char *MENU_ITEM[] = {
     "Cursor",
     "Fast Forward",
 #ifdef A30
-    "Joystick"
+    "Joy Mode",
+    "Joy DZone"
 #endif
 };
 
@@ -6101,8 +6127,13 @@ int handle_menu(int key)
             }
             break;
 #ifdef A30
-        case MENU_JOYSTICK:
-            myjoy_mode = MYJOY_MODE_KEYPAD;
+        case MENU_JOYSTICK_MODE:
+            nds.joy.mode = MYJOY_MODE_KEYPAD;
+            break;
+        case MENU_JOYSTICK_DZONE:
+            if (nds.joy.dzone > 0) {
+                nds.joy.dzone -= 1;
+            }
             break;
 #endif
         default:
@@ -6206,8 +6237,13 @@ int handle_menu(int key)
             }
             break;
 #ifdef A30
-        case MENU_JOYSTICK:
-            myjoy_mode = MYJOY_MODE_MOUSE;
+        case MENU_JOYSTICK_MODE:
+            nds.joy.mode = MYJOY_MODE_MOUSE;
+            break;
+        case MENU_JOYSTICK_DZONE:
+            if (nds.joy.dzone < 255) {
+                nds.joy.dzone += 1;
+            }
             break;
 #endif
         default:
@@ -6457,10 +6493,10 @@ int handle_menu(int key)
             sprintf(buf, "%s", DPAD[nds.keys_rotate % 3]);
             break;
         case MENU_PEN_XV:
-            sprintf(buf, "%d (30000)", nds.pen.xv);
+            sprintf(buf, "%d (80000)", nds.pen.xv);
             break;
         case MENU_PEN_YV:
-            sprintf(buf, "%d (35000)", nds.pen.yv);
+            sprintf(buf, "%d (85000)", nds.pen.yv);
             break;
         case MENU_CURSOR:
             sprintf(buf, "%s", to_lang(nds.menu.show_cursor ? "Show" : "Hide"));
@@ -6469,8 +6505,11 @@ int handle_menu(int key)
             sprintf(buf, "%d (6)", nds.fast_forward);
             break;
 #ifdef A30
-        case MENU_JOYSTICK:
-            sprintf(buf, "%s", to_lang((myjoy_mode == MYJOY_MODE_KEYPAD) ? "D-Pad" : "Mouse"));
+        case MENU_JOYSTICK_MODE:
+            sprintf(buf, "%s", to_lang((nds.joy.mode == MYJOY_MODE_KEYPAD) ? "D-Pad" : "Mouse"));
+            break;
+        case MENU_JOYSTICK_DZONE:
+            sprintf(buf, "%d (65)", nds.joy.dzone);
             break;
 #endif
         }
