@@ -541,7 +541,7 @@ static void* draw_thread(void *pParam)
 }
 #endif
 
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
 static void* sdl_malloc(size_t size)
 {
     static int idx = 0;
@@ -578,51 +578,6 @@ static void sdl_free(void *ptr)
     }
 
     if (found == 0) {
-        free(ptr);
-    }
-}
-
-static void* sdl_realloc(void *ptr, size_t size)
-{
-    void *r = NULL;
-    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
-
-    if ((size == (NDS_W * NDS_H * bpp)) ||
-        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
-    {
-        r = sdl_malloc(size);
-    }
-    else {
-        r = realloc(ptr, size);
-    }
-    return r;
-}
-#endif
-
-#ifdef MMIYOO
-static void* sdl_malloc(size_t size)
-{
-    static int idx = 0;
-
-    void *r = NULL;
-    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
-
-    if ((size == (NDS_W * NDS_H * bpp)) ||
-        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
-    {
-        r = gfx.lcd.virAddr[idx];
-        idx += 1;
-        idx %= 2;
-    }
-    else {
-        r = malloc(size);
-    }
-    return r;
-}
-
-static void sdl_free(void *ptr)
-{
-    if ((ptr != gfx.lcd.virAddr[0]) && (ptr != gfx.lcd.virAddr[1])) {
         free(ptr);
     }
 }
@@ -1575,7 +1530,7 @@ static int process_screen(void)
     int idx = 0;
     int screen_cnt = 0;
     char buf[MAX_PATH] = {0};
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
     int cur_sel = gfx.lcd.cur_sel ^ 1;
 #endif
 
@@ -1713,14 +1668,12 @@ static int process_screen(void)
             *((uint8_t *)VAR_SDL_SCREEN1_HRES_MODE):
             *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
 
-#ifndef MMIYOO
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
         nds.screen.pixels[idx] = gfx.lcd.virAddr[cur_sel][idx];
 #else
         nds.screen.pixels[idx] = (idx == 0) ?
             (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
             (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS));
-#endif
 #endif
 
         if (nds.screen.hres_mode[idx]) {
@@ -2109,51 +2062,13 @@ void sdl_update_screen(void)
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
-#if defined(MMIYOO)
-        int cc = 0;
-        int cnt = 2;
-        uint8_t hres = *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
-        uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
-        uint32_t w = hres ? NDS_Wx2 : NDS_W;
-        uint32_t h = hres ? NDS_Hx2 : NDS_H;
-        uint32_t pitch = (hres * bpp * 0x100) + (bpp * 0x100);
-        uint32_t color = ((pitch / w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888);
-
-        MI_U16 u16Fence = 0;
-        MI_GFX_Opt_t opt = {0};
-        MI_GFX_Rect_t srt = {0};
-        MI_GFX_Rect_t drt = {0};
-        MI_GFX_Surface_t ssurf = {0};
-        MI_GFX_Surface_t dsurf = {0};
-
-        opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
-
-        ssurf.u32Width = srt.u32Width = w;
-        ssurf.u32Height = srt.u32Height = h;
-        ssurf.u32Stride = pitch;
-        ssurf.eColorFmt = color;
-
-        dsurf.u32Width = drt.u32Width = w;
-        dsurf.u32Height = drt.u32Height = h;
-        dsurf.u32Stride = pitch;
-        dsurf.eColorFmt = color;
-
-        cnt = hres ? 1 : 2;
-        for (cc = 0; cc < cnt; cc++) {
-            ssurf.phyAddr = gfx.lcd.phyAddr[cc];
-            dsurf.phyAddr = gfx.dup.phyAddr[cc];
-
-            MI_SYS_FlushInvCache(gfx.lcd.virAddr[cc], pitch * h);
-            MI_GFX_BitBlit(&ssurf, &srt, &dsurf, &drt, &opt, &u16Fence);
-            MI_GFX_WaitAllDone(FALSE, u16Fence);
-        }
-#endif
-
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
         gfx.lcd.cur_sel ^= 1;
         *((uint32_t *)VAR_SDL_SCREEN0_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
         *((uint32_t *)VAR_SDL_SCREEN1_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
+#ifdef A30
         nds.menu.drastic.enable = 0;
+#endif
 #endif
         nds.update_screen = 1;
     }
@@ -3423,8 +3338,6 @@ int fb_quit(void)
 #ifdef MMIYOO
 int fb_init(void)
 {
-    int cc = 0;
-
     MI_SYS_Init();
     MI_GFX_Open();
 
@@ -3446,22 +3359,19 @@ int fb_init(void)
     MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.overlay.phyAddr);
     MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
 
-    for (cc = 0; cc < 2; cc++) {
-        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[cc]);
-        MI_SYS_Mmap(gfx.lcd.phyAddr[cc], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[cc], TRUE);
-
-        MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.dup.phyAddr[cc]);
-        MI_SYS_Mmap(gfx.dup.phyAddr[cc], SCREEN_DMA_SIZE, &gfx.dup.virAddr[cc], TRUE);
-
-        nds.screen.pixels[cc] = gfx.dup.virAddr[cc];
-    }
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[0][0]);
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[0][1]);
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[1][0]);
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[1][1]);
+    MI_SYS_Mmap(gfx.lcd.phyAddr[0][0], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[0][0], TRUE);
+    MI_SYS_Mmap(gfx.lcd.phyAddr[0][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[0][1], TRUE);
+    MI_SYS_Mmap(gfx.lcd.phyAddr[1][0], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][0], TRUE);
+    MI_SYS_Mmap(gfx.lcd.phyAddr[1][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][1], TRUE);
     return 0;
 }
 
 int fb_quit(void)
 {
-    int cc = 0;
-
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
 
     MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
@@ -3470,13 +3380,14 @@ int fb_quit(void)
     MI_SYS_Munmap(gfx.overlay.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.overlay.phyAddr);
 
-    for (cc = 0; cc < 2; cc++) {
-        MI_SYS_Munmap(gfx.lcd.virAddr[cc], SCREEN_DMA_SIZE);
-        MI_SYS_MMA_Free(gfx.lcd.phyAddr[cc]);
-
-        MI_SYS_Munmap(gfx.dup.virAddr[cc], SCREEN_DMA_SIZE);
-        MI_SYS_MMA_Free(gfx.dup.phyAddr[cc]);
-    }
+    MI_SYS_Munmap(gfx.lcd.virAddr[0][0], SCREEN_DMA_SIZE);
+    MI_SYS_Munmap(gfx.lcd.virAddr[0][1], SCREEN_DMA_SIZE);
+    MI_SYS_Munmap(gfx.lcd.virAddr[1][0], SCREEN_DMA_SIZE);
+    MI_SYS_Munmap(gfx.lcd.virAddr[1][1], SCREEN_DMA_SIZE);
+    MI_SYS_MMA_Free(gfx.lcd.phyAddr[0][0]);
+    MI_SYS_MMA_Free(gfx.lcd.phyAddr[0][1]);
+    MI_SYS_MMA_Free(gfx.lcd.phyAddr[1][0]);
+    MI_SYS_MMA_Free(gfx.lcd.phyAddr[1][1]);
 
     MI_GFX_Close();
     MI_SYS_Exit();
@@ -3644,14 +3555,12 @@ void GFX_Quit(void)
 void GFX_Clear(void)
 {
 #ifdef MMIYOO
-    int cc = 0;
-
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
     MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
-    for (cc = 0; cc < 2; cc++) {
-        MI_SYS_MemsetPa(gfx.lcd.phyAddr[cc], 0, SCREEN_DMA_SIZE);
-        MI_SYS_MemsetPa(gfx.dup.phyAddr[cc], 0, SCREEN_DMA_SIZE);
-    }
+    MI_SYS_MemsetPa(gfx.lcd.phyAddr[0][0], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(gfx.lcd.phyAddr[0][1], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(gfx.lcd.phyAddr[1][0], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(gfx.lcd.phyAddr[1][1], 0, SCREEN_DMA_SIZE);
 #endif
 }
 
@@ -4386,6 +4295,7 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
 #ifdef MMIYOO
     int cc = 0;
     int copy_it = 1;
+    int cur_sel = gfx.lcd.cur_sel ^ 1;
     int is_dma_buf = -1;
     MI_U16 u16Fence = 0;
     int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
@@ -4395,7 +4305,7 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
     }
 
     for (cc = 0; cc < 2; cc++) {
-        if (pixels == gfx.dup.virAddr[cc]) {
+        if (pixels == gfx.lcd.virAddr[cur_sel][cc]) {
             is_dma_buf = cc;
             break;
         }
@@ -4902,7 +4812,7 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
 
     if (copy_it) {
         if (is_dma_buf >= 0) {
-            gfx.hw.src.surf.phyAddr = gfx.dup.phyAddr[is_dma_buf];
+            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cur_sel][is_dma_buf];
         }
         else {
             neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);

@@ -392,18 +392,14 @@ typedef struct _GFX {
 #endif
     } fb, tmp, overlay;
 
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
     struct {
         int cur_sel;
         void *virAddr[2][2];
-    } lcd;
-#endif
-
 #ifdef MMIYOO
-    struct {
-        void *virAddr[2];
-        MI_PHY phyAddr[2];
-    } lcd, dup;
+        MI_PHY phyAddr[2][2];
+#endif
+    } lcd;
 #endif
 
     struct _HW {
