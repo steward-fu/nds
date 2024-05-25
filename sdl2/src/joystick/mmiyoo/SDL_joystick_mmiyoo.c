@@ -65,8 +65,8 @@ struct MIYOO_PAD_FRAME {
 };
 
 static int s_fd = -1;
-static int g_lastX = 0;
-static int g_lastY = 0;
+int g_lastX = 0;
+int g_lastY = 0;
 
 static int MIYOO_ADC_MAX_X  = 200;
 static int MIYOO_ADC_ZERO_X = 137;
@@ -375,7 +375,7 @@ int joystick_handler(void *param)
             rcv_buf[len] = '\0';
             parser_miyoo_input(rcv_buf, len);
         }
-        usleep(10);
+        usleep(10000);
     }
     return 0;
 }
@@ -496,121 +496,17 @@ static int MMIYOO_JoystickSetSensorsEnabled(SDL_Joystick *joystick, SDL_bool ena
 void MMIYOO_JoystickUpdate(SDL_Joystick *joystick)
 {
 #ifdef A30
-    const int LTH = -70;
-    const int RTH = 70;
-    const int UTH = -70;
-    const int DTH = 70;
-
     static int pre_x = -1;
     static int pre_y = -1;
 
-    if (joystick == (SDL_Joystick *)MYJOY_MODE_KEYPAD) {
-        static int pre_up = 0;
-        static int pre_down = 0;
-        static int pre_left = 0;
-        static int pre_right = 0;
-
-        uint32_t u_key = SDLK_UP;
-        uint32_t d_key = SDLK_DOWN;
-        uint32_t l_key = SDLK_LEFT;
-        uint32_t r_key = SDLK_RIGHT;
-
-        if (g_lastX != pre_x) {
-            pre_x = g_lastX;
-            if (pre_x < LTH) {
-                if (pre_left == 0) {
-                    pre_left = 1;
-                    SDL_SendKeyboardKey(SDL_PRESSED, SDL_GetScancodeFromKey(l_key));
-                }
-            }
-            else if (pre_x > RTH){
-                if (pre_right == 0) {
-                    pre_right = 1;
-                    SDL_SendKeyboardKey(SDL_PRESSED, SDL_GetScancodeFromKey(r_key));
-                }
-            }
-            else {
-                if (pre_left != 0) {
-                    pre_left = 0;
-                    SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(l_key));
-                }
-                if (pre_right != 0) {
-                    pre_right = 0;
-                    SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(r_key));
-                }
-            }
-        }
-
-        if (g_lastY != pre_y) {
-            pre_y = g_lastY;
-            if (pre_y < UTH) {
-                if (pre_up == 0) {
-                    pre_up = 1;
-                    SDL_SendKeyboardKey(SDL_PRESSED, SDL_GetScancodeFromKey(u_key));
-                }
-            }
-            else if (pre_y > DTH){
-                if (pre_down == 0) {
-                    pre_down = 1;
-                    SDL_SendKeyboardKey(SDL_PRESSED, SDL_GetScancodeFromKey(d_key));
-                }
-            }
-            else {
-                if (pre_up != 0) {
-                    pre_up = 0;
-                    SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(u_key));
-                }
-                if (pre_down != 0) {
-                    pre_down = 0;
-                    SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(d_key));
-                }
-            }
-        }
-    }
-    else if (joystick == (SDL_Joystick *)MYJOY_MODE_MOUSE) {
-        const int XRES = 320;
-        const int YRES = 240;
-        const int INTV = 3;
-        static int xx = XRES / 2;
-        static int yy = YRES / 2;
-
+    if (g_lastX != pre_x) {
         pre_x = g_lastX;
-        if (pre_x < LTH) {
-            if (xx > 0) {
-                xx -= INTV;
-            }
-        }
-        if (pre_x > RTH) {
-            if (xx < XRES) {
-                xx += INTV;
-            }
-        }
-        pre_y = g_lastY;
-        if (pre_y < UTH) {
-            if (yy > 0) {
-                yy -= INTV;
-            }
-        }
-        if (pre_y > DTH) {
-            if (yy < YRES) {
-                yy += INTV;
-            }
-        }
-
-        if (vid.window && (xx || yy)) {
-            SDL_SendMouseMotion(vid.window, 0, 0, xx, yy);
-        }
+        SDL_PrivateJoystickAxis(joystick, 0, pre_x);
     }
-    else {
-        if (g_lastX != pre_x) {
-            pre_x = g_lastX;
-            SDL_PrivateJoystickAxis(joystick, 0, pre_x);
-        }
 
-        if (g_lastY != pre_y) {
-            pre_y = g_lastY;
-            SDL_PrivateJoystickAxis(joystick, 1, pre_x);
-        }
+    if (g_lastY != pre_y) {
+        pre_y = g_lastY;
+        SDL_PrivateJoystickAxis(joystick, 1, pre_x);
     }
 #endif
 }

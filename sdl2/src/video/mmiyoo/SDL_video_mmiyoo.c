@@ -105,6 +105,8 @@ int pre_dismode = 0;
 #endif
 
 #ifdef A30
+extern int myjoy_mode;
+
 GLfloat bgVertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
@@ -5914,6 +5916,9 @@ enum {
     MENU_PEN_YV,
     MENU_CURSOR,
     MENU_FAST_FORWARD,
+#ifdef A30
+    MENU_JOYSTICK,
+#endif
     MENU_LAST,
 };
 
@@ -5938,7 +5943,10 @@ static const char *MENU_ITEM[] = {
     "Pen X Speed",
     "Pen Y Speed",
     "Cursor",
-    "Fast Forward"
+    "Fast Forward",
+#ifdef A30
+    "Joystick"
+#endif
 };
 
 int handle_menu(int key)
@@ -6092,6 +6100,11 @@ int handle_menu(int key)
                 nds.fast_forward -= 1;
             }
             break;
+#ifdef A30
+        case MENU_JOYSTICK:
+            myjoy_mode = MYJOY_MODE_KEYPAD;
+            break;
+#endif
         default:
             break;
         }
@@ -6192,6 +6205,11 @@ int handle_menu(int key)
                 nds.fast_forward += 1;
             }
             break;
+#ifdef A30
+        case MENU_JOYSTICK:
+            myjoy_mode = MYJOY_MODE_MOUSE;
+            break;
+#endif
         default:
             break;
         }
@@ -6450,6 +6468,11 @@ int handle_menu(int key)
         case MENU_FAST_FORWARD:
             sprintf(buf, "%d (6)", nds.fast_forward);
             break;
+#ifdef A30
+        case MENU_JOYSTICK:
+            sprintf(buf, "%s", to_lang((myjoy_mode == MYJOY_MODE_KEYPAD) ? "D-Pad" : "Mouse"));
+            break;
+#endif
         }
         draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
         idx+= 1;

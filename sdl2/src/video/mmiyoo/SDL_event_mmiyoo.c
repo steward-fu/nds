@@ -166,6 +166,8 @@ static uint32_t pre_keypad_bitmaps = 0;
 
 extern int FB_W;
 extern int FB_H;
+extern int g_lastX;
+extern int g_lastY;
 
 #ifdef TRIMUI
 typedef struct _cust_key_t {
@@ -304,6 +306,425 @@ static void set_key(uint32_t bit, int val)
     }
 }
 
+#if defined(A30) && USE_MYJOY
+static int update_joystick(void)
+{
+    const int LTH = -30;
+    const int RTH = 30;
+    const int UTH = -30;
+    const int DTH = 30;
+
+    static int pre_x = -1;
+    static int pre_y = -1;
+
+    int r = 0;
+
+    if (myjoy_mode == MYJOY_MODE_KEYPAD) {
+        static int pre_up = 0;
+        static int pre_down = 0;
+        static int pre_left = 0;
+        static int pre_right = 0;
+
+        uint32_t u_key = MYKEY_UP;
+        uint32_t d_key = MYKEY_DOWN;
+        uint32_t l_key = MYKEY_LEFT;
+        uint32_t r_key = MYKEY_RIGHT;
+
+        if (g_lastX != pre_x) {
+            pre_x = g_lastX;
+            if (pre_x < LTH) {
+                if (pre_left == 0) {
+                    r = 1;
+                    pre_left = 1;
+                    set_key(l_key, 1);
+                }
+            }
+            else if (pre_x > RTH){
+                if (pre_right == 0) {
+                    r = 1;
+                    pre_right = 1;
+                    set_key(r_key, 1);
+                }
+            }
+            else {
+                if (pre_left != 0) {
+                    r = 1;
+                    pre_left = 0;
+                    set_key(l_key, 0);
+                }
+                if (pre_right != 0) {
+                    r = 1;
+                    pre_right = 0;
+                    set_key(r_key, 0);
+                }
+            }
+        }
+
+        if (g_lastY != pre_y) {
+            pre_y = g_lastY;
+            if (pre_y < UTH) {
+                if (pre_up == 0) {
+                    r = 1;
+                    pre_up = 1;
+                    set_key(u_key, 1);
+                }
+            }
+            else if (pre_y > DTH){
+                if (pre_down == 0) {
+                    r = 1;
+                    pre_down = 1;
+                    set_key(d_key, 1);
+                }
+            }
+            else {
+                if (pre_up != 0) {
+                    r = 1;
+                    pre_up = 0;
+                    set_key(u_key, 0);
+                }
+                if (pre_down != 0) {
+                    r = 1;
+                    pre_down = 0;
+                    set_key(d_key, 0);
+                }
+            }
+        }
+    }
+    else if (myjoy_mode == MYJOY_MODE_MOUSE) {
+        const int XRES = 320;
+        const int YRES = 240;
+        const int INTV = 3;
+        static int xx = XRES / 2;
+        static int yy = YRES / 2;
+
+        pre_x = g_lastX;
+        if (pre_x < LTH) {
+            if (xx > 0) {
+                xx -= INTV;
+            }
+        }
+        if (pre_x > RTH) {
+            if (xx < XRES) {
+                xx += INTV;
+            }
+        }
+        pre_y = g_lastY;
+        if (pre_y < UTH) {
+            if (yy > 0) {
+                yy -= INTV;
+            }
+        }
+        if (pre_y > DTH) {
+            if (yy < YRES) {
+                yy += INTV;
+            }
+        }
+
+        if (vid.window && (xx || yy)) {
+            SDL_SendMouseMotion(vid.window, 0, 0, xx, yy);
+        }
+    }
+    return r;
+}
+#endif
+
+static int handle_hotkey(void)
+{
+    int hotkey_mask = 0;
+#ifdef TRIMUI
+    char buf[MAX_PATH << 1] = {0};
+#endif
+
+    hotkey_mask = 1;
+    if (nds.menu.enable || nds.menu.drastic.enable) {
+        hotkey_mask = 0;
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_UP)) {
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+        if (evt.mode == MMIYOO_MOUSE_MODE) {
+            switch (nds.dis_mode) {
+            case NDS_DIS_MODE_VH_T0:
+            case NDS_DIS_MODE_VH_T1:
+            case NDS_DIS_MODE_S0:
+            case NDS_DIS_MODE_S1:
+                break;
+            default:
+                nds.pen.pos = 1;
+                break;
+            }
+        }
+#endif
+        set_key(MYKEY_UP, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_DOWN)) {
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+        if (evt.mode == MMIYOO_MOUSE_MODE) {
+            switch (nds.dis_mode) {
+            case NDS_DIS_MODE_VH_T0:
+            case NDS_DIS_MODE_VH_T1:
+            case NDS_DIS_MODE_S0:
+            case NDS_DIS_MODE_S1:
+                break;
+            default:
+                nds.pen.pos = 0;
+                break;
+            }
+        }
+#endif
+        set_key(MYKEY_DOWN, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
+#if defined(MMIYOO) || defined(A30)
+        if (nds.hres_mode == 0) {
+            if (nds.dis_mode > 0) {
+                nds.dis_mode -= 1;
+            }
+        }
+        else {
+            nds.dis_mode = NDS_DIS_MODE_HRES0;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+            evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
+
+            if (evt.mode == MMIYOO_MOUSE_MODE) {
+                release_all_keys();
+            }
+            lower_speed = 0;
+        }
+#endif
+        set_key(MYKEY_LEFT, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_RIGHT)) {
+#if defined(MMIYOO) || defined(A30)
+        if (nds.hres_mode == 0) {
+            if (nds.dis_mode < NDS_DIS_MODE_LAST) {
+                nds.dis_mode += 1;
+            }
+        }
+        else {
+            nds.dis_mode = NDS_DIS_MODE_HRES1;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        set_key(MYKEY_R2, 1);
+#endif
+        set_key(MYKEY_RIGHT, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_A)) {
+#if defined(MMIYOO) || defined(A30)
+        if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
+            uint32_t tmp = nds.alt_mode;
+            nds.alt_mode = nds.dis_mode;
+            nds.dis_mode = tmp;
+        }
+#endif
+
+#ifdef TRIMUI
+        nds.dis_mode = (nds.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
+        disp_resize();
+#endif
+        set_key(MYKEY_A, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_B)) {
+#if defined(MMIYOO) || defined(A30)
+        pixel_filter = pixel_filter ? 0 : 1;
+#endif
+        set_key(MYKEY_B, 0);
+    }
+
+    if (hit_hotkey(MYKEY_X)) {
+#ifdef TRIMUI
+        int w = FB_W;
+        int h = FB_H;
+        int pitch = FB_W * FB_BPP;
+        uint32_t *dst = NULL;
+        SDL_Surface *p = NULL;
+        time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+
+        // for MMIYOO
+        // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
+        dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
+
+        if (nds.dis_mode == NDS_DIS_MODE_S0) {
+            w = NDS_H;
+            h = NDS_W;
+        }
+        else {
+            w = FB_H;
+            h = FB_W;
+        }
+        pitch = FB_H * FB_BPP;
+
+        if (dst) {
+            p = SDL_CreateRGBSurfaceFrom(dst, w, h, 32, pitch, 0, 0, 0, 0);
+            if (p) {
+                sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                IMG_SavePNG(p, buf);
+                SDL_FreeSurface(p);
+                printf(PREFIX"Saved \'%s\'\n", buf);
+            }
+        }
+        nds.shot.take = 1;
+#endif
+        set_key(MYKEY_X, 0);
+    }
+
+    if (hit_hotkey(MYKEY_Y)) {
+        if (hotkey_mask) {
+            if (evt.mode == MMIYOO_KEYPAD_MODE) {
+                if ((nds.overlay.sel >= nds.overlay.max) &&
+                    (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
+                    (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
+                    (nds.dis_mode != NDS_DIS_MODE_S1) &&
+                    (nds.dis_mode != NDS_DIS_MODE_HRES1))
+                {
+                    nds.theme.sel+= 1;
+                    if (nds.theme.sel > nds.theme.max) {
+                        nds.theme.sel = 0;
+                    }
+                }
+            }
+            else {
+                nds.pen.sel+= 1;
+                if (nds.pen.sel >= nds.pen.max) {
+                    nds.pen.sel = 0;
+                }
+                reload_pen();
+            }
+        }
+        else {
+            nds.menu.sel+= 1;
+            if (nds.menu.sel >= nds.menu.max) {
+                nds.menu.sel = 0;
+            }
+            reload_menu();
+
+            if (nds.menu.drastic.enable) {
+                SDL_SendKeyboardKey(SDL_PRESSED, SDLK_e);
+                usleep(100000);
+                SDL_SendKeyboardKey(SDL_RELEASED, SDLK_e);
+            }
+        }
+        set_key(MYKEY_Y, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_START)) {
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+        if (nds.menu.enable == 0) {
+#ifdef QX1000
+            update_wayland_res(640, 480);
+#endif
+            nds.menu.enable = 1;
+            usleep(100000);
+            handle_menu(-1);
+            hotkey = 0;
+            pre_keypad_bitmaps = evt.keypad.bitmaps = 0;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+        set_key(MYKEY_EXIT, 1);
+#endif
+        set_key(MYKEY_START, 0);
+    }
+
+#if defined(MMIYOO) || defined(A30)
+    if (nds.hotkey == HOTKEY_BIND_MENU) {
+        if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
+            set_key(MYKEY_MENU_ONION, 1);
+            set_key(MYKEY_SELECT, 0);
+        }
+    }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+    if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
+        set_key(MYKEY_MENU_ONION, 1);
+        set_key(MYKEY_SELECT, 0);
+    }
+#endif
+
+    if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
+#if defined(MMIYOO) || defined(A30)
+        static int pre_ff = 0;
+
+        if (pre_ff != nds.fast_forward) {
+            pre_ff = nds.fast_forward;
+            dtr_fastforward(nds.fast_forward);
+        }
+        set_key(MYKEY_FF, 1);
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        set_key(MYKEY_QSAVE, 1);
+#endif
+        set_key(MYKEY_R1, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_L1)) {
+#if defined(MMIYOO) || defined(A30)
+        set_key(MYKEY_EXIT, 1);
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        set_key(MYKEY_QLOAD, 1);
+#endif
+        set_key(MYKEY_L1, 0);
+    }
+
+#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+    if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
+#ifdef A30
+        set_key(MYKEY_QLOAD, 1);
+#else
+        set_key(MYKEY_QSAVE, 1);
+#endif
+        set_key(MYKEY_R2, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(MYKEY_L2)) {
+#ifdef A30
+        set_key(MYKEY_QSAVE, 1);
+#else
+        set_key(MYKEY_QLOAD, 1);
+#endif
+        set_key(MYKEY_L2, 0);
+    }
+    else if (evt.keypad.bitmaps & (1 << MYKEY_L2)) {
+        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+            evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
+            set_key(MYKEY_L2, 0);
+
+            if (evt.mode == MMIYOO_MOUSE_MODE) {
+                release_all_keys();
+            }
+            lower_speed = 0;
+        }
+    }
+#endif
+
+#ifdef A30
+    //set_key(MYKEY_L2, 0);
+#endif
+
+    if (!(evt.keypad.bitmaps & 0x0f)) {
+        nds.pen.pre_ticks = clock();
+    }
+
+    return 0;
+}
+
 int EventUpdate(void *data)
 {
     struct input_event ev = {0};
@@ -324,11 +745,6 @@ int EventUpdate(void *data)
     uint32_t down = DOWN;
     uint32_t left = LEFT;
     uint32_t right = RIGHT;
-
-    int hotkey_mask = 0;
-#ifdef TRIMUI
-    char buf[MAX_PATH << 1] = {0};
-#endif
 
     while (running) {
         SDL_SemWait(event_sem);
@@ -402,8 +818,11 @@ int EventUpdate(void *data)
 #endif
 
         if (event_fd > 0) {
+            int r = 0;
+
             if (read(event_fd, &ev, sizeof(struct input_event))) {
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
+                    r = 1;
                     //printf(PREFIX"code:%d, value:%d\n", ev.code, ev.value);
                     if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
                     if (ev.code == r1)      { set_key(MYKEY_R1,    ev.value); }
@@ -479,302 +898,17 @@ int EventUpdate(void *data)
                         break;
 #endif
                     }
-
-                    hotkey_mask = 1;
-                    if (nds.menu.enable || nds.menu.drastic.enable) {
-                        hotkey_mask = 0;
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_UP)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
-                        if (evt.mode == MMIYOO_MOUSE_MODE) {
-                            switch (nds.dis_mode) {
-                            case NDS_DIS_MODE_VH_T0:
-                            case NDS_DIS_MODE_VH_T1:
-                            case NDS_DIS_MODE_S0:
-                            case NDS_DIS_MODE_S1:
-                                break;
-                            default:
-                                nds.pen.pos = 1;
-                                break;
-                            }
-                        }
-#endif
-                        set_key(MYKEY_UP, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_DOWN)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
-                        if (evt.mode == MMIYOO_MOUSE_MODE) {
-                            switch (nds.dis_mode) {
-                            case NDS_DIS_MODE_VH_T0:
-                            case NDS_DIS_MODE_VH_T1:
-                            case NDS_DIS_MODE_S0:
-                            case NDS_DIS_MODE_S1:
-                                break;
-                            default:
-                                nds.pen.pos = 0;
-                                break;
-                            }
-                        }
-#endif
-                        set_key(MYKEY_DOWN, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
-#if defined(MMIYOO) || defined(A30)
-                        if (nds.hres_mode == 0) {
-                            if (nds.dis_mode > 0) {
-                                nds.dis_mode -= 1;
-                            }
-                        }
-                        else {
-                            nds.dis_mode = NDS_DIS_MODE_HRES0;
-                        }
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA)
-                        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
-                            evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
-
-                            if (evt.mode == MMIYOO_MOUSE_MODE) {
-                                release_all_keys();
-                            }
-                            lower_speed = 0;
-                        }
-#endif
-                        set_key(MYKEY_LEFT, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_RIGHT)) {
-#if defined(MMIYOO) || defined(A30)
-                        if (nds.hres_mode == 0) {
-                            if (nds.dis_mode < NDS_DIS_MODE_LAST) {
-                                nds.dis_mode += 1;
-                            }
-                        }
-                        else {
-                            nds.dis_mode = NDS_DIS_MODE_HRES1;
-                        }
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA)
-                        set_key(MYKEY_R2, 1);
-#endif
-                        set_key(MYKEY_RIGHT, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_A)) {
-#if defined(MMIYOO) || defined(A30)
-                        if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
-                            uint32_t tmp = nds.alt_mode;
-                            nds.alt_mode = nds.dis_mode;
-                            nds.dis_mode = tmp;
-                        }
-#endif
-
-#ifdef TRIMUI
-                        nds.dis_mode = (nds.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
-                        disp_resize();
-#endif
-                        set_key(MYKEY_A, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_B)) {
-#if defined(MMIYOO) || defined(A30)
-                        pixel_filter = pixel_filter ? 0 : 1;
-#endif
-                        set_key(MYKEY_B, 0);
-                    }
-
-                    if (hit_hotkey(MYKEY_X)) {
-#ifdef TRIMUI
-                        int w = FB_W;
-                        int h = FB_H;
-                        int pitch = FB_W * FB_BPP;
-                        uint32_t *dst = NULL;
-                        SDL_Surface *p = NULL;
-                        time_t t = time(NULL);
-                        struct tm tm = *localtime(&t);
-
-                        // for MMIYOO
-                        // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
-                        dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
-
-                        if (nds.dis_mode == NDS_DIS_MODE_S0) {
-                            w = NDS_H;
-                            h = NDS_W;
-                        }
-                        else {
-                            w = FB_H;
-                            h = FB_W;
-                        }
-                        pitch = FB_H * FB_BPP;
-
-                        if (dst) {
-                            p = SDL_CreateRGBSurfaceFrom(dst, w, h, 32, pitch, 0, 0, 0, 0);
-                            if (p) {
-                                sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
-                                IMG_SavePNG(p, buf);
-                                SDL_FreeSurface(p);
-                                printf(PREFIX"Saved \'%s\'\n", buf);
-                            }
-                        }
-                        nds.shot.take = 1;
-#endif
-                        set_key(MYKEY_X, 0);
-                    }
-
-                    if (hit_hotkey(MYKEY_Y)) {
-                        if (hotkey_mask) {
-                            if (evt.mode == MMIYOO_KEYPAD_MODE) {
-                                if ((nds.overlay.sel >= nds.overlay.max) &&
-                                    (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
-                                    (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
-                                    (nds.dis_mode != NDS_DIS_MODE_S1) &&
-                                    (nds.dis_mode != NDS_DIS_MODE_HRES1))
-                                {
-                                    nds.theme.sel+= 1;
-                                    if (nds.theme.sel > nds.theme.max) {
-                                        nds.theme.sel = 0;
-                                    }
-                                }
-                            }
-                            else {
-                                nds.pen.sel+= 1;
-                                if (nds.pen.sel >= nds.pen.max) {
-                                    nds.pen.sel = 0;
-                                }
-                                reload_pen();
-                            }
-                        }
-                        else {
-                            nds.menu.sel+= 1;
-                            if (nds.menu.sel >= nds.menu.max) {
-                                nds.menu.sel = 0;
-                            }
-                            reload_menu();
-
-                            if (nds.menu.drastic.enable) {
-                                SDL_SendKeyboardKey(SDL_PRESSED, SDLK_e);
-                                usleep(100000);
-                                SDL_SendKeyboardKey(SDL_RELEASED, SDLK_e);
-                            }
-                        }
-                        set_key(MYKEY_Y, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_START)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
-                        if (nds.menu.enable == 0) {
-#ifdef QX1000
-                            update_wayland_res(640, 480);
-#endif
-                            nds.menu.enable = 1;
-                            usleep(100000);
-                            handle_menu(-1);
-                            hotkey = 0;
-                            pre_keypad_bitmaps = evt.keypad.bitmaps = 0;
-                        }
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
-                        set_key(MYKEY_EXIT, 1);
-#endif
-                        set_key(MYKEY_START, 0);
-                    }
-
-#if defined(MMIYOO) || defined(A30)
-                    if (nds.hotkey == HOTKEY_BIND_MENU) {
-                        if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
-                            set_key(MYKEY_MENU_ONION, 1);
-                            set_key(MYKEY_SELECT, 0);
-                        }
-                    }
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
-                    if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
-                        set_key(MYKEY_MENU_ONION, 1);
-                        set_key(MYKEY_SELECT, 0);
-                    }
-#endif
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
-#if defined(MMIYOO) || defined(A30)
-                        static int pre_ff = 0;
-
-                        if (pre_ff != nds.fast_forward) {
-                            pre_ff = nds.fast_forward;
-                            dtr_fastforward(nds.fast_forward);
-                        }
-                        set_key(MYKEY_FF, 1);
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA)
-                        set_key(MYKEY_QSAVE, 1);
-#endif
-                        set_key(MYKEY_R1, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_L1)) {
-#if defined(MMIYOO) || defined(A30)
-                        set_key(MYKEY_EXIT, 1);
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA)
-                        set_key(MYKEY_QLOAD, 1);
-#endif
-                        set_key(MYKEY_L1, 0);
-                    }
-
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
-                    if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
-#ifdef A30
-                        set_key(MYKEY_QLOAD, 1);
-#else
-                        set_key(MYKEY_QSAVE, 1);
-#endif
-                        set_key(MYKEY_R2, 0);
-                    }
-
-                    if (hotkey_mask && hit_hotkey(MYKEY_L2)) {
-#ifdef A30
-                        set_key(MYKEY_QSAVE, 1);
-#else
-                        set_key(MYKEY_QLOAD, 1);
-#endif
-                        set_key(MYKEY_L2, 0);
-                    }
-                    else if (evt.keypad.bitmaps & (1 << MYKEY_L2)) {
-                        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
-                            evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
-                            set_key(MYKEY_L2, 0);
-
-                            if (evt.mode == MMIYOO_MOUSE_MODE) {
-                                release_all_keys();
-                            }
-                            lower_speed = 0;
-                        }
-                    }
-#endif
-
-#ifdef A30
-                    //set_key(MYKEY_L2, 0);
-#endif
                 }
-            
-                if (!(evt.keypad.bitmaps & 0x0f)) {
-                    nds.pen.pre_ticks = clock();
-                }
+            }
+#if defined(A30) && USE_MYJOY
+            r |= update_joystick();
+#endif
+            if (r > 0) {
+                handle_hotkey();
             }
         }
         SDL_SemPost(event_sem);
         usleep(1000000 / 60);
-
-#if USE_MYJOY
-        MMIYOO_JoystickUpdate((SDL_Joystick *)myjoy_mode);
-#endif
     }
     
     return 0;
