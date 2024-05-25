@@ -1933,13 +1933,18 @@ static int process_screen(void)
             drt.y = (DEF_FB_H - drt.y) - drt.h;
             drt.x = (DEF_FB_W - drt.x) - drt.w;
         }
-#endif
 
         if (show_pen && ((evt.mode == MMIYOO_MOUSE_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_MOUSE)))) {
+#else
+        if (show_pen && (evt.mode == MMIYOO_MOUSE_MODE)) {
+#endif
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
+
+#ifdef A30
             if (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_MOUSE)) {
                 nds.joy.show_cnt -= 1;
             }
+#endif
         }
 
 #ifdef A30
@@ -6516,10 +6521,18 @@ int handle_menu(int key)
             sprintf(buf, "%s", DPAD[nds.keys_rotate % 3]);
             break;
         case MENU_PEN_XV:
+#ifdef A30
             sprintf(buf, "%d (80000)", nds.pen.xv);
+#else
+            sprintf(buf, "%d (30000)", nds.pen.xv);
+#endif
             break;
         case MENU_PEN_YV:
+#ifdef A30
             sprintf(buf, "%d (85000)", nds.pen.yv);
+#else
+            sprintf(buf, "%d (35000)", nds.pen.yv);
+#endif
             break;
         case MENU_CURSOR:
             sprintf(buf, "%s", to_lang(nds.menu.show_cursor ? "Show" : "Hide"));

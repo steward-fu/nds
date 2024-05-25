@@ -745,7 +745,7 @@ static int handle_hotkey(void)
 
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
     if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
         set_key(MYKEY_QLOAD, 1);
 #else
         set_key(MYKEY_QSAVE, 1);
@@ -754,7 +754,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_L2)) {
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
         set_key(MYKEY_QSAVE, 1);
 #else
         set_key(MYKEY_QLOAD, 1);
@@ -772,10 +772,6 @@ static int handle_hotkey(void)
             lower_speed = 0;
         }
     }
-#endif
-
-#ifdef A30
-    //set_key(MYKEY_L2, 0);
 #endif
 
     if (!(evt.keypad.bitmaps & 0x0f)) {
@@ -918,8 +914,8 @@ int EventUpdate(void *data)
                     }
                     if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
 #else
-                    if (ev.code == r2)      { set_key(MYKEY_R2,    ev.value); }
-                    if (ev.code == l2)      { set_key(MYKEY_L2,    ev.value); }
+                    if (ev.code == r2)      { set_key(MYKEY_L2,    ev.value); }
+                    if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
 #endif
 #endif
 
