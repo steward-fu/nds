@@ -58,8 +58,12 @@
 
 #ifdef A30
 #define USE_MYJOY           1
-#define MYJOY_MODE_KEYPAD   0
-#define MYJOY_MODE_MOUSE    1
+
+#define MYJOY_MODE_KEYPAD   1
+#define MYJOY_MODE_MOUSE    0
+#define MYJOY_SHOW_CNT      300
+#define MYJOY_MOVE_SPEED    4
+
 #define INIT_CPU_CORE       4
 #define INIT_CPU_CLOCK      1350
 #define DEINIT_CPU_CORE     2
@@ -218,6 +222,7 @@
 #define PEN_LB                      1
 #define PEN_RT                      2
 #define PEN_RB                      3
+#define PEN_CP                      4
 #define FONT_PATH                   "resources/font/font.ttf"
 
 #if defined(MMIYOO) || defined(A30) || defined(PANDORA) || defined(QX1000)
@@ -543,6 +548,7 @@ typedef struct _NDS {
 
         int mode;
         int dzone;
+        int show_cnt;
     } joy;
 #endif
 } NDS;

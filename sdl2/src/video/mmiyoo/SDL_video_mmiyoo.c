@@ -1935,8 +1935,11 @@ static int process_screen(void)
         }
 #endif
 
-        if ((evt.mode == MMIYOO_MOUSE_MODE) && show_pen) {
+        if (show_pen && ((evt.mode == MMIYOO_MOUSE_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_MOUSE)))) {
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
+            if (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_MOUSE)) {
+                nds.joy.show_cnt -= 1;
+            }
         }
 
 #ifdef A30
@@ -3684,14 +3687,18 @@ int draw_pen(void *pixels, int width, int pitch)
     case PEN_LT:
         break;
     case PEN_LB:
-        y-= (h * scale);
+        y -= (h * scale);
         break;
     case PEN_RT:
-        x-= (w * scale);
+        x -= (w * scale);
         break;
     case PEN_RB:
-        x-= (w * scale);
-        y-= (h * scale);
+        x -= (w * scale);
+        y -= (h * scale);
+        break;
+    case PEN_CP:
+        x -= ((w * scale) >> 1);
+        y -= ((h * scale) >> 1);
         break;
     }
 
@@ -5146,8 +5153,11 @@ int reload_pen(void)
                 else if (strstr(buf, "_rb")) {
                     nds.pen.type = PEN_RB;
                 }
-                else {
+                else if (strstr(buf, "_lb")) {
                     nds.pen.type = PEN_LB;
+                }
+                else {
+                    nds.pen.type = PEN_CP;
                 }
             }
             else {
@@ -6239,6 +6249,9 @@ int handle_menu(int key)
 #ifdef A30
         case MENU_JOYSTICK_MODE:
             nds.joy.mode = MYJOY_MODE_MOUSE;
+            if (evt.mode == MMIYOO_MOUSE_MODE) {
+                evt.mode = MMIYOO_KEYPAD_MODE;
+            }
             break;
         case MENU_JOYSTICK_DZONE:
             if (nds.joy.dzone < 255) {
