@@ -1933,6 +1933,9 @@ static int process_screen(void)
             drt.y = (DEF_FB_H - drt.y) - drt.h;
             drt.x = (DEF_FB_W - drt.x) - drt.w;
         }
+        else if (rotate == E_MI_GFX_ROTATE_90) {
+            drt.x = (drt.x == 0) ? 320 : 0;
+        }
 
         if (show_pen && ((evt.mode == MMIYOO_MOUSE_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_MOUSE)))) {
 #else
