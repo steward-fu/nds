@@ -1,3 +1,4 @@
+#include <time.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,6 +18,10 @@
 #include <linux/soundcard.h>
 #include <json-c/json.h>
 #include <sys/mman.h>
+#include <sys/time.h>
+#include <linux/rtc.h>
+#include <sys/time.h>
+#include <syslog.h>
 
 #ifdef QX1000
 #include <pulse/pulseaudio.h>
@@ -369,6 +374,36 @@ int volume_dec(void)
     }
     return cur_volume;
 }
+
+static int open_dsp(void)
+{
+    int arg = 0;
+
+    if (dsp_fd > 0) {
+        close(dsp_fd);
+    }
+    system("amixer set \'DACL Mixer AIF1DA0L\' on");
+    system("amixer set \'DACL Mixer AIF1DA0R\' on");
+
+    vol_ptr = (uint32_t *)(&mem_ptr[0xc00 + 0x258]);
+    *vol_ptr = ((vol_base + (cur_volume << vol_mul)) << 8) | (vol_base + (cur_volume << vol_mul));
+
+    dsp_fd = open("/dev/dsp", O_WRONLY);
+    if (dsp_fd < 0) {
+        printf(PREFIX"Failed to open /dev/dsp device\n");
+        return -1;
+    }
+
+    arg = 16;
+    ioctl(dsp_fd, SOUND_PCM_WRITE_BITS, &arg);
+
+    arg = CHANNELS;
+    ioctl(dsp_fd, SOUND_PCM_WRITE_CHANNELS, &arg);
+
+    arg = FREQ;
+    ioctl(dsp_fd, SOUND_PCM_WRITE_RATE, &arg);
+    return 0;
+}
 #endif
 
 void snd_nds_reload_config(void)
@@ -497,6 +532,9 @@ static void *audio_handler(void *threadid)
 #ifdef MMIYOO
     MI_AUDIO_Frame_t aoTestFrame = {0};
 #endif
+#ifdef A30
+    int chk_cnt = 0;
+#endif
     int r = 0, len = pcm_buf_len, idx = 0;
 
     while (pcm_ready) {
@@ -529,6 +567,25 @@ static void *audio_handler(void *threadid)
 #endif
             }
         }
+#ifdef A30
+        else {
+            if (chk_cnt == 0) {
+                char buf[255] = {0};
+                FILE *fd = popen("amixer get \'DACL Mixer AIF1DA0L\' | grep \"Mono: Playback \\[off\\]\" | wc -l", "r");
+
+                if (fd) {
+                    fgets(buf, sizeof(buf), fd);
+                    pclose(fd);
+
+                    if (atoi(buf) > 0) {
+                        open_dsp();
+                    }
+                }
+                chk_cnt = 30000;
+            }
+            chk_cnt -= 1;
+        }
+#endif
         usleep(10);
     }
     pthread_exit(NULL);
@@ -629,6 +686,10 @@ int snd_pcm_start(snd_pcm_t *pcm)
     int arg = 0;
 #endif
 
+#ifdef A30
+    struct tm ct = {0};
+#endif
+
     queue_init(&queue, (size_t)QUEUE_SIZE);
     if (queue.buffer == NULL) {
         return -1;
@@ -700,11 +761,10 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #ifdef A30
     mem_fd = open("/dev/mem", O_RDWR);
     mem_ptr = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, 0x1c22000);
-    vol_ptr = (uint32_t *)(&mem_ptr[0xc00 + 0x258]);
-    *vol_ptr = ((vol_base + (cur_volume << vol_mul)) << 8) | (vol_base + (cur_volume << vol_mul));
+    open_dsp();
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
+#if defined(TRIMUI) || defined(PANDORA)
     dsp_fd = open("/dev/dsp", O_WRONLY);
     if (dsp_fd < 0) {
         printf(PREFIX"Failed to open /dev/dsp device\n");
