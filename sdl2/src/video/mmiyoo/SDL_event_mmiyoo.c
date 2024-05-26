@@ -455,6 +455,8 @@ static int update_joystick(void)
                 }
             }
             else {
+                int x = 0;
+                int y = 0;
                 const int v = MYJOY_MOVE_SPEED;
 
                 if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_rotate == 0)) {
@@ -486,6 +488,10 @@ static int update_joystick(void)
                     }
                 }
                 check_mouse_pos();
+
+                x = (evt.mouse.x * 160) / evt.mouse.maxx;
+                y = (evt.mouse.y * 120) / evt.mouse.maxy;
+                SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
             }
             nds.joy.show_cnt = MYJOY_SHOW_CNT;
         }
@@ -914,13 +920,7 @@ int EventUpdate(void *data)
                                 set_key(MYKEY_L2, ev.value);
                             }
                             else {
-                                int x = 0;
-                                int y = 0;
-
                                 nds.joy.show_cnt = MYJOY_SHOW_CNT;
-                                x = (evt.mouse.x * 160) / evt.mouse.maxx;
-                                y = (evt.mouse.y * 120) / evt.mouse.maxy;
-                                SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
                                 SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
                             }
                         }
