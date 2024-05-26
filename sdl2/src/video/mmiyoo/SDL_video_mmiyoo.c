@@ -1530,6 +1530,7 @@ static int process_screen(void)
     int idx = 0;
     int screen_cnt = 0;
     char buf[MAX_PATH] = {0};
+
 #if defined(MMIYOO) || defined(A30)
     int cur_sel = gfx.lcd.cur_sel ^ 1;
 #endif
@@ -3367,6 +3368,10 @@ int fb_init(void)
     MI_SYS_Mmap(gfx.lcd.phyAddr[0][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[0][1], TRUE);
     MI_SYS_Mmap(gfx.lcd.phyAddr[1][0], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][0], TRUE);
     MI_SYS_Mmap(gfx.lcd.phyAddr[1][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][1], TRUE);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][0]);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][1]);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][0]);
+    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
     return 0;
 }
 
@@ -4295,20 +4300,11 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
 #ifdef MMIYOO
     int cc = 0;
     int copy_it = 1;
-    int cur_sel = gfx.lcd.cur_sel ^ 1;
-    int is_dma_buf = -1;
     MI_U16 u16Fence = 0;
     int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
 
     if (pixels == NULL) {
         return -1;
-    }
-
-    for (cc = 0; cc < 2; cc++) {
-        if (pixels == gfx.lcd.virAddr[cur_sel][cc]) {
-            is_dma_buf = cc;
-            break;
-        }
     }
 
     if (alpha != 0) {
@@ -4811,10 +4807,22 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
     }
 
     if (copy_it) {
-        if (is_dma_buf >= 0) {
-            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cur_sel][is_dma_buf];
+        int found = 0;
+
+        for (cc = 0; cc < 2; cc++) {
+            if (pixels == gfx.lcd.virAddr[cc][0]) {
+                found = 1;
+                gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][0];
+                break;
+            }
+            if (pixels == gfx.lcd.virAddr[cc][1]) {
+                found = 1;
+                gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][1];
+                break;
+            }
         }
-        else {
+
+        if (found == 0) {
             neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
             gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
             MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
