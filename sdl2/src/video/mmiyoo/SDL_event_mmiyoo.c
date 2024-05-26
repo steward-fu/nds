@@ -284,6 +284,7 @@ static void set_key(uint32_t bit, int val)
 #endif
 
 #if defined(MMIYOO) || defined(A30)
+        // when press the hotkey, we need to clean all of existing keys
         if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == MYKEY_SELECT) {
                 cur_keypad_bitmaps = (1 << MYKEY_SELECT);
@@ -916,7 +917,7 @@ int EventUpdate(void *data)
 #ifdef A30
                     if (ev.code == r2) {
                         if (nds.joy.mode == MYJOY_MODE_MOUSE) {
-                            if (cur_keypad_bitmaps & (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU))) {
+                            if (evt.keypad.bitmaps & (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU))) {
                                 set_key(MYKEY_L2, ev.value);
                             }
                             else {
