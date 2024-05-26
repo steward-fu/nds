@@ -141,8 +141,12 @@
 #define NDS_VER                     "v1.9"
 #define NDS_W                       256
 #define NDS_H                       192
-#define NDS_Wx2                     (NDS_W << 1)
-#define NDS_Hx2                     (NDS_H << 1)
+#define NDS_Wx2                     (NDS_W * 2)
+#define NDS_Hx2                     (NDS_H * 2)
+#define NDS_Wx3                     (NDS_W * 3)
+#define NDS_Hx3                     (NDS_H * 3)
+#define NDS_Wx4                     (NDS_W * 4)
+#define NDS_Hx4                     (NDS_H * 4)
 
 #ifndef MAX_PATH
     #define MAX_PATH                128
@@ -159,12 +163,14 @@
 #endif
 
 #ifdef MMIYOO
+    #define USE_MASK                0
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+    #define MASK_SIZE               (NDS_Wx3 * NDS_Hx3 * 4)
     #define RELOAD_BG_COUNT         120
 #endif
 
@@ -392,6 +398,13 @@ typedef struct _GFX {
 #endif
     } fb, tmp, overlay;
 
+#ifdef MMIYOO
+    struct {
+        void *virAddr[2];
+        MI_PHY phyAddr[2];
+    } mask;
+#endif
+
 #if defined(MMIYOO) || defined(A30)
     struct {
         int cur_sel;
@@ -606,7 +619,6 @@ void update_wayland_res(int w, int h);
 
 void render_scanline_tiled_4bpp(void);
 void render_polygon_setup_perspective_steps(void);
-void MMIYOO_JoystickUpdate(SDL_Joystick *joystick);
 
 #endif
 

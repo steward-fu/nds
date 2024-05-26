@@ -3079,9 +3079,8 @@ int fb_init(void)
     gfx.ion_dev = open("/dev/ion", O_RDWR);
     gfx.mem_dev = open("/dev/mem", O_RDWR);
     gfx.disp_dev = open("/dev/disp", O_RDWR);
-
     if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open fb0\n");
+        printf(PREFIX"Failed to open /dev/fb0\n");
         return -1;
     }
 
@@ -3254,12 +3253,12 @@ int fb_init(void)
 {
     gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
     if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open framebuffer device\n");
+        printf(PREFIX"Failed to open /dev/fb0\n");
         return -1;
     }
 
     if (ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo) < 0) {
-        printf(PREFIX"Failed to get framebuffer information\n");
+        printf(PREFIX"Failed to get fb info\n");
         return -1;
     }
 
@@ -3267,7 +3266,7 @@ int fb_init(void)
     if (gfx.fb.virAddr == (void *)-1) {
         close(gfx.fb_dev);
         gfx.fb_dev = -1;
-        printf(PREFIX"Failed to mmap /dev/fb0\n");
+        printf(PREFIX"Failed to mmap fb\n");
         return -1;
     }
     printf(PREFIX"FB virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
@@ -3339,10 +3338,20 @@ int fb_quit(void)
 #ifdef MMIYOO
 int fb_init(void)
 {
+#if USE_MASK
+    int c0 = 0;
+    int c1 = 0;
+    uint32_t *p = NULL;
+#endif
+
     MI_SYS_Init();
     MI_GFX_Open();
 
     gfx.fb_dev = open("/dev/fb0", O_RDWR);
+    if (gfx.fb_dev < 0) {
+        printf(PREFIX"Failed to open /dev/fb0\n");
+        return -1;
+    }
     ioctl(gfx.fb_dev, FBIOGET_FSCREENINFO, &gfx.finfo);
     ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo);
     gfx.vinfo.yoffset = 0;
@@ -3372,6 +3381,26 @@ int fb_init(void)
     printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][1]);
     printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][0]);
     printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
+
+#if USE_MASK
+    MI_SYS_MMA_Alloc(NULL, MASK_SIZE, &gfx.mask.phyAddr[0]);
+    MI_SYS_MMA_Alloc(NULL, MASK_SIZE, &gfx.mask.phyAddr[1]);
+    MI_SYS_Mmap(gfx.mask.phyAddr[0], MASK_SIZE, &gfx.mask.virAddr[0], TRUE);
+    MI_SYS_Mmap(gfx.mask.phyAddr[1], MASK_SIZE, &gfx.mask.virAddr[1], TRUE);
+
+    p = (uint32_t *)gfx.mask.virAddr[0];
+    for (c0 = 0; c0 < NDS_Hx3; c0++) {
+        for (c1 = 0; c1 < NDS_Wx3; c1++) {
+            if (((c0 % 3) == 0) || (c1 % 3) == 0) {
+                *p++ = 0xff000000;
+            }
+            else {
+                *p++ = 0x00000000;
+            }
+        }
+    }
+    MI_SYS_FlushInvCache(gfx.mask.virAddr[0], MASK_SIZE);
+#endif
     return 0;
 }
 
@@ -3384,6 +3413,13 @@ int fb_quit(void)
 
     MI_SYS_Munmap(gfx.overlay.virAddr, TMP_SIZE);
     MI_SYS_MMA_Free(gfx.overlay.phyAddr);
+
+#if USE_MASK
+    MI_SYS_Munmap(gfx.mask.virAddr[0], MASK_SIZE);
+    MI_SYS_Munmap(gfx.mask.virAddr[1], MASK_SIZE);
+    MI_SYS_MMA_Free(gfx.mask.phyAddr[0]);
+    MI_SYS_MMA_Free(gfx.mask.phyAddr[1]);
+#endif
 
     MI_SYS_Munmap(gfx.lcd.virAddr[0][0], SCREEN_DMA_SIZE);
     MI_SYS_Munmap(gfx.lcd.virAddr[0][1], SCREEN_DMA_SIZE);
@@ -4300,11 +4336,25 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
 #ifdef MMIYOO
     int cc = 0;
     int copy_it = 1;
+    int dma_found = 0;
     MI_U16 u16Fence = 0;
     int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
 
     if (pixels == NULL) {
         return -1;
+    }
+
+    for (cc = 0; cc < 2; cc++) {
+        if (pixels == gfx.lcd.virAddr[cc][0]) {
+            dma_found = 1;
+            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][0];
+            break;
+        }
+        if (pixels == gfx.lcd.virAddr[cc][1]) {
+            dma_found = 1;
+            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][1];
+            break;
+        }
     }
 
     if (alpha != 0) {
@@ -4460,325 +4510,391 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
             }
 
             if (pitch == 1024) {
-                asm volatile (
-                    "0:  add r8, %1, %2         ;"
-                    "1:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "2:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "3:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "4:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "5:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "6:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "7:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "8:  vldmia %0!, {q0-q3}    ;"
-                    "    vldmia %0!, {q8-q11}   ;"
-                    "    vdup.32 d15, d7[1]     ;"
-                    "    vdup.32 d14, d7[0]     ;"
-                    "    vdup.32 d13, d6[1]     ;"
-                    "    vdup.32 d12, d6[0]     ;"
-                    "    vdup.32 d11, d5[1]     ;"
-                    "    vdup.32 d10, d5[0]     ;"
-                    "    vdup.32 d9, d4[1]      ;"
-                    "    vdup.32 d8, d4[0]      ;"
-                    "    vdup.32 d7, d3[1]      ;"
-                    "    vdup.32 d6, d3[0]      ;"
-                    "    vdup.32 d5, d2[1]      ;"
-                    "    vdup.32 d4, d2[0]      ;"
-                    "    vdup.32 d3, d1[1]      ;"
-                    "    vdup.32 d2, d1[0]      ;"
-                    "    vdup.32 d1, d0[1]      ;"
-                    "    vdup.32 d0, d0[0]      ;"
-                    "    vdup.32 d31, d23[1]    ;"
-                    "    vdup.32 d30, d23[0]    ;"
-                    "    vdup.32 d29, d22[1]    ;"
-                    "    vdup.32 d28, d22[0]    ;"
-                    "    vdup.32 d27, d21[1]    ;"
-                    "    vdup.32 d26, d21[0]    ;"
-                    "    vdup.32 d25, d20[1]    ;"
-                    "    vdup.32 d24, d20[0]    ;"
-                    "    vdup.32 d23, d19[1]    ;"
-                    "    vdup.32 d22, d19[0]    ;"
-                    "    vdup.32 d21, d18[1]    ;"
-                    "    vdup.32 d20, d18[0]    ;"
-                    "    vdup.32 d19, d17[1]    ;"
-                    "    vdup.32 d18, d17[0]    ;"
-                    "    vdup.32 d17, d16[1]    ;"
-                    "    vdup.32 d16, d16[0]    ;"
-                    "    vstmia %1!, {q0-q7}    ;"
-                    "    vstmia %1!, {q8-q15}   ;"
-                    "    vstmia r8!, {q0-q7}    ;"
-                    "    vstmia r8!, {q8-q15}   ;"
-                    "    add %1, %1, %2         ;"
-                    "    subs %3, #1            ;"
-                    "    bne 0b                 ;"
-                    :
-                    : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(NDS_Wx2 * 4), "r"(NDS_H)
-                    : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
-                );
-                copy_it = 0;
-                srcrect.x = 0;
-                srcrect.y = 0;
-                srcrect.w = NDS_Wx2;
-                srcrect.h = NDS_Hx2;
-                pitch = srcrect.w * 4;
+#if USE_MASK
+                if (dma_found) {
+                    gfx.hw.opt.u32GlobalSrcConstColor = 0;
+                    gfx.hw.opt.eRotate = 0;
+                    gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+                    gfx.hw.opt.eDstDfbBldOp = 0;
+                    gfx.hw.opt.eDFBBlendFlag = 0;
+
+                    gfx.hw.src.rt.s32Xpos = 0;
+                    gfx.hw.src.rt.s32Ypos = 0;
+                    gfx.hw.src.rt.u32Width = NDS_W;
+                    gfx.hw.src.rt.u32Height = NDS_H;
+                    gfx.hw.src.surf.u32Width = NDS_W;
+                    gfx.hw.src.surf.u32Height = NDS_H;
+                    gfx.hw.src.surf.u32Stride = pitch;
+                    gfx.hw.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
+
+                    gfx.hw.dst.rt.s32Xpos = 0;
+                    gfx.hw.dst.rt.s32Ypos = 0;
+                    gfx.hw.dst.rt.u32Width = NDS_Wx3;
+                    gfx.hw.dst.rt.u32Height = NDS_Hx3;
+                    gfx.hw.dst.surf.u32Width = NDS_Wx3;
+                    gfx.hw.dst.surf.u32Height = NDS_Hx3;
+                    gfx.hw.dst.surf.u32Stride = NDS_Wx3 * FB_BPP;
+                    gfx.hw.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
+                    gfx.hw.dst.surf.phyAddr = gfx.mask.phyAddr[1];
+
+                    MI_GFX_BitBlit(&gfx.hw.src.surf, &gfx.hw.src.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
+                    MI_GFX_WaitAllDone(FALSE, u16Fence);
+
+                    gfx.hw.overlay.surf.phyAddr = gfx.mask.phyAddr[0];
+                    gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
+                    gfx.hw.overlay.surf.u32Width = NDS_Wx3;
+                    gfx.hw.overlay.surf.u32Height = NDS_Hx3;
+                    gfx.hw.overlay.surf.u32Stride = NDS_Wx3 * FB_BPP;
+                    gfx.hw.overlay.rt.s32Xpos = 0;
+                    gfx.hw.overlay.rt.s32Ypos = 0;
+                    gfx.hw.overlay.rt.u32Width = NDS_Wx3;
+                    gfx.hw.overlay.rt.u32Height = NDS_Hx3;
+
+                    gfx.hw.dst.rt.s32Xpos = 0;
+                    gfx.hw.dst.rt.s32Ypos = 0;
+                    gfx.hw.dst.rt.u32Width = NDS_Wx3;
+                    gfx.hw.dst.rt.u32Height = NDS_Hx3;
+                    gfx.hw.dst.surf.phyAddr = gfx.mask.phyAddr[1];
+
+                    gfx.hw.opt.u32GlobalSrcConstColor = 0xff000000;
+                    gfx.hw.opt.eRotate = 0;
+                    gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+                    gfx.hw.opt.eDstDfbBldOp = E_MI_GFX_DFB_BLD_INVSRCALPHA;
+                    gfx.hw.opt.eDFBBlendFlag = E_MI_GFX_DFB_BLEND_SRC_PREMULTIPLY | E_MI_GFX_DFB_BLEND_COLORALPHA | E_MI_GFX_DFB_BLEND_ALPHACHANNEL;
+                    MI_GFX_BitBlit(&gfx.hw.overlay.surf, &gfx.hw.overlay.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
+                    MI_GFX_WaitAllDone(FALSE, u16Fence);
+
+                    copy_it = 0;
+                    srcrect.x = 0;
+                    srcrect.y = 0;
+                    srcrect.w = NDS_Wx3;
+                    srcrect.h = NDS_Hx3;
+                    pitch = srcrect.w * 4;
+                }
+                else
+#endif
+                {
+                    asm volatile (
+                        "0:  add r8, %1, %2         ;"
+                        "1:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "2:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "3:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "4:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "5:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "6:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "7:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "8:  vldmia %0!, {q0-q3}    ;"
+                        "    vldmia %0!, {q8-q11}   ;"
+                        "    vdup.32 d15, d7[1]     ;"
+                        "    vdup.32 d14, d7[0]     ;"
+                        "    vdup.32 d13, d6[1]     ;"
+                        "    vdup.32 d12, d6[0]     ;"
+                        "    vdup.32 d11, d5[1]     ;"
+                        "    vdup.32 d10, d5[0]     ;"
+                        "    vdup.32 d9, d4[1]      ;"
+                        "    vdup.32 d8, d4[0]      ;"
+                        "    vdup.32 d7, d3[1]      ;"
+                        "    vdup.32 d6, d3[0]      ;"
+                        "    vdup.32 d5, d2[1]      ;"
+                        "    vdup.32 d4, d2[0]      ;"
+                        "    vdup.32 d3, d1[1]      ;"
+                        "    vdup.32 d2, d1[0]      ;"
+                        "    vdup.32 d1, d0[1]      ;"
+                        "    vdup.32 d0, d0[0]      ;"
+                        "    vdup.32 d31, d23[1]    ;"
+                        "    vdup.32 d30, d23[0]    ;"
+                        "    vdup.32 d29, d22[1]    ;"
+                        "    vdup.32 d28, d22[0]    ;"
+                        "    vdup.32 d27, d21[1]    ;"
+                        "    vdup.32 d26, d21[0]    ;"
+                        "    vdup.32 d25, d20[1]    ;"
+                        "    vdup.32 d24, d20[0]    ;"
+                        "    vdup.32 d23, d19[1]    ;"
+                        "    vdup.32 d22, d19[0]    ;"
+                        "    vdup.32 d21, d18[1]    ;"
+                        "    vdup.32 d20, d18[0]    ;"
+                        "    vdup.32 d19, d17[1]    ;"
+                        "    vdup.32 d18, d17[0]    ;"
+                        "    vdup.32 d17, d16[1]    ;"
+                        "    vdup.32 d16, d16[0]    ;"
+                        "    vstmia %1!, {q0-q7}    ;"
+                        "    vstmia %1!, {q8-q15}   ;"
+                        "    vstmia r8!, {q0-q7}    ;"
+                        "    vstmia r8!, {q8-q15}   ;"
+                        "    add %1, %1, %2         ;"
+                        "    subs %3, #1            ;"
+                        "    bne 0b                 ;"
+                        :
+                        : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(NDS_Wx2 * 4), "r"(NDS_H)
+                        : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
+                    );
+
+                    copy_it = 0;
+                    srcrect.x = 0;
+                    srcrect.y = 0;
+                    srcrect.w = NDS_Wx2;
+                    srcrect.h = NDS_Hx2;
+                    pitch = srcrect.w * 4;
+                }
             }
             else {
                 int x = 0, y = 0;
@@ -4807,30 +4923,20 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
     }
 
     if (copy_it) {
-        int found = 0;
-
-        for (cc = 0; cc < 2; cc++) {
-            if (pixels == gfx.lcd.virAddr[cc][0]) {
-                found = 1;
-                gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][0];
-                break;
-            }
-            if (pixels == gfx.lcd.virAddr[cc][1]) {
-                found = 1;
-                gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][1];
-                break;
-            }
-        }
-
-        if (found == 0) {
+        if (dma_found == 0) {
             neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
             gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
             MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
         }
     }
     else {
+#if USE_MASK
+        gfx.hw.src.surf.phyAddr = gfx.mask.phyAddr[1];
+        MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
+#else
         gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
         MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
+#endif
     }
 
     gfx.hw.opt.u32GlobalSrcConstColor = 0;
@@ -4862,10 +4968,15 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
     MI_GFX_WaitAllDone(FALSE, u16Fence);
 
     if ((nds.menu.enable == 0) && (srcrect.w != 800) && ((srcrect.w == NDS_W) || (srcrect.w == NDS_Wx2)) && (nds.overlay.sel < nds.overlay.max)) {
-        gfx.hw.src.rt.s32Xpos = 0;
-        gfx.hw.src.rt.s32Ypos = 0;
-        gfx.hw.src.rt.u32Width = FB_W;
-        gfx.hw.src.rt.u32Height = FB_H;
+        gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
+        gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
+        gfx.hw.overlay.surf.u32Width = FB_W;
+        gfx.hw.overlay.surf.u32Height = FB_H;
+        gfx.hw.overlay.surf.u32Stride = FB_W * FB_BPP;
+        gfx.hw.overlay.rt.s32Xpos = 0;
+        gfx.hw.overlay.rt.s32Ypos = 0;
+        gfx.hw.overlay.rt.u32Width = FB_W;
+        gfx.hw.overlay.rt.u32Height = FB_H;
 
         gfx.hw.dst.rt.s32Xpos = 0;
         gfx.hw.dst.rt.s32Ypos = 0;
@@ -5448,15 +5559,6 @@ int reload_overlay(void)
                     SDL_FreeSurface(t);
 
 #ifdef MMIYOO
-                    gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
-                    gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
-                    gfx.hw.overlay.surf.u32Width = FB_W;
-                    gfx.hw.overlay.surf.u32Height = FB_H;
-                    gfx.hw.overlay.surf.u32Stride = FB_W * FB_BPP;
-                    gfx.hw.overlay.rt.s32Xpos = 0;
-                    gfx.hw.overlay.rt.s32Ypos = 0;
-                    gfx.hw.overlay.rt.u32Width = FB_W;
-                    gfx.hw.overlay.rt.u32Height = FB_H;
                     neon_memcpy(gfx.overlay.virAddr, nds.overlay.img->pixels, FB_W * FB_H * 4);
                     MI_SYS_FlushInvCache(gfx.overlay.virAddr, FB_W * FB_H * FB_BPP);
 #endif
