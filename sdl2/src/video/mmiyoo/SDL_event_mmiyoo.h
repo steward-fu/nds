@@ -59,7 +59,8 @@
 
 typedef struct _MMIYOO_EventInfo {
     struct _keypad{
-        uint32_t bitmaps;
+        uint32_t cur_keys;
+        uint32_t pre_keys;
     } keypad;
 
     struct _mouse{

@@ -157,8 +157,6 @@ static int is_stock_os = 0;
 #endif
 static SDL_sem *event_sem = NULL;
 static SDL_Thread *thread = NULL;
-static uint32_t cur_keypad_bitmaps = 0;
-static uint32_t pre_keypad_bitmaps = 0;
 
 extern int FB_W;
 extern int FB_H;
@@ -247,10 +245,10 @@ static void release_all_keys(void)
     int cc = 0;
 
     for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
-        if (evt.keypad.bitmaps & 1) {
+        if (evt.keypad.cur_keys & 1) {
             SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
         }
-        evt.keypad.bitmaps>>= 1;
+        evt.keypad.cur_keys>>= 1;
     }
 }
 
@@ -268,38 +266,34 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
-    return (cur_keypad_bitmaps ^ mask) ? 0 : 1;
+    return (evt.keypad.cur_keys ^ mask) ? 0 : 1;
 }
 
 static void set_key(uint32_t bit, int val)
 {
     if (val) {
-        cur_keypad_bitmaps|= (1 << bit);
-        evt.keypad.bitmaps|= (1 << bit);
-
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
         if (bit == MYKEY_MENU) {
-            cur_keypad_bitmaps = (1 << MYKEY_MENU);
+            evt.keypad.cur_keys = (1 << MYKEY_MENU);
         }
 #endif
 
 #if defined(MMIYOO) || defined(A30)
-        // when press the hotkey, we need to clean all of existing keys
         if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == MYKEY_SELECT) {
-                cur_keypad_bitmaps = (1 << MYKEY_SELECT);
+                evt.keypad.cur_keys = (1 << MYKEY_SELECT);
             }
         }
         else {
             if (bit == MYKEY_MENU) {
-                cur_keypad_bitmaps = (1 << MYKEY_MENU);
+                evt.keypad.cur_keys = (1 << MYKEY_MENU);
             }
         }
 #endif
+        evt.keypad.cur_keys|= (1 << bit);
     }
     else {
-        cur_keypad_bitmaps &= ~(1 << bit);
-        evt.keypad.bitmaps &= ~(1 << bit);
+        evt.keypad.cur_keys &= ~(1 << bit);
     }
 }
 
@@ -438,7 +432,7 @@ static int update_joystick(void)
         }
 
         if (pre_up || pre_down || pre_left || pre_right) {
-            if (cur_keypad_bitmaps &  (1 << MYKEY_Y)) {
+            if (evt.keypad.cur_keys &  (1 << MYKEY_Y)) {
                 if (pre_right) {
                     static int cc = 0;
 
@@ -711,8 +705,7 @@ static int handle_hotkey(void)
             nds.menu.enable = 1;
             usleep(100000);
             handle_menu(-1);
-            cur_keypad_bitmaps = 0;
-            pre_keypad_bitmaps = evt.keypad.bitmaps = 0;
+            evt.keypad.pre_keys = evt.keypad.cur_keys = 0;
         }
 #endif
 
@@ -784,20 +777,26 @@ static int handle_hotkey(void)
 #endif
         set_key(MYKEY_L2, 0);
     }
-    else if (evt.keypad.bitmaps & (1 << MYKEY_L2)) {
-        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
-            evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
-            set_key(MYKEY_L2, 0);
+    else if (evt.keypad.cur_keys & (1 << MYKEY_L2)) {
+#ifdef A30
+        if (nds.joy.mode != MYJOY_MODE_MOUSE) {
+#endif
+            if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+                evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
+                set_key(MYKEY_L2, 0);
 
-            if (evt.mode == MMIYOO_MOUSE_MODE) {
-                release_all_keys();
+                if (evt.mode == MMIYOO_MOUSE_MODE) {
+                    release_all_keys();
+                }
+                lower_speed = 0;
             }
-            lower_speed = 0;
+#ifdef A30
         }
+#endif
     }
 #endif
 
-    if (!(evt.keypad.bitmaps & 0x0f)) {
+    if (!(evt.keypad.cur_keys & 0x0f)) {
         nds.pen.pre_ticks = clock();
     }
 
@@ -917,17 +916,17 @@ int EventUpdate(void *data)
 #ifdef A30
                     if (ev.code == r2) {
                         if (nds.joy.mode == MYJOY_MODE_MOUSE) {
-                            if (evt.keypad.bitmaps & (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU))) {
-                                set_key(MYKEY_L2, ev.value);
-                            }
-                            else {
+                            //if (evt.keypad.cur_keys & (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU))) {
+                                //set_key(MYKEY_L2, ev.value);
+                            //}
+                            //else {
                                 nds.joy.show_cnt = MYJOY_SHOW_CNT;
                                 SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
-                            }
+                            //}
                         }
-                        else {
+                        //else {
                             set_key(MYKEY_L2, ev.value);
-                        }
+                        //}
                     }
                     if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
 #else
@@ -1012,7 +1011,7 @@ void MMIYOO_EventInit(void)
     DIR *dir = NULL;
 #endif
 
-    pre_keypad_bitmaps = 0;
+    evt.keypad.pre_keys = 0;
     memset(&evt, 0, sizeof(evt));
     evt.mouse.maxx = NDS_W;
     evt.mouse.maxy = NDS_H;
@@ -1100,25 +1099,25 @@ void MMIYOO_PumpEvents(_THIS)
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
         int cc = 0;
         uint32_t bit = 0;
-        uint32_t changed = pre_keypad_bitmaps ^ evt.keypad.bitmaps;
+        uint32_t changed = evt.keypad.pre_keys ^ evt.keypad.cur_keys;
 
         for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
             bit = 1 << cc;
             if (changed & bit) {
-                if ((evt.keypad.bitmaps & bit) == 0) {
+                if ((evt.keypad.cur_keys & bit) == 0) {
                     handle_menu(cc);
                 }
             }
         }
-        pre_keypad_bitmaps = evt.keypad.bitmaps;
+        evt.keypad.pre_keys = evt.keypad.cur_keys;
 #endif
     }
     else {
         if (evt.mode == MMIYOO_KEYPAD_MODE) {
-            if (pre_keypad_bitmaps != evt.keypad.bitmaps) {
+            if (evt.keypad.pre_keys != evt.keypad.cur_keys) {
                 int cc = 0;
                 uint32_t bit = 0;
-                uint32_t changed = pre_keypad_bitmaps ^ evt.keypad.bitmaps;
+                uint32_t changed = evt.keypad.pre_keys ^ evt.keypad.cur_keys;
 
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
@@ -1136,98 +1135,98 @@ void MMIYOO_PumpEvents(_THIS)
 #endif
 
                     if (changed & bit) {
-                        SDL_SendKeyboardKey((evt.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                        SDL_SendKeyboardKey((evt.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                     }
                 }
 
 #if defined(TRIMUI) || defined(PANDORA)
-                if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }
-                if (pre_keypad_bitmaps & (1 << MYKEY_L2)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_L2)) {
                     set_key(MYKEY_L2, 0);
                 }
 #endif
-                if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_QSAVE)) {
                     nds.state|= NDS_STATE_QSAVE;
                     set_key(MYKEY_QSAVE, 0);
                 }
-                if (pre_keypad_bitmaps & (1 << MYKEY_QLOAD)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_QLOAD)) {
                     nds.state|= NDS_STATE_QLOAD;
                     set_key(MYKEY_QLOAD, 0);
                 }
-                if (pre_keypad_bitmaps & (1 << MYKEY_FF)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_FF)) {
                     nds.state|= NDS_STATE_FF;
                     set_key(MYKEY_FF, 0);
                 }
-                if (pre_keypad_bitmaps & (1 << MYKEY_MENU_ONION)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_MENU_ONION)) {
                     set_key(MYKEY_MENU_ONION, 0);
                 }
-                if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_EXIT)) {
                     release_all_keys();
                 }
-                pre_keypad_bitmaps = evt.keypad.bitmaps;
+                evt.keypad.pre_keys = evt.keypad.cur_keys;
             }
         }
         else {
             int updated = 0;
             
-            if (pre_keypad_bitmaps != evt.keypad.bitmaps) {
+            if (evt.keypad.pre_keys != evt.keypad.cur_keys) {
                 uint32_t cc = 0;
                 uint32_t bit = 0;
-                uint32_t changed = pre_keypad_bitmaps ^ evt.keypad.bitmaps;
+                uint32_t changed = evt.keypad.pre_keys ^ evt.keypad.cur_keys;
 
                 if (changed & (1 << MYKEY_A)) {
-                    SDL_SendMouseButton(vid.window, 0, (evt.keypad.bitmaps & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+                    SDL_SendMouseButton(vid.window, 0, (evt.keypad.cur_keys & (1 << MYKEY_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
                 }
 
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
                     if ((cc == MYKEY_FF) || (cc == MYKEY_QSAVE) || (cc == MYKEY_QLOAD) || (cc == MYKEY_EXIT) || (cc == MYKEY_R2)) {
                         if (changed & bit) {
-                            SDL_SendKeyboardKey((evt.keypad.bitmaps & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                            SDL_SendKeyboardKey((evt.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
                         }
                     }
                     if (cc == MYKEY_R1) {
                         if (changed & bit) {
-                            lower_speed = (evt.keypad.bitmaps & bit);
+                            lower_speed = (evt.keypad.cur_keys & bit);
                         }
                     }
                 }
             }
 
             if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_rotate == 0)) {
-                if (evt.keypad.bitmaps & (1 << MYKEY_UP)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_UP)) {
                     updated = 1;
                     evt.mouse.x+= get_move_interval(1);
                 }
-                if (evt.keypad.bitmaps & (1 << MYKEY_DOWN)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_DOWN)) {
                     updated = 1;
                     evt.mouse.x-= get_move_interval(1);
                 }
-                if (evt.keypad.bitmaps & (1 << MYKEY_LEFT)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_LEFT)) {
                     updated = 1;
                     evt.mouse.y-= get_move_interval(0);
                 }
-                if (evt.keypad.bitmaps & (1 << MYKEY_RIGHT)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_RIGHT)) {
                     updated = 1;
                     evt.mouse.y+= get_move_interval(0);
                 }
             }
             else {
-                if (evt.keypad.bitmaps & (1 << MYKEY_UP)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_UP)) {
                     updated = 1;
                     evt.mouse.y-= get_move_interval(1);
                 }
-                if (evt.keypad.bitmaps & (1 << MYKEY_DOWN)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_DOWN)) {
                     updated = 1;
                     evt.mouse.y+= get_move_interval(1);
                 }
-                if (evt.keypad.bitmaps & (1 << MYKEY_LEFT)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_LEFT)) {
                     updated = 1;
                     evt.mouse.x-= get_move_interval(0);
                 }
-                if (evt.keypad.bitmaps & (1 << MYKEY_RIGHT)) {
+                if (evt.keypad.cur_keys & (1 << MYKEY_RIGHT)) {
                     updated = 1;
                     evt.mouse.x+= get_move_interval(0);
                 }
@@ -1244,26 +1243,26 @@ void MMIYOO_PumpEvents(_THIS)
             }
 
 #if defined(TRIMUI) || defined(PANDORA)
-                if (pre_keypad_bitmaps & (1 << MYKEY_R2)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_R2)) {
                     set_key(MYKEY_R2, 0);
                 }
-                if (pre_keypad_bitmaps & (1 << MYKEY_L2)) {
+                if (evt.keypad.pre_keys & (1 << MYKEY_L2)) {
                     set_key(MYKEY_L2, 0);
                 }
 #endif
-            if (pre_keypad_bitmaps & (1 << MYKEY_QSAVE)) {
+            if (evt.keypad.pre_keys & (1 << MYKEY_QSAVE)) {
                 set_key(MYKEY_QSAVE, 0);
             }
-            if (pre_keypad_bitmaps & (1 << MYKEY_QLOAD)) {
+            if (evt.keypad.pre_keys & (1 << MYKEY_QLOAD)) {
                 set_key(MYKEY_QLOAD, 0);
             }
-            if (pre_keypad_bitmaps & (1 << MYKEY_FF)) {
+            if (evt.keypad.pre_keys & (1 << MYKEY_FF)) {
                 set_key(MYKEY_FF, 0);
             }
-            if (pre_keypad_bitmaps & (1 << MYKEY_EXIT)) {
+            if (evt.keypad.pre_keys & (1 << MYKEY_EXIT)) {
                 release_all_keys();
             }
-            pre_keypad_bitmaps = evt.keypad.bitmaps;
+            evt.keypad.pre_keys = evt.keypad.cur_keys;
         }
     }
     SDL_SemPost(event_sem);
