@@ -2390,7 +2390,7 @@ static void lang_enum(void)
 
 static int read_config(void)
 {
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
+#if defined(TRIMUI) || defined(PANDORA)
     int fd = -1;
 #endif
 
@@ -2603,17 +2603,15 @@ static int read_config(void)
 #endif
     json_object_put(jfile);
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
+#if defined(TRIMUI) || defined(PANDORA)
     fd = open("/dev/dsp", O_RDWR);
     if (fd > 0) {
         close(fd);
 #endif
 
-#ifndef A30
-        snd_nds_reload_config();
-#endif
+    snd_nds_reload_config();
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
+#if defined(TRIMUI) || defined(PANDORA)
     }
 #endif
 
