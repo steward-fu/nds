@@ -43,6 +43,7 @@ rel:
 
 .PHONY: clean
 clean:
+	rm -rf unittest/unittest
 	rm -rf drastic/libs2
 	rm -rf drastic/cpuclock
 	rm -rf drastic/launch.sh

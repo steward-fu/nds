@@ -46,6 +46,26 @@
     #define INPUT_DEV "/dev/input/event0"
 #endif
 
+#ifdef UNITTEST
+    #define UP      1
+    #define DOWN    2
+    #define LEFT    3
+    #define RIGHT   4
+    #define A       5
+    #define B       6
+    #define X       7
+    #define Y       8
+    #define L1      9
+    #define L2      10
+    #define R1      11
+    #define R2      12
+    #define START   13
+    #define SELECT  14
+    #define MENU    15
+    #define VOLUP   16
+    #define VOLDOWN 17
+#endif
+
 #ifdef A30
     #define UP      103
     #define DOWN    108
@@ -254,7 +274,7 @@ static void release_all_keys(void)
 
 static int hit_hotkey(uint32_t bit)
 {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(UNITTEST)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU));
 #endif
 

@@ -48,6 +48,7 @@ static int32_t dtr_save_state_index(void *system, uint32_t index, uint16_t *snap
 
 static void dtr_initialize_backup(backup_struct *backup, backup_type_enum backup_type, uint8_t *data, uint32_t size, char *path)
 {
+#ifndef UNITTEST
     char *data_file_name = NULL;
     FILE *__stream = NULL;
     FILE *data_file = NULL;
@@ -148,6 +149,7 @@ LAB_08092f94:
     if (data_file_name) {
         free(data_file_name);
     }
+#endif
 }
 
 int dtr_savestate(int slot)
@@ -244,15 +246,18 @@ void detour_init(size_t page, const char *path)
     if ((path != NULL) && (path[0] != 0)) {
         is_hooked = 1;
         strcpy(states_path, path);
+#ifndef UNITTEST
         detour_hook(FUN_LOAD_STATE_INDEX, (intptr_t)dtr_load_state_index);
         detour_hook(FUN_SAVE_STATE_INDEX, (intptr_t)dtr_save_state_index);
         detour_hook(FUN_INITIALIZE_BACKUP, (intptr_t)dtr_initialize_backup);
         printf(PREFIX"Enabled savestate hooking\n");
+#endif
     }
 }
 
 void detour_hook(uint32_t old_func, uint32_t new_func)
 {
+#ifndef UNITTEST
     volatile uint8_t *base = (uint8_t *)(intptr_t)old_func;
 
     mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
@@ -264,6 +269,7 @@ void detour_hook(uint32_t old_func, uint32_t new_func)
     base[5] = new_func >> 8;
     base[6] = new_func >> 16;
     base[7] = new_func >> 24;
+#endif
 }
 
 void detour_quit(void)

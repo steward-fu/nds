@@ -43,8 +43,8 @@
 #include "../SDL_sysvideo.h"
 #include "../SDL_pixels_c.h"
 
-#include "SDL_ttf.h"
-#include "SDL_image.h"
+#include <SDL_ttf.h>
+#include <SDL_image.h>
 #include "SDL_version.h"
 #include "SDL_syswm.h"
 #include "SDL_loadso.h"
@@ -152,6 +152,16 @@
     #define MAX_PATH                128
 #endif
 
+#ifdef UNITTEST
+    #define DEF_FB_W                640
+    #define DEF_FB_H                480
+    #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+    #define RELOAD_BG_COUNT         120
+#endif
+
 #ifdef A30
     #define DEF_FB_W                640
     #define DEF_FB_H                480
@@ -232,7 +242,7 @@
 #define PEN_CP                      4
 #define FONT_PATH                   "resources/font/font.ttf"
 
-#if defined(MMIYOO) || defined(A30) || defined(PANDORA) || defined(QX1000)
+#if defined(MMIYOO) || defined(A30) || defined(PANDORA) || defined(QX1000) || defined(UNITTEST)
     #define DEF_FONT_SIZE           24
 #endif
 

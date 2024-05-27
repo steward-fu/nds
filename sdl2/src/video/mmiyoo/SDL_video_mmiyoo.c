@@ -2946,6 +2946,18 @@ static int get_overlay_count(void)
     return get_file_count(nds.overlay.path);
 }
 
+#ifdef UNITTEST
+int fb_init(void)
+{
+    return 0;
+}
+
+int fb_quit(void)
+{
+    return 0;
+}
+#endif
+
 #ifdef QX1000
 int fb_init(void)
 {
@@ -3607,6 +3619,7 @@ void GFX_Clear(void)
 
 int draw_pen(void *pixels, int width, int pitch)
 {
+#ifndef UNITTEST
     int c0 = 0;
     int c1 = 0;
     int w = 28;
@@ -3723,6 +3736,7 @@ int draw_pen(void *pixels, int width, int pitch)
             s+= 1;
         }
     }
+#endif
     return 0;
 }
 
@@ -5248,7 +5262,7 @@ int reload_menu(void)
         SDL_FreeSurface(t);
     }
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(UNITTEST)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
     nds.menu.drastic.cursor = IMG_Load(buf);
 #endif
@@ -5260,7 +5274,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(UNITTEST)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -5279,7 +5293,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(UNITTEST)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -5300,11 +5314,11 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#if !defined(PANDORA) && !defined(QX1000)
+#if !defined(PANDORA) && !defined(QX1000) && !defined(UNITTEST)
     static int pre_sel = -1;
 #endif
 
-#if !defined(PANDORA) && !defined(QX1000)
+#if !defined(PANDORA) && !defined(QX1000) && !defined(UNITTEST)
     static int pre_mode = -1;
 #endif
 
@@ -5737,7 +5751,10 @@ int MMIYOO_VideoInit(_THIS)
     detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
     detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
     detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
+#ifndef UNITTEST
     detour_hook(FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS, (intptr_t)render_polygon_setup_perspective_steps);
+#endif
+
 #if defined(MMIYOO) || defined(A30)
     printf(PREFIX"Installed hooking for libc functions\n");
     detour_hook(FUN_MALLOC, (intptr_t)sdl_malloc);
