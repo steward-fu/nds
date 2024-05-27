@@ -437,6 +437,7 @@ static void queue_destroy(queue_t *q)
 {
     if (q->buffer) {
         free(q->buffer);
+        q->buffer = NULL;
     }
     pthread_mutex_destroy(&q->lock);
 }
@@ -845,7 +846,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     }
     queue_destroy(&queue);
 
-#if defined(MMIYOO) && !defined(UNITTEST)
+#if defined(MMIYOO)
     MI_AO_DisableChn(AoDevId, AoChn);
     MI_AO_Disable(AoDevId);
 #endif
@@ -922,14 +923,44 @@ TEST_TEAR_DOWN(alsa)
 {
 }
 
+TEST(alsa, snd_pcm_close)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_close(NULL));
+    TEST_ASSERT_EQUAL_INT(0, pcm_ready);
+    TEST_ASSERT_EQUAL_INT(0, pcm_buf);
+    TEST_ASSERT_EQUAL_INT(0, queue.buffer);
+}
+
 TEST(alsa, snd_pcm_writei)
 {
-    TEST_ASSERT_EQUAL_INT(snd_pcm_writei(NULL, NULL, 0), 0);
+    char buf[32] = {0};
+
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_writei(NULL, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), snd_pcm_writei(NULL, buf, sizeof(buf)));
+}
+
+TEST(alsa, snd_pcm_sw_params)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params(NULL, NULL));
+}
+
+TEST(alsa, snd_pcm_sw_params_malloc)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params_malloc(NULL));
+}
+
+TEST(alsa, snd_pcm_sw_params_current)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params_current(NULL, NULL));
 }
 
 TEST_GROUP_RUNNER(alsa)
 {
+    RUN_TEST_CASE(alsa, snd_pcm_close);
     RUN_TEST_CASE(alsa, snd_pcm_writei);
+    RUN_TEST_CASE(alsa, snd_pcm_sw_params);
+    RUN_TEST_CASE(alsa, snd_pcm_sw_params_malloc);
+    RUN_TEST_CASE(alsa, snd_pcm_sw_params_current);
 }
 #endif
 

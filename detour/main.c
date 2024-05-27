@@ -154,6 +154,7 @@ LAB_08092f94:
 
 int dtr_savestate(int slot)
 {
+#ifndef UNITTEST
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
     char buf[255] = {0};
     nds_screen_copy16 _func0 = (nds_screen_copy16)FUN_SCREEN_COPY16;
@@ -203,6 +204,7 @@ int dtr_savestate(int slot)
     if (d1 != NULL) {
         free(d1);
     }
+#endif
 #endif
 }
 

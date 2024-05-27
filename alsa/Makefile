@@ -43,7 +43,6 @@ ifeq ($(MOD),qx1000)
 endif
 
 ifeq ($(MOD),unittest)
-    CFLAGS += -DMMIYOO -I../mmiyoo/inc
     CFLAGS += -DUNITTEST -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src
 endif
 
