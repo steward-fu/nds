@@ -31,5 +31,9 @@
   "menu_cursor":1,
   "fast_forward":6,
   "joy_mode":0,
-  "joy_dzone":65
+  "joy_dzone":65,
+  "joy_cuskey0": 0,
+  "joy_cuskey1": 1,
+  "joy_cuskey2": 2,
+  "joy_cuskey3": 3
 }
