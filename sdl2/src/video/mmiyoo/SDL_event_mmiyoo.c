@@ -401,7 +401,7 @@ static int update_joystick(void)
             }
         }
     }
-    else if (nds.joy.mode == MYJOY_MODE_MOUSE) {
+    else if (nds.joy.mode == MYJOY_MODE_STYLUS) {
         static int pre_up = 0;
         static int pre_down = 0;
         static int pre_left = 0;
@@ -511,6 +511,77 @@ static int update_joystick(void)
             nds.joy.show_cnt = MYJOY_SHOW_CNT;
         }
     }
+    else if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+        static int pre_up = 0;
+        static int pre_down = 0;
+        static int pre_left = 0;
+        static int pre_right = 0;
+
+        uint32_t u_key = nds.joy.cuskey[0];
+        uint32_t d_key = nds.joy.cuskey[1];
+        uint32_t l_key = nds.joy.cuskey[2];
+        uint32_t r_key = nds.joy.cuskey[3];
+
+        if (g_lastX != pre_x) {
+            pre_x = g_lastX;
+            if (pre_x < LTH) {
+                if (pre_left == 0) {
+                    r = 1;
+                    pre_left = 1;
+                    set_key(l_key, 1);
+                }
+            }
+            else if (pre_x > RTH){
+                if (pre_right == 0) {
+                    r = 1;
+                    pre_right = 1;
+                    set_key(r_key, 1);
+                }
+            }
+            else {
+                if (pre_left != 0) {
+                    r = 1;
+                    pre_left = 0;
+                    set_key(l_key, 0);
+                }
+                if (pre_right != 0) {
+                    r = 1;
+                    pre_right = 0;
+                    set_key(r_key, 0);
+                }
+            }
+        }
+
+        if (g_lastY != pre_y) {
+            pre_y = g_lastY;
+            if (pre_y < UTH) {
+                if (pre_up == 0) {
+                    r = 1;
+                    pre_up = 1;
+                    set_key(u_key, 1);
+                }
+            }
+            else if (pre_y > DTH){
+                if (pre_down == 0) {
+                    r = 1;
+                    pre_down = 1;
+                    set_key(d_key, 1);
+                }
+            }
+            else {
+                if (pre_up != 0) {
+                    r = 1;
+                    pre_up = 0;
+                    set_key(u_key, 0);
+                }
+                if (pre_down != 0) {
+                    r = 1;
+                    pre_down = 0;
+                    set_key(d_key, 0);
+                }
+            }
+        }
+    }
     return r;
 }
 #endif
@@ -542,7 +613,7 @@ static int handle_hotkey(void)
             }
         }
 #ifdef A30
-        if (nds.joy.mode == MYJOY_MODE_MOUSE) {
+        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.pen.pos = 1;
         }
 #endif
@@ -565,7 +636,7 @@ static int handle_hotkey(void)
             }
         }
 #ifdef A30
-        if (nds.joy.mode == MYJOY_MODE_MOUSE) {
+        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.pen.pos = 0;
         }
 #endif
@@ -799,7 +870,7 @@ static int handle_hotkey(void)
     }
     else if (evt.keypad.cur_keys & (1 << MYKEY_L2)) {
 #ifdef A30
-        if (nds.joy.mode != MYJOY_MODE_MOUSE) {
+        if (nds.joy.mode != MYJOY_MODE_STYLUS) {
 #endif
             if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
                 evt.mode = (evt.mode == MMIYOO_KEYPAD_MODE) ? MMIYOO_MOUSE_MODE : MMIYOO_KEYPAD_MODE;
@@ -935,18 +1006,11 @@ int EventUpdate(void *data)
 #if defined(MMIYOO) || defined(QX1000) || defined(A30)
 #ifdef A30
                     if (ev.code == r2) {
-                        if (nds.joy.mode == MYJOY_MODE_MOUSE) {
-                            //if (evt.keypad.cur_keys & (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU))) {
-                                //set_key(MYKEY_L2, ev.value);
-                            //}
-                            //else {
-                                nds.joy.show_cnt = MYJOY_SHOW_CNT;
-                                SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
-                            //}
+                        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+                            nds.joy.show_cnt = MYJOY_SHOW_CNT;
+                            SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
                         }
-                        //else {
-                            set_key(MYKEY_L2, ev.value);
-                        //}
+                        set_key(MYKEY_L2, ev.value);
                     }
                     if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
 #else

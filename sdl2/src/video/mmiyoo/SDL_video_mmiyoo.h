@@ -61,7 +61,10 @@
 
 #define MYJOY_MODE_DISABLE  0
 #define MYJOY_MODE_KEYPAD   1
-#define MYJOY_MODE_MOUSE    2
+#define MYJOY_MODE_STYLUS   2
+#define MYJOY_MODE_CUSKEY   3
+#define MYJOY_MODE_LAST     3
+
 #define MYJOY_SHOW_CNT      300
 #define MYJOY_MOVE_SPEED    4
 
@@ -307,6 +310,10 @@
 #define JSON_NDS_FAST_FORWARD       "fast_forward"
 #define JSON_NDS_JOY_MODE           "joy_mode"
 #define JSON_NDS_JOY_DZONE          "joy_dzone"
+#define JSON_NDS_JOY_CUSKEY0        "joy_cuskey0"
+#define JSON_NDS_JOY_CUSKEY1        "joy_cuskey1"
+#define JSON_NDS_JOY_CUSKEY2        "joy_cuskey2"
+#define JSON_NDS_JOY_CUSKEY3        "joy_cuskey3"
 
 #define DEF_LANG_SLOT               0
 #define DEF_LANG_LANG               "english"
@@ -569,6 +576,8 @@ typedef struct _NDS {
         int mode;
         int dzone;
         int show_cnt;
+
+        int cuskey[4];
     } joy;
 #endif
 } NDS;

@@ -1891,14 +1891,14 @@ static int process_screen(void)
             drt.x = (drt.x == 0) ? 320 : 0;
         }
 
-        if (show_pen && ((evt.mode == MMIYOO_MOUSE_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_MOUSE)))) {
+        if (show_pen && ((evt.mode == MMIYOO_MOUSE_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_STYLUS)))) {
 #else
         if (show_pen && (evt.mode == MMIYOO_MOUSE_MODE)) {
 #endif
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
 
 #ifdef A30
-            if (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_MOUSE)) {
+            if (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_STYLUS)) {
                 nds.joy.show_cnt -= 1;
             }
 #endif
@@ -2504,6 +2504,26 @@ static int read_config(void)
     if (jval) {
         nds.joy.dzone = json_object_get_int(jval);
     }
+
+    json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY0, &jval);
+    if (jval) {
+        nds.joy.cuskey[0] = json_object_get_int(jval);
+    }
+
+    json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY1, &jval);
+    if (jval) {
+        nds.joy.cuskey[1] = json_object_get_int(jval);
+    }
+
+    json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY2, &jval);
+    if (jval) {
+        nds.joy.cuskey[2] = json_object_get_int(jval);
+    }
+
+    json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY3, &jval);
+    if (jval) {
+        nds.joy.cuskey[3] = json_object_get_int(jval);
+    }
 #endif
 
     nds.menu.c0 = 0xffffff;
@@ -2680,6 +2700,10 @@ static int write_config(void)
 #ifdef A30
     json_object_object_add(jfile, JSON_NDS_JOY_MODE, json_object_new_int(nds.joy.mode));
     json_object_object_add(jfile, JSON_NDS_JOY_DZONE, json_object_new_int(nds.joy.dzone));
+    json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY0, json_object_new_int(nds.joy.cuskey[0]));
+    json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY1, json_object_new_int(nds.joy.cuskey[1]));
+    json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY2, json_object_new_int(nds.joy.cuskey[2]));
+    json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY3, json_object_new_int(nds.joy.cuskey[3]));
 #endif
 
     json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
@@ -5870,6 +5894,7 @@ static const char *DIS_MODE0_640[] = {
     "384*288",
     "384*288",
     "384*288",
+    "384*288",
     "427*320",
     "427*320"
 };
@@ -5884,6 +5909,7 @@ static const char *DIS_MODE1_640[] = {
     "256*192",
     "320*240",
     "160*120",
+    "256*192",
     "256*192",
     "256*192",
     "256*192",
@@ -5904,6 +5930,7 @@ static const char *DIS_MODE0_752[] = {
     "496*368",
     "496*368",
     "496*368",
+    "496*368",
     "501*376",
     "501*376"
 };
@@ -5918,6 +5945,7 @@ static const char *DIS_MODE1_752[] = {
     "256*192",
     "373*280",
     "160*120",
+    "256*192",
     "256*192",
     "256*192",
     "256*192",
@@ -5943,7 +5971,11 @@ static const char *HOTKEY[] = {
 
 #ifdef A30
 static const char *JOY_MODE[] = {
-    "Disable", "D-Pad", "Stylus"
+    "Disable", "D-Pad", "Stylus", "Customized Key"
+};
+
+static const char *JOY_CUSKEY[] = {
+    "UP", "DOWN", "LEFT", "RIGHT", "A", "B", "X", "Y", "L1", "R1", "L2", "R2", "SELECT", "START"
 };
 #endif
 
@@ -6000,8 +6032,12 @@ enum {
     MENU_CURSOR,
     MENU_FAST_FORWARD,
 #ifdef A30
-    MENU_JOYSTICK_MODE,
-    MENU_JOYSTICK_DZONE,
+    MENU_JOY_MODE,
+    MENU_JOY_CUSKEY0,
+    MENU_JOY_CUSKEY1,
+    MENU_JOY_CUSKEY2,
+    MENU_JOY_CUSKEY3,
+    MENU_JOY_DZONE,
 #endif
     MENU_LAST,
 };
@@ -6030,7 +6066,11 @@ static const char *MENU_ITEM[] = {
     "Fast Forward",
 #ifdef A30
     "Joy Mode",
-    "Joy DZone"
+    "  Joy Up",
+    "  Joy Down",
+    "  Joy Left",
+    "  Joy Right",
+    "Joy Dead Zone"
 #endif
 };
 
@@ -6186,12 +6226,40 @@ int handle_menu(int key)
             }
             break;
 #ifdef A30
-        case MENU_JOYSTICK_MODE:
+        case MENU_JOY_MODE:
             if (nds.joy.mode > 0) {
                 nds.joy.mode -= 1;
             }
             break;
-        case MENU_JOYSTICK_DZONE:
+        case MENU_JOY_CUSKEY0:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[0] > 0) {
+                    nds.joy.cuskey[0] -= 1;
+                }
+            }
+            break;
+        case MENU_JOY_CUSKEY1:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[1] > 0) {
+                    nds.joy.cuskey[1] -= 1;
+                }
+            }
+            break;
+        case MENU_JOY_CUSKEY2:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[2] > 0) {
+                    nds.joy.cuskey[2] -= 1;
+                }
+            }
+            break;
+        case MENU_JOY_CUSKEY3:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[3] > 0) {
+                    nds.joy.cuskey[3] -= 1;
+                }
+            }
+            break;
+        case MENU_JOY_DZONE:
             if (nds.joy.dzone > 0) {
                 nds.joy.dzone -= 1;
             }
@@ -6298,15 +6366,45 @@ int handle_menu(int key)
             }
             break;
 #ifdef A30
-        case MENU_JOYSTICK_MODE:
-            if (nds.joy.mode < MYJOY_MODE_MOUSE) {
+        case MENU_JOY_MODE:
+            if (nds.joy.mode < MYJOY_MODE_LAST) {
                 nds.joy.mode += 1;
             }
-            if (evt.mode == MMIYOO_MOUSE_MODE) {
-                evt.mode = MMIYOO_KEYPAD_MODE;
+            if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+                if (evt.mode == MMIYOO_MOUSE_MODE) {
+                    evt.mode = MMIYOO_KEYPAD_MODE;
+                }
             }
             break;
-        case MENU_JOYSTICK_DZONE:
+        case MENU_JOY_CUSKEY0:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[0] < 13) {
+                    nds.joy.cuskey[0] += 1;
+                }
+            }
+            break;
+        case MENU_JOY_CUSKEY1:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[1] < 13) {
+                    nds.joy.cuskey[1] += 1;
+                }
+            }
+            break;
+        case MENU_JOY_CUSKEY2:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[2] < 13) {
+                    nds.joy.cuskey[2] += 1;
+                }
+            }
+            break;
+        case MENU_JOY_CUSKEY3:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.joy.cuskey[3] < 13) {
+                    nds.joy.cuskey[3] += 1;
+                }
+            }
+            break;
+        case MENU_JOY_DZONE:
             if (nds.joy.dzone < 255) {
                 nds.joy.dzone += 1;
             }
@@ -6432,6 +6530,17 @@ int handle_menu(int key)
             }
             else {
                 col1 = unsel_col;
+            }
+            break;
+        case MENU_JOY_CUSKEY0:
+        case MENU_JOY_CUSKEY1:
+        case MENU_JOY_CUSKEY2:
+        case MENU_JOY_CUSKEY3:
+            if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                col1 = (cur_sel == cc) ? val_col : unsel_col;
+            }
+            else {
+                col1 = dis_col;
             }
             break;
         default:
@@ -6579,10 +6688,22 @@ int handle_menu(int key)
             sprintf(buf, "%d (6)", nds.fast_forward);
             break;
 #ifdef A30
-        case MENU_JOYSTICK_MODE:
+        case MENU_JOY_MODE:
             sprintf(buf, "%s", to_lang(JOY_MODE[nds.joy.mode]));
             break;
-        case MENU_JOYSTICK_DZONE:
+        case MENU_JOY_CUSKEY0:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.joy.cuskey[0]]));
+            break;
+        case MENU_JOY_CUSKEY1:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.joy.cuskey[1]]));
+            break;
+        case MENU_JOY_CUSKEY2:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.joy.cuskey[2]]));
+            break;
+        case MENU_JOY_CUSKEY3:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.joy.cuskey[3]]));
+            break;
+        case MENU_JOY_DZONE:
             sprintf(buf, "%d (65)", nds.joy.dzone);
             break;
 #endif
@@ -6790,8 +6911,8 @@ int handle_menu(int key)
             
             rt.w = 51;
             rt.h = 38;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - rt.h) / 2);
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy + (96 - rt.h);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_VH_S2:
@@ -6803,14 +6924,14 @@ int handle_menu(int key)
             
             rt.w = 96;
             rt.h = 72;
-            rt.x = sx;
+            rt.x = sx + ((128 - rt.w) / 2);
             rt.y = sy;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             
             rt.w = 32;
             rt.h = 24;
             rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - rt.h) / 2);
+            rt.y = sy + (96 - rt.h);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
         case NDS_DIS_MODE_VH_C0:
