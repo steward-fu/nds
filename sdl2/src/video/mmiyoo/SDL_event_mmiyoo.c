@@ -236,6 +236,18 @@ static void check_mouse_pos(void)
     }
 }
 
+static int is_hh_mode(void)
+{
+    if ((nds.dis_mode == NDS_DIS_MODE_HH0) ||
+        (nds.dis_mode == NDS_DIS_MODE_HH1) ||
+        (nds.dis_mode == NDS_DIS_MODE_HH2) ||
+        (nds.dis_mode == NDS_DIS_MODE_HH3))
+    {
+        return 1;
+    }
+    return 0;
+}
+
 static int get_move_interval(int type)
 {
     float move = 0.0;
@@ -247,7 +259,7 @@ static int get_move_interval(int type)
         xv*= 2;
     }
 
-    if ((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) {
+    if (is_hh_mode()) {
         move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? yv : xv);
     }
     else {
@@ -474,7 +486,7 @@ static int update_joystick(void)
                 int y = 0;
                 const int v = MYJOY_MOVE_SPEED;
 
-                if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_rotate == 0)) {
+                if (is_hh_mode() && (nds.keys_rotate == 0)) {
                     if (pre_down) {
                         evt.mouse.x -= v;
                     }
@@ -1279,7 +1291,7 @@ void MMIYOO_PumpEvents(_THIS)
                 }
             }
 
-            if (((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH1)) && (nds.keys_rotate == 0)) {
+            if (is_hh_mode() && (nds.keys_rotate == 0)) {
                 if (evt.keypad.cur_keys & (1 << MYKEY_UP)) {
                     updated = 1;
                     evt.mouse.x+= get_move_interval(1);

@@ -1864,6 +1864,22 @@ static int process_screen(void)
             }
             rotate = (nds.dis_mode == NDS_DIS_MODE_HH0) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
             break;
+        case NDS_DIS_MODE_HH2:
+        case NDS_DIS_MODE_HH3:
+            if (nds.enable_752x560 == 0) {
+                drt.x = screen0 ? 0 : 320;
+                drt.y = 0;
+                drt.w = 480;
+                drt.h = 320;
+            }
+            else {
+                drt.x = screen0 ? 0 : 376;
+                drt.y = 0;
+                drt.w = 560;
+                drt.h = 376;
+            }
+            rotate = (nds.dis_mode == NDS_DIS_MODE_HH2) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
+            break;
         case NDS_DIS_MODE_HRES0:
             drt.w = NDS_Wx2;
             drt.h = NDS_Hx2;
@@ -3767,7 +3783,7 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
 #ifdef A30
     int tex = (id >= 0) ? id : TEX_TMP;
 
-    if ((id != -1) && (nds.dis_mode == NDS_DIS_MODE_HH1)) {
+    if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH1) || (nds.dis_mode == NDS_DIS_MODE_HH3))) {
         vVertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
         vVertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
@@ -3780,7 +3796,7 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
         vVertices[0] = vVertices[15];
         vVertices[1] = vVertices[6];
     }
-    else if ((id != -1) && (nds.dis_mode == NDS_DIS_MODE_HH0)) {
+    else if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH2))) {
         vVertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
         vVertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
@@ -5896,7 +5912,9 @@ static const char *DIS_MODE0_640[] = {
     "384*288",
     "384*288",
     "427*320",
-    "427*320"
+    "427*320",
+    "480*320",
+    "480*320",
 };
 
 static const char *DIS_MODE1_640[] = {
@@ -5915,6 +5933,8 @@ static const char *DIS_MODE1_640[] = {
     "256*192",
     "427*320",
     "427*320",
+    "480*320",
+    "480*320",
 };
 
 static const char *DIS_MODE0_752[] = {
@@ -5932,7 +5952,9 @@ static const char *DIS_MODE0_752[] = {
     "496*368",
     "496*368",
     "501*376",
-    "501*376"
+    "501*376",
+    "560*376",
+    "560*376",
 };
 
 static const char *DIS_MODE1_752[] = {
@@ -5951,6 +5973,8 @@ static const char *DIS_MODE1_752[] = {
     "256*192",
     "501*376",
     "501*376",
+    "560*376",
+    "560*376",
 };
 
 static const char *POS[] = {
@@ -7008,6 +7032,44 @@ int handle_menu(int key)
             rt.h = 85;
             rt.x = sx + (128 - rt.w);
             rt.y = sy + ((96 - rt.h) / 2);
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
+            break;
+        case NDS_DIS_MODE_HH2:
+            rt.x = sx;
+            rt.y = sy;
+            rt.w = 128;
+            rt.h = 96;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
+
+            rt.w = 64;
+            rt.h = 96;
+            rt.x = sx;
+            rt.y = sy;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
+
+            rt.w = 64;
+            rt.h = 96;
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+            break;
+        case NDS_DIS_MODE_HH3:
+            rt.x = sx;
+            rt.y = sy;
+            rt.w = 128;
+            rt.h = 96;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
+
+            rt.w = 64;
+            rt.h = 96;
+            rt.x = sx;
+            rt.y = sy;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+
+            rt.w = 64;
+            rt.h = 96;
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy;
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
             break;
         case NDS_DIS_MODE_HRES0:

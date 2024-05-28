@@ -268,9 +268,11 @@
 #define NDS_DIS_MODE_VH_C1          12
 #define NDS_DIS_MODE_HH0            13
 #define NDS_DIS_MODE_HH1            14
-#define NDS_DIS_MODE_LAST           14
-#define NDS_DIS_MODE_HRES0          15
-#define NDS_DIS_MODE_HRES1          16
+#define NDS_DIS_MODE_HH2            15
+#define NDS_DIS_MODE_HH3            16
+#define NDS_DIS_MODE_LAST           16
+#define NDS_DIS_MODE_HRES0          17
+#define NDS_DIS_MODE_HRES1          18
 
 #define NDS_ALPHA_MAX               7
 #define NDS_BORDER_MAX              7
