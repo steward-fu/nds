@@ -6556,6 +6556,7 @@ int handle_menu(int key)
                 col1 = unsel_col;
             }
             break;
+#ifdef A30
         case MENU_JOY_CUSKEY0:
         case MENU_JOY_CUSKEY1:
         case MENU_JOY_CUSKEY2:
@@ -6567,6 +6568,7 @@ int handle_menu(int key)
                 col1 = dis_col;
             }
             break;
+#endif
         default:
             break;
         }
