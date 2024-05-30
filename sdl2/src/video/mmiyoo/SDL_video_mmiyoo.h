@@ -68,8 +68,8 @@
 #define MYJOY_SHOW_CNT      300
 #define MYJOY_MOVE_SPEED    4
 
-#define INIT_CPU_CORE       4
-#define INIT_CPU_CLOCK      1350
+#define INIT_CPU_CORE       2
+#define INIT_CPU_CLOCK      1500
 #define DEINIT_CPU_CORE     2
 #define DEINIT_CPU_CLOCK    648
 #endif
@@ -316,6 +316,7 @@
 #define JSON_NDS_JOY_CUSKEY1        "joy_cuskey1"
 #define JSON_NDS_JOY_CUSKEY2        "joy_cuskey2"
 #define JSON_NDS_JOY_CUSKEY3        "joy_cuskey3"
+#define JSON_NDS_CHK_BAT            "chk_bat"
 
 #define DEF_LANG_SLOT               0
 #define DEF_LANG_LANG               "english"
@@ -348,6 +349,11 @@
 
 #define DAC_BASE                        0x1c22000
 #define CCU_BASE                        0x01C20000
+
+#define BAT_CHK_CNT                     300
+#define BAT_MAX_CMD                     "cat /sys/class/power_supply/battery/voltage_max_design"
+#define BAT_MIN_CMD                     "cat /sys/class/power_supply/battery/voltage_min_design"
+#define BAT_CUR_CMD                     "cat /sys/class/power_supply/battery/voltage_now"
 
 enum _TEX_TYPE {
     TEX_SCR0 = 0,
@@ -463,6 +469,7 @@ typedef struct _NDS {
     int maxcpu;
     int volume;
     int hotkey;
+    int chk_bat;
     int dis_mode;
     int alt_mode;
     int hres_mode;

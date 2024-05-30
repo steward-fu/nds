@@ -599,6 +599,35 @@ static void* sdl_realloc(void *ptr, size_t size)
 }
 #endif
 
+#ifdef A30
+static int get_bat_val(void)
+{
+    static int maxv = 0;
+
+    FILE *fd = NULL;
+    char buf[32] = {0};
+    int curv = 0;
+
+    if (maxv == 0) {
+        fd = popen(BAT_MAX_CMD, "r");
+        if (fd) {
+            fgets(buf, sizeof(buf), fd);
+            pclose(fd);
+            maxv = atoi(buf);
+        }
+    }
+
+    fd = popen(BAT_CUR_CMD, "r");
+    if (fd) {
+        fgets(buf, sizeof(buf), fd);
+        pclose(fd);
+        curv = atoi(buf);
+    }
+
+    return 100 - (((maxv - curv) * 100) / 1200000);
+}
+#endif
+
 static void write_file(const char *fname, const void *buf, int len)
 {
     struct stat st = {0};
@@ -770,19 +799,19 @@ static int draw_drastic_menu_main(void)
 
     y = 10;
 #ifdef A30
-    sprintf(buf, "Rel "NDS_VER" Res %s", "640*480");
+    sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
 #endif
 
 #ifdef MMIYOO
-    sprintf(buf, "Rel "NDS_VER" Res %s", nds.enable_752x560 ? "752*560" : "640*480");
+    sprintf(buf, "Rel "NDS_VER", Res %s", nds.enable_752x560 ? "752*560" : "640*480");
 #endif
 
 #ifdef TRIMUI
-    sprintf(buf, "Rel "NDS_VER" Res %s", "320*240");
+    sprintf(buf, "Rel "NDS_VER", Res %s", "320*240");
 #endif
 
 #ifdef PANDORA
-    sprintf(buf, "Rel "NDS_VER" Res %s", "800*480");
+    sprintf(buf, "Rel "NDS_VER", Res %s", "800*480");
 #endif
 
 #ifdef QX1000
@@ -1526,6 +1555,11 @@ static int process_screen(void)
     static int pre_dis_mode = NDS_DIS_MODE_VH_S0;
     static int pre_hres_mode = NDS_DIS_MODE_HRES0;
     static char show_info_buf[MAX_PATH << 1] = {0};
+#ifdef A30
+    static int bat_chk_cnt = BAT_CHK_CNT;
+#endif
+    static int col_fg = 0xe0e000;
+    static int col_bg = 0x000000;
 
     int idx = 0;
     int screen_cnt = 0;
@@ -1620,6 +1654,8 @@ static int process_screen(void)
     if (show_info_cnt == 0) {
         need_reload_bg = RELOAD_BG_COUNT;
         show_info_cnt = -1;
+        col_fg = 0xe0e000;
+        col_bg = 0x000000;
     }
         
     if (nds.defer_update_bg > 0) {
@@ -1646,6 +1682,27 @@ static int process_screen(void)
             sprintf(show_info_buf, " %s ", to_lang("Fast Forward"));
             nds.state&= ~NDS_STATE_FF;
         }
+    }
+
+    if (nds.chk_bat) {
+#ifdef A30
+        bat_chk_cnt -= 1;
+        if (bat_chk_cnt <= 0) {
+            int v = get_bat_val();
+
+            if (v <= 10) {
+                show_info_cnt = 50;
+                col_fg = 0xffffff;
+                col_bg = 0xff0000;
+                sprintf(show_info_buf, " %s %d%%", to_lang("Battery"), v);
+            }
+
+            bat_chk_cnt = BAT_CHK_CNT;
+            if (v <= 5) {
+                bat_chk_cnt /= 2;
+            }
+        }
+#endif
     }
 
     nds.screen.bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
@@ -2037,7 +2094,7 @@ static int process_screen(void)
     }
 
     if (show_info_cnt > 0) {
-        draw_info(NULL, show_info_buf, FB_W - get_font_width(show_info_buf), 0, 0xe0e000, 0x000000);
+        draw_info(NULL, show_info_buf, FB_W - get_font_width(show_info_buf), 0, col_fg, col_bg);
         show_info_cnt-= 1;
     }
     else if (show_fps && fps_info) {
@@ -2510,6 +2567,11 @@ static int read_config(void)
         nds.keys_rotate = json_object_get_int(jval) % 3;
     }
 
+    json_object_object_get_ex(jfile, JSON_NDS_CHK_BAT, &jval);
+    if (jval) {
+        nds.chk_bat = json_object_get_int(jval) ? 1: 0;
+    }
+
 #ifdef A30
     json_object_object_get_ex(jfile, JSON_NDS_JOY_MODE, &jval);
     if (jval) {
@@ -2712,6 +2774,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_MENU_BG, json_object_new_int(nds.menu.sel));
     json_object_object_add(jfile, JSON_NDS_MENU_CURSOR, json_object_new_int(nds.menu.show_cursor));
     json_object_object_add(jfile, JSON_NDS_FAST_FORWARD, json_object_new_int(nds.fast_forward));
+    json_object_object_add(jfile, JSON_NDS_CHK_BAT, json_object_new_int(nds.chk_bat));
 
 #ifdef A30
     json_object_object_add(jfile, JSON_NDS_JOY_MODE, json_object_new_int(nds.joy.mode));
