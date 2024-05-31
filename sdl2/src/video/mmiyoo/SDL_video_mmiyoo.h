@@ -56,24 +56,6 @@
 
 #include "detour.h"
 
-#ifdef A30
-#define USE_MYJOY           1
-
-#define MYJOY_MODE_DISABLE  0
-#define MYJOY_MODE_KEYPAD   1
-#define MYJOY_MODE_STYLUS   2
-#define MYJOY_MODE_CUSKEY   3
-#define MYJOY_MODE_LAST     3
-
-#define MYJOY_SHOW_CNT      300
-#define MYJOY_MOVE_SPEED    4
-
-#define INIT_CPU_CORE       2
-#define INIT_CPU_CLOCK      1500
-#define DEINIT_CPU_CORE     2
-#define DEINIT_CPU_CLOCK    648
-#endif
-
 #if defined(MMIYOO)
 #include "mi_sys.h"
 #include "mi_gfx.h"
@@ -163,6 +145,7 @@
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define RELOAD_BG_COUNT         120
+    #define DEF_FONT_SIZE           24
 #endif
 
 #ifdef A30
@@ -173,6 +156,25 @@
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define RELOAD_BG_COUNT         120
+    #define USE_MYJOY               1
+    #define MYJOY_MODE_DISABLE      0
+    #define MYJOY_MODE_KEYPAD       1
+    #define MYJOY_MODE_STYLUS       2
+    #define MYJOY_MODE_CUSKEY       3
+    #define MYJOY_MODE_LAST         3
+    #define MYJOY_SHOW_CNT          300
+    #define MYJOY_MOVE_SPEED        4
+    #define INIT_CPU_CORE           2
+    #define INIT_CPU_CLOCK          1500
+    #define DEINIT_CPU_CORE         2
+    #define DEINIT_CPU_CLOCK        648
+    #define DEF_FONT_SIZE           24
+    #define DAC_BASE                0x1c22000
+    #define CCU_BASE                0x01c20000
+    #define BAT_CHK_CNT             300
+    #define BAT_MAX_CMD             "cat /sys/class/power_supply/battery/voltage_max_design"
+    #define BAT_MIN_CMD             "cat /sys/class/power_supply/battery/voltage_min_design"
+    #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/voltage_now"
 #endif
 
 #ifdef MMIYOO
@@ -185,6 +187,8 @@
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define MASK_SIZE               (NDS_Wx3 * NDS_Hx3 * 4)
     #define RELOAD_BG_COUNT         120
+    #define DEF_FONT_SIZE           24
+    #define BAT_MAX_VAL             630
 #endif
 
 #ifdef TRIMUI
@@ -196,6 +200,7 @@
     #define IMG_W                   640
     #define IMG_H                   480
     #define RELOAD_BG_COUNT         1
+    #define DEF_FONT_SIZE           12
 #endif
 
 #ifdef PANDORA
@@ -205,6 +210,7 @@
     #define IMG_W                   DEF_FB_W
     #define IMG_H                   DEF_FB_H
     #define RELOAD_BG_COUNT         1
+    #define DEF_FONT_SIZE           24
 #endif
 
 #ifdef QX1000
@@ -216,6 +222,7 @@
     #define IMG_W                   640
     #define IMG_H                   480
     #define RELOAD_BG_COUNT         1
+    #define DEF_FONT_SIZE           24
 #endif
 
 #define PREFIX                      "[SDL] "
@@ -244,14 +251,6 @@
 #define PEN_RB                      3
 #define PEN_CP                      4
 #define FONT_PATH                   "resources/font/font.ttf"
-
-#if defined(MMIYOO) || defined(A30) || defined(PANDORA) || defined(QX1000) || defined(UNITTEST)
-    #define DEF_FONT_SIZE           24
-#endif
-
-#if defined(TRIMUI)
-    #define DEF_FONT_SIZE           12
-#endif
 
 #define NDS_DIS_MODE_VH_T0          0
 #define NDS_DIS_MODE_VH_T1          1
@@ -346,15 +345,6 @@
 #define PEN_YV_MAX                      500000
 
 #ifdef A30
-
-#define DAC_BASE                        0x1c22000
-#define CCU_BASE                        0x01C20000
-
-#define BAT_CHK_CNT                     300
-#define BAT_MAX_CMD                     "cat /sys/class/power_supply/battery/voltage_max_design"
-#define BAT_MIN_CMD                     "cat /sys/class/power_supply/battery/voltage_min_design"
-#define BAT_CUR_CMD                     "cat /sys/class/power_supply/battery/voltage_now"
-
 enum _TEX_TYPE {
     TEX_SCR0 = 0,
     TEX_SCR1,

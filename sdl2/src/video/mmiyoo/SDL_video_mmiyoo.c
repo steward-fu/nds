@@ -606,6 +606,7 @@ static int get_bat_val(void)
 
     FILE *fd = NULL;
     char buf[32] = {0};
+    int r = 0;
     int curv = 0;
 
     if (maxv == 0) {
@@ -624,7 +625,14 @@ static int get_bat_val(void)
         curv = atoi(buf);
     }
 
-    return 100 - (((maxv - curv) * 100) / 1200000);
+    r = 100 - (((maxv - curv) * 100) / 1200000);
+    if (r > 100) {
+        r = 100;
+    }
+    if (r < 0) {
+        r = 0;
+    }
+    return r;
 }
 #endif
 
