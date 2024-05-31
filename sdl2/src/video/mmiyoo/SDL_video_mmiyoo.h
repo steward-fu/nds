@@ -188,7 +188,9 @@
     #define MASK_SIZE               (NDS_Wx3 * NDS_Hx3 * 4)
     #define RELOAD_BG_COUNT         120
     #define DEF_FONT_SIZE           24
+    #define BAT_CHK_CNT             90
     #define BAT_MAX_VAL             630
+    #define BAT_MIN_VAL             420
 #endif
 
 #ifdef TRIMUI
@@ -377,6 +379,10 @@ typedef struct MMIYOO_VideoInfo {
     uint8_t* dac_mem;
     uint32_t *vol_ptr;
     uint32_t *cpu_ptr;
+#endif
+
+#ifdef MMIYOO
+    int sar_fd;
 #endif
 } MMIYOO_VideoInfo;
 

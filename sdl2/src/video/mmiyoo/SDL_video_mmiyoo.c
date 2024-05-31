@@ -599,6 +599,29 @@ static void* sdl_realloc(void *ptr, size_t size)
 }
 #endif
 
+#ifdef MMIYOO
+static int get_bat_val(void)
+{
+    int r = 0;
+    uint32_t v[2] = {0};
+
+    if (vid.sar_fd < 0) {
+        return 0;
+    }
+
+    ioctl(vid.sar_fd, 0x6100, 0);
+    ioctl(vid.sar_fd, 0x6101, v);
+    r = 100 - (((BAT_MAX_VAL - v[1]) * 100) / (BAT_MAX_VAL - BAT_MIN_VAL));
+    if (r > 100) {
+        r = 100;
+    }
+    if (r < 0) {
+        r = 0;
+    }
+    return r;
+}
+#endif
+
 #ifdef A30
 static int get_bat_val(void)
 {
@@ -811,7 +834,7 @@ static int draw_drastic_menu_main(void)
 #endif
 
 #ifdef MMIYOO
-    sprintf(buf, "Rel "NDS_VER", Res %s", nds.enable_752x560 ? "752*560" : "640*480");
+    sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", nds.enable_752x560 ? "752*560" : "640*480", get_bat_val());
 #endif
 
 #ifdef TRIMUI
@@ -1563,7 +1586,7 @@ static int process_screen(void)
     static int pre_dis_mode = NDS_DIS_MODE_VH_S0;
     static int pre_hres_mode = NDS_DIS_MODE_HRES0;
     static char show_info_buf[MAX_PATH << 1] = {0};
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
     static int bat_chk_cnt = BAT_CHK_CNT;
 #endif
     static int col_fg = 0xe0e000;
@@ -1693,7 +1716,7 @@ static int process_screen(void)
     }
 
     if (nds.chk_bat) {
-#ifdef A30
+#if defined(MMIYOO) || defined(A30)
         bat_chk_cnt -= 1;
         if (bat_chk_cnt <= 0) {
             int v = get_bat_val();
@@ -1702,7 +1725,7 @@ static int process_screen(void)
                 show_info_cnt = 50;
                 col_fg = 0xffffff;
                 col_bg = 0xff0000;
-                sprintf(show_info_buf, " %s %d%%", to_lang("Battery"), v);
+                sprintf(show_info_buf, " %s %d%% ", to_lang("Battery"), v);
             }
 
             bat_chk_cnt = BAT_CHK_CNT;
@@ -3522,6 +3545,8 @@ int fb_init(void)
     }
     MI_SYS_FlushInvCache(gfx.mask.virAddr[0], MASK_SIZE);
 #endif
+
+    vid.sar_fd = open("/dev/sar", O_RDWR);
     return 0;
 }
 
@@ -3558,6 +3583,9 @@ int fb_quit(void)
     ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
     close(gfx.fb_dev);
     gfx.fb_dev = -1;
+
+    close(vid.sar_fd);
+    vid.sar_fd = -1;
     return 0;
 }
 #endif
