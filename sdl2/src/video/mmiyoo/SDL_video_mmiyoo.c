@@ -1,6 +1,9 @@
 /*
   Special customized version for the DraStic emulator that runs on
-  Miyoo Mini (Plus), TRIMUI-SMART and Miyoo A30 handhelds.
+      Miyoo Mini (Plus)
+      TRIMUI-SMART
+      Miyoo A30
+      Fxtec Pro1 (QX1000)
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
   Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
@@ -446,7 +449,7 @@ void egl_create(void)
     eglInitialize(wl.egl.display, &major, &minor);
     eglGetConfigs(wl.egl.display, NULL, 0, &cnt);
     eglChooseConfig(wl.egl.display, egl_attribs, &cfg, 1, &cnt);
-    wl.egl.surface = eglCreateWindowSurface(wl.egl.display, cfg, wl.egl.window, NULL);
+    wl.egl.surface = eglCreateWindowSurface(wl.egl.display, cfg, (EGLNativeWindowType)wl.egl.window, NULL);
     wl.egl.context = eglCreateContext(wl.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
     eglMakeCurrent(wl.egl.display, wl.egl.surface, wl.egl.surface, wl.egl.context);
 
@@ -689,25 +692,25 @@ static int get_current_menu_layer(void)
     const char *P6 = "KB Space: select";
 
     for (cc=0; cc<drastic_menu.cnt; cc++) {
-        if ((drastic_menu.item[cc].x == 180) && !memcmp(drastic_menu.item[cc].msg, P0, strlen(P0))) {
+        if (!memcmp(drastic_menu.item[cc].msg, P0, strlen(P0))) {
             return NDS_DRASTIC_MENU_MAIN;
         }
-        else if ((drastic_menu.item[cc].x == 92) && !memcmp(drastic_menu.item[cc].msg, P1, strlen(P1))) {
+        else if (!memcmp(drastic_menu.item[cc].msg, P1, strlen(P1))) {
             return NDS_DRASTIC_MENU_OPTION;
         }
-        else if ((drastic_menu.item[cc].x == 56) && !memcmp(drastic_menu.item[cc].msg, P2, strlen(P2))) {
+        else if (!memcmp(drastic_menu.item[cc].msg, P2, strlen(P2))) {
             return NDS_DRASTIC_MENU_CONTROLLER;
         }
-        else if ((drastic_menu.item[cc].x == 56) && !memcmp(drastic_menu.item[cc].msg, P3, strlen(P3))) {
+        else if (!memcmp(drastic_menu.item[cc].msg, P3, strlen(P3))) {
             return NDS_DRASTIC_MENU_CONTROLLER2;
         }
-        else if ((drastic_menu.item[cc].x == 92) && !memcmp(drastic_menu.item[cc].msg, P4, strlen(P4))) {
+        else if (!memcmp(drastic_menu.item[cc].msg, P4, strlen(P4))) {
             return NDS_DRASTIC_MENU_FIRMWARE;
         }
-        else if ((drastic_menu.item[cc].x == 6) && !memcmp(drastic_menu.item[cc].msg, P5, strlen(P5))) {
+        else if (!memcmp(drastic_menu.item[cc].msg, P5, strlen(P5))) {
             return NDS_DRASTIC_MENU_CHEAT;
         }
-        else if ((drastic_menu.item[cc].x == 6) && !memcmp(drastic_menu.item[cc].msg, P6, strlen(P6))) {
+        else if (!memcmp(drastic_menu.item[cc].msg, P6, strlen(P6))) {
             return NDS_DRASTIC_MENU_ROM;
         }
     }
@@ -1262,12 +1265,12 @@ static int draw_drastic_menu_firmware(void)
         }
     
         memset(buf, 0, sizeof(buf));
-        if (p->x != 92) {
+        if ((p->x != 92) && (p->x != 256)) {
             strcat(name, p->msg);
         }
         else {
             y = (25 / div) + (cnt * ww);
-            if ((p->x == 92) && (p->bg)) {
+            if (((p->x == 92) || (p->x == 256)) && (p->bg)) {
                 rt.x = 5 / div;
                 rt.y = y - (3 / div);
                 rt.w = FB_W - (10 / div);
@@ -5823,31 +5826,32 @@ int MMIYOO_VideoInit(_THIS)
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
-    mode.w = 320;
-    mode.h = 240;
+    mode.w = 480;
+    mode.h = 272;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_ARGB8888;
-    mode.w = 320;
-    mode.h = 240;
+    mode.w = 480;
+    mode.h = 272;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
-    mode.w = 480;
-    mode.h = 272;
+    mode.w = 320;
+    mode.h = 240;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_ARGB8888;
-    mode.w = 480;
-    mode.h = 272;
+    mode.w = 320;
+    mode.h = 240;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
+
     SDL_AddVideoDisplay(&display, SDL_FALSE);
 
     LINE_H = 30;
