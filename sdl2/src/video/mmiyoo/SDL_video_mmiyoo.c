@@ -72,6 +72,8 @@ NDS nds = {0};
 GFX gfx = {0};
 MMIYOO_VideoInfo vid = {0};
 
+extern MMIYOO_EventInfo evt;
+
 int FB_W = 0;
 int FB_H = 0;
 int FB_SIZE = 0;
@@ -83,12 +85,11 @@ int pixel_filter = 1;
 int savestate_busy = 0;
 SDL_Surface *fps_info = NULL;
 
+static volatile int is_video_thread_running = 0;
+
 static pthread_t thread;
-static volatile int is_running = 0;
 static int need_reload_bg = RELOAD_BG_COUNT;
 static SDL_Surface *cvt = NULL;
-
-extern MMIYOO_EventInfo evt;
 
 static int MMIYOO_VideoInit(_THIS);
 static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
@@ -229,9 +230,9 @@ static int max_cpu_item = sizeof(cpu_clock) / sizeof(struct _cpu_clock);
 #endif
 
 #ifdef QX1000
-static struct _wayland wl = {0};
+static volatile int is_wl_thread_running = 0;
 
-int thread_run = 0;
+static struct _wayland wl = {0};
 static pthread_t thread_id[2] = {0};
 
 EGLint egl_attribs[] = {
@@ -346,13 +347,13 @@ void update_wayland_res(int w, int h)
     memset(wl.data, 0, LCD_W * LCD_H * 2);
     wl.pixels[0] = (uint16_t*)wl.data;
     wl.pixels[1] = (uint16_t*)(wl.data + wl.info.size);
-    printf(PREFIX"Updated Wayland width=%d height=%d scale=%d\n", w, h, scale);
+    printf(PREFIX"Updated wayland width=%d height=%d scale=%d\n", w, h, scale);
 }
 
 static void* wl_thread(void* pParam)
 {
-    while(thread_run){
-        if(wl.init && wl.ready){
+    while (is_wl_thread_running) {
+        if (wl.init && wl.ready) {
             wl_display_dispatch(wl.display);
         }
         usleep(100);
@@ -521,23 +522,21 @@ static void* draw_thread(void *pParam)
     egl_create();
 
     wl.init = 1;
-    while(thread_run){
-        if(wl.ready){
+    while (is_wl_thread_running) {
+        if (wl.ready) {
             glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
             glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.bg);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.bg);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
 
             glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_fb_vertices);
             glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_fb_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.pixels[wl.flip ^ 1]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.pixels[wl.flip ^ 1]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
             eglSwapBuffers(wl.egl.display, wl.egl.surface);
         }
-        else{
-            usleep(1000);
+        else {
+            usleep(100);
         }
     }
     return NULL;
@@ -2362,7 +2361,7 @@ static void *video_handler(void *threadid)
     printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
 #endif
 
-    while (is_running) {
+    while (is_video_thread_running) {
 #ifdef A30
         if (nds.menu.enable) {
             if (nds.update_menu) {
@@ -2697,7 +2696,7 @@ static int read_config(void)
         nds.fast_forward = json_object_get_int(jval);
     }
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(QX1000)
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
         struct stat st = {0};
@@ -3096,12 +3095,12 @@ int fb_quit(void)
 #ifdef QX1000
 int fb_init(void)
 {
-    thread_run = 1;
+    is_wl_thread_running = 1;
     wl.bg = SDL_malloc(LCD_W * LCD_H * 2);
     memset(wl.bg, 0, LCD_W * LCD_H * 2);
     pthread_create(&thread_id[0], NULL, wl_thread, NULL);
     pthread_create(&thread_id[1], NULL, draw_thread, NULL);
-    while(wl.init == 0){
+    while (wl.init == 0) {
         usleep(100000);
     }
 
@@ -3723,7 +3722,7 @@ void GFX_Init(void)
     }
 #endif
 
-    is_running = 1;
+    is_video_thread_running = 1;
     pthread_create(&thread, NULL, video_handler, (void *)NULL);
 }
 
@@ -3732,7 +3731,7 @@ void GFX_Quit(void)
     void *ret = NULL;
 
     printf(PREFIX"Wait for video_handler exit\n");
-    is_running = 0;
+    is_video_thread_running = 0;
     pthread_join(thread, &ret);
 
     GFX_Clear();
