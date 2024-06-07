@@ -832,11 +832,21 @@ static int draw_drastic_menu_main(void)
 
     y = 10;
 #ifdef A30
-    sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
+    if (nds.chk_bat) {
+        sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
+    }
+    else {
+        sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
+    }
 #endif
 
 #ifdef MMIYOO
-    sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", nds.enable_752x560 ? "752*560" : "640*480", get_bat_val());
+    if (nds.chk_bat) {
+        sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", nds.enable_752x560 ? "752*560" : "640*480", get_bat_val());
+    }
+    else {
+        sprintf(buf, "Rel "NDS_VER", Res %s", nds.enable_752x560 ? "752*560" : "640*480");
+    }
 #endif
 
 #ifdef TRIMUI
@@ -2817,6 +2827,7 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY2, json_object_new_int(nds.joy.cuskey[2]));
     json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY3, json_object_new_int(nds.joy.cuskey[3]));
 #endif
+    json_object_object_add(jfile, JSON_NDS_CHK_BAT, json_object_new_int(nds.chk_bat));
 
     json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
@@ -6165,6 +6176,7 @@ enum {
     MENU_JOY_CUSKEY3,
     MENU_JOY_DZONE,
 #endif
+    MENU_CHK_BAT,
     MENU_LAST,
 };
 
@@ -6196,8 +6208,9 @@ static const char *MENU_ITEM[] = {
     "  Joy Down",
     "  Joy Left",
     "  Joy Right",
-    "Joy Dead Zone"
+    "Joy Dead Zone",
 #endif
+    "Check Battery",
 };
 
 int handle_menu(int key)
@@ -6391,6 +6404,9 @@ int handle_menu(int key)
             }
             break;
 #endif
+        case MENU_CHK_BAT:
+            nds.chk_bat = 0;
+            break;
         default:
             break;
         }
@@ -6536,6 +6552,9 @@ int handle_menu(int key)
             }
             break;
 #endif
+        case MENU_CHK_BAT:
+            nds.chk_bat = 1;
+            break;
         default:
             break;
         }
@@ -6835,6 +6854,9 @@ int handle_menu(int key)
             sprintf(buf, "%d (65)", nds.joy.dzone);
             break;
 #endif
+        case MENU_CHK_BAT:
+            sprintf(buf, "%s", to_lang(nds.chk_bat ? "Yes" : "No"));
+            break;
         }
         draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
         idx+= 1;
