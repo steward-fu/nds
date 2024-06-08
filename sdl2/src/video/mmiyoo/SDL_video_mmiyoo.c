@@ -605,7 +605,22 @@ static void* sdl_realloc(void *ptr, size_t size)
 static int get_bat_val(void)
 {
     int r = 0;
+    char buf[255] = {0};
     uint32_t v[2] = {0};
+    struct stat st = {0};
+    const char *AXP = "/customer/app/axp_test";
+
+    if (stat (AXP, &st) == 0) {
+        // {"battery":99, "voltage":4254, "charging":3}
+        FILE *fd = popen(AXP, "r");
+
+        if (fd) {
+            fgets(buf, sizeof(buf), fd);
+            pclose(fd);
+            return (atoi(&buf[11]));
+        }
+        return 0;
+    }
 
     if (vid.sar_fd < 0) {
         return 0;
