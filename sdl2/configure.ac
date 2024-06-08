@@ -2398,6 +2398,19 @@ CheckQNXAudio()
     fi
 }
 
+CheckRG28XXVideo()
+{
+    if test x$enable_video = xyes; then
+        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
+        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DRG28XX -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/a30/arm-a30-linux-gnueabihf/sysroot/usr/include/SDL2"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckA30Video()
 {
     if test x$enable_video = xyes; then
@@ -2473,6 +2486,20 @@ CheckUnittestVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUNITTEST -fPIC -I/usr/include/SDL2 -I../detour -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
         SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
+CheckRG28XXAudio()
+{
+    if test x$enable_audio = xyes; then
+        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
+        have_audio=yes
+        if test x$HOST = xarm-linux; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lasound"
+        fi
+        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
     fi
 }
 
@@ -3841,6 +3868,9 @@ case "$host" in
         esac
 
         case "$MOD" in
+            *rg28xx*)           ARCH=rg28xx
+                CheckRG28XXVideo
+                ;;
             *a30*)              ARCH=a30
                 CheckA30Video
                 ;;
@@ -3971,6 +4001,9 @@ case "$host" in
             ;;
             nto)
                 CheckQNXAudio
+            ;;
+            rg28xx)
+                CheckRG28XXAudio
             ;;
             a30)
                 CheckA30Audio

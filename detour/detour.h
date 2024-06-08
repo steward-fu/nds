@@ -1,5 +1,32 @@
-#ifndef __PATCH_H__
-#define __PATCH_H__
+/*
+  Special customized version for the DraStic emulator that runs on
+      Miyoo Mini (Plus)
+      TRIMUI-SMART
+      Miyoo A30
+      Anbernic RG28XX
+      Fxtec Pro1 (QX1000)
+
+  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+*/
+
+#ifndef __DETOUR_H__
+#define __DETOUR_H__
 
     #define VAR_SYSTEM                  0x083f4000
     #define VAR_SYSTEM_GAMECARD_NAME    0x0847e8e8
@@ -27,6 +54,8 @@
     #define VAR_ADPCM_STEP_TABLE        0x0815a600
     #define VAR_ADPCM_INDEX_STEP_TABLE  0x0815a6b8
     #define VAR_DESMUME_FOOTER_STR      0x0815a740
+
+    #define VAR_PCM_HANDLER             0x083e532c
 
     #define FUN_FREE                                    0x08003e58
     #define FUN_REALLOC                                 0x0800435c

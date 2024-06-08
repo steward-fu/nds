@@ -3,6 +3,7 @@
       Miyoo Mini (Plus)
       TRIMUI-SMART
       Miyoo A30
+      Anbernic RG28XX
       Fxtec Pro1 (QX1000)
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
@@ -81,7 +82,7 @@ static SDL_Thread *thread = NULL;
 extern NDS nds;
 extern MMIYOO_VideoInfo vid;
 
-int uart_open(const char *port)
+static int uart_open(const char *port)
 {
     int fd = -1;
 

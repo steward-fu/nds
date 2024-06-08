@@ -3,6 +3,7 @@
       Miyoo Mini (Plus)
       TRIMUI-SMART
       Miyoo A30
+      Anbernic RG28XX
       Fxtec Pro1 (QX1000)
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
@@ -35,7 +36,7 @@
 #include <linux/omapfb.h>
 #endif
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #endif
@@ -148,6 +149,19 @@
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define RELOAD_BG_COUNT         120
+    #define DEF_FONT_SIZE           24
+#endif
+
+#ifdef RG28XX
+    #define DEF_FB_W                640
+    #define DEF_FB_H                480
+    #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+    #define RELOAD_BG_COUNT         120
+    #define INIT_CPU_CORE           2
+    #define DEINIT_CPU_CORE         2
     #define DEF_FONT_SIZE           24
 #endif
 
@@ -349,7 +363,7 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
 enum _TEX_TYPE {
     TEX_SCR0 = 0,
     TEX_SCR1,
@@ -363,7 +377,7 @@ enum _TEX_TYPE {
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     EGLConfig eglConfig;
     EGLDisplay eglDisplay;
     EGLContext eglContext;
@@ -408,7 +422,7 @@ typedef struct _GFX {
     struct fb_fix_screeninfo finfo;
 
     struct {
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         void *virAddr;
 #endif
 
@@ -429,7 +443,7 @@ typedef struct _GFX {
     } mask;
 #endif
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
     struct {
         int cur_sel;
         void *virAddr[2][2];

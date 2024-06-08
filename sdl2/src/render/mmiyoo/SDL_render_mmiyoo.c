@@ -3,6 +3,7 @@
       Miyoo Mini (Plus)
       TRIMUI-SMART
       Miyoo A30
+      Anbernic RG28XX
       Fxtec Pro1 (QX1000)
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>

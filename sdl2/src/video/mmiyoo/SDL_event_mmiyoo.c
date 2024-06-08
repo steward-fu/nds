@@ -3,6 +3,7 @@
       Miyoo Mini (Plus)
       TRIMUI-SMART
       Miyoo A30
+      Anbernic RG28XX
       Fxtec Pro1 (QX1000)
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
@@ -33,6 +34,10 @@
 #include <dirent.h>
 #include <linux/input.h>
 
+#ifdef RG28XX
+#include <alsa/asoundlib.h>
+#endif
+
 #include "../../SDL_internal.h"
 #include "../../events/SDL_events_c.h"
 #include "../../core/linux/SDL_evdev.h"
@@ -45,6 +50,8 @@
     #define INPUT_DEV "/dev/input/event4"
 #elif defined(QX1000) || defined(A30)
     #define INPUT_DEV "/dev/input/event3"
+#elif defined(RG28XX)
+    #define INPUT_DEV "/dev/input/event1"
 #else
     #define INPUT_DEV "/dev/input/event0"
 #endif
@@ -67,6 +74,26 @@
     #define MENU    15
     #define VOLUP   16
     #define VOLDOWN 17
+#endif
+
+#ifdef RG28XX
+    #define UP      103
+    #define DOWN    108
+    #define LEFT    105
+    #define RIGHT   106
+    #define A       57
+    #define B       29
+    #define X       42
+    #define Y       56
+    #define L1      15
+    #define L2      18
+    #define R1      14
+    #define R2      20
+    #define START   28
+    #define SELECT  97
+    #define MENU    1
+    #define VOLUP   115
+    #define VOLDOWN 114
 #endif
 
 #ifdef A30
@@ -223,6 +250,43 @@ const SDL_Scancode code[]={
 int volume_inc(void);
 int volume_dec(void);
 
+#ifdef RG28XX
+static int volume = 16;
+
+static int set_volume(void)
+{
+    char buf[255] = {0};
+
+    sprintf(buf, "amixer set \'lineout volume\' %d", volume);
+    system(buf);
+    return 0;
+}
+
+int volume_inc(void)
+{
+    if (volume < 31) {
+        volume += 2;
+        if (volume > 31) {
+            volume = 31;
+        }
+        set_volume();
+    }
+    return volume;
+}
+
+int volume_dec(void)
+{
+    if (volume > 0) {
+        volume -= 2;
+        if (volume < 0) {
+            volume = 0;
+        }
+        set_volume();
+    }
+    return volume;
+}
+#endif
+
 static void check_mouse_pos(void)
 {
     if (evt.mouse.x < 0) {
@@ -289,7 +353,7 @@ static void release_all_keys(void)
 
 static int hit_hotkey(uint32_t bit)
 {
-#if defined(MMIYOO) || defined(A30) || defined(UNITTEST)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UNITTEST)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU));
 #endif
 
@@ -313,7 +377,7 @@ static void set_key(uint32_t bit, int val)
         }
 #endif
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == MYKEY_SELECT) {
                 evt.keypad.cur_keys = (1 << MYKEY_SELECT);
@@ -614,7 +678,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_UP)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
         if (evt.mode == MMIYOO_MOUSE_MODE) {
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
@@ -637,7 +701,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_DOWN)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
         if (evt.mode == MMIYOO_MOUSE_MODE) {
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
@@ -660,7 +724,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         if (nds.hres_mode == 0) {
             if (nds.dis_mode > 0) {
                 nds.dis_mode -= 1;
@@ -685,7 +749,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_RIGHT)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         if (nds.hres_mode == 0) {
             if (nds.dis_mode < NDS_DIS_MODE_LAST) {
                 nds.dis_mode += 1;
@@ -703,7 +767,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_A)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
             uint32_t tmp = nds.alt_mode;
             nds.alt_mode = nds.dis_mode;
@@ -719,7 +783,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_B)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         pixel_filter = pixel_filter ? 0 : 1;
 #endif
         set_key(MYKEY_B, 0);
@@ -803,7 +867,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_START)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
         if (nds.menu.enable == 0) {
 #ifdef QX1000
             update_wayland_res(640, 480);
@@ -821,7 +885,7 @@ static int handle_hotkey(void)
         set_key(MYKEY_START, 0);
     }
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
     if (nds.hotkey == HOTKEY_BIND_MENU) {
         if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
             set_key(MYKEY_MENU_ONION, 1);
@@ -838,7 +902,7 @@ static int handle_hotkey(void)
 #endif
 
     if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         static int pre_ff = 0;
 
         if (pre_ff != nds.fast_forward) {
@@ -855,7 +919,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_L1)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         set_key(MYKEY_EXIT, 1);
 #endif
 
@@ -865,9 +929,9 @@ static int handle_hotkey(void)
         set_key(MYKEY_L1, 0);
     }
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
     if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         set_key(MYKEY_QLOAD, 1);
 #else
         set_key(MYKEY_QSAVE, 1);
@@ -876,7 +940,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_L2)) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         set_key(MYKEY_QSAVE, 1);
 #else
         set_key(MYKEY_QLOAD, 1);
@@ -911,11 +975,14 @@ static int handle_hotkey(void)
 
 int EventUpdate(void *data)
 {
+#ifdef RG28XX
+    char tbuf[16] = {0};
+#endif
     struct input_event ev = {0};
 
     uint32_t l1 = L1;
     uint32_t r1 = R1;
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
     uint32_t l2 = L2;
     uint32_t r2 = R2;
 #endif
@@ -969,7 +1036,7 @@ int EventUpdate(void *data)
             y = Y;
         }
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
         if (nds.swap_l1l2) {
             l1 = L2;
             l2 = L1;
@@ -1004,8 +1071,52 @@ int EventUpdate(void *data)
         if (event_fd > 0) {
             int r = 0;
 
+#ifdef RG28XX
+            ev.code = 0;
+            if (read(event_fd, tbuf, 16)) {
+                ev.value = !!tbuf[12];
+
+                switch (tbuf[10]) {
+                case 0x11: 
+                    if (ev.value) {
+                        ev.code = (tbuf[12] == 0xff) ? up : down;
+                    }
+                    else {
+                        ev.code = up;
+                        set_key(MYKEY_UP, 0);
+                        set_key(MYKEY_DOWN, 0);
+                    }
+                    break;
+                case 0x10:
+                    if (ev.value) {
+                        ev.code = (tbuf[12] == 0xff) ? left : right;
+                    }
+                    else {
+                        ev.code = left;
+                        set_key(MYKEY_LEFT, 0);
+                        set_key(MYKEY_RIGHT, 0);
+                    }
+                    break;
+                case 0x30: ev.code = a; break;
+                case 0x31: ev.code = b; break;
+                case 0x33: ev.code = x; break;
+                case 0x32: ev.code = y; break;
+                case 0x34: ev.code = l1; break;
+                case 0x3a: ev.code = l2; break;
+                case 0x35: ev.code = r1; break;
+                case 0x3b: ev.code = r2; break;
+                case 0x38: ev.code = MENU; break;
+                case 0x36: ev.code = SELECT; break;
+                case 0x37: ev.code = START; break;
+                case 0x73: ev.code = VOLUP; break;
+                case 0x72: ev.code = VOLDOWN; break;
+                }
+
+                if (ev.code > 0) {
+#else
             if (read(event_fd, &ev, sizeof(struct input_event))) {
                 if ((ev.type == EV_KEY) && (ev.value != 2)) {
+#endif
                     r = 1;
                     //printf(PREFIX"code:%d, value:%d\n", ev.code, ev.value);
                     if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
@@ -1018,7 +1129,7 @@ int EventUpdate(void *data)
                     if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
                     if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
 #ifdef A30
                     if (ev.code == r2) {
                         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
@@ -1073,7 +1184,7 @@ int EventUpdate(void *data)
                         break;
 #endif
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
                     case VOLUP:
                         set_key(MYKEY_VOLUP, ev.value);
                         if (ev.value == 0) {
@@ -1090,6 +1201,7 @@ int EventUpdate(void *data)
                     }
                 }
             }
+
 #if defined(A30) && USE_MYJOY
             r |= update_joystick();
 #endif
@@ -1140,18 +1252,23 @@ void MMIYOO_EventInit(void)
 
     event_fd = open(INPUT_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if(event_fd < 0){
-        printf(PREFIX"Failed to open event0\n");
+        printf(PREFIX"Failed to open %s\n", INPUT_DEV);
+        exit(-1);
     }
 
     if((event_sem =  SDL_CreateSemaphore(1)) == NULL) {
         SDL_SetError("Can't create input semaphore");
-        return;
+        exit(-1);
     }
+
+#ifdef RG28XX
+    set_volume();
+#endif
 
     running = 1;
     if((thread = SDL_CreateThreadInternal(EventUpdate, "MMIYOOInputThread", 4096, NULL)) == NULL) {
         SDL_SetError("Can't create input thread");
-        return;
+        exit(-1);
     }
 
 #ifdef MMIYOO
@@ -1195,7 +1312,7 @@ void MMIYOO_PumpEvents(_THIS)
 {
     SDL_SemWait(event_sem);
     if (nds.menu.enable) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
         int cc = 0;
         uint32_t bit = 0;
         uint32_t changed = evt.keypad.pre_keys ^ evt.keypad.cur_keys;
@@ -1221,7 +1338,7 @@ void MMIYOO_PumpEvents(_THIS)
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
                     if ((nds.hotkey == HOTKEY_BIND_MENU) && (cc == MYKEY_MENU)) {
                         continue;
                     }

@@ -3,6 +3,7 @@
       Miyoo Mini (Plus)
       TRIMUI-SMART
       Miyoo A30
+      Anbernic RG28XX
       Fxtec Pro1 (QX1000)
 
   Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
@@ -108,7 +109,7 @@ int need_restore = 0;
 int pre_dismode = 0;
 #endif
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
 GLfloat bgVertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
@@ -157,6 +158,7 @@ const char *fShaderSrc =
     "    }                                                     \n"
     "}                                                         \n";
 
+#ifdef A30
 static struct _cpu_clock cpu_clock[] = {
     {96, 0x80000110},
     {144, 0x80000120},
@@ -227,6 +229,7 @@ static struct _cpu_clock cpu_clock[] = {
 };
 
 static int max_cpu_item = sizeof(cpu_clock) / sizeof(struct _cpu_clock);
+#endif
 #endif
 
 #ifdef QX1000
@@ -543,7 +546,7 @@ static void* draw_thread(void *pParam)
 }
 #endif
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
 static void* sdl_malloc(size_t size)
 {
     static int idx = 0;
@@ -762,7 +765,7 @@ static int draw_drastic_menu_main(void)
         p = &drastic_menu.item[cc];
         if (p->y == 201) {
             draw = 1;
-#if defined(MMIYOO) || defined(TRIMUI) || defined(A30)
+#if defined(MMIYOO) || defined(TRIMUI) || defined(A30) || defined(RG28XX)
             sprintf(buf, "NDS %s", &p->msg[8]);
 #else
             sprintf(buf, "%s", &p->msg[8]);
@@ -846,6 +849,10 @@ static int draw_drastic_menu_main(void)
     }
 
     y = 10;
+#ifdef RG28XX
+    sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
+#endif
+
 #ifdef A30
     if (nds.chk_bat) {
         sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
@@ -905,7 +912,7 @@ static int draw_drastic_menu_main(void)
             _func((void*)VAR_SYSTEM, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? h - 20 : 50;
                 rt.w = NDS_W;
@@ -917,7 +924,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? (h + NDS_H) - 20 : 50 + NDS_H;
                 rt.w = NDS_W;
@@ -1588,7 +1595,7 @@ int process_drastic_menu(void)
         memset(&drastic_menu, 0, sizeof(drastic_menu));
         return 0;
     }
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     nds.update_menu = 1;
 #else
     GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
@@ -1623,11 +1630,11 @@ static int process_screen(void)
     int screen_cnt = 0;
     char buf[MAX_PATH] = {0};
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
     int cur_sel = gfx.lcd.cur_sel ^ 1;
 #endif
 
-#if defined(MMIYOO) || defined(PANDORA) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(PANDORA) || defined(QX1000) || defined(A30) || defined(RG28XX)
     screen_cnt = 2;
 #else
     screen_cnt = 1;
@@ -1784,7 +1791,7 @@ static int process_screen(void)
             *((uint8_t *)VAR_SDL_SCREEN1_HRES_MODE):
             *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         nds.screen.pixels[idx] = gfx.lcd.virAddr[cur_sel][idx];
 #else
         nds.screen.pixels[idx] = (idx == 0) ?
@@ -1828,7 +1835,7 @@ static int process_screen(void)
 #if defined(QX1000)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
-#elif defined(MMIYOO) || defined(A30)
+#elif defined(MMIYOO) || defined(A30) || defined(RG28XX)
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
             if (screen1) {
@@ -2013,7 +2020,7 @@ static int process_screen(void)
         return 0;
 #endif
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         if (rotate == E_MI_GFX_ROTATE_180) {
             drt.y = (DEF_FB_H - drt.y) - drt.h;
             drt.x = (DEF_FB_W - drt.x) - drt.w;
@@ -2022,7 +2029,11 @@ static int process_screen(void)
             drt.x = (drt.x == 0) ? 320 : 0;
         }
 
+#ifdef A30
         if (show_pen && ((evt.mode == MMIYOO_MOUSE_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_STYLUS)))) {
+#else
+        if (show_pen && (evt.mode == MMIYOO_MOUSE_MODE)) {
+#endif
 #else
         if (show_pen && (evt.mode == MMIYOO_MOUSE_MODE)) {
 #endif
@@ -2035,7 +2046,7 @@ static int process_screen(void)
 #endif
         }
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         if ((idx == 0) && (nds.alpha.border > 0) && ((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1))) {
             int c0 = 0;
             uint32_t *p0 = NULL;
@@ -2076,20 +2087,20 @@ static int process_screen(void)
             MI_SYS_FlushInvCache(nds.screen.pixels[idx], nds.screen.pitch[idx] * srt.h);
 #endif
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
             GFX_Copy(idx, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
 #else
             GFX_Copy(-1, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
 #endif
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = 160;
                 drt.h = 120;
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
                 switch (nds.alpha.pos) {
                 case 0:
                     drt.x = DEF_FB_W - drt.w;
@@ -2118,7 +2129,7 @@ static int process_screen(void)
                 drt.y = 0;
                 drt.w = NDS_W;
                 drt.h = NDS_H;
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
                 switch (nds.alpha.pos) {
                 case 0:
                     drt.x = DEF_FB_W - drt.w;
@@ -2194,11 +2205,11 @@ void sdl_update_screen(void)
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
         gfx.lcd.cur_sel ^= 1;
         *((uint32_t *)VAR_SDL_SCREEN0_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
         *((uint32_t *)VAR_SDL_SCREEN1_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         nds.menu.drastic.enable = 0;
 #endif
 #endif
@@ -2315,7 +2326,7 @@ static void strip_newline(char *p)
 
 static void *video_handler(void *threadid)
 {
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     EGLint egl_major = 0;
     EGLint egl_minor = 0;
     EGLint num_configs = 0;
@@ -2387,7 +2398,7 @@ static void *video_handler(void *threadid)
 #endif
 
     while (is_video_thread_running) {
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         if (nds.menu.enable) {
             if (nds.update_menu) {
                 nds.update_menu = 0;
@@ -2415,7 +2426,7 @@ static void *video_handler(void *threadid)
         }
     }
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     glDeleteTextures(TEX_MAX, vid.texID);
     eglMakeCurrent(vid.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(vid.eglDisplay, vid.eglContext);
@@ -2721,7 +2732,7 @@ static int read_config(void)
         nds.fast_forward = json_object_get_int(jval);
     }
 
-#if defined(MMIYOO) || defined(A30) || defined(QX1000)
+#if defined(MMIYOO) || defined(A30) || defined(QX1000) || defined(RG28XX)
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
         struct stat st = {0};
@@ -2754,7 +2765,7 @@ static int read_config(void)
     reload_menu();
 
     reload_pen();
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
     reload_overlay();
 #endif
     json_object_put(jfile);
@@ -2765,7 +2776,9 @@ static int read_config(void)
         close(fd);
 #endif
 
+#ifndef RG28XX
     snd_nds_reload_config();
+#endif
 
 #if defined(TRIMUI) || defined(PANDORA)
     }
@@ -3348,6 +3361,118 @@ void disp_resize(void)
 }
 #endif
 
+#ifdef RG28XX
+static int get_core(int index)
+{
+    FILE *fd = NULL;
+    char buf[255] = {0};
+
+    sprintf(buf, "cat /sys/devices/system/cpu/cpu%d/online", index % 4);
+    fd = popen(buf, "r");
+    if (fd == NULL) {
+        return -1;
+    }
+    fgets(buf, sizeof(buf), fd);
+    pclose(fd);
+    return atoi(buf);
+}
+
+static void check_before_set(int num, int v)
+{
+    char buf[255] = {0};
+
+    if (get_core(num) != v) {
+        sprintf(buf, "echo %d > /sys/devices/system/cpu/cpu%d/online", v ? 1 : 0, num);
+        system(buf);
+    }
+}
+
+static void set_core(int n)
+{
+    if (n <= 1) {
+        printf(PREFIX"New CPU Core: 1\n");
+        check_before_set(0, 1);
+        check_before_set(1, 0);
+        check_before_set(2, 0);
+        check_before_set(3, 0);
+    }
+    else if (n == 2) {
+        printf(PREFIX"New CPU Core: 2\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 0);
+        check_before_set(3, 0);
+    }
+    else if (n == 3) {
+        printf(PREFIX"New CPU Core: 3\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 1);
+        check_before_set(3, 0);
+    }
+    else {
+        printf(PREFIX"New CPU Core: 4\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 1);
+        check_before_set(3, 1);
+    }
+}
+
+int fb_init(void)
+{
+    gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
+    if (gfx.fb_dev < 0) {
+        printf(PREFIX"Failed to open /dev/fb0\n");
+        return -1;
+    }
+
+    if (ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo) < 0) {
+        printf(PREFIX"Failed to get fb info\n");
+        return -1;
+    }
+
+    gfx.fb.virAddr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fb_dev, 0);
+    if (gfx.fb.virAddr == (void *)-1) {
+        close(gfx.fb_dev);
+        gfx.fb_dev = -1;
+        printf(PREFIX"Failed to mmap fb\n");
+        return -1;
+    }
+    printf(PREFIX"FB virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
+    memset(gfx.fb.virAddr, 0 , FB_SIZE);
+
+    gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
+    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+
+    set_core(INIT_CPU_CORE);
+    system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+    return 0;
+}
+
+int fb_quit(void)
+{
+    set_core(DEINIT_CPU_CORE);
+    system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+
+    if (gfx.fb.virAddr) {
+        munmap(gfx.fb.virAddr, FB_SIZE);
+        gfx.fb.virAddr = NULL;
+    }
+
+    if (gfx.fb_dev > 0) {
+        close(gfx.fb_dev);
+        gfx.fb_dev = -1;
+    }
+
+    if (vid.mem_fd > 0) {
+        close(vid.mem_fd);
+        vid.mem_fd = -1;
+    }
+    return 0;
+}
+#endif
+
 #ifdef A30
 static int get_core(int index)
 {
@@ -3907,7 +4032,7 @@ int draw_pen(void *pixels, int width, int pitch)
 
 int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     int tex = (id >= 0) ? id : TEX_TMP;
 
     if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH1) || (nds.dis_mode == NDS_DIS_MODE_HH3))) {
@@ -5189,7 +5314,7 @@ void GFX_Flip(void)
     gfx.vinfo.yoffset ^= FB_H;
 #endif
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     eglSwapBuffers(vid.eglDisplay, vid.eglSurface);
 
     if (nds.theme.img) {
@@ -5336,7 +5461,7 @@ int reload_pen(void)
         if (get_file_path(nds.pen.path, nds.pen.sel, buf, 1) == 0) {
             t = IMG_Load(buf);
             if (t) {
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
                 int x = 0;
                 int y = 0;
                 uint32_t *p = malloc(t->pitch * t->h);
@@ -5427,7 +5552,7 @@ int reload_menu(void)
         SDL_FreeSurface(t);
     }
 
-#if defined(MMIYOO) || defined(A30) || defined(UNITTEST)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UNITTEST)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
     nds.menu.drastic.cursor = IMG_Load(buf);
 #endif
@@ -5439,7 +5564,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(UNITTEST)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UNITTEST)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -5458,7 +5583,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(UNITTEST)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UNITTEST)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -5487,7 +5612,7 @@ int reload_bg(void)
     static int pre_mode = -1;
 #endif
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
     SDL_Rect srt = {0, 0, IMG_W, IMG_H};
@@ -5564,7 +5689,7 @@ int reload_bg(void)
                     if (t) {
                         SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
                         SDL_FreeSurface(t);
-#ifndef A30
+#if !defined(A30) && !defined(RG28XX)
                         GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #endif
                     }
@@ -5576,7 +5701,7 @@ int reload_bg(void)
         }
         else {
             if (nds.theme.img) {
-#ifndef A30
+#if !defined(A30) && !defined(RG28XX)
                 GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #else
                 glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
@@ -5711,7 +5836,7 @@ int reload_bg(void)
     return 0;
 }
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
 int reload_overlay(void)
 {
     static int pre_sel = -1;
@@ -5921,7 +6046,7 @@ int MMIYOO_VideoInit(_THIS)
     detour_hook(FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS, (intptr_t)render_polygon_setup_perspective_steps);
 #endif
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
     printf(PREFIX"Installed hooking for libc functions\n");
     detour_hook(FUN_MALLOC, (intptr_t)sdl_malloc);
     detour_hook(FUN_REALLOC, (intptr_t)sdl_realloc);
@@ -6024,7 +6149,7 @@ void MMIYOO_VideoQuit(_THIS)
     lang_unload();
 }
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
 static const char *DIS_MODE0_640[] = {
     "640*480",
     "640*480",
@@ -6163,9 +6288,11 @@ static int lang_prev(void)
 
 enum {
     MENU_LANG = 0,
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     MENU_CPU_CORE,
+#ifdef A30
     MENU_CPU_CLOCK,
+#endif
 #else
     MENU_CPU,
 #endif
@@ -6191,15 +6318,20 @@ enum {
     MENU_JOY_CUSKEY3,
     MENU_JOY_DZONE,
 #endif
+
+#if defined(MMIYOO) || defined(A30)
     MENU_CHK_BAT,
+#endif
     MENU_LAST,
 };
 
 static const char *MENU_ITEM[] = {
     "Language",
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     "CPU Core",
+#ifdef A30
     "CPU Clock",
+#endif
 #else
     "CPU",
 #endif
@@ -6232,11 +6364,13 @@ int handle_menu(int key)
 {
     static int pre_ff = 0;
     static int cur_sel = 0;
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     static uint32_t cur_cpucore = INIT_CPU_CORE;
     static uint32_t pre_cpucore = INIT_CPU_CORE;
+#ifdef A30
     static uint32_t cur_cpuclock = INIT_CPU_CLOCK;
     static uint32_t pre_cpuclock = INIT_CPU_CLOCK;
+#endif
 #else
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
@@ -6266,11 +6400,14 @@ int handle_menu(int key)
     if (pre_lang[0] == 0) {
         strcpy(pre_lang, nds.lang.trans[DEF_LANG_SLOT]);
     }
+
+#ifndef RG28XX
     if (pre_cpuclock == 0) {
 #ifdef MMIYOO
         cur_cpuclock = pre_cpuclock = get_cpuclock();
 #endif
     }
+#endif
 
     switch (key) {
     case MYKEY_UP:
@@ -6288,17 +6425,19 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_prev();
             break;
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         case MENU_CPU_CORE:
             if (cur_cpucore > nds.mincore) {
                 cur_cpucore-= 1;
             }
             break;
+#ifdef A30
         case MENU_CPU_CLOCK:
             if (cur_cpuclock > nds.mincpu) {
                 cur_cpuclock-= 50;
             }
             break;
+#endif
 #else
         case MENU_CPU:
             if (cur_cpuclock > nds.mincpu) {
@@ -6419,9 +6558,11 @@ int handle_menu(int key)
             }
             break;
 #endif
+#if defined(MMIYOO) || defined(A30)
         case MENU_CHK_BAT:
             nds.chk_bat = 0;
             break;
+#endif
         default:
             break;
         }
@@ -6431,17 +6572,19 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_next();
             break;
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         case MENU_CPU_CORE:
             if (cur_cpucore < nds.maxcore) {
                 cur_cpucore+= 1;
             }
             break;
+#ifdef A30
         case MENU_CPU_CLOCK:
             if (cur_cpuclock < nds.maxcpu) {
                 cur_cpuclock+= 50;
             }
             break;
+#endif
 #else
         case MENU_CPU:
             if (cur_cpuclock < nds.maxcpu) {
@@ -6567,14 +6710,17 @@ int handle_menu(int key)
             }
             break;
 #endif
+#if defined(MMIYOO) || defined(A30)
         case MENU_CHK_BAT:
             nds.chk_bat = 1;
             break;
+#endif
         default:
             break;
         }
         break;
     case MYKEY_B:
+#ifndef RG28XX
         if (cur_cpuclock != pre_cpuclock) {
 #ifdef MMIYOO
             set_cpuclock(cur_cpuclock);
@@ -6585,8 +6731,9 @@ int handle_menu(int key)
 #endif
             pre_cpuclock = cur_cpuclock;
         }
+#endif
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         if (cur_cpucore != pre_cpucore) {
             set_core(cur_cpucore);
             pre_cpucore = cur_cpucore;
@@ -6755,13 +6902,15 @@ int handle_menu(int key)
         case MENU_LANG:
             sprintf(buf, "%s", nds.lang.trans[DEF_LANG_SLOT]);
             break;
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
         case MENU_CPU_CORE:
             sprintf(buf, "%d", cur_cpucore);
             break;
+#ifdef A30
         case MENU_CPU_CLOCK:
             sprintf(buf, "%dMHz", cur_cpuclock);
             break;
+#endif
 #else
         case MENU_CPU:
             sprintf(buf, "%dMHz", cur_cpuclock);
@@ -6779,7 +6928,7 @@ int handle_menu(int key)
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
                 get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
                 reload_overlay();
 #endif
             }
@@ -6869,9 +7018,11 @@ int handle_menu(int key)
             sprintf(buf, "%d (65)", nds.joy.dzone);
             break;
 #endif
+#if defined(MMIYOO) || defined(A30)
         case MENU_CHK_BAT:
             sprintf(buf, "%s", to_lang(nds.chk_bat ? "Yes" : "No"));
             break;
+#endif
         }
         draw_info(cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
         idx+= 1;
@@ -7236,7 +7387,7 @@ int handle_menu(int key)
         }
     }
 
-#ifdef A30
+#if defined(A30) || defined(RG28XX)
     nds.update_menu = 1;
 #else
     GFX_Copy(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
