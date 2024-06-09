@@ -163,6 +163,8 @@
     #define INIT_CPU_CORE           2
     #define DEINIT_CPU_CORE         2
     #define DEF_FONT_SIZE           24
+    #define BAT_MAX_VAL             4080000
+    #define BAT_MIN_VAL             3400000
 #endif
 
 #ifdef A30
