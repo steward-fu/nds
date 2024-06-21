@@ -621,7 +621,7 @@ static void *audio_handler(void *threadid)
 
 snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm)
 {
-    return 0; // pcm_buf_len;
+    return 2048;
 }
 
 int snd_pcm_hw_params(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
