@@ -184,7 +184,7 @@
     #define MYJOY_SHOW_CNT          300
     #define MYJOY_MOVE_SPEED        4
     #define INIT_CPU_CORE           2
-    #define INIT_CPU_CLOCK          1500
+    #define INIT_CPU_CLOCK          1200
     #define DEINIT_CPU_CORE         2
     #define DEINIT_CPU_CLOCK        648
     #define DEF_FONT_SIZE           24
