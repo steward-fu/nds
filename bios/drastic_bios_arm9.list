@@ -1,0 +1,766 @@
+ARM GAS  /tmp/ccRnIv0Q.s 			page 1
+
+
+   1              	# 0 "bios_common.S"
+   2              	# 0 "<built-in>"
+   3              	# 0 "<command-line>"
+   4              	# 1 "/usr/arm-linux-gnueabi/include/stdc-predef.h" 1 3
+   5              	# 0 "<command-line>" 2
+   6              	# 1 "bios_common.S"
+   7              	# Custom NDS ARM7/ARM9 BIOS replacement
+   8              	# Copyright (c) 2013, Gilead Kutnick
+   9              	# All rights reserved.
+  10              	
+  11              	# Redistribution and use in source and binary forms, with or without
+  12              	# modification, are permitted provided that the following conditions are met:
+  13              	
+  14              	# 1) Redistributions of source code must retain the above copyright notice,
+  15              	# this list of conditions and the following disclaimer.
+  16              	# 2) Redistributions in binary form must reproduce the above copyright notice,
+  17              	# this list of conditions and the following disclaimer in the documentation
+  18              	# and/or other materials provided with the distribution.
+  19              	
+  20              	# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  21              	# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  22              	# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  23              	# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+  24              	# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  25              	# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  26              	# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  27              	# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  28              	# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  29              	# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  30              	# POSSIBILITY OF SUCH DAMAGE.
+  31              	
+  32              	.section .text
+  33              	
+  34              	.org 0x00000000
+  35              	
+  36              	
+  37              	
+  38 0000 3E0000EA 	b boot_handler
+  39 0004 3E0000EA 	b unhandled_exception
+  40 0008 3E0000EA 	b swi_handler
+  41 000c 3C0000EA 	b unhandled_exception
+  42 0010 3B0000EA 	b unhandled_exception
+  43 0014 3A0000EA 	b unhandled_exception
+  44 0018 820100EA 	b interrupt_handler
+  45 001c 380000EA 	b unhandled_exception
+  46              	
+  47              	
+  48              	
+  49              	
+  50              	
+  51 0020 00000000 	.fill 0xe0, 0x1, 0x0
+  51      00000000 
+  51      00000000 
+  51      00000000 
+  51      00000000 
+  52              	# 57 "bios_common.S"
+  53              	boot_handler:
+ARM GAS  /tmp/ccRnIv0Q.s 			page 2
+
+
+  54              	 0:
+  55 0100 FEFFFFEA 	  b 0b
+  56              	
+  57              	
+  58              	unhandled_exception:
+  59              	 0:
+  60 0104 FEFFFFEA 	  b 0b
+  61              	# 90 "bios_common.S"
+  62              	swi_handler:
+  63              	
+  64 0108 10502DE9 	  stmdb sp!, { r4, r12, lr }
+  65              	
+  66              	
+  67 010c 00404FE1 	  mrs r4, SPSR
+  68              	
+  69              	
+  70              	
+  71 0110 10002DE9 	  stmdb sp!, { r4 }
+  72 0114 804004E2 	  and r4, r4, #0x80
+  73 0118 1F4084E3 	  orr r4, r4, #0x1F
+  74              	
+  75              	
+  76              	
+  77 011c 02C05EE5 	  ldrb r12, [ lr, #-2 ]
+  78 0120 04F029E1 	  msr CPSR_fc, r4
+  79              	
+  80              	
+  81 0124 00402DE9 	  stmdb sp!, { lr }
+  82              	
+  83              	
+  84              	
+  85              	
+  86 0128 20005CE3 	  cmp r12, #0x20
+  87 012c 01C0A0A3 	  movge r12, #0x01
+  88              	
+  89              	
+  90 0130 0CF19FE7 	  ldr pc, [ pc, r12, lsl #2 ]
+  91 0134 0000A0E1 	  nop
+  92              	
+  93              	
+  94              	
+  95 0138 D001FFFF 	  .word (swi_soft_reset + 0xFFFF0000)
+  96 013c B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+  97 0140 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+  98 0144 E001FFFF 	  .word (swi_wait_by_loop + 0xFFFF0000)
+  99 0148 2002FFFF 	  .word (swi_interrupt_wait + 0xFFFF0000)
+ 100 014c 1802FFFF 	  .word (swi_vblank_interrupt_wait + 0xFFFF0000)
+ 101 0150 D401FFFF 	  .word (swi_halt + 0xFFFF0000)
+ 102 0154 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 103 0158 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 104 015c 4C02FFFF 	  .word (swi_divide + 0xFFFF0000)
+ 105 0160 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 106 0164 A802FFFF 	  .word (swi_cpu_set + 0xFFFF0000)
+ 107 0168 2803FFFF 	  .word (swi_cpu_fast_set + 0xFFFF0000)
+ 108 016c 6803FFFF 	  .word (swi_sqrt + 0xFFFF0000)
+ 109 0170 B403FFFF 	  .word (swi_get_crc16 + 0xFFFF0000)
+ 110 0174 4C04FFFF 	  .word (swi_is_debugger + 0xFFFF0000)
+ARM GAS  /tmp/ccRnIv0Q.s 			page 3
+
+
+ 111 0178 5404FFFF 	  .word (swi_bit_unpack + 0xFFFF0000)
+ 112 017c E804FFFF 	  .word (swi_lz77_decompress_wram + 0xFFFF0000)
+ 113 0180 E804FFFF 	  .word (swi_lz77_decompress_vram + 0xFFFF0000)
+ 114 0184 6405FFFF 	  .word (swi_huffman_decompress + 0xFFFF0000)
+ 115 0188 6805FFFF 	  .word (swi_runlength_decompress_wram + 0xFFFF0000)
+ 116 018c 6805FFFF 	  .word (swi_runlength_decompress_vram + 0xFFFF0000)
+ 117 0190 C005FFFF 	  .word (swi_diff_8bit_unfilter_wram + 0xFFFF0000)
+ 118 0194 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 119 0198 EC05FFFF 	  .word (swi_diff_16bit_unfilter + 0xFFFF0000)
+ 120 019c B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 121 01a0 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 122 01a4 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 123 01a8 B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 124 01ac B401FFFF 	  .word (swi_invalid + 0xFFFF0000)
+ 125 01b0 1C06FFFF 	  .word (swi_custom_halt_post + 0xFFFF0000)
+ 126              	
+ 127              	swi_invalid:
+ 128              	
+ 129              	
+ 130              	
+ 131              	swi_complete:
+ 132              	
+ 133 01b4 0040BDE8 	  ldmia sp!, { lr }
+ 134              	
+ 135              	
+ 136 01b8 D340A0E3 	  mov r4, #0xD3
+ 137 01bc 04F029E1 	  msr CPSR_fc, r4
+ 138              	
+ 139              	
+ 140 01c0 1000BDE8 	  ldmia sp!, { r4 }
+ 141 01c4 04F069E1 	  msr SPSR, r4
+ 142              	
+ 143              	
+ 144 01c8 1050BDE8 	  ldmia sp!, { r4, r12, lr }
+ 145              	
+ 146              	
+ 147 01cc 0EF0B0E1 	  movs pc, lr
+ 148              	
+ 149              	
+ 150              	
+ 151              	swi_soft_reset:
+ 152 01d0 F7FFFFEA 	  b swi_complete
+ 153              	
+ 154              	swi_halt:
+ 155              	
+ 156              	
+ 157              	
+ 158              	
+ 159              	
+ 160 01d4 0000A0E3 	  mov r0, #0x0
+ 161 01d8 900F07EE 	  mcr p15, 0, r0, cr7, cr0, 4
+ 162              	
+ 163 01dc F4FFFFEA 	  b swi_complete
+ 164              	
+ 165              	swi_wait_by_loop:
+ 166              	 0:
+ 167 01e0 010050E2 	  subs r0, r0, #1
+ARM GAS  /tmp/ccRnIv0Q.s 			page 4
+
+
+ 168 01e4 FDFFFFCA 	  bgt 0b
+ 169              	
+ 170 01e8 F1FFFFEA 	  b swi_complete
+ 171              	# 214 "bios_common.S"
+ 172              	interrupt_check:
+ 173              	
+ 174              	
+ 175 01ec 112F19EE 	  mrc p15, 0, r2, cr9, cr1, 0
+ 176 01f0 FF20C2E3 	  bic r2, r2, #0xFF
+ 177              	
+ 178              	
+ 179 01f4 012982E2 	  add r2, r2, #0x4000
+ 180              	
+ 181              	
+ 182              	
+ 183 01f8 080012E5 	  ldr r0, [ r2, #-8 ]
+ 184              	
+ 185              	
+ 186 01fc 083283E5 	  str r3, [ r3, #0x208 ]
+ 187              	
+ 188              	
+ 189 0200 000011E1 	  tst r1, r0
+ 190              	
+ 191              	
+ 192 0204 0100C0E1 	  bic r0, r0, r1
+ 193 0208 080002E5 	  str r0, [ r2, #-8 ]
+ 194              	
+ 195 020c 01C0A0E3 	  mov r12, #0x1
+ 196              	
+ 197 0210 08C283E5 	  str r12, [ r3, #0x208 ]
+ 198 0214 1EFF2FE1 	  bx lr
+ 199              	
+ 200              	
+ 201              	
+ 202              	
+ 203              	swi_vblank_interrupt_wait:
+ 204              	
+ 205 0218 0100A0E3 	  mov r0, #1
+ 206 021c 0110A0E3 	  mov r1, #1
+ 207              	
+ 208              	
+ 209              	
+ 210              	swi_interrupt_wait:
+ 211 0220 0133A0E3 	  mov r3, #0x4000000
+ 212              	
+ 213              	
+ 214 0224 000050E3 	  cmp r0, #0
+ 215 0228 EFFFFF1B 	  blne interrupt_check
+ 216              	
+ 217              	
+ 218              	 0:
+ 219              	
+ 220              	
+ 221 022c 0000A0E3 	  mov r0, #0
+ 222 0230 900F07EE 	  mcr p15, 0, r0, cr7, cr0, 4
+ 223              	
+ 224              	
+ARM GAS  /tmp/ccRnIv0Q.s 			page 5
+
+
+ 225              	
+ 226              	
+ 227              	
+ 228              	
+ 229 0234 ECFFFFEB 	  bl interrupt_check
+ 230 0238 FBFFFF0A 	  beq 0b
+ 231              	
+ 232 023c DCFFFFEA 	  b swi_complete
+ 233              	
+ 234              	swi_interrupt_check_first:
+ 235              	
+ 236 0240 E9FFFFEB 	  bl interrupt_check
+ 237              	
+ 238 0244 DAFFFF1A 	  bne swi_complete
+ 239              	
+ 240              	
+ 241 0248 F7FFFFEA 	  b 0b
+ 242              	# 325 "bios_common.S"
+ 243              	swi_divide:
+ 244              	
+ 245 024c 02C110E2 	  ands r12, r0, #0x80000000
+ 246 0250 00006042 	  rsbmi r0, r0, #0
+ 247              	
+ 248              	
+ 249 0254 023111E2 	  ands r3, r1, #0x80000000
+ 250 0258 00106142 	  rsbmi r1, r1, #0
+ 251              	
+ 252              	
+ 253 025c 03C02CE0 	  eor r12, r12, r3
+ 254              	
+ 255 0260 0020A0E3 	  mov r2, #0
+ 256 0264 0130A0E3 	  mov r3, #1
+ 257              	
+ 258              	
+ 259              	
+ 260              	
+ 261              	 0:
+ 262 0268 000051E1 	  cmp r1, r0
+ 263 026c 8110A091 	  movls r1, r1, lsl #1
+ 264 0270 8330A091 	  movls r3, r3, lsl #1
+ 265 0274 FBFFFF9A 	  bls 0b
+ 266              	
+ 267              	
+ 268              	 1:
+ 269 0278 010050E1 	  cmp r0, r1
+ 270 027c 01004020 	  subcs r0, r0, r1
+ 271 0280 03208221 	  orrcs r2, r2, r3
+ 272 0284 A330B0E1 	  movs r3, r3, lsr #1
+ 273 0288 A110A031 	  movcc r1, r1, lsr #1
+ 274 028c F9FFFF3A 	  bcc 1b
+ 275              	
+ 276 0290 0010A0E1 	  mov r1, r0
+ 277 0294 0230A0E1 	  mov r3, r2
+ 278 0298 0200A0E1 	  mov r0, r2
+ 279              	
+ 280 029c 02011CE3 	  tst r12, #0x80000000
+ 281 02a0 00006042 	  rsbmi r0, r0, #0
+ARM GAS  /tmp/ccRnIv0Q.s 			page 6
+
+
+ 282              	
+ 283 02a4 C2FFFFEA 	  b swi_complete
+ 284              	# 375 "bios_common.S"
+ 285              	swi_cpu_set:
+ 286              	
+ 287 02a8 FFC4C2E3 	  bic r12, r2, #0xFF000000
+ 288 02ac 0EC6CCE3 	  bic r12, r12, #0x00E00000
+ 289              	
+ 290 02b0 010312E3 	  tst r2, #(1 << 26)
+ 291 02b4 0D00001A 	  bne copy_32bit
+ 292              	
+ 293              	 copy_16bit:
+ 294 02b8 010412E3 	  tst r2, #(1 << 24)
+ 295 02bc 0100C0E3 	  bic r0, #0x1
+ 296 02c0 0110C1E3 	  bic r1, #0x1
+ 297 02c4 0400001A 	  bne set_16bit
+ 298              	
+ 299              	 0:
+ 300 02c8 B230D0E0 	  ldrh r3, [ r0 ], #2
+ 301 02cc 01C05CE2 	  subs r12, r12, #1
+ 302 02d0 B230C1E0 	  strh r3, [ r1 ], #2
+ 303 02d4 FBFFFF1A 	  bne 0b
+ 304              	
+ 305 02d8 B5FFFFEA 	  b swi_complete
+ 306              	
+ 307              	 set_16bit:
+ 308 02dc B030D0E1 	  ldrh r3, [ r0 ]
+ 309              	
+ 310              	 0:
+ 311 02e0 B230C1E0 	  strh r3, [ r1 ], #2
+ 312 02e4 01C05CE2 	  subs r12, r12, #1
+ 313 02e8 FCFFFF1A 	  bne 0b
+ 314              	
+ 315 02ec B0FFFFEA 	  b swi_complete
+ 316              	
+ 317              	 copy_32bit:
+ 318 02f0 010412E3 	  tst r2, #(1 << 24)
+ 319 02f4 0300C0E3 	  bic r0, #0x3
+ 320 02f8 0310C1E3 	  bic r1, #0x3
+ 321 02fc 0400001A 	  bne set_32bit
+ 322              	
+ 323              	 0:
+ 324 0300 043090E4 	  ldr r3, [ r0 ], #4
+ 325 0304 01C05CE2 	  subs r12, r12, #1
+ 326 0308 043081E4 	  str r3, [ r1 ], #4
+ 327 030c FBFFFF1A 	  bne 0b
+ 328              	
+ 329 0310 A7FFFFEA 	  b swi_complete
+ 330              	
+ 331              	 set_32bit:
+ 332 0314 003090E5 	  ldr r3, [ r0 ]
+ 333              	
+ 334              	 0:
+ 335 0318 043081E4 	  str r3, [ r1 ], #4
+ 336 031c 01C05CE2 	  subs r12, r12, #1
+ 337 0320 FCFFFF1A 	  bne 0b
+ 338              	
+ARM GAS  /tmp/ccRnIv0Q.s 			page 7
+
+
+ 339 0324 A2FFFFEA 	  b swi_complete
+ 340              	
+ 341              	
+ 342              	
+ 343              	swi_cpu_fast_set:
+ 344              	
+ 345 0328 FFC4C2E3 	  bic r12, r2, #0xFF000000
+ 346 032c 0EC6CCE3 	  bic r12, r12, #0x00E00000
+ 347              	
+ 348 0330 010412E3 	  tst r2, #(1 << 24)
+ 349 0334 0300C0E3 	  bic r0, #0x3
+ 350 0338 0310C1E3 	  bic r1, #0x3
+ 351 033c 0400001A 	  bne fast_set_32bit
+ 352              	
+ 353              	 0:
+ 354 0340 043090E4 	  ldr r3, [ r0 ], #4
+ 355 0344 01C05CE2 	  subs r12, r12, #1
+ 356 0348 043081E4 	  str r3, [ r1 ], #4
+ 357 034c FBFFFF1A 	  bne 0b
+ 358              	
+ 359 0350 97FFFFEA 	  b swi_complete
+ 360              	
+ 361              	 fast_set_32bit:
+ 362 0354 003090E5 	  ldr r3, [ r0 ]
+ 363              	
+ 364              	 0:
+ 365 0358 043081E4 	  str r3, [ r1 ], #4
+ 366 035c 01C05CE2 	  subs r12, r12, #1
+ 367 0360 FCFFFF1A 	  bne 0b
+ 368              	
+ 369 0364 92FFFFEA 	  b swi_complete
+ 370              	# 472 "bios_common.S"
+ 371              	swi_sqrt:
+ 372 0368 0111A0E3 	  mov r1, #0x40000000
+ 373 036c 0020A0E3 	  mov r2, #0x0
+ 374              	
+ 375              	 0:
+ 376 0370 023081E1 	  orr r3, r1, r2
+ 377 0374 030050E1 	  cmp r0, r3
+ 378 0378 030040A0 	  subge r0, r0, r3
+ 379 037c A220A0E1 	  mov r2, r2, lsr #1
+ 380 0380 012082A1 	  orrge r2, r2, r1
+ 381 0384 2111B0E1 	  movs r1, r1, lsr #2
+ 382 0388 F8FFFF1A 	  bne 0b
+ 383              	
+ 384 038c 0200A0E1 	  mov r0, r2
+ 385 0390 87FFFFEA 	  b swi_complete
+ 386              	# 512 "bios_common.S"
+ 387              	crc_table:
+ 388 0394 000001CC 	 .hword 0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401
+ 388      01D80014 
+ 388      01F0003C 
+ 388      002801E4 
+ 389 03a4 01A0006C 	  .hword 0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
+ 389      007801B4 
+ 389      0050019C 
+ 389      01880044 
+ARM GAS  /tmp/ccRnIv0Q.s 			page 8
+
+
+ 390              	
+ 391              	swi_get_crc16:
+ 392 03b4 20002DE9 	  stmdb sp!, { r5 }
+ 393 03b8 1E40A0E3 	  mov r4, #0x1E
+ 394 03bc 30E04FE2 	  adr r14, crc_table
+ 395              	
+ 396 03c0 A220B0E1 	  movs r2, r2, lsr #1
+ 397 03c4 1E00000A 	  beq 1f
+ 398              	
+ 399              	 0:
+ 400 03c8 B230D1E0 	  ldrh r3, [ r1 ], #2
+ 401              	
+ 402 03cc 805004E0 	  ; and r5, r4, r0, lsl #1 ; ldrh r12, [ r14, r5 ] ; mov r0, r0, lsr #4 ; eor r0, r0, r12 ; ; and r
+ 402      B5C09EE1 
+ 402      2002A0E1 
+ 402      0C0020E0 
+ 402      835004E0 
+ 403 03e8 805004E0 	  ; and r5, r4, r0, lsl #1 ; ldrh r12, [ r14, r5 ] ; mov r0, r0, lsr #4 ; eor r0, r0, r12 ; ; and r
+ 403      B5C09EE1 
+ 403      2002A0E1 
+ 403      0C0020E0 
+ 403      A35104E0 
+ 404 0404 805004E0 	  ; and r5, r4, r0, lsl #1 ; ldrh r12, [ r14, r5 ] ; mov r0, r0, lsr #4 ; eor r0, r0, r12 ; ; and r
+ 404      B5C09EE1 
+ 404      2002A0E1 
+ 404      0C0020E0 
+ 404      A35304E0 
+ 405 0420 805004E0 	  ; and r5, r4, r0, lsl #1 ; ldrh r12, [ r14, r5 ] ; mov r0, r0, lsr #4 ; eor r0, r0, r12 ; ; and r
+ 405      B5C09EE1 
+ 405      2002A0E1 
+ 405      0C0020E0 
+ 405      A35504E0 
+ 406              	
+ 407 043c 012052E2 	  subs r2, r2, #1
+ 408 0440 E0FFFF1A 	  bne 0b
+ 409              	
+ 410              	 1:
+ 411 0444 2000BDE8 	  ldmia sp!, { r5 }
+ 412 0448 59FFFFEA 	  b swi_complete
+ 413              	
+ 414              	
+ 415              	swi_is_debugger:
+ 416 044c 0000A0E3 	  mov r0, #0
+ 417 0450 57FFFFEA 	  b swi_complete
+ 418              	# 562 "bios_common.S"
+ 419              	swi_bit_unpack:
+ 420 0454 E0032DE9 	  stmdb sp!, { r5 - r9 }
+ 421              	
+ 422 0458 B030D2E1 	  ldrh r3, [ r2, #0 ]
+ 423 045c 02C0D2E5 	  ldrb r12, [ r2, #2 ]
+ 424 0460 03E0D2E5 	  ldrb r14, [ r2, #3 ]
+ 425 0464 044092E5 	  ldr r4, [ r2, #4 ]
+ 426              	
+ 427              	
+ 428 0468 A42FA0E1 	  mov r2, r4, lsr #31
+ 429 046c 0241C4E3 	  bic r4, r4, #0x80000000
+ 430              	
+ARM GAS  /tmp/ccRnIv0Q.s 			page 9
+
+
+ 431 0470 0150A0E3 	  mov r5, #0x1
+ 432 0474 155CA0E1 	  mov r5, r5, lsl r12
+ 433 0478 015045E2 	  sub r5, r5, #1
+ 434              	
+ 435 047c 0160A0E3 	  mov r6, #0x1
+ 436 0480 0070A0E3 	  mov r7, #0
+ 437 0484 0080A0E3 	  mov r8, #0
+ 438              	
+ 439 0488 01005CE3 	  cmp r12, #1
+ 440 048c 8331A001 	  moveq r3, r3, lsl #3
+ 441              	
+ 442 0490 02005CE3 	  cmp r12, #2
+ 443 0494 0331A001 	  moveq r3, r3, lsl #2
+ 444              	
+ 445 0498 04005CE3 	  cmp r12, #4
+ 446 049c 8330A001 	  moveq r3, r3, lsl #1
+ 447              	
+ 448              	 0:
+ 449              	
+ 450 04a0 010056E3 	  cmp r6, #0x1
+ 451 04a4 0160D004 	  ldreqb r6, [ r0 ], #1
+ 452 04a8 016C8603 	  orreq r6, r6, #0x100
+ 453              	
+ 454              	
+ 455 04ac 059006E0 	  and r9, r6, r5
+ 456 04b0 366CA0E1 	  mov r6, r6, lsr r12
+ 457              	
+ 458 04b4 000059E3 	  cmp r9, #0
+ 459 04b8 01001203 	  tsteq r2, #0x1
+ 460 04bc 04908910 	  addne r9, r9, r4
+ 461              	
+ 462              	
+ 463 04c0 197887E1 	  orr r7, r7, r9, lsl r8
+ 464 04c4 0E8088E0 	  add r8, r8, r14
+ 465              	
+ 466              	
+ 467 04c8 200058E3 	  cmp r8, #32
+ 468 04cc 04708104 	  streq r7, [ r1 ], #4
+ 469 04d0 0070A003 	  moveq r7, #0
+ 470 04d4 0080A003 	  moveq r8, #0
+ 471              	
+ 472 04d8 013053E2 	  subs r3, r3, #1
+ 473 04dc EFFFFF1A 	  bne 0b
+ 474              	
+ 475 04e0 E003BDE8 	  ldmia sp!, { r5 - r9 }
+ 476 04e4 32FFFFEA 	  b swi_complete
+ 477              	# 637 "bios_common.S"
+ 478              	swi_lz77_decompress_vram:
+ 479              	swi_lz77_decompress_wram:
+ 480 04e8 043090E4 	  ldr r3, [ r0 ], #4
+ 481 04ec 2324B0E1 	  movs r2, r3, lsr #8
+ 482 04f0 2FFFFF0A 	  beq swi_complete
+ 483              	
+ 484              	 0:
+ 485 04f4 0130D0E4 	  ldrb r3, [ r0 ], #1
+ 486              	
+ 487 04f8 023583E3 	  orr r3, r3, #(1 << 23)
+ARM GAS  /tmp/ccRnIv0Q.s 			page 10
+
+
+ 488              	
+ 489              	 1:
+ 490 04fc 800013E3 	  tst r3, #0x80
+ 491 0500 1000000A 	  beq 2f
+ 492              	
+ 493              	
+ 494              	
+ 495              	
+ 496 0504 0140D0E4 	  ldrb r4, [ r0 ], #1
+ 497 0508 01E0D0E4 	  ldrb r14, [ r0 ], #1
+ 498 050c 04448EE1 	  orr r4, r14, r4, lsl #8
+ 499              	
+ 500              	
+ 501 0510 24E6A0E1 	  mov r14, r4, lsr #12
+ 502 0514 0FCAC4E3 	  bic r12, r4, #0xF000
+ 503              	
+ 504 0518 03E08EE2 	  add r14, r14, #3
+ 505 051c 0CC041E0 	  sub r12, r1, r12
+ 506 0520 01C04CE2 	  sub r12, r12, #1
+ 507              	
+ 508              	 3:
+ 509 0524 0140DCE4 	  ldrb r4, [ r12 ], #1
+ 510 0528 012052E2 	  subs r2, r2, #1
+ 511 052c 0140C1E4 	  strb r4, [ r1 ], #1
+ 512 0530 1FFFFF0A 	  beq swi_complete
+ 513              	
+ 514 0534 01E05EE2 	  subs r14, r14, #1
+ 515 0538 F9FFFF1A 	  bne 3b
+ 516              	
+ 517 053c 8330B0E1 	  movs r3, r3, lsl #1
+ 518 0540 EDFFFF5A 	  bpl 1b
+ 519 0544 EAFFFFEA 	  b 0b
+ 520              	
+ 521              	
+ 522              	 2:
+ 523 0548 0140D0E4 	  ldrb r4, [ r0 ], #1
+ 524 054c 012052E2 	  subs r2, r2, #1
+ 525 0550 0140C1E4 	  strb r4, [ r1 ], #1
+ 526 0554 16FFFF0A 	  beq swi_complete
+ 527              	
+ 528 0558 8330B0E1 	  movs r3, r3, lsl #1
+ 529 055c E6FFFF5A 	  bpl 1b
+ 530 0560 E3FFFFEA 	  b 0b
+ 531              	
+ 532              	
+ 533              	
+ 534              	swi_huffman_decompress:
+ 535 0564 12FFFFEA 	  b swi_complete
+ 536              	# 708 "bios_common.S"
+ 537              	swi_runlength_decompress_vram:
+ 538              	swi_runlength_decompress_wram:
+ 539 0568 043090E4 	  ldr r3, [ r0 ], #4
+ 540              	
+ 541 056c 2324A0E1 	  mov r2, r3, lsr #8
+ 542              	
+ 543              	 0:
+ 544 0570 0130D0E4 	  ldrb r3, [ r0 ], #1
+ARM GAS  /tmp/ccRnIv0Q.s 			page 11
+
+
+ 545 0574 800013E3 	  tst r3, #0x80
+ 546 0578 7F3003E2 	  and r3, r3, #0x7F
+ 547 057c 0700000A 	  beq 1f
+ 548              	
+ 549 0580 01C0D0E4 	  ldrb r12, [ r0 ], #1
+ 550 0584 033083E2 	  add r3, r3, #3
+ 551              	
+ 552              	 2:
+ 553 0588 01C0C1E4 	  strb r12, [ r1 ], #1
+ 554 058c 012052E2 	  subs r2, r2, #1
+ 555 0590 07FFFF0A 	  beq swi_complete
+ 556              	
+ 557 0594 013053E2 	  subs r3, r3, #1
+ 558 0598 FAFFFF1A 	  bne 2b
+ 559              	
+ 560 059c F3FFFFEA 	  b 0b
+ 561              	
+ 562              	 1:
+ 563 05a0 013083E2 	  add r3, r3, #1
+ 564              	
+ 565              	 2:
+ 566 05a4 01C0D0E4 	  ldrb r12, [ r0 ], #1
+ 567 05a8 012052E2 	  subs r2, r2, #1
+ 568 05ac 01C0C1E4 	  strb r12, [ r1 ], #1
+ 569              	
+ 570 05b0 FFFEFF0A 	  beq swi_complete
+ 571              	
+ 572 05b4 013053E2 	  subs r3, r3, #1
+ 573 05b8 F9FFFF1A 	  bne 2b
+ 574              	
+ 575 05bc EBFFFFEA 	  b 0b
+ 576              	# 762 "bios_common.S"
+ 577              	swi_diff_8bit_unfilter_wram:
+ 578 05c0 043090E4 	  ldr r3, [ r0 ], #4
+ 579              	
+ 580 05c4 01C0D0E4 	  ldrb r12, [ r0 ], #1
+ 581 05c8 2324A0E1 	  mov r2, r3, lsr #8
+ 582              	
+ 583 05cc 01C0C1E4 	  strb r12, [ r1 ], #1
+ 584 05d0 012042E2 	  sub r2, r2, #1
+ 585              	
+ 586              	 0:
+ 587 05d4 0130D0E4 	  ldrb r3, [ r0 ], #1
+ 588 05d8 012052E2 	  subs r2, r2, #1
+ 589 05dc 03C08CE0 	  add r12, r12, r3
+ 590 05e0 01C0C1E4 	  strb r12, [ r1 ], #1
+ 591 05e4 FAFFFF1A 	  bne 0b
+ 592              	
+ 593 05e8 F1FEFFEA 	  b swi_complete
+ 594              	
+ 595              	
+ 596              	swi_diff_16bit_unfilter:
+ 597 05ec 043090E4 	  ldr r3, [ r0 ], #4
+ 598              	
+ 599 05f0 B2C0D0E0 	  ldrh r12, [ r0 ], #2
+ 600 05f4 2324A0E1 	  mov r2, r3, lsr #8
+ 601              	
+ARM GAS  /tmp/ccRnIv0Q.s 			page 12
+
+
+ 602 05f8 B2C0C1E0 	  strh r12, [ r1 ], #2
+ 603 05fc 0120C2E3 	  bic r2, r2, #0x1
+ 604              	
+ 605 0600 022042E2 	  sub r2, r2, #2
+ 606              	
+ 607              	 0:
+ 608 0604 B230D0E0 	  ldrh r3, [ r0 ], #2
+ 609 0608 022052E2 	  subs r2, r2, #2
+ 610 060c 03C08CE0 	  add r12, r12, r3
+ 611 0610 B2C0C1E0 	  strh r12, [ r1 ], #2
+ 612 0614 FAFFFF1A 	  bne 0b
+ 613              	
+ 614 0618 E5FEFFEA 	  b swi_complete
+ 615              	# 1043 "bios_common.S"
+ 616              	swi_custom_halt_post:
+ 617 061c 0113A0E3 	  mov r1, #0x4000000
+ 618              	
+ 619              	
+ 620              	
+ 621              	
+ 622 0620 0003C1E5 	  strb r0, [ r1, #0x300 ]
+ 623              	
+ 624              	
+ 625 0624 E2FEFFEA 	  b swi_complete
+ 626              	
+ 627              	
+ 628              	interrupt_handler:
+ 629              	
+ 630              	
+ 631 0628 0F502DE9 	  stmdb sp!, { r0 - r3, r12, lr }
+ 632              	
+ 633              	
+ 634              	
+ 635 062c 110F19EE 	  mrc p15, 0, r0, cr9, cr1, 0
+ 636 0630 FF00C0E3 	  bic r0, r0, #0xFF
+ 637              	
+ 638              	
+ 639 0634 010980E2 	  add r0, r0, #0x4000
+ 640              	
+ 641              	
+ 642              	
+ 643              	
+ 644              	
+ 645              	
+ 646 0638 0FE0A0E1 	  mov lr, pc
+ 647 063c 04F010E5 	  ldr pc, [ r0, #-4 ]
+ 648              	
+ 649              	
+ 650 0640 0F50BDE8 	  ldmia sp!, { r0 - r3, r12, lr }
+ 651 0644 04F05EE2 	  subs pc, lr, #4
+ 652              	# 1087 "bios_common.S"
+ 653 0648 00000000 	.org 4096
+ 653      00000000 
+ 653      00000000 
+ 653      00000000 
+ 653      00000000 
+ARM GAS  /tmp/ccRnIv0Q.s 			page 13
+
+
+DEFINED SYMBOLS
+     /tmp/ccRnIv0Q.s:53     .text:00000100 boot_handler
+     /tmp/ccRnIv0Q.s:38     .text:00000000 $a
+     /tmp/ccRnIv0Q.s:58     .text:00000104 unhandled_exception
+     /tmp/ccRnIv0Q.s:62     .text:00000108 swi_handler
+     /tmp/ccRnIv0Q.s:628    .text:00000628 interrupt_handler
+     /tmp/ccRnIv0Q.s:51     .text:00000020 $d
+     /tmp/ccRnIv0Q.s:55     .text:00000100 $a
+     /tmp/ccRnIv0Q.s:95     .text:00000138 $d
+     /tmp/ccRnIv0Q.s:151    .text:000001d0 swi_soft_reset
+     /tmp/ccRnIv0Q.s:127    .text:000001b4 swi_invalid
+     /tmp/ccRnIv0Q.s:165    .text:000001e0 swi_wait_by_loop
+     /tmp/ccRnIv0Q.s:210    .text:00000220 swi_interrupt_wait
+     /tmp/ccRnIv0Q.s:203    .text:00000218 swi_vblank_interrupt_wait
+     /tmp/ccRnIv0Q.s:154    .text:000001d4 swi_halt
+     /tmp/ccRnIv0Q.s:243    .text:0000024c swi_divide
+     /tmp/ccRnIv0Q.s:285    .text:000002a8 swi_cpu_set
+     /tmp/ccRnIv0Q.s:343    .text:00000328 swi_cpu_fast_set
+     /tmp/ccRnIv0Q.s:371    .text:00000368 swi_sqrt
+     /tmp/ccRnIv0Q.s:391    .text:000003b4 swi_get_crc16
+     /tmp/ccRnIv0Q.s:415    .text:0000044c swi_is_debugger
+     /tmp/ccRnIv0Q.s:419    .text:00000454 swi_bit_unpack
+     /tmp/ccRnIv0Q.s:479    .text:000004e8 swi_lz77_decompress_wram
+     /tmp/ccRnIv0Q.s:478    .text:000004e8 swi_lz77_decompress_vram
+     /tmp/ccRnIv0Q.s:534    .text:00000564 swi_huffman_decompress
+     /tmp/ccRnIv0Q.s:538    .text:00000568 swi_runlength_decompress_wram
+     /tmp/ccRnIv0Q.s:537    .text:00000568 swi_runlength_decompress_vram
+     /tmp/ccRnIv0Q.s:577    .text:000005c0 swi_diff_8bit_unfilter_wram
+     /tmp/ccRnIv0Q.s:596    .text:000005ec swi_diff_16bit_unfilter
+     /tmp/ccRnIv0Q.s:616    .text:0000061c swi_custom_halt_post
+     /tmp/ccRnIv0Q.s:131    .text:000001b4 swi_complete
+     /tmp/ccRnIv0Q.s:133    .text:000001b4 $a
+     /tmp/ccRnIv0Q.s:172    .text:000001ec interrupt_check
+     /tmp/ccRnIv0Q.s:234    .text:00000240 swi_interrupt_check_first
+     /tmp/ccRnIv0Q.s:317    .text:000002f0 copy_32bit
+     /tmp/ccRnIv0Q.s:293    .text:000002b8 copy_16bit
+     /tmp/ccRnIv0Q.s:307    .text:000002dc set_16bit
+     /tmp/ccRnIv0Q.s:331    .text:00000314 set_32bit
+     /tmp/ccRnIv0Q.s:361    .text:00000354 fast_set_32bit
+     /tmp/ccRnIv0Q.s:387    .text:00000394 crc_table
+     /tmp/ccRnIv0Q.s:388    .text:00000394 $d
+     /tmp/ccRnIv0Q.s:392    .text:000003b4 $a
+
+NO UNDEFINED SYMBOLS

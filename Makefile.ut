@@ -1,0 +1,4 @@
+export MOD=ut
+export DEBUG=1
+
+include Makefile.mk

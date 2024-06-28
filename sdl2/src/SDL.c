@@ -153,6 +153,11 @@ SDL_InitSubSystem(Uint32 flags)
 {
     Uint32 flags_initialized = 0;
 
+#if SDL_VIDEO_DRIVER_NDS
+	SDL_setenv("SDL_VIDEODRIVER", "NDS", 1);
+	SDL_setenv("SDL_AUDIODRIVER", "NDS", 1);
+#endif
+
     if(!SDL_MainIsReady) {
         SDL_SetError("Application didn't initialize properly, did you include SDL_main.h in the file containing your main() function?");
         return -1;

@@ -1,0 +1,6 @@
+export MOD=mini
+export PATH=/opt/mini/bin:$(shell echo $$PATH)
+export CROSS=/opt/mini/bin/arm-linux-gnueabihf-
+export HOST=arm-linux
+
+include Makefile.mk

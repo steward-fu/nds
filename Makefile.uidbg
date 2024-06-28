@@ -1,0 +1,4 @@
+export MOD=uidbg
+export DEBUG=1
+
+include Makefile.mk

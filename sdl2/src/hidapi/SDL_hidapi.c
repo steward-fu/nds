@@ -968,6 +968,7 @@ DeleteHIDDeviceWrapper(SDL_hid_device *device)
         pDst->var = NULL; \
     }
 
+#if defined(SDL_LIBUSB_DYNAMIC) || defined(HAVE_DRIVER_BACKEND)
 static void
 CopyHIDDeviceInfo(struct SDL_hid_device_info *pSrc, struct SDL_hid_device_info *pDst)
 {
@@ -986,6 +987,7 @@ CopyHIDDeviceInfo(struct SDL_hid_device_info *pSrc, struct SDL_hid_device_info *
     pDst->interface_protocol = pSrc->interface_protocol;
     pDst->next = NULL;
 }
+#endif
 
 #undef COPY_IF_EXISTS
 #undef WCOPY_IF_EXISTS

@@ -1,6 +1,3 @@
-drastic_*.zip
-nds_*.opk
-
 sdl2/configure
 sdl2/config.log
 sdl2/include/SDL_config.h

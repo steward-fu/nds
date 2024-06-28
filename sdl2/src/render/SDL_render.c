@@ -48,13 +48,13 @@ this should probably be removed at some point in the future.  --ryan. */
 
 #define CHECK_RENDERER_MAGIC(renderer, retval) \
     if (!renderer || renderer->magic != &renderer_magic) { \
-        SDL_SetError("Invalid renderer"); \
+        SDL_SetError("%s, Invalid renderer (%p)", __func__, renderer); \
         return retval; \
     }
 
 #define CHECK_TEXTURE_MAGIC(texture, retval) \
     if (!texture || texture->magic != &texture_magic) { \
-        SDL_SetError("%s, Invalid texture", __func__); \
+        SDL_SetError("%s, Invalid texture (%p)", __func__, texture); \
         return retval; \
     }
 
@@ -120,8 +120,8 @@ static const SDL_RenderDriver *render_drivers[] = {
 #if SDL_VIDEO_RENDER_SW
     &SW_RenderDriver,
 #endif
-#if SDL_VIDEO_RENDER_MMIYOO
-    &MMIYOO_RenderDriver
+#if SDL_VIDEO_RENDER_NDS
+    &NDS_RenderDriver
 #endif
 };
 #endif /* !SDL_RENDER_DISABLED */
@@ -530,7 +530,7 @@ QueueCmdDrawLines(SDL_Renderer *renderer, const SDL_FPoint *points, const int co
 }
 
 static int
-QueueCmdFillRects(SDL_Renderer *renderer, const SDL_FRect *rects, const int count)
+QueueCmdFillRects(SDL_Renderer *renderer, SDL_FRect *rects, const int count)
 {
     SDL_RenderCommand *cmd;
     int retval = -1;

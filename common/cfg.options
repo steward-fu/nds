@@ -1,0 +1,3 @@
+nds_pb_cfg.ver      max_size:255
+nds_pb_cfg.lang     max_size:255
+nds_pb_cfg.home     max_size:255

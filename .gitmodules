@@ -1,0 +1,3 @@
+[submodule "ucgui"]
+	path = ucgui
+	url = ssh://git@github.com/steward-fu/ucgui

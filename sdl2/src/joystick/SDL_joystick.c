@@ -98,11 +98,11 @@ static SDL_JoystickDriver *SDL_joystick_drivers[] = {
 #ifdef SDL_JOYSTICK_VITA
     &SDL_VITA_JoystickDriver,
 #endif
-#if defined(SDL_JOYSTICK_MMIYOO)
-    &SDL_MMIYOO_JoystickDriver,
-#endif
 #if defined(SDL_JOYSTICK_DUMMY) || defined(SDL_JOYSTICK_DISABLED)
     &SDL_DUMMY_JoystickDriver,
+#endif
+#if defined(SDL_JOYSTICK_NDS)
+    &NDS_JoystickDriver,
 #endif
 };
 static SDL_bool SDL_joystick_allows_background_events = SDL_FALSE;
@@ -1152,7 +1152,7 @@ SDL_JoystickQuit(void)
     }
 
     /* Quit drivers in reverse order to avoid breaking dependencies between drivers */
-    for(i = SDL_arraysize(SDL_joystick_drivers) - 1; i >= 0; --i) {
+    for(i = (int)SDL_arraysize(SDL_joystick_drivers) - 1; i >= 0; --i) {
         SDL_joystick_drivers[i]->Quit();
     }
 

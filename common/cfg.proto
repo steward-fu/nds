@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+enum MODE {
+    KEY             = 0;
+    TOUCH           = 1;
+}
+
+message nds_pb_cfg {
+    string ver      = 1;
+    string lang     = 2;
+    string home     = 3;
+    bool dbg        = 4;
+    MODE mode       = 5;
+}
+

@@ -1,0 +1,7 @@
+export MOD=flip
+export DEBUG=1
+export HOST=aarch64-linux
+export CROSS=/opt/flip/bin/aarch64-linux-
+export PATH=/opt/flip/bin:$(shell echo $$PATH)
+
+include Makefile.mk

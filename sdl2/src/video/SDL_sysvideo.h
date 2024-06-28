@@ -437,7 +437,6 @@ extern VideoBootStrap RPI_bootstrap;
 extern VideoBootStrap KMSDRM_bootstrap;
 extern VideoBootStrap KMSDRM_LEGACY_bootstrap;
 extern VideoBootStrap DUMMY_bootstrap;
-extern VideoBootStrap MMIYOO_bootstrap;
 extern VideoBootStrap Wayland_bootstrap;
 extern VideoBootStrap NACL_bootstrap;
 extern VideoBootStrap VIVANTE_bootstrap;
@@ -446,6 +445,7 @@ extern VideoBootStrap QNX_bootstrap;
 extern VideoBootStrap OFFSCREEN_bootstrap;
 extern VideoBootStrap OS2DIVE_bootstrap;
 extern VideoBootStrap OS2VMAN_bootstrap;
+extern VideoBootStrap NDS_VideoDriver;
 
 extern SDL_VideoDevice *SDL_GetVideoDevice(void);
 extern int SDL_AddBasicVideoDisplay(const SDL_DisplayMode *desktop_mode);
