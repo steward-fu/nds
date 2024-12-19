@@ -37,7 +37,7 @@
 #define JSON_SYS_PATH                   JSON_SYS_FOLDER "/" JSON_SYS_FILE
 #define JSON_SYS_VOLUME                 "vol"
 
-#define JSON_CFG_FOLDER                 "resources"
+#define JSON_CFG_FOLDER                 "miyoo"
 #define JSON_CFG_FILE                   "settings.json"
 #define JSON_CFG_PATH                   JSON_CFG_FOLDER "/" JSON_CFG_FILE
 #define JSON_CFG_VERSION                "version"
@@ -56,7 +56,8 @@ if (!_x_) { \
     return -1; \
 }
 
-#define MAX_SLOT 10
+#define MAX_SLOT    10
+#define CFG_VERSION "v2.0"
 
 struct json_config {
     char json_path[MAX_PATH];
@@ -76,6 +77,8 @@ struct json_config {
 };
 
 int init_cfg(void);
+int read_cfg_json_file(void);
+int read_sys_json_file(void);
 int get_sys_volume(void);
 int set_sys_volume(int vol);
 int get_cfg_half_volume(void);
@@ -84,8 +87,8 @@ int get_cfg_auto_save_load(void);
 int set_cfg_auto_save_load(int enable);
 int get_cfg_auto_save_load_slot(void);
 int set_cfg_auto_save_load_slot(int slot);
-int read_cfg_json_file(void);
-int read_sys_json_file(void);
+int set_cfg_pen(const char *path);
+int get_cfg_pen(char *ret, int ret_size);
 
 #endif
 

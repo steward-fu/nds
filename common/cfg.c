@@ -133,6 +133,31 @@ TEST(common_cfg, set_sys_volume)
 }
 #endif
 
+int get_cfg_version(char *ret, int ret_size)
+{
+    CHECK_POINTER_AND_RETURN(ret);
+    if (ret_size < strlen(cfg.version)) {
+        err(COM"the length of buffer is too small in %s\n", __func__);
+        return -1;
+    }
+
+    strncpy(ret, cfg.version, ret_size);
+    return 0;
+}
+
+#if defined(UT)
+TEST(common_cfg, get_cfg_version)
+{
+    char buf[MAX_PATH] = { 0 };
+
+    TEST_ASSERT_EQUAL_INT(-1, get_cfg_version(NULL, 0));
+    TEST_ASSERT_EQUAL_INT(-1, get_cfg_version(buf, 1));
+    TEST_ASSERT_EQUAL_INT(0, get_cfg_version(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(0, get_cfg_version(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_STRING(CFG_VERSION, buf);
+}
+#endif
+
 int get_cfg_pen(char *ret, int ret_size)
 {
     CHECK_POINTER_AND_RETURN(ret);
@@ -458,6 +483,7 @@ TEST_GROUP_RUNNER(common_cfg)
     RUN_TEST_CASE(common_cfg, get_sys_volume);
     RUN_TEST_CASE(common_cfg, set_sys_volume);
     RUN_TEST_CASE(common_cfg, get_cfg_pen);
+    RUN_TEST_CASE(common_cfg, get_cfg_version);
     RUN_TEST_CASE(common_cfg, set_cfg_pen);
     RUN_TEST_CASE(common_cfg, get_cfg_half_volume);
     RUN_TEST_CASE(common_cfg, set_cfg_half_volume);

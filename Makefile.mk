@@ -85,6 +85,7 @@ all: cfg
 .PHONY: cfg
 cfg:
 ifeq (,$(wildcard sdl2/Makefile))
+	cp -a ChangeLog.txt drastic/
 	cp -a assets/$(MOD)/* drastic/
 	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure $(SDL2_CFG) --host=$(HOST)
 endif
@@ -101,14 +102,15 @@ clean:
 	rm -rf drastic/launch.sh
 	rm -rf drastic/config.json
 	rm -rf drastic/show_hotkeys
+	rm -rf drastic/ChangeLog.txt
 	rm -rf drastic/libs/libdetour.so
 	rm -rf drastic/libs/libcommon.so
 	rm -rf drastic/libs/libasound.so.2
+	rm -rf drastic/libs/libpcre2-8.so.0
 	rm -rf drastic/libs/libSDL2-2.0.so.0
 	rm -rf drastic/libs/libfreetype.so.6
 	rm -rf drastic/libs/libglib-2.0.so.0
 	rm -rf drastic/libs/libharfbuzz.so.0
-	rm -rf drastic/libs/libpcre2-8.so.0
 	make -C ut clean
 	make -C alsa clean
 	make -C detour clean
