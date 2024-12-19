@@ -95,7 +95,7 @@ int set_cfg_auto_save_load_slot(int slot)
     return cfg.auto_save_load.slot;
 }
 
-static int read_json_obj_int(const struct json_object *jfile, const char *item, int *ret)
+static int read_json_obj_int(struct json_object *jfile, const char *item, int *ret)
 {
     struct json_object *jval = NULL;
 
