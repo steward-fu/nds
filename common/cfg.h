@@ -37,14 +37,10 @@
 #define JSON_SYS_PATH                   JSON_SYS_FOLDER "/" JSON_SYS_FILE
 #define JSON_SYS_VOLUME                 "vol"
 
-#if defined(UT)
-#define JSON_CFG_FOLDER                 "../drastic/resources"
-#else
 #define JSON_CFG_FOLDER                 "resources"
-#endif
-
 #define JSON_CFG_FILE                   "settings.json"
 #define JSON_CFG_PATH                   JSON_CFG_FOLDER "/" JSON_CFG_FILE
+#define JSON_CFG_VERSION                "version"
 #define JSON_CFG_PEN                    "pen"
 #define JSON_CFG_HALF_VOLUME            "half_volume"
 #define JSON_CFG_AUTO_SAVE_LOAD         "auto_save_load"
@@ -54,6 +50,12 @@
 #define MAX_PATH 128
 #endif
 
+#define CHECK_POINTER_AND_RETURN(_x_) \
+if (!_x_) { \
+    err(COM"invalid parameter in %s()\n", __func__); \
+    return -1; \
+}
+
 #define MAX_SLOT 10
 
 struct json_config {
@@ -61,6 +63,7 @@ struct json_config {
 
     int volume;
     int half_volume;
+    char version[MAX_PATH];
 
     struct _auto_save_load {
         int slot;
@@ -72,6 +75,7 @@ struct json_config {
     } pen;
 };
 
+int init_cfg(void);
 int get_sys_volume(void);
 int set_sys_volume(int vol);
 int get_cfg_half_volume(void);
