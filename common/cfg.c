@@ -38,8 +38,25 @@
 #include "cfg.h"
 #include "snd.h"
 
-static struct json_config cfg = {0};
-static struct json_config sys = {0};
+static char home[MAX_PATH] = { 0 };
+static struct json_config cfg = { 0 };
+static struct json_config sys = { 0 };
+
+int set_home_path(const char *path)
+{
+    if (!path) {
+        err(COM"Invalid parameter in %s\n", __func__);
+        return -1;
+    }
+
+    if (strlen(path) > sizeof(home)) {
+        err(COM"Input parameter is too large in %s\n", __func__);
+        return -1;
+    }
+
+    strncpy(home, path, sizeof(home));
+    return 0;
+}
 
 int get_sys_volume(void)
 {
@@ -49,12 +66,44 @@ int get_sys_volume(void)
 int set_sys_volume(int vol)
 {
     if ((vol < 0) || (vol > MAX_VOLUME)) {
-        warn(COM"Invalid system volume(%d)\n", vol);
+        warn(COM"Invalid system volume in %s(%d)\n", __func__, vol);
     }
     else {
         sys.volume = vol;
     }
     return sys.volume;
+}
+
+int get_cfg_pen(char *ret, int ret_size)
+{
+    if (!ret) {
+        err(COM"Invalid parameter in %s\n", __func__);
+        return -1;
+    }
+
+    if (ret_size < strlen(cfg.pen.image_path)) {
+        err(COM"Not enough memory size in %s\n", __func__);
+        return -1;
+    }
+
+    strncpy(ret, cfg.pen.image_path, ret_size);
+    return 0;
+}
+
+int set_cfg_pen(const char *path)
+{
+    if (!path) {
+        err(COM"Invalid parameter in %s\n", __func__);
+        return -1;
+    }
+
+    if (strlen(path) > sizeof(cfg.pen.image_path)) {
+        err(COM"Too large pen image path\n");
+        return -1;
+    }
+
+    strncpy(cfg.pen.image_path, path, sizeof(cfg.pen.image_path));
+    return 0;
 }
 
 int get_cfg_half_volume(void)
@@ -87,7 +136,7 @@ int get_cfg_auto_save_load_slot(void)
 int set_cfg_auto_save_load_slot(int slot)
 {
     if ((slot < 0) || (slot > MAX_SLOT)) {
-        warn(COM"Invalid auto slot(%d)\n", slot);
+        warn(COM"Invalid auto slot in %s(%d)\n", __func__, slot);
     }
     else {
         cfg.auto_save_load.slot = slot;
@@ -113,18 +162,37 @@ static int read_json_obj_int(struct json_object *jfile, const char *item, int *r
     }
 }
 
+static int read_json_obj_str(struct json_object *jfile, const char *item, char *ret, int ret_size)
+{
+    struct json_object *jval = NULL;
+
+    if (!jfile || !item || !ret) {
+        err(COM"Invalid input parameters in %s(jfile:0x%x, item:0x%x, ret:0x%x)\n", __func__, jfile, item, ret);
+        return -1;
+    }
+
+    if (json_object_object_get_ex(jfile, item, &jval)) {
+        strncpy(ret, json_object_get_string(jval), ret_size);
+        info(COM"Read json object(%s:\"%s\")\n", item, ret);
+    }
+    else {
+        warn(COM"Failed to read json object(%s)\n", item);
+    }
+}
+
 int read_cfg_json_file(void)
 {
     struct json_object *jfile = NULL;
 
-    jfile = json_object_from_file(cfg.path);
+    jfile = json_object_from_file(cfg.json_path);
     if (jfile ==  NULL) {
-        err(COM"Failed to open config json file(path:\"%s\")\n", cfg.path);
+        err(COM"Failed to open config json file(path:\"%s\")\n", cfg.json_path);
         return -1;
     }
     read_json_obj_int(jfile, JSON_CFG_HALF_VOLUME, &cfg.half_volume);
     read_json_obj_int(jfile, JSON_CFG_AUTO_SAVE_LOAD, &cfg.auto_save_load.enable);
     read_json_obj_int(jfile, JSON_CFG_AUTO_SAVE_LOAD_SLOT, &cfg.auto_save_load.slot);
+    read_json_obj_str(jfile, JSON_CFG_PEN, cfg.pen.image_path, sizeof(cfg.pen.image_path));
     json_object_put(jfile);
     return 0;
 }
@@ -133,13 +201,21 @@ int read_sys_json_file(void)
 {
     struct json_object *jfile = NULL;
 
-    jfile = json_object_from_file(sys.path);
+    jfile = json_object_from_file(sys.json_path);
     if (jfile ==  NULL) {
-        err(COM"Failed to open system json file(path:\"%s\")\n", sys.path);
+        err(COM"Failed to open system json file(path:\"%s\")\n", sys.json_path);
         return -1;
     }
     read_json_obj_int(jfile, JSON_SYS_VOLUME, &sys.volume);
     json_object_put(jfile);
+    return 0;
+}
+
+int init_cfg(void)
+{
+    getcwd(home, sizeof(home));
+    read_cfg_json_file();
+    read_sys_json_file();
     return 0;
 }
 
@@ -157,6 +233,7 @@ TEST_SETUP(common_cfg)
         fprintf(f, "}");
         fclose(f);
     }
+    init_cfg();
 }
 
 TEST_TEAR_DOWN(common_cfg)
@@ -169,10 +246,10 @@ TEST(common_cfg, read_cfg_json_file)
     memset(&cfg, 0, sizeof(cfg));
     TEST_ASSERT_EQUAL_INT(-1, read_cfg_json_file());
 
-    strncpy(cfg.path, "/NOT_EXIST_FILE", sizeof(cfg.path));
+    strncpy(cfg.json_path, "/NOT_EXIST_FILE", sizeof(cfg.json_path));
     TEST_ASSERT_EQUAL_INT(-1, read_cfg_json_file());
 
-    strncpy(cfg.path, JSON_CFG_PATH, sizeof(cfg.path));
+    strncpy(cfg.json_path, JSON_CFG_PATH, sizeof(cfg.json_path));
     TEST_ASSERT_EQUAL_INT(0, read_cfg_json_file());
 }
 
@@ -181,10 +258,10 @@ TEST(common_cfg, read_sys_json_file)
     memset(&sys, 0, sizeof(sys));
     TEST_ASSERT_EQUAL_INT(-1, read_sys_json_file());
 
-    strncpy(sys.path, "/NOT_EXIST_FILE", sizeof(sys.path));
+    strncpy(sys.json_path, "/NOT_EXIST_FILE", sizeof(sys.json_path));
     TEST_ASSERT_EQUAL_INT(-1, read_sys_json_file());
 
-    strncpy(sys.path, JSON_SYS_PATH, sizeof(sys.path));
+    strncpy(sys.json_path, JSON_SYS_PATH, sizeof(sys.json_path));
     TEST_ASSERT_EQUAL_INT(0, read_sys_json_file());
 }
 
@@ -264,12 +341,29 @@ TEST(common_cfg, set_cfg_auto_save_load_slot)
     TEST_ASSERT_EQUAL_INT(0, get_cfg_auto_save_load_slot());
 }
 
+TEST(common_cfg, get_cfg_pen)
+{
+    char buf[MAX_PATH] = { 0 };
+
+    TEST_ASSERT_EQUAL_INT(-1, get_cfg_pen(NULL, 0));
+    TEST_ASSERT_EQUAL_INT(-1, get_cfg_pen(buf, 1));
+    TEST_ASSERT_EQUAL_INT(0, get_cfg_pen(buf, sizeof(buf)));
+}
+
+TEST(common_cfg, set_cfg_pen)
+{
+    TEST_ASSERT_EQUAL_INT(-1, set_cfg_pen(NULL));
+    TEST_ASSERT_EQUAL_INT(0, set_cfg_pen("pen/NOT_EXIST_PEN.png"));
+}
+
 TEST_GROUP_RUNNER(common_cfg)
 {
     RUN_TEST_CASE(common_cfg, read_cfg_json_file);
     RUN_TEST_CASE(common_cfg, read_sys_json_file);
     RUN_TEST_CASE(common_cfg, get_sys_volume);
     RUN_TEST_CASE(common_cfg, set_sys_volume);
+    RUN_TEST_CASE(common_cfg, get_cfg_pen);
+    RUN_TEST_CASE(common_cfg, set_cfg_pen);
     RUN_TEST_CASE(common_cfg, get_cfg_half_volume);
     RUN_TEST_CASE(common_cfg, set_cfg_half_volume);
     RUN_TEST_CASE(common_cfg, get_cfg_auto_save_load);

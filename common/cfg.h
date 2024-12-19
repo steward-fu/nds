@@ -45,6 +45,7 @@
 
 #define JSON_CFG_FILE                   "settings.json"
 #define JSON_CFG_PATH                   JSON_CFG_FOLDER "/" JSON_CFG_FILE
+#define JSON_CFG_PEN                    "pen"
 #define JSON_CFG_HALF_VOLUME            "half_volume"
 #define JSON_CFG_AUTO_SAVE_LOAD         "auto_save_load"
 #define JSON_CFG_AUTO_SAVE_LOAD_SLOT    "auto_save_load_slot"
@@ -56,7 +57,7 @@
 #define MAX_SLOT 10
 
 struct json_config {
-    char path[MAX_PATH];
+    char json_path[MAX_PATH];
 
     int volume;
     int half_volume;
@@ -65,6 +66,10 @@ struct json_config {
         int slot;
         int enable;
     } auto_save_load;
+
+    struct _pen {
+        char image_path[MAX_PATH];
+    } pen;
 };
 
 int get_sys_volume(void);
