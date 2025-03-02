@@ -2472,6 +2472,7 @@ CheckUtVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUT"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../include/sdl2"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../include/nanopb"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"

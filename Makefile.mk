@@ -66,6 +66,7 @@ ifeq ($(MOD),ut)
     CFLAGS  += -I../alsa
     CFLAGS  += -I../detour
     CFLAGS  += -I../common
+    CFLAGS  += -I../include/nanopb
     CFLAGS  += -I../ut/src
     CFLAGS  += -I../ut/extras/memory/src
     CFLAGS  += -I../ut/extras/fixture/src
