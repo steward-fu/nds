@@ -7,6 +7,7 @@
 #include "io_fb.h"
 #include "GUIConf.h"
 #include "GUI_Protected.h"
+#include "LCD_ConfDefaults.h"
 
 #include "menu_nds.h"
 
@@ -22,7 +23,7 @@ int flip_lcd_screen(void)
 
 int flush_lcd_screen(int tex_id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch, int alpha, int rotate)
 {
-    memcpy(screen->pixels, pixels, SCREEN_W * SCREEN_H * 2);
+    memcpy(screen->pixels, pixels, LCD_XSIZE * LCD_YSIZE * 2);
     return 0;
 }
 
@@ -67,7 +68,7 @@ static void* input_handler(void *param)
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
-    screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    screen = SDL_SetVideoMode(LCD_XSIZE, LCD_YSIZE, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
 
     pthread_create(&thread_id, NULL, input_handler, NULL);
     prehook_cb_menu((void *)0xdeadbeef, 1);

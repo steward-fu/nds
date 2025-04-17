@@ -49,7 +49,7 @@ extern nds_video myvid;
 static void *fb_pixels = NULL;
 
 static GUI_WIDGET_CREATE_INFO info[] = {
-    { FRAMEWIN_CreateIndirect,  "",     100, 0, 0, SCREEN_W, SCREEN_H, WM_CF_SHOW | FRAMEWIN_SF_ICON16, 0},
+    { FRAMEWIN_CreateIndirect,  "",     100, 0, 0, LCD_XSIZE, LCD_YSIZE, WM_CF_SHOW | FRAMEWIN_SF_ICON16, 0},
     { TEXT_CreateIndirect,      "",     101, 10, 20, 150, 20, 0, GUI_TA_LEFT },
 };
 
