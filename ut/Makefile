@@ -16,10 +16,6 @@ SRCS     = main.c \
            extras/memory/src/unity_memory.c \
            extras/fixture/src/unity_fixture.c
 
-.PHONY: a30 mini
-a30 mini:
-	rm -rf $(TARGET)
-
 .PHONY: ut
 ut:
 	$(CROSS)gcc $(SRCS) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(MOREFLAGS)

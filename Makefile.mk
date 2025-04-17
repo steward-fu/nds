@@ -16,12 +16,8 @@ ifeq ($(MOD),mini)
     CFLAGS  += -DMIYOO_MINI
     CFLAGS  += -mcpu=cortex-a7
     CFLAGS  += -mfpu=neon-vfpv4
-    CFLAGS  += -I../alsa
-    CFLAGS  += -I../detour
-    CFLAGS  += -I../common
-    CFLAGS  += -I../include/mini
-    CFLAGS  += -I../include/nanopb
-    LDFLAGS += -L../library/mini
+    CFLAGS  += -I../inc/mini
+    LDFLAGS += -L../lib/mini
     LDFLAGS += -lmi_ao
     LDFLAGS += -lmi_sys
     LDFLAGS += -lmi_gfx
@@ -71,15 +67,12 @@ endif
 ifeq ($(MOD),ut)
     export ASAN_OPTIONS=detect_odr_violation=0
     CFLAGS  += -DUT
-    CFLAGS  += -I../alsa
-    CFLAGS  += -I../detour
-    CFLAGS  += -I../common
-    CFLAGS  += -I../include/nanopb
     CFLAGS  += -I../ut/src
     CFLAGS  += -I../ut/extras/memory/src
     CFLAGS  += -I../ut/extras/fixture/src
     CFLAGS  += -fno-omit-frame-pointer
     CFLAGS  += -fsanitize=address,leak,undefined
+    LDFLAGS += -lprotobuf-nanopb
     SDL2CFG += --enable-nds-ut
 endif
 
@@ -104,7 +97,7 @@ export AR=${CROSS}ar
 export AS=${CROSS}as
 export LD=${CROSS}ld
 export CXX=${CROSS}g++
-export MOREFLAGS=${CFLAGS} ${LDFALGS}
+export MOREFLAGS=${CFLAGS} ${LDFLAGS}
 
 .PHONY: all
 all: cfg
@@ -196,6 +189,7 @@ mkdir:
 
 .PHONY: clean
 clean:
+	rm -rf $(MYDIR)
 	rm -rf ut/ut
 	make -C ut clean
 	make -C alsa clean

@@ -5,9 +5,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -53,8 +55,10 @@ static int write_file(const char *fpath, const void *buf, int len)
 {
     int fd = -1;
 
+    debug(COM"call %s()\n", __func__);
+
     if (!fpath || !buf) {
-        err(COM"invalid parameters(0x%x, 0x%x) in %s\n", fpath, buf, __func__);
+        error(COM"invalid parameters(0x%x, 0x%x)\n", fpath, buf);
         return -1;
     }
 
@@ -70,7 +74,7 @@ static int write_file(const char *fpath, const void *buf, int len)
     }
 
     if (write(fd, buf, len) != len) {
-        err(COM"failed to write data to \"%s\" in %s\n", fpath, __func__);
+        error(COM"failed to write data to \"%s\"\n", fpath);
     }
 
     close(fd);
@@ -97,25 +101,25 @@ int create_bios_files(void)
     if (write_file(buf, nds_bios_arm7, sizeof(nds_bios_arm7)) < 0) {
         return -1;
     }
-    debug(COM"wrote \"%s\" in %s\n", buf, __func__);
+    debug(COM"wrote \"%s\"\n", buf);
 
     snprintf(buf, sizeof(buf), "%s%s/"NDS_BIOS_ARM9".bin", mycfg.home, BIOS_PATH);
     if (write_file(buf, nds_bios_arm9, sizeof(nds_bios_arm9)) < 0) {
         return -1;
     }
-    debug(COM"wrote \"%s\" in %s\n", buf, __func__);
+    debug(COM"wrote \"%s\"\n", buf);
 
     snprintf(buf, sizeof(buf), "%s%s/"NDS_FIRMWARE".bin", mycfg.home, BIOS_PATH);
     if (write_file(buf, nds_firmware, sizeof(nds_firmware)) < 0) {
         return -1;
     }
-    debug(COM"wrote \"%s\" in %s\n", buf, __func__);
+    debug(COM"wrote \"%s\"\n", buf);
 
     snprintf(buf, sizeof(buf), "%s%s/"DRASTIC_BIOS_ARM7".bin", mycfg.home, BIOS_PATH);
     if (write_file(buf, drastic_bios_arm7, sizeof(drastic_bios_arm7)) < 0)  {
         return -1;
     }
-    debug(COM"wrote \"%s\" in %s\n", buf, __func__);
+    debug(COM"wrote \"%s\"\n", buf);
 
     snprintf(buf, sizeof(buf), "%s%s/"DRASTIC_BIOS_ARM9".bin", mycfg.home, BIOS_PATH);
     if (write_file(buf, drastic_bios_arm9, sizeof(drastic_bios_arm9)) < 0) {

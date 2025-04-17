@@ -24,10 +24,7 @@ static int is_state_hooked = 0;
 static size_t page_size = 4096;
 static char state_path[MAX_PATH] = { 0 };
 
-extern int drastic_save_load_state_hook;
-extern char drastic_save_load_state_path[MAX_PATH];
-
-#ifdef UT
+#if defined(UT)
 TEST_GROUP(detour_hook);
 
 TEST_SETUP(detour_hook)
@@ -421,7 +418,7 @@ TEST(detour_hook, unlock_protected_area)
 }
 #endif
 
-int add_hook_point(uintptr_t func, void *cb)
+int install_prehook_cb(uintptr_t func, void *cb)
 {
     int r = -1;
     uintptr_t addr = (uintptr_t)cb;
@@ -687,7 +684,7 @@ TEST(detour_hook, init_table)
 }
 #endif
 
-int init_detour_hook(void)
+int init_hook(void)
 {
     debug(DTR"call %s()\n", __func__);
 
@@ -695,6 +692,7 @@ int init_detour_hook(void)
         error(DTR"failed to initialize hook table\n");
         return -1;
     }
+
     return 0;
 }
 
@@ -705,8 +703,10 @@ TEST(detour_hook, init_hook)
 }
 #endif
 
-int restore_detour_hook(void)
+int quit_hook(void)
 {
+    debug(DTR"call %s()\n", __func__);
+
     return 0;
 }
 
@@ -737,9 +737,9 @@ TEST(detour_hook, set_page_size)
 }
 #endif
 
-int add_save_load_state_handler(const char *state_path)
+int install_state_handler(const char *path)
 {
-    drastic_save_load_state_hook = 0;
+    debug(DTR"call %s()\n", __func__);
 
     is_state_hooked = 0;
     if (!path) {

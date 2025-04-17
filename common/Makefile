@@ -15,7 +15,7 @@ endif
 
 .PHONY: all
 all:
-	$(CROSS)gcc $(SRCS) -o $(TARGET) $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
+	$(CC) $(SRCS) -o $(TARGET) $(CFLAGS) $(LDFLAGS)
 
 .PHONY: proto
 proto:

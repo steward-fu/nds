@@ -1,13 +1,17 @@
-TARGET = libasound.so.2
+TARGET   = libasound.so.2
 LDFLAGS += -fPIC
 LDFLAGS += -shared
 LDFLAGS += -lm
 LDFLAGS += -lpthread
-SRC = snd.c
+LDFLAGS += -L../common
+LDFLAGS += -lcommon
+LDFLAGS += -L../detour
+LDFLAGS += -ldetour
+SRCS     = snd.c
 
 .PHONY: all
 all:
-	$(CROSS)gcc $(SRC) -o $(TARGET) $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
+	$(CC) $(SRCS) -o $(TARGET) $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
 
 .PHONY: clean
 clean:

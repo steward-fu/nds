@@ -25,7 +25,7 @@ typedef struct _nds_pb_cfg {
 } nds_pb_cfg;
 
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -67,7 +67,7 @@ extern const pb_msgdesc_t nds_pb_cfg_msg;
 #define CFG_PB_H_MAX_SIZE                        nds_pb_cfg_size
 #define nds_pb_cfg_size                          775
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 } /* extern "C" */
 #endif
 

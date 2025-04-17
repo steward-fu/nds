@@ -2400,7 +2400,7 @@ CheckQNXAudio()
     fi
 }
 
-CheckMiyooA30()
+CheckDebug()
 {
     AC_ARG_ENABLE(nds-debug,
         [AS_HELP_STRING([--enable-nds-debug],
@@ -2424,13 +2424,12 @@ CheckSailfishEGL()
         [use NDS driver for Sailfish OS (EGL support) [default=no]])],,
         enable_nds_sfos_egl=no)
 
-    if test x$enable_nds_a30 = xyes; then
+    if test x$enable_nds_sfos_egl = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_NDS, 1, [ ])
         AC_DEFINE(SDL_RENDER_DRIVER_NDS, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
         have_video=yes
-        have_video_nds_a30=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DSFOS_EGL"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
@@ -2508,8 +2507,13 @@ CheckMiyooEGL()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../include/sdl2"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../include/nanopb"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/nanopb"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI_X"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI/Core"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI/Widget"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI/WM"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L."
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lrt"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lSDL2_image"
@@ -2585,23 +2589,20 @@ CheckMiyooEGL()
 
 CheckMiyooMini()
 {
-    AC_ARG_ENABLE(nds-mini,
-        [AS_HELP_STRING([--enable-nds-mini],
+    AC_ARG_ENABLE(nds-miyoo-mini,
+        [AS_HELP_STRING([--enable-nds-miyoo-mini],
         [use NDS driver for Miyoo Mini [default=no]])],,
-        enable_nds_mini=no)
+        enable_nds_miyoo_mini=no)
 
-    if test x$enable_nds_mini = xyes; then
+    if test x$enable_nds_miyoo_mini = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_NDS, 1, [ ])
         AC_DEFINE(SDL_RENDER_DRIVER_NDS, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
         have_video=yes
-        have_video_nds_mini=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMINI"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_MINI"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../include/mini"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
@@ -2641,6 +2642,8 @@ CheckMiyooMini()
         enable_diskaudio=no
         enable_pulseaudio=no
         enable_dummyaudio=no
+
+        enable_libudev=no
     fi
 }
 
@@ -2656,7 +2659,6 @@ CheckUT()
         AC_DEFINE(SDL_RENDER_DRIVER_NDS, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
         have_video=yes
-        have_video_nds_ut=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUT"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/usr/include/libdrm"
@@ -2696,66 +2698,6 @@ CheckUT()
 
         SUMMARY_video="${SUMMARY_video} NDS_UT"
         SUMMARY_input="${SUMMARY_input} NDS_UT"
-
-        enable_video_x11=no
-        enable_video_dummy=no
-        enable_video_vulkan=no
-        enable_video_kmsdrm=no
-        enable_video_opengl=no
-        enable_video_opengles1=no
-        enable_video_opengles2=no
-
-        enable_oss=no
-        enable_alsa=no
-        enable_jack=no
-        enable_sndio=no
-        enable_diskaudio=no
-        enable_pulseaudio=no
-        enable_dummyaudio=no
-    fi
-}
-
-CheckUIDBG()
-{
-    AC_ARG_ENABLE(nds-uidbg,
-        [AS_HELP_STRING([--enable-nds-uidbg],
-        [use NDS driver for UI Debug [default=no]])],,
-        enable_nds_uidbg=no)
-
-    if test x$enable_nds_uidbg = xyes; then
-        SUMMARY_video="${SUMMARY_video} UI_Debug"
-        SUMMARY_input="${SUMMARY_input} UI_Debug"
-
-        enable_video_x11=no
-        enable_video_dummy=no
-        enable_video_vulkan=no
-        enable_video_kmsdrm=no
-        enable_video_opengl=no
-        enable_video_opengles1=no
-        enable_video_opengles2=no
-
-        enable_oss=no
-        enable_alsa=no
-        enable_jack=no
-        enable_sndio=no
-        enable_diskaudio=no
-        enable_pulseaudio=no
-        enable_dummyaudio=no
-
-        enable_libudev=no
-    fi
-}
-
-CheckUIDBG()
-{
-    AC_ARG_ENABLE(nds-uidbg,
-        [AS_HELP_STRING([--enable-nds-uidbg],
-        [use NDS driver for UI Debug [default=no]])],,
-        enable_nds_uidbg=no)
-
-    if test x$enable_nds_uidbg = xyes; then
-        SUMMARY_video="${SUMMARY_video} UI_Debug"
-        SUMMARY_input="${SUMMARY_input} UI_Debug"
 
         enable_video_x11=no
         enable_video_dummy=no
@@ -4096,6 +4038,8 @@ case "$host" in
         CheckUIDBG
         CheckMiyooEGL
         CheckMiyooMini
+        CheckSailfishEGL
+        CheckDebug
         CheckVisibilityHidden
         CheckDummyVideo
         CheckOffscreenVideo

@@ -16,7 +16,7 @@ endif
 
 .PHONY: all
 all:
-	$(CROSS)gcc $(SRC) -o $(TARGET) $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
+	$(CC) $(SRCS) $(CFLAGS) -o $(TARGET) $(LDFLAGS)
 
 .PHONY: clean
 clean:

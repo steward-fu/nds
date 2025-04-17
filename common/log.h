@@ -16,8 +16,6 @@
     #define GUI "[GUI] "
 
     #define ERROR "[ERROR]"
-    #define WARN "[WARN]"
-    #define INFO "[INFO]"
     #define DEBUG "[DEBUG]"
 
     #define error(...)  write_log_to_file(LOG_LEVEL_ERROR, ERROR, __VA_ARGS__)

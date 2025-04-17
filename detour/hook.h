@@ -124,32 +124,30 @@
         screen_t screen[2];
     } sdl_t;
 
-    typedef struct _adpcm {
+    typedef struct {
         uint32_t *step_table;
         uint32_t *index_step_table;
     } adpcm_t;
 
-    typedef struct _var {
+    typedef struct {
         system_t system;
-
         sdl_t sdl;
-
         adpcm_t adpcm;
-
         uint32_t *pcm_handler;
         uint32_t *fast_forward;
         uint32_t *desmume_footer_str;
     } var_t;
 
-    typedef struct _fun {
+    typedef struct {
+        uintptr_t menu;
         uintptr_t free;
-        uintptr_t realloc;
+        uintptr_t quit;
         uintptr_t malloc;
+        uintptr_t realloc;
         uintptr_t screen_copy16;
         uintptr_t print_string;
         uintptr_t load_state_index;
         uintptr_t save_state_index;
-        uintptr_t quit;
         uintptr_t savestate_pre;
         uintptr_t savestate_post;
         uintptr_t update_screen;
@@ -169,7 +167,7 @@
         uintptr_t render_polygon_setup_perspective_steps;
     } fun_t;
 
-    typedef struct _miyoo_hook {
+    typedef struct {
         fun_t fun;
         var_t var;
     } nds_hook;

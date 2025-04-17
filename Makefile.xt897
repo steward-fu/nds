@@ -1,0 +1,5 @@
+export MOD=xt897
+export HOST=arm-linux
+export DEBUG=1
+
+include Makefile.mk

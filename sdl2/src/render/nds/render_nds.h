@@ -4,15 +4,12 @@
 #ifndef __RENDER_NDS_H__
 #define __RENDER_NDS_H__
 
-typedef struct Miyoo_TextureData {
+typedef struct {
     void *pixels;
-    uint32_t size;
-    uint32_t width;
-    uint32_t height;
-    uint32_t bits;
-    uint32_t format;
+    uint32_t w;
+    uint32_t h;
     uint32_t pitch;
-} Miyoo_TextureData;
+} NDS_Texture;
 
 #endif
 

@@ -205,21 +205,5 @@ TEST_GROUP_RUNNER(sdl2_menu)
 }
 #endif
 
-#if defined(UT)
-TEST(sdl2_menu, prehook_cb_menu)
-{
-    prehook_cb_menu(NULL, 0);
-    TEST_PASS();
-}
-#endif
-
-#if defined(UT)
-TEST_GROUP_RUNNER(sdl2_menu)
-{
-    RUN_TEST_CASE(sdl2_menu, WndProc)
-    RUN_TEST_CASE(sdl2_menu, prehook_cb_menu)
-}
-#endif
-
 #endif
 

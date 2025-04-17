@@ -34,7 +34,6 @@
 #include "snd.h"
 #include "hook.h"
 #include "cfg.pb.h"
-#include "drastic.h"
 
 nds_alsa myalsa = { 0 };
 
@@ -149,11 +148,7 @@ TEST(alsa_snd, adpcm_decode_block)
 static int open_dsp(void)
 {
     int arg = 0;
-    int vol = mycfg.system_volume;
-
-    debug(SND"call %s()\n", __func__);
-
-    debug(SND"call %s()\n", __func__);
+    int vol = 0;
 
     debug(SND"call %s()\n", __func__);
 
@@ -789,7 +784,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 {
 #if defined(MIYOO_MINI)
     MI_S32 miret = 0;
-    MI_SYS_ChnPort_t chn = 0;
+    MI_SYS_ChnPort_t chn = { 0 };
 #endif
 
 #if defined(MIYOO_A30)
@@ -872,7 +867,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
         error(SND"failed to hook adpcm decode\n");
         return -1;
     }
-    info(SND"added spu hooking successfully\n");
+    debug(SND"added spu hooking successfully\n");
 #endif
 
     pthread_create(&myalsa.thread, NULL, alsa_snd_handler, (void *)NULL);

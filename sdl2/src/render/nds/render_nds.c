@@ -8,23 +8,17 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-#include "../../video/nds/video_nds.h"
-#include "../../video/nds/event_nds.h"
-#include "../SDL_sysrender.h"
 #include "SDL_hints.h"
+#include "../SDL_sysrender.h"
 
 #include "log.h"
 #include "render_nds.h"
+#include "../../video/nds/video_nds.h"
+#include "../../video/nds/event_nds.h"
 
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
-
-extern NDS nds;
-extern int show_fps;
-
-static void DestroyRenderer(SDL_Renderer *renderer);
-static SDL_Renderer* CreateRenderer(SDL_Window *window, uint32_t flags);
 
 #if defined(UT)
 TEST_GROUP(sdl2_render);
@@ -42,9 +36,7 @@ TEST_TEAR_DOWN(sdl2_render)
 
 static void event_handler(SDL_Renderer *r, const SDL_WindowEvent *e)
 {
-    if (!renderer || !event) {
-        err(SDL"invalid parameters(0x%x, 0x%x)in %s\n", renderer, event, __func__);
-    }
+    debug(SDL"call %s()\n", __func__);
 }
 
 #if defined(UT)
@@ -57,46 +49,39 @@ TEST(sdl2_render, event_handler)
 
 static void destroy_texture(SDL_Renderer *r, SDL_Texture *t)
 {
-    do {
-        if (!renderer || !texture) {
-            err(SDL"invalid parameters(0x%x, 0x%x)in %s\n", renderer, texture, __func__);
-            break;
-        }
+    debug(SDL"call %s()\n", __func__);
 
-        if (texture->driverdata) {
-            Miyoo_TextureData *m = (Miyoo_TextureData *)texture->driverdata;
+    if (t && t->driverdata) {
+        NDS_Texture *p = (NDS_Texture *)t->driverdata;
 
-            if (!m) {
-                break;
+        if (p) {
+            if (p->pixels) {
+                SDL_free(p->pixels);
+                p->pixels = NULL;
             }
 
-            if (m->pixels) {
-                SDL_free(m->pixels);
-                m->pixels = NULL;
-            }
-
-            SDL_free(m);
-            texture->driverdata = NULL;
+            SDL_free(p);
+            t->driverdata = NULL;
         }
-    } while (0);
+    }
 }
 
 #if defined(UT)
 TEST(sdl2_render, destroy_texture)
 {
-    SDL_Texture t = {0};
+    SDL_Texture t = { 0 };
     SDL_Renderer r = { 0 };
-    Miyoo_TextureData *m = NULL;
+    NDS_Texture *p = NULL;
 
     destroy_texture(NULL, NULL);
     destroy_texture(&r, NULL);
 
-    m = SDL_calloc(1, sizeof(Miyoo_TextureData));
-    TEST_ASSERT_NOT_NULL(m);
+    p = SDL_calloc(1, sizeof(NDS_Texture));
+    TEST_ASSERT_NOT_NULL(p);
 
-    m->pixels = SDL_calloc(1, 32);
-    TEST_ASSERT_NOT_NULL(m->pixels);
-    t.driverdata = m;
+    p->pixels = SDL_calloc(1, 32);
+    TEST_ASSERT_NOT_NULL(p->pixels);
+    t.driverdata = p;
 
     destroy_texture(&r, &t);
 }
@@ -113,12 +98,11 @@ static int create_texture(SDL_Renderer *r, SDL_Texture *t)
         return -1;
     }
 
-    do {
-        Miyoo_TextureData *m = (Miyoo_TextureData *)SDL_calloc(1, sizeof(Miyoo_TextureData));
-        if(!m) {
-            err(SDL"failed to allocate miyoo texture in %s\n", __func__);
-            return SDL_OutOfMemory();
-        }
+    p = (NDS_Texture *)SDL_calloc(1, sizeof(NDS_Texture));
+    if (!p) {
+        error(SDL"failed to allocate nds texture\n");
+        return SDL_OutOfMemory();
+    }
 
     p->w = t->w;
     p->h = t->h;
@@ -160,31 +144,33 @@ TEST(sdl2_render, create_texture)
 
 static int lock_texture(SDL_Renderer *r, SDL_Texture *t, const SDL_Rect *rt, void **pixels, int *pitch)
 {
-    if (!renderer || !texture || !rect || !pixels || !pitch) {
-        err(SDL"invalid parameters(0x%x, 0x%x, 0x%x, 0x%x, 0x%x) in %s\n", renderer, texture, rect, pixels, pitch, __func__);
+    NDS_Texture *p = NULL;
+
+    debug(SDL"call %s()\n", __func__);
+
+    if (!t) {
+        error(SDL"invalid texture\n");
         return -1;
     }
 
-    do {
-        Miyoo_TextureData *m = (Miyoo_TextureData *)(texture->driverdata);
+    p = (NDS_Texture *)(t->driverdata);
+    if (p) {
+        *pitch = p->pitch;
+        *pixels = p->pixels;
+    }
 
-        if (m) {
-            *pitch = m->pitch;
-            *pixels = m->pixels;
-        }
-    } while (0);
     return 0;
 }
 
 #if defined(UT)
 TEST(sdl2_render, lock_texture)
 {
+    int pitch = 0;
+    uint32_t **pixels = NULL;
     SDL_Rect rt = { 0 };
     SDL_Texture t = { 0 };
     SDL_Renderer r = { 0 };
-    int pitch = 0;
-    uint32_t **pixels = NULL;
-    Miyoo_TextureData m = { 0 };
+    NDS_Texture p = { 0 };
 
     TEST_ASSERT_EQUAL_INT(-1, lock_texture(NULL, NULL, NULL, NULL, NULL));
     TEST_ASSERT_EQUAL_INT(0, lock_texture(NULL, &t, NULL, (void *)pixels, NULL));
@@ -230,15 +216,11 @@ TEST(sdl2_render, update_texture)
 
 static void unlock_texture(SDL_Renderer *r, SDL_Texture *t)
 {
-    do {
-        if (!renderer || !texture) {
-            err(SDL"invalid parameters(0x%x, 0x%x) in %s\n", renderer, texture, __func__);
-            break;
-        }
+    debug(SDL"call %s()\n", __func__);
 
-        if (texture->driverdata) {
-            SDL_Rect rect = { 0 };
-            Miyoo_TextureData *m = (Miyoo_TextureData * )texture->driverdata;
+    if (t && t->driverdata) {
+        SDL_Rect rt = { 0 };
+        NDS_Texture *p = (NDS_Texture *)t->driverdata;
 
         if (p) {
             rt.x = 0;
@@ -247,7 +229,7 @@ static void unlock_texture(SDL_Renderer *r, SDL_Texture *t)
             rt.h = t->h;
             update_texture(r, t, &rt, p->pixels, p->pitch);
         }
-    } while (0);
+    }
 }
 
 #if defined(UT)
@@ -264,9 +246,7 @@ TEST(sdl2_render, unlock_texture)
 
 static void set_texture_scale_mode(SDL_Renderer *r, SDL_Texture *t, SDL_ScaleMode m)
 {
-    if (!renderer || !texture) {
-        err(SDL"invalid parameters(0x%x, 0x%x) in %s\n", renderer, texture, __func__);
-    }
+    debug(SDL"call %s()\n", __func__);
 }
 
 #if defined(UT)
@@ -323,7 +303,6 @@ static int set_draw_color(SDL_Renderer *r, SDL_RenderCommand *cmd)
 #if defined(UT)
 TEST(sdl2_render, set_draw_color)
 {
-    SDL_FPoint f = { 0 };
     SDL_Renderer r = { 0 };
     SDL_RenderCommand c = { 0 };
 
@@ -342,11 +321,9 @@ static int queue_draw_points(SDL_Renderer *r, SDL_RenderCommand *cmd, const SDL_
 #if defined(UT)
 TEST(sdl2_render, queue_draw_points)
 {
-    float xy = 0;
-    SDL_Color c = { 0 };
-    SDL_Texture t = { 0 };
+    SDL_FPoint f = { 0 };
     SDL_Renderer r = { 0 };
-    SDL_RenderCommand cmd = { 0 };
+    SDL_RenderCommand c = { 0 };
 
     TEST_ASSERT_EQUAL_INT(0, queue_draw_points(NULL, NULL, NULL, 0));
     TEST_ASSERT_EQUAL_INT(0, queue_draw_points(&r, &c, &f, 0));
@@ -427,11 +404,7 @@ TEST(sdl2_render, render_read_pixels)
 
 static void render_present(SDL_Renderer *r)
 {
-    do {
-        if (!renderer) {
-            err(SDL"invalid parameter(0x%x) in %s\n", renderer, __func__);
-        }
-    } while( 0 );
+    debug(SDL"call %s()\n", __func__);
 }
 
 #if defined(UT)
@@ -452,8 +425,7 @@ static int set_vsync(SDL_Renderer *r, const int vsync)
 #if defined(UT)
 TEST(sdl2_render, set_vsync)
 {
-    SDL_Window w = {0};
-    SDL_Renderer *r = NULL;
+    SDL_Renderer t = { 0 };
 
     TEST_ASSERT_EQUAL_INT(0, set_vsync(NULL, 0));
     TEST_ASSERT_EQUAL_INT(0, set_vsync(&t, 0));
@@ -462,11 +434,11 @@ TEST(sdl2_render, set_vsync)
 
 static void destroy_renderer(SDL_Renderer *r)
 {
-    if (!renderer || (vsync < 0)) {
-        err(SDL"invalid parameters(0x%x, 0x%x) in %s\n", renderer, vsync, __func__);
-        return -1;
+    debug(SDL"call %s()\n", __func__);
+
+    if (r) {
+        SDL_free(r);
     }
-    return 0;
 }
 
 #if defined(UT)
@@ -481,16 +453,18 @@ TEST(sdl2_render, destroy_renderer)
 
 static SDL_Renderer* create_renderer(SDL_Window *w, uint32_t flags)
 {
-    SDL_Renderer *renderer = NULL;
+    SDL_Renderer *r = NULL;
+
+    debug(SDL"call %s()\n", __func__);
 
     if (!w) {
         error(SDL"invalid window\n");
         return NULL;
     }
 
-    renderer = (SDL_Renderer *)SDL_calloc(1, sizeof(SDL_Renderer));
-    if(!renderer) {
-        err(SDL"failed to create render in %s\n", __func__);
+    r = (SDL_Renderer *)SDL_calloc(1, sizeof(SDL_Renderer));
+    if (!r) {
+        error(SDL"failed to allocate memory for renderer\n");
         SDL_OutOfMemory();
         return NULL;
     }
@@ -550,7 +524,7 @@ SDL_RenderDriver NDS_RenderDriver = {
             [0] = SDL_PIXELFORMAT_RGB565,
             [1] = SDL_PIXELFORMAT_ARGB8888,
         },
-        .max_texture_width = 640,
+        .max_texture_width = 800,
         .max_texture_height = 480,
     }
 };

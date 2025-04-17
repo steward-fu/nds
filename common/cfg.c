@@ -174,7 +174,7 @@ TEST(common_cfg, load_cfg)
 }
 #endif
 
-int init_config_settings(void)
+int init_cfg(void)
 {
     char path[MAX_PATH] = { 0 };
 

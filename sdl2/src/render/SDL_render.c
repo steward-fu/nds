@@ -120,7 +120,7 @@ static const SDL_RenderDriver *render_drivers[] = {
 #if SDL_VIDEO_RENDER_SW
     &SW_RenderDriver,
 #endif
-#if SDL_VIDEO_RENDER_NDS
+#if SDL_RENDER_DRIVER_NDS
     &NDS_RenderDriver
 #endif
 };
