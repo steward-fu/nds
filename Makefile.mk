@@ -99,8 +99,10 @@ export LD=${CROSS}ld
 export CXX=${CROSS}g++
 export MOREFLAGS=${CFLAGS} ${LDFLAGS}
 
+include lvgl/lvgl.mk
+
 .PHONY: all
-all: cfg
+all: cfg lvgl
 	MOD=$(MOD) make -C common
 	MOD=$(MOD) make -C detour
 	MOD=$(MOD) make -C alsa
@@ -118,6 +120,19 @@ ifeq (,$(wildcard sdl2/Makefile))
 	cd sdl2 && ./autogen.sh && ./configure $(SDL2CFG) --host=$(HOST)
 endif
 endif
+
+LVGL_OBJS  = $(CSRCS:c=o)
+LVGL_OBJS += $(CXXSRCS:cpp=o)
+
+.PHONY: lvgl
+lvgl: $(LVGL_OBJS)
+	$(CXX) -shared -fPIC $^ -o lvgl/liblvgl.so
+
+%.o: %.c
+	$(CC) -fPIC -DLV_CONF_SKIP $(CFLAGS) $(LDFLAGS) -c $< -o $@
+
+%.o: %.cpp
+	$(CXX) -fPIC -DLV_CONF_SKIP $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 .PHONY: rel
 rel: mkdir prepare
@@ -191,6 +206,7 @@ mkdir:
 clean:
 	rm -rf $(MYDIR)
 	rm -rf ut/ut
+	rm -rf lvgl/liblvgl.so
 	make -C ut clean
 	make -C alsa clean
 	make -C uidbg clean
@@ -198,3 +214,4 @@ clean:
 	make -C detour clean
 	make -C common clean
 	make -C sdl2 distclean > /dev/null 2>&1 || true
+	find lvgl -name "*.o" -exec rm -rf {} \;

@@ -9,6 +9,7 @@ LDFLAGS += -Wl,-rpath-link .
 LDFLAGS += -lm
 LDFLAGS += -lpthread
 LDFLAGS += -lSDL
+LDFLAGS += ../lvgl/liblvgl.so
 LDFLAGS += ../ucgui/libucgui.so
 LDFLAGS += ../common/libcommon.so
 SRCS     = main.c \

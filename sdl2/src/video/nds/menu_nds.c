@@ -16,6 +16,8 @@
 #include <SDL.h>
 #endif
 
+#include "lvgl.h"
+
 #include "GUI.h"
 #include "GUIConf.h"
 #include "LCDConf.h"
@@ -40,6 +42,10 @@
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
+
+#include "cfg.pb.h"
+
+extern nds_pb_cfg mycfg;
 
 #if !defined(UIDBG)
 extern nds_hook myhook;
@@ -241,48 +247,81 @@ TEST(sdl2_menu, WndProc)
 }
 #endif
 
-void prehook_cb_menu(void *sys, uint32_t show_dlg)
+static int run_ucgui(void)
 {
     int cc = 0;
     void *fb_pixels = NULL;
     SDL_Rect rt = { 0, 0, LCD_XSIZE, LCD_YSIZE };
 
-    debug(GUI"call %s(system=%p, show_dlg=%d)\n", __func__, sys, show_dlg);
+    debug(GUI"call %s()\n", __func__);
 
-    do {
-        if (!sys) {
-            error(GUI"sys is null");
-            break;
-        }
+    GUI_Init();
+    GUI_SetBkColor(GUI_GRAY);
+    GUI_Clear();
 
-#if defined(SFOS_EGL)
-        update_wayland_client_size(SCREEN_W, SCREEN_H);
+    fb_pixels = fb_getbuffer();
+    debug(GUI"fb_pixels=%p\n", fb_pixels);
+    if (!fb_pixels) {
+        error(GUI"fb_pixels is null\n");
+        return -1;
+    }
+
+    GUI_CURSOR_Show();
+    GUI_CURSOR_SetPosition(LCD_XSIZE >> 1, LCD_YSIZE >> 1);
+
+    GUI_CreateDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
+    GUI_Delay(100);
+
+    running = 1;
+    while (running) {
+        flush_lcd_screen(-1, fb_pixels, rt, rt, LCD_XSIZE * 2, 0, 0);
+        flip_lcd_screen();
+        GUI_Delay(1000 / 30);
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, run_ucgui)
+{
+    TEST_ASSERT_EQUAL_INT(-1, run_ucgui());
+}
 #endif
 
-        GUI_Init();
-        GUI_SetBkColor(GUI_GRAY);
-        GUI_Clear();
+static int run_lvgl(void)
+{
+    debug(GUI"call %s()\n", __func__);
 
-        fb_pixels = fb_getbuffer();
-        debug(GUI"fb_pixels=%p\n", fb_pixels);
-        if (!fb_pixels) {
-            error(GUI"fb_pixels is null\n");
-            break;
-        }
+    lv_obj_t *label = lv_label_create(lv_screen_active());
+    lv_label_set_text(label, "Hello, world!");
+ 
+    lv_timer_handler();
+    SDL_Delay(3000);
+    return 0;
+}
 
-        GUI_CURSOR_Show();
-        GUI_CURSOR_SetPosition(LCD_XSIZE >> 1, LCD_YSIZE >> 1);
+#if defined(UT)
+TEST(sdl2_menu, run_lvgl)
+{
+    TEST_ASSERT_EQUAL_INT(-1, run_lvgl());
+}
+#endif
 
-        GUI_CreateDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
-        GUI_Delay(100);
+void prehook_cb_menu(void *sys, uint32_t show_dlg)
+{
+    debug(GUI"call %s(system=%p, show_dlg=%d)\n", __func__, sys, show_dlg);
 
-        running = 1;
-        while (running) {
-            flush_lcd_screen(-1, fb_pixels, rt, rt, LCD_XSIZE * 2, 0, 0);
-            flip_lcd_screen();
-            GUI_Delay(1000 / 30);
-        }
-    } while (0);
+#if defined(SFOS_EGL)
+    update_wayland_client_size(SCREEN_W, SCREEN_H);
+#endif
+
+    if (mycfg.ui == UI_LVGL) {
+        run_lvgl();
+    }
+    else if (mycfg.ui == UI_UCGUI) {
+        run_ucgui();
+    }
 }
 
 #if defined(UT)

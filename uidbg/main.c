@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+
+#include <lvgl.h>
 #include <SDL.h>
 
 #include "io_fb.h"
@@ -9,10 +11,14 @@
 #include "GUI_Protected.h"
 #include "LCD_ConfDefaults.h"
 
+#include "cfg.pb.h"
 #include "menu_nds.h"
+
+extern nds_pb_cfg mycfg;
 
 static int running = 0;
 static pthread_t thread_id = 0;
+static lv_display_t *disp = NULL;
 static SDL_Surface *screen = NULL;
 
 int flip_lcd_screen(void)
@@ -65,10 +71,32 @@ static void* input_handler(void *param)
     return NULL;
 }
 
+static void refresh_cb(lv_timer_t *timer)
+{
+    lv_refr_now(disp);
+}
+
+static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
+{
+    SDL_Flip(screen);
+    lv_display_flush_ready(disp);
+}
+
 int main(int argc, char **argv)
 {
+    mycfg.ui = UI_UCGUI;
+
     SDL_Init(SDL_INIT_VIDEO);
     screen = SDL_SetVideoMode(LCD_XSIZE, LCD_YSIZE, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+
+    lv_init();
+
+    disp = lv_display_create(LCD_XSIZE, LCD_YSIZE);
+    lv_display_set_flush_cb(disp, flush_cb);
+    lv_display_set_buffers(disp, screen->pixels, NULL, LCD_XSIZE * LCD_YSIZE * 2, LV_DISPLAY_RENDER_MODE_FULL);
+
+    lv_timer_t * refr_timer = lv_display_get_refr_timer(disp);
+    lv_timer_set_cb(refr_timer, refresh_cb);
 
     pthread_create(&thread_id, NULL, input_handler, NULL);
     prehook_cb_menu((void *)0xdeadbeef, 1);
