@@ -1,3 +1,6 @@
 [submodule "ucgui"]
 	path = ucgui
 	url = ssh://git@github.com/steward-fu/ucgui
+[submodule "lvgl"]
+	path = lvgl
+	url = https://github.com/lvgl/lvgl
