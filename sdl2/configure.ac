@@ -2484,6 +2484,7 @@ CheckSailfishEGL()
 
     if test x$enable_nds_sfos_xt897 = xyes; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DSFOS_XT897"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM32"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         SUMMARY_video="${SUMMARY_video} NDS_SFOS_XT897"
@@ -2555,6 +2556,7 @@ CheckMiyooEGL()
 
     if test x$enable_nds_miyoo_a30 = xyes; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_A30"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM32"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lMali"
@@ -2574,6 +2576,7 @@ CheckMiyooEGL()
 
     if test x$enable_nds_miyoo_flip = xyes; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_FLIP"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM64"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/libdrm"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lgbm"
@@ -2600,6 +2603,7 @@ CheckMiyooMini()
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_MINI"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM32"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
