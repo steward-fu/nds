@@ -2412,7 +2412,9 @@ CheckDebug()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -ggdb"
         SUMMARY_video="${SUMMARY_video} NDS_DEBUG"
         SUMMARY_input="${SUMMARY_input} NDS_DEBUG"
-    else
+    fi
+
+    if test x$enable_nds_debug = xno; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
     fi
 }
@@ -2436,6 +2438,7 @@ CheckSailfishEGL()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/nanopb"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../lvgl"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI_X"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI/Core"
@@ -2456,6 +2459,8 @@ CheckSailfishEGL()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lcommon"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../ucgui"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lucgui"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lvgl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -llvgl"
         SUMMARY_video="${SUMMARY_video} NDS_SFOS_EGL"
 
         enable_video_x11=no
@@ -2510,6 +2515,7 @@ CheckMiyooEGL()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/nanopb"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../lvgl"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI_X"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI/Core"
@@ -2525,9 +2531,11 @@ CheckMiyooEGL()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../common"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lcommon"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../ucgui"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lucgui"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lvgl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -llvgl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lEGL"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lGLESv2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lucgui"
         SUMMARY_video="${SUMMARY_video} NDS_MIYOO_EGL"
 
         enable_video_x11=no
@@ -2613,6 +2621,7 @@ CheckMiyooMini()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/mini"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/nanopb"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../lvgl"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI_X"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ucgui/GUI/Core"
@@ -2629,6 +2638,8 @@ CheckMiyooMini()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldetour"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../common"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lcommon"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lvgl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -llvgl"
         SUMMARY_video="${SUMMARY_video} NDS_MIYOO_MINI"
 
         enable_video_x11=no

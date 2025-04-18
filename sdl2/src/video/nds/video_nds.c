@@ -723,6 +723,11 @@ static int init_sfos_lcd(void)
     myvid.wl.bg = SDL_malloc(size);
     memset(myvid.wl.bg, 0, size);
 
+    myvid.wl.flip = 0;
+    myvid.wl.ready = 0;
+    myvid.wl.data = SDL_malloc(size);
+    memset(myvid.wl.data, 0, size);
+
 #if !defined(UT)
     pthread_create(&myvid.wl.thread.id, NULL, wl_display_handler, NULL);
     while (myvid.wl.init == 0) {
@@ -730,10 +735,6 @@ static int init_sfos_lcd(void)
     }
 #endif
 
-    myvid.wl.flip = 0;
-    myvid.wl.ready = 0;
-    myvid.wl.data = SDL_malloc(size);
-    memset(myvid.wl.data, 0, size);
     update_wayland_client_size(NDS_W * 2, NDS_H);
     myvid.wl.ready = 1;
 
@@ -924,7 +925,7 @@ int flush_lcd_screen(int tex_id, const void *pixels, SDL_Rect srt, SDL_Rect drt,
     debug(SDL"dst(%d, %d, %d, %d)\n", drt.x, drt.y, drt.w, drt.h);
 
     if (tex_id >= TEXTURE_MAX) {
-        error(SDL"invalid is tex_id(%d)\n", tex_id);
+        error(SDL"invalid tex_id(%d)\n", tex_id);
         return -1;
     }
 

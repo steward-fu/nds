@@ -191,6 +191,7 @@ endif
 .PHONY: prepare
 prepare:
 	cp -a sdl2/build/.libs/libSDL2-2.0.so.0.18.2 $(MYDIR)/lib/libSDL2-2.0.so.0
+	cp -a lvgl/liblvgl.so $(MYDIR)/lib
 	cp -a ucgui/libucgui.so $(MYDIR)/lib
 	cp -a common/libcommon.so $(MYDIR)/lib
 	cp -a detour/libdetour.so $(MYDIR)/lib

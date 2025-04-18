@@ -53,8 +53,11 @@ extern nds_video myvid;
 #endif
 
 static int running = 0;
+static uint16_t *lv_pixels = NULL;
+static lv_display_t *lv_disp = NULL;
+
 static GUI_WIDGET_CREATE_INFO info[] = {
-    { FRAMEWIN_CreateIndirect,  "",     100, 0, 0, LCD_XSIZE, LCD_YSIZE, WM_CF_SHOW | FRAMEWIN_SF_ICON24, 0},
+    { FRAMEWIN_CreateIndirect,  "",     100, 0, 0, LCD_XSIZE, LCD_YSIZE, WM_CF_SHOW | FRAMEWIN_SF_ICON24, 0 },
     { TEXT_CreateIndirect,      "",     101, 10, 20, 150, 20, 0, GUI_TA_LEFT },
 };
 
@@ -105,6 +108,8 @@ static int create_submenu_file(MENU_Handle hMenu)
     add_menu(h,     0, NULL,                    0,                          MENU_IF_SEPARATOR);
     add_menu(h,     0, " Quit ",                MENU_FILE_QUIT,             0);
     add_menu(hMenu, h, " File ",                0,                          0);
+
+    return 0;
 }
 
 static int create_submenu_view(MENU_Handle hMenu)
@@ -117,6 +122,8 @@ static int create_submenu_view(MENU_Handle hMenu)
     add_menu(h,     0, " Layout ",              MENU_VIEW_LAYOUT,   0);
     add_menu(h,     0, " Filter ",              MENU_VIEW_FILTER,   0);
     add_menu(hMenu, h, " View ",                0,                  0);
+
+    return 0;
 }
 
 static int create_submenu_system(MENU_Handle hMenu)
@@ -127,6 +134,8 @@ static int create_submenu_system(MENU_Handle hMenu)
     MENU_SetFont(h, &GUI_Font24_ASCII);
 
     add_menu(hMenu, h, " System ",              0,                      0);
+
+    return 0;
 }
 
 static int create_submenu_config(MENU_Handle hMenu)
@@ -137,6 +146,8 @@ static int create_submenu_config(MENU_Handle hMenu)
     MENU_SetFont(h, &GUI_Font24_ASCII);
 
     add_menu(hMenu, h, " Config ",              0,                      0);
+
+    return 0;
 }
 
 static int create_submenu_tools(MENU_Handle hMenu)
@@ -147,6 +158,8 @@ static int create_submenu_tools(MENU_Handle hMenu)
     MENU_SetFont(h, &GUI_Font24_ASCII);
 
     add_menu(hMenu, h, " Tools ",              0,                      0);
+
+    return 0;
 }
 
 static int create_submenu_help(MENU_Handle hMenu)
@@ -157,6 +170,8 @@ static int create_submenu_help(MENU_Handle hMenu)
     MENU_SetFont(h, &GUI_Font24_ASCII);
 
     add_menu(hMenu, h, " Help ",              0,                      0);
+
+    return 0;
 }
 
 #if defined(UT)
@@ -181,6 +196,8 @@ static int create_menu(WM_HWIN hParent)
     create_submenu_help(h);
 
     FRAMEWIN_AddMenu(hParent, h);
+
+    return 0;
 }
 
 #if defined(UT)
@@ -192,7 +209,6 @@ TEST(sdl2_menu, create_menu)
 
 static void WndProc(WM_MESSAGE* pMsg)
 {
-    GUI_RECT rt = { 0 };
     char buf[MAX_PATH] = { 0 };
     GUI_PID_STATE *mouse = NULL;
     MENU_MSG_DATA *pMenuInfo = NULL;
@@ -249,11 +265,10 @@ TEST(sdl2_menu, WndProc)
 
 static int run_ucgui(void)
 {
-    int cc = 0;
     void *fb_pixels = NULL;
     SDL_Rect rt = { 0, 0, LCD_XSIZE, LCD_YSIZE };
 
-    debug(GUI"call %s()\n", __func__);
+    debug(GUI"call %s(w=%d, h=%d)++\n", __func__, LCD_XSIZE, LCD_YSIZE);
 
     GUI_Init();
     GUI_SetBkColor(GUI_GRAY);
@@ -279,6 +294,7 @@ static int run_ucgui(void)
         GUI_Delay(1000 / 30);
     }
 
+    debug(GUI"call %s()--\n");
     return 0;
 }
 
@@ -289,15 +305,74 @@ TEST(sdl2_menu, run_ucgui)
 }
 #endif
 
-static int run_lvgl(void)
+static void refresh_cb(lv_timer_t *timer)
 {
     debug(GUI"call %s()\n", __func__);
 
-    lv_obj_t *label = lv_label_create(lv_screen_active());
+    lv_refr_now(lv_disp);
+    flip_lcd_screen();
+}
+
+#if defined(UT)
+TEST(sdl2_menu, refresh_cb)
+{
+    refresh_cb();
+    TEST_PASS();
+}
+#endif
+
+static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
+{
+    SDL_Rect rt = { 0, 0, LCD_XSIZE, LCD_YSIZE };
+
+    debug(GUI"call %s()\n", __func__);
+
+    lv_display_flush_ready(disp);
+    flush_lcd_screen(-1, lv_pixels, rt, rt, LCD_XSIZE * 2, 0, 0);
+}
+
+#if defined(UT)
+TEST(sdl2_menu, flush_cb)
+{
+    flush_cb(NULL, NULL, NULL);
+    TEST_PASS();
+}
+#endif
+
+static int run_lvgl(void)
+{
+    lv_obj_t *label = NULL;
+    lv_timer_t * refr_timer = NULL;
+
+    debug(GUI"call %s(w=%d, h=%d)++\n", __func__, LCD_XSIZE, LCD_YSIZE);
+
+    if (lv_pixels) {
+        free(lv_pixels);
+    }
+
+    lv_pixels = malloc(LCD_XSIZE * LCD_YSIZE * 2);
+    if (!lv_pixels) {
+        error(GUI"failed to allocate buffer\n");
+        return -1;
+    }
+
+    lv_init();
+    lv_disp = lv_display_create(LCD_XSIZE, LCD_YSIZE);
+    lv_display_set_flush_cb(lv_disp, flush_cb);
+    lv_display_set_buffers(lv_disp, lv_pixels, NULL, LCD_XSIZE * LCD_YSIZE * 2, LV_DISPLAY_RENDER_MODE_FULL);
+
+    refr_timer = lv_display_get_refr_timer(lv_disp);
+    lv_timer_set_cb(refr_timer, refresh_cb);
+
+    label = lv_label_create(lv_screen_active());
     lv_label_set_text(label, "Hello, world!");
- 
+
     lv_timer_handler();
     SDL_Delay(3000);
+
+    free(lv_pixels);
+    lv_pixels = NULL;
+    debug(GUI"call %s()--\n");
     return 0;
 }
 
@@ -315,6 +390,8 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
 #if defined(SFOS_EGL)
     update_wayland_client_size(SCREEN_W, SCREEN_H);
 #endif
+
+    //mycfg.ui = UI_UCGUI;
 
     if (mycfg.ui == UI_LVGL) {
         run_lvgl();
