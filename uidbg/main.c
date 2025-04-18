@@ -75,6 +75,7 @@ int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
     screen = SDL_SetVideoMode(LCD_XSIZE, LCD_YSIZE, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    SDL_ShowCursor(SDL_FALSE);
 
     pthread_create(&thread_id, NULL, input_handler, NULL);
     prehook_cb_menu((void *)0xdeadbeef, 1);

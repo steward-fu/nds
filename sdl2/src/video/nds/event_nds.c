@@ -27,6 +27,11 @@
 #include "hook.h"
 #include "cfg.pb.h"
 
+#include "io_fb.h"
+#include "GUIConf.h"
+#include "GUI_Protected.h"
+#include "LCD_ConfDefaults.h"
+
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
@@ -138,17 +143,72 @@ TEST(sdl2_event, get_key_bit)
 }
 #endif
 
+static int send_gui_event(void)
+{
+    int cc = 0;
+    uint32_t v = 0;
+
+    const int MOV = 5;
+    GUI_PID_STATE mouse = { 0 };
+
+    debug(SDL"call %s()\n", __func__);
+
+    for (cc = 0; cc < KEY_BIT_MAX; cc++) {
+        v = (myevt.key.cur_bits & (1 << cc)) ? 1 : 0;
+
+        switch (cc) {
+        case KEY_BIT_UP:
+            if (v && (myevt.mouse.y > 0)) {
+                myevt.mouse.y -= MOV;
+            }
+            break;
+        case KEY_BIT_DOWN:
+            if (v && (myevt.mouse.y < SCREEN_H)) {
+                myevt.mouse.y += MOV;
+            }
+            break;
+        case KEY_BIT_LEFT:
+            if (v && (myevt.mouse.x > 0)) {
+                myevt.mouse.x -= MOV;
+            }
+            break;
+        case KEY_BIT_RIGHT:
+            if (v && (myevt.mouse.x < SCREEN_W)) {
+                myevt.mouse.x += MOV;
+            }
+            break;
+        case KEY_BIT_A:
+            myevt.mouse.pressed = v;
+            break;
+        }
+    }
+
+    mouse.x = myevt.mouse.x;
+    mouse.y = myevt.mouse.y;
+    mouse.Pressed = myevt.mouse.pressed;
+    debug(SDL"mouse event(x=%d, y=%d, pressed=%d)\n", mouse.x, mouse.y, mouse.Pressed);
+
+    GUI_MOUSE_StoreState(&mouse);
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, send_gui_event)
+{
+    TEST_ASSERT_EQUAL_INT(0, send_gui_event());
+}
+#endif
+
 static int input_handler(void *data)
 {
     int fd = -1;
+    int act = 0;
+    int bit = 0;
     struct input_event ev = {{ 0 }};
 
     debug(SDL"call %s()++\n", __func__);
 
-#if defined(UT)
-    return 0;
-#endif
-
+#if !defined(UT)
     fd = open(INPUT_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if(fd < 0){
         error(SDL"failed to open \"%s\"\n", INPUT_DEV);
@@ -157,33 +217,30 @@ static int input_handler(void *data)
 
     myevt.running = 1;
     while (myevt.running) {
-        int r = 0;
-        int k = 0;
-
+        act = 0;
         if (read(fd, &ev, sizeof(struct input_event))) {
             if ((ev.type == EV_KEY) && (ev.value != 2)) {
                 debug(SDL"%s, code=%d, value=%d\n", INPUT_DEV, ev.code, ev.value);
 
-if (ev.code == 97) {
-    exit(0);
-}
-                k = get_key_bit(ev.code);
-                if (k >= 0) {
-                    r = 1;
-                    set_key_bit(k, ev.value);
+                bit = get_key_bit(ev.code);
+                if (bit >= 0) {
+                    act = 1;
+                    set_key_bit(bit, ev.value);
                 }
             }
         }
 
-        if (r) {
+        if (myvid.mode == MENU) {
+            send_gui_event();
         }
 
         usleep(1000000 / 30);
     }
     free_all_keys();
     close(fd);
-    debug(SDL"call %s()++\n", __func__);
+#endif
 
+    debug(SDL"call %s()--\n", __func__);
     return 0;
 }
 

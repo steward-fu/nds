@@ -63,13 +63,10 @@
 #endif
 
 #if defined(MIYOO_MINI)
-#define FB_W                    640
-#define FB_H                    480
-#define FB_BPP                  4
-#define FB_SIZE                 (FB_W * FB_H * FB_BPP * 2)
-#define FB_DEV                  "/dev/fb0"
 #define SCREEN_W                640
 #define SCREEN_H                480
+#define FB_DEV                  "/dev/fb0"
+#define FB_SIZE                 (SCREEN_W * SCREEN_H * 4 * 2)
 #endif
 
 #if defined(MIYOO_FLIP)
@@ -98,15 +95,14 @@ enum _TEXTURE_TYPE {
 };
 #endif
 
-typedef struct {
-    SDL_Window *window;
+typedef enum {
+    GAME = 0,
+    MENU
+} DISP_MODE;
 
-    struct {
-        int w;
-        int h;
-        int bpp;
-        int size;
-    } info;
+typedef struct {
+    DISP_MODE mode;
+    SDL_Window *window;
 
     struct {
         int running;

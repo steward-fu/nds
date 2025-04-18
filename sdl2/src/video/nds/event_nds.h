@@ -153,6 +153,12 @@ typedef struct {
         SDL_Scancode code[32];
     } key;
 
+    struct {
+        uint32_t x;
+        uint32_t y;
+        uint8_t pressed;
+    } mouse;
+
     int running;
     SDL_Thread *thread;
 } nds_event;

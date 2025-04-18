@@ -257,6 +257,7 @@ int update_wayland_client_size(int w, int h)
 {
     int c0 = 0;
     int c1 = 0;
+    int size = 0;
     int scale = 0;
 
 #if !defined(UT)
@@ -276,19 +277,15 @@ int update_wayland_client_size(int w, int h)
         return -1;
     }
 
-    myvid.info.w = w;
-    myvid.info.h = h;
-    myvid.info.bpp = 32;
-    myvid.info.size = myvid.info.w * (myvid.info.bpp / 8) * myvid.info.h;
-
-    c0 = SCREEN_H / myvid.info.w;
-    c1 = SCREEN_W / myvid.info.h;
+    size = w * h * 4;
+    c0 = SCREEN_H / w;
+    c1 = SCREEN_W / h;
     scale = (c0 > c1) ? c1 : c0;
     scale = (scale <= 0) ? 1 : scale;
 
 #if !defined(UT)
-    y0 = ((float)(myvid.info.w * scale) / SCREEN_H);
-    x0 = ((float)(myvid.info.h * scale) / SCREEN_W);
+    y0 = ((float)(w * scale) / SCREEN_H);
+    x0 = ((float)(h * scale) / SCREEN_W);
 
     fg_vertices[0] = -x0;
     fg_vertices[1] = y0;
@@ -300,9 +297,9 @@ int update_wayland_client_size(int w, int h)
     fg_vertices[16] =  y0;
 #endif
 
-    memset(myvid.wl.data, 0, myvid.info.size);
+    memset(myvid.wl.data, 0, size);
     myvid.wl.pixels[0] = (void *)myvid.wl.data;
-    myvid.wl.pixels[1] = (void *)(myvid.wl.data + myvid.info.size);
+    myvid.wl.pixels[1] = (void *)(myvid.wl.data + size);
 
     debug(SDL"new wayland client(w=%d, h=%d, scale=%d)\n", w, h, scale);
     return 0;
@@ -319,9 +316,6 @@ TEST(sdl2_video, update_wayland_client_size)
     myvid.wl.data = buf;
     TEST_ASSERT_EQUAL_INT(-1, update_wayland_client_size(0, 0));
     TEST_ASSERT_EQUAL_INT(0, update_wayland_client_size(w, h));
-    TEST_ASSERT_EQUAL_INT(w, myvid.info.w);
-    TEST_ASSERT_EQUAL_INT(h, myvid.info.h);
-    TEST_ASSERT_EQUAL_INT(bpp, myvid.info.bpp);
     TEST_ASSERT_NOT_NULL(myvid.wl.pixels[0]);
     TEST_ASSERT_NOT_NULL(myvid.wl.pixels[1]);
 }
@@ -875,7 +869,7 @@ int flip_lcd_screen(void)
     if (ioctl(myvid.fb.fd, FBIOPAN_DISPLAY, &myvid.fb.var_info) < 0) {
         error(SDL"failed to flip fb through ioctl()\n");
     }
-    myvid.fb.var_info.yoffset ^= FB_H;
+    myvid.fb.var_info.yoffset ^= SCREEN_H;
     debug(SDL"fb yoffset=%d\n", myvid.fb.var_info.yoffset);
 #endif
     return 0;
@@ -1109,11 +1103,11 @@ int flush_lcd_screen(int tex_id, const void *pixels, SDL_Rect srt, SDL_Rect drt,
     myvid.gfx.dst.rt.s32Ypos = drt.y;
     myvid.gfx.dst.rt.u32Width = drt.w;
     myvid.gfx.dst.rt.u32Height = drt.h;
-    myvid.gfx.dst.surf.u32Width = FB_W;
-    myvid.gfx.dst.surf.u32Height = FB_H;
-    myvid.gfx.dst.surf.u32Stride = FB_W * FB_BPP;
+    myvid.gfx.dst.surf.u32Width = SCREEN_W;
+    myvid.gfx.dst.surf.u32Height = SCREEN_H;
+    myvid.gfx.dst.surf.u32Stride = SCREEN_W * 4;
     myvid.gfx.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
-    myvid.gfx.dst.surf.phyAddr = myvid.gfx.dst.phy + (myvid.fb.var_info.yoffset * FB_W * FB_BPP);
+    myvid.gfx.dst.surf.phyAddr = myvid.gfx.dst.phy + (myvid.fb.var_info.yoffset * SCREEN_W * 4);
 
     MI_GFX_BitBlit(&myvid.gfx.src.surf, &myvid.gfx.src.rt, &myvid.gfx.dst.surf, &myvid.gfx.dst.rt, &opt, &fence);
     MI_GFX_WaitAllDone(TRUE, fence);
@@ -1389,11 +1383,6 @@ int init_video(_THIS)
     SDL_AddDisplayMode(&display, &mode);
 
     SDL_AddVideoDisplay(&display, SDL_FALSE);
-
-    myvid.info.w = SCREEN_W;
-    myvid.info.h = SCREEN_H;
-    myvid.info.size = myvid.info.w * myvid.info.h * (myvid.info.bpp / 8) * 2;
-    debug(SDL"framebuffer w=%d, h=%d\n", myvid.info.w, myvid.info.h);
 
     TTF_Init();
 #endif

@@ -50,6 +50,7 @@ extern nds_pb_cfg mycfg;
 #if !defined(UIDBG)
 extern nds_hook myhook;
 extern nds_video myvid;
+extern nds_event myevt;
 #endif
 
 static int running = 0;
@@ -210,7 +211,6 @@ TEST(sdl2_menu, create_menu)
 static void WndProc(WM_MESSAGE* pMsg)
 {
     char buf[MAX_PATH] = { 0 };
-    GUI_PID_STATE *mouse = NULL;
     MENU_MSG_DATA *pMenuInfo = NULL;
 
     debug(GUI"call %s(pMsg=%p)\n", __func__, pMsg);
@@ -242,12 +242,6 @@ static void WndProc(WM_MESSAGE* pMsg)
                 GUI_MessageBox(buf, "main", GUI_MB_OK);
                 break;
             }
-            break;
-        case WM_PAINT:
-            break;
-        case WM_MOUSEOVER:
-            mouse = (GUI_PID_STATE *)pMsg->Data.p;
-            GUI_CURSOR_SetPosition(mouse->x, mouse->y);
             break;
         default:
             WM_DefaultProc(pMsg);
@@ -286,6 +280,13 @@ static int run_ucgui(void)
         return -1;
     }
 
+#if !defined(UIDBG)
+    myevt.mouse.x = LCD_XSIZE >> 1;
+    myevt.mouse.y = LCD_YSIZE >> 1;
+    myevt.mouse.pressed = 0;
+#endif
+
+    GUI_CURSOR_Select(&GUI_CursorArrowL);
     GUI_CURSOR_Show();
     GUI_CURSOR_SetPosition(LCD_XSIZE >> 1, LCD_YSIZE >> 1);
 
@@ -397,6 +398,10 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
 {
     debug(GUI"call %s(system=%p, show_dlg=%d)\n", __func__, sys, show_dlg);
 
+#if !defined(UIDBG)
+    myvid.mode = MENU;
+#endif
+
 #if defined(SFOS_EGL)
     update_wayland_client_size(SCREEN_W, SCREEN_H);
 #endif
@@ -409,6 +414,10 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
     else if (mycfg.ui == UI_UCGUI) {
         run_ucgui();
     }
+
+#if !defined(UIDBG)
+    myvid.mode = GAME;
+#endif
 }
 
 #if defined(UT)
