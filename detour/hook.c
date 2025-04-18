@@ -456,8 +456,8 @@ TEST(detour_hook, install_prehook_cb)
 static int init_table(void)
 {
 #if defined(NDS_ARM64)
-    const uint64_t VAR_OFFSET = 0x7ff4496000;
-    const uint64_t FUN_OFFSET = 0x7ff4133460;
+    const uint64_t VAR_BASE_OFFSET = 0x7ff4496000;
+    const uint64_t FUN_BASE_OFFSET = 0x7ff4133460;
     const uint64_t VAR_START_OFFSET = 0x004f6000;
     const uint64_t FUN_START_OFFSET = 0x00193460;
 #endif
@@ -780,7 +780,7 @@ TEST(detour_hook, install_state_handler)
 }
 #endif
 
-#if defined(UIDBG) || defined(UT)
+#if defined(UIDBG) || defined(MIYOO_FLIP) || defined(UT)
 void prehook_cb_render_polygon_steps(void)
 {
     debug(DTR"call %s()\n", __func__);

@@ -391,7 +391,7 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
     update_wayland_client_size(SCREEN_W, SCREEN_H);
 #endif
 
-    //mycfg.ui = UI_UCGUI;
+    mycfg.ui = UI_UCGUI;
 
     if (mycfg.ui == UI_LVGL) {
         run_lvgl();
