@@ -46,10 +46,9 @@ extern nds_hook myhook;
 extern nds_video myvid;
 #endif
 
-static void *fb_pixels = NULL;
-
+static int running = 0;
 static GUI_WIDGET_CREATE_INFO info[] = {
-    { FRAMEWIN_CreateIndirect,  "",     100, 0, 0, LCD_XSIZE, LCD_YSIZE, WM_CF_SHOW | FRAMEWIN_SF_ICON16, 0},
+    { FRAMEWIN_CreateIndirect,  "",     100, 0, 0, LCD_XSIZE, LCD_YSIZE, WM_CF_SHOW | FRAMEWIN_SF_ICON24, 0},
     { TEXT_CreateIndirect,      "",     101, 10, 20, 150, 20, 0, GUI_TA_LEFT },
 };
 
@@ -63,12 +62,125 @@ TEST_GROUP(sdl2_menu);
 
 TEST_SETUP(sdl2_menu)
 {
-    debug(SDL"call %s()\n", __func__);
+    debug(GUI"call %s()\n", __func__);
 }
 
 TEST_TEAR_DOWN(sdl2_menu)
 {
-    debug(SDL"call %s()\n", __func__);
+    debug(GUI"call %s()\n", __func__);
+}
+#endif
+
+static int add_menu(MENU_Handle hMenu, MENU_Handle hSubMenu, char *pText, U16 dwID, U16 dwFlags)
+{
+    MENU_ITEM_DATA m = { 0 };
+
+    m.pText = pText;
+    m.hSubmenu = hSubMenu;
+    m.Flags = dwFlags;
+    m.Id = dwID;
+    MENU_AddItem(hMenu, &m);
+
+    return 0;
+}
+
+static int create_submenu_file(MENU_Handle hMenu)
+{
+    MENU_Handle h = 0;
+
+    h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+    MENU_SetFont(h, &GUI_Font24_ASCII);
+
+    add_menu(h,     0, " Open ROM...",          MENU_FILE_OPEN_ROM,         0);
+    add_menu(h,     0, " Open Recent ",         MENU_FILE_OPEN_RECENT,      0);
+    add_menu(h,     0, NULL,                    0,                          MENU_IF_SEPARATOR);
+    add_menu(h,     0, " Save State ",          MENU_FILE_SAVE_STATE,       0);
+    add_menu(h,     0, " Load State ",          MENU_FILE_LOAD_STATE,       0);
+    add_menu(h,     0, NULL,                    0,                          MENU_IF_SEPARATOR);
+    add_menu(h,     0, " Quit ",                MENU_FILE_QUIT,             0);
+    add_menu(hMenu, h, " File ",                0,                          0);
+}
+
+static int create_submenu_view(MENU_Handle hMenu)
+{
+    MENU_Handle h = 0;
+
+    h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+    MENU_SetFont(h, &GUI_Font24_ASCII);
+
+    add_menu(h,     0, " Layout ",              MENU_VIEW_LAYOUT,   0);
+    add_menu(h,     0, " Filter ",              MENU_VIEW_FILTER,   0);
+    add_menu(hMenu, h, " View ",                0,                  0);
+}
+
+static int create_submenu_system(MENU_Handle hMenu)
+{
+    MENU_Handle h = 0;
+
+    h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+    MENU_SetFont(h, &GUI_Font24_ASCII);
+
+    add_menu(hMenu, h, " System ",              0,                      0);
+}
+
+static int create_submenu_config(MENU_Handle hMenu)
+{
+    MENU_Handle h = 0;
+
+    h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+    MENU_SetFont(h, &GUI_Font24_ASCII);
+
+    add_menu(hMenu, h, " Config ",              0,                      0);
+}
+
+static int create_submenu_tools(MENU_Handle hMenu)
+{
+    MENU_Handle h = 0;
+
+    h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+    MENU_SetFont(h, &GUI_Font24_ASCII);
+
+    add_menu(hMenu, h, " Tools ",              0,                      0);
+}
+
+static int create_submenu_help(MENU_Handle hMenu)
+{
+    MENU_Handle h = 0;
+
+    h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+    MENU_SetFont(h, &GUI_Font24_ASCII);
+
+    add_menu(hMenu, h, " Help ",              0,                      0);
+}
+
+#if defined(UT)
+TEST(sdl2_menu, create_submenu_file)
+{
+    TEST_ASSERT_EQUAL_INT(-1, create_menu(NULL));
+}
+#endif
+
+static int create_menu(WM_HWIN hParent)
+{
+    MENU_Handle h = 0;
+
+    h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_HORIZONTAL, 100);
+    MENU_SetFont(h, &GUI_Font24_ASCII);
+
+    create_submenu_file(h);
+    create_submenu_view(h);
+    create_submenu_system(h);
+    create_submenu_config(h);
+    create_submenu_tools(h);
+    create_submenu_help(h);
+
+    FRAMEWIN_AddMenu(hParent, h);
+}
+
+#if defined(UT)
+TEST(sdl2_menu, create_menu)
+{
+    TEST_ASSERT_EQUAL_INT(-1, create_menu(NULL));
 }
 #endif
 
@@ -76,55 +188,38 @@ static void WndProc(WM_MESSAGE* pMsg)
 {
     GUI_RECT rt = { 0 };
     char buf[MAX_PATH] = { 0 };
-    WM_HWIN hWin = 0;
-    FRAMEWIN_Handle hFrame = 0;
     GUI_PID_STATE *mouse = NULL;
-    MENU_Handle hMenu = 0;
-    MENU_ITEM_DATA item = { 0 };
+    MENU_MSG_DATA *pMenuInfo = NULL;
 
-    debug(SDL"call %s(pMsg=%p)\n", __func__, pMsg);
+    debug(GUI"call %s(pMsg=%p)\n", __func__, pMsg);
 
     do {
         if (!pMsg) {
-            error(SDL"pMsg is null\n");
+            error(GUI"pMsg is null\n");
             break;
         }
-
-        hWin = pMsg->hWin;
-        hFrame = hWin;
 
         switch (pMsg->MsgId) {
         case WM_INIT_DIALOG:
             snprintf(buf, sizeof(buf), "%s - %s", NDS_VER, __DATE__);
-            FRAMEWIN_SetText(hFrame, buf);
-            FRAMEWIN_SetFont(hFrame, &GUI_Font8x15B_1);
-
-            WM_GetClientRectEx(hFrame, &rt);
-            hMenu = MENU_CreateEx(3, 20, 634, 20, hFrame, WM_CF_SHOW, 0, 0);
-            item.pText = "File";
-            item.Id = 100;
-            item.Flags = 0;
-            item.hSubmenu = 0;
-            MENU_AddItem(hMenu, &item);
-
-            item.pText = "Edit";
-            item.Id = 101;
-            item.Flags = 0;
-            item.hSubmenu = 0;
-            MENU_AddItem(hMenu, &item);
-
-            item.pText = "View";
-            item.Id = 102;
-            item.Flags = 0;
-            item.hSubmenu = 0;
-            MENU_AddItem(hMenu, &item);
-
-            item.pText = "Help";
-            item.Id = 103;
-            item.Flags = 0;
-            item.hSubmenu = 0;
-            MENU_AddItem(hMenu, &item);
-            MENU_SetFont(hMenu, &GUI_Font8x15B_1);
+            FRAMEWIN_SetText(pMsg->hWin, buf);
+            FRAMEWIN_SetFont(pMsg->hWin, &GUI_Font24_ASCII);
+            create_menu(pMsg->hWin);
+            break;
+        case WM_MENU:
+            pMenuInfo = (MENU_MSG_DATA *)pMsg->Data.p;
+            switch (pMenuInfo->MsgType) {
+            case MENU_ON_ITEMSELECT:
+                if (pMenuInfo->ItemId == MENU_FILE_QUIT) {
+                    debug(GUI"exit\n");
+                    running = 0;
+                    GUI_EndDialog(pMsg->hWin, 0);
+                    break;
+                }
+                sprintf(buf, "ID %d", pMenuInfo->ItemId);
+                GUI_MessageBox(buf, "main", GUI_MB_OK);
+                break;
+            }
             break;
         case WM_PAINT:
             break;
@@ -149,13 +244,14 @@ TEST(sdl2_menu, WndProc)
 void prehook_cb_menu(void *sys, uint32_t show_dlg)
 {
     int cc = 0;
+    void *fb_pixels = NULL;
     SDL_Rect rt = { 0, 0, LCD_XSIZE, LCD_YSIZE };
 
     debug(GUI"call %s(system=%p, show_dlg=%d)\n", __func__, sys, show_dlg);
 
     do {
         if (!sys) {
-            error(SDL"sys is null");
+            error(GUI"sys is null");
             break;
         }
 
@@ -170,7 +266,7 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
         fb_pixels = fb_getbuffer();
         debug(GUI"fb_pixels=%p\n", fb_pixels);
         if (!fb_pixels) {
-            error(SDL"fb_pixels is null\n");
+            error(GUI"fb_pixels is null\n");
             break;
         }
 
@@ -180,11 +276,11 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
         GUI_CreateDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
         GUI_Delay(100);
 
-        cc = 100;
-        while (cc--) {
+        running = 1;
+        while (running) {
             flush_lcd_screen(-1, fb_pixels, rt, rt, LCD_XSIZE * 2, 0, 0);
             flip_lcd_screen();
-            GUI_Delay(100);
+            GUI_Delay(1000 / 30);
         }
     } while (0);
 }
