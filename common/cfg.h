@@ -17,6 +17,7 @@ int init_cfg(void);
 int load_cfg(const char *);
 int reset_cfg(void);
 int update_cfg(const char *);
+void* neon_memcpy(void *, const void *, size_t);
 
 #endif
 

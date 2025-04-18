@@ -137,6 +137,9 @@ lvgl: $(LVGL_OBJS)
 .PHONY: rel
 rel: mkdir prepare
 ifeq ($(MOD),mini)
+ifeq ($(DEBUG),1)
+	cp -a gdb/armhf/* $(MYDIR)
+endif
 	cp -a assets/nds/armhf/* $(MYDIR)
 	cp -a assets/lib/armhf/libz.so.1 $(MYDIR)/lib
 	cp -a assets/lib/armhf/libEGL.so $(MYDIR)/lib
@@ -147,10 +150,14 @@ ifeq ($(MOD),mini)
 	cp -a assets/lib/armhf/libSDL2_ttf-2.0.so.0 $(MYDIR)/lib
 	cp -a assets/lib/armhf/libSDL2_image-2.0.so.0 $(MYDIR)/lib
 	cp -a assets/mini/* $(MYDIR)
+	cp -a lib/mini/libprotobuf-nanopb.so.0 $(MYDIR)/lib
 	cp -a alsa/libasound.so.2 $(MYDIR)/lib
 endif
 
 ifeq ($(MOD),a30)
+ifeq ($(DEBUG),1)
+	cp -a gdb/armhf/* $(MYDIR)
+endif
 	cp -a assets/nds/armhf/* $(MYDIR)
 	cp -a assets/lib/armhf/libz.so.1 $(MYDIR)/lib
 	cp -a assets/lib/armhf/libpng16.so.16 $(MYDIR)/lib

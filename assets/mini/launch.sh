@@ -24,7 +24,7 @@ sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
 
 cd $MYDIR
-./drastic "$1"
+./drastic $1
 sync
 
 echo $sv > /proc/sys/vm/swappiness

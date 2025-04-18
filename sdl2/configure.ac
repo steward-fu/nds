@@ -2638,8 +2638,17 @@ CheckMiyooMini()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldetour"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../common"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lcommon"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../ucgui"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lucgui"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lvgl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -llvgl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lib/mini"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_ao"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lshmvar"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_common"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_sys"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_gfx"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
         SUMMARY_video="${SUMMARY_video} NDS_MIYOO_MINI"
 
         enable_video_x11=no

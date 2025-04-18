@@ -787,6 +787,70 @@ TEST(sdl2_video, quit_miyoo_lcd)
 #endif
 #endif
 
+#if defined(MIYOO_MINI) || defined(UT)
+static int init_mini_lcd(void)
+{
+    debug(SDL"call %s()\n", __func__);
+
+    MI_SYS_Init();
+    MI_GFX_Open();
+
+    myvid.fb.fd = open(FB_DEV, O_RDWR);
+    if (myvid.fb.fd < 0) {
+        error(SDL"failed to open "FB_DEV"\n");
+        return -1;
+    }
+    debug(SDL"fb handle=%d\n", myvid.fb.fd);
+
+    ioctl(myvid.fb.fd, FBIOGET_FSCREENINFO, &myvid.fb.fix_info);
+    ioctl(myvid.fb.fd, FBIOGET_VSCREENINFO, &myvid.fb.var_info);
+
+    myvid.fb.var_info.yoffset = 0;
+    myvid.fb.var_info.yres_virtual = myvid.fb.var_info.yres * 2;
+    ioctl(myvid.fb.fd, FBIOPUT_VSCREENINFO, &myvid.fb.var_info);
+
+    myvid.gfx.dst.phy = myvid.fb.fix_info.smem_start;
+    MI_SYS_MemsetPa(myvid.gfx.dst.phy, 0, FB_SIZE);
+    MI_SYS_Mmap(myvid.gfx.dst.phy, myvid.fb.fix_info.smem_len, &myvid.gfx.dst.virt, TRUE);
+
+    MI_SYS_MMA_Alloc(NULL, FB_SIZE, &myvid.gfx.src.phy);
+    MI_SYS_Mmap(myvid.gfx.src.phy, FB_SIZE, &myvid.gfx.src.virt, TRUE);
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, init_mini_lcd)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_mini_lcd());
+}
+#endif
+
+static int quit_mini_lcd(void)
+{
+    debug(SDL"call %s()\n", __func__);
+
+    MI_SYS_Munmap(myvid.gfx.dst.virt, FB_SIZE);
+    MI_SYS_Munmap(myvid.gfx.src.virt, FB_SIZE);
+    MI_SYS_MMA_Free(myvid.gfx.src.phy);
+
+    MI_GFX_Close();
+    MI_SYS_Exit();
+
+    myvid.fb.var_info.yoffset = 0;
+    ioctl(myvid.fb.fd, FBIOPUT_VSCREENINFO, &myvid.fb.var_info);
+    close(myvid.fb.fd);
+    myvid.fb.fd = -1;
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, quit_mini_lcd)
+{
+    TEST_ASSERT_EQUAL_INT(0, quit_mini_lcd());
+}
+#endif
+#endif
+
 int flip_lcd_screen(void)
 {
     debug(SDL"call %s()\n", __func__);
@@ -807,6 +871,13 @@ int flip_lcd_screen(void)
     gbm_surface_release_buffer(myvid.drm.gs, myvid.drm.bo);
 #endif
 
+#if defined(MIYOO_MINI)
+    if (ioctl(myvid.fb.fd, FBIOPAN_DISPLAY, &myvid.fb.var_info) < 0) {
+        error(SDL"failed to flip fb through ioctl()\n");
+    }
+    myvid.fb.var_info.yoffset ^= FB_H;
+    debug(SDL"fb yoffset=%d\n", myvid.fb.var_info.yoffset);
+#endif
     return 0;
 }
 
@@ -842,7 +913,7 @@ static int update_nds_screen(void)
         lcd.w = hires ? NDS_Wx2 : NDS_W;
         lcd.h = hires ? NDS_Hx2 : NDS_H;
 
-        flush_lcd_screen(TEXTURE_BUF, pixels, lcd, lcd, lcd.w * bpp, 0, 0);
+        flush_lcd_screen(-1, pixels, lcd, lcd, lcd.w * bpp, 0, 0);
     }
 
     flip_lcd_screen();
@@ -919,15 +990,16 @@ int flush_lcd_screen(int tex_id, const void *pixels, SDL_Rect srt, SDL_Rect drt,
     int tex = (tex_id >= 0) ? tex_id : TEXTURE_BUF;
 #endif
 
+#if defined(MIYOO_MINI)
+    MI_U16 fence = 0;
+    MI_GFX_Opt_t opt = { 0 };
+    int fmt = (pitch / srt.w) == 2 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
+#endif
+
     debug(SDL"call %s()\n", __func__);
     debug(SDL"tex_id=%d, pixels=%p, pitch=%d, alpha=%d, rotate=%d\n", tex_id, pixels, pitch, alpha, rotate);
     debug(SDL"src(%d, %d, %d, %d)\n", srt.x, srt.y, srt.w, srt.h);
     debug(SDL"dst(%d, %d, %d, %d)\n", drt.x, drt.y, drt.w, drt.h);
-
-    if (tex_id >= TEXTURE_MAX) {
-        error(SDL"invalid tex_id(%d)\n", tex_id);
-        return -1;
-    }
 
     if (!pixels) {
         error(SDL"pixels is null\n");
@@ -935,6 +1007,13 @@ int flush_lcd_screen(int tex_id, const void *pixels, SDL_Rect srt, SDL_Rect drt,
     }
 
 #if defined(SFOS_EGL) || defined(MIYOO_EGL)
+#if defined(MIYOO_EGL)
+    if (tex_id >= TEXTURE_MAX) {
+        error(SDL"invalid tex_id(%d)\n", tex_id);
+        return -1;
+    }
+#endif
+
 #if defined(SFOS_EGL)
     fg_vertices[0] = ((((float)drt.x) / SCREEN_H) - 0.5) * 2.0;
     fg_vertices[1] = ((((float)drt.y) / SCREEN_W) - 0.5) * -2.0;
@@ -1004,6 +1083,40 @@ int flush_lcd_screen(int tex_id, const void *pixels, SDL_Rect srt, SDL_Rect drt,
     glEnableVertexAttribArray(myvid.egl.pos);
     glEnableVertexAttribArray(myvid.egl.coord);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+#endif
+
+#if defined(MIYOO_MINI)
+    neon_memcpy(myvid.gfx.src.virt, pixels, srt.h * pitch);
+    MI_SYS_FlushInvCache(myvid.gfx.src.virt, FB_SIZE);
+
+    opt.u32GlobalSrcConstColor = 0;
+    opt.eRotate = rotate;
+    opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+    opt.eDstDfbBldOp = 0;
+    opt.eDFBBlendFlag = 0;
+
+    myvid.gfx.src.rt.s32Xpos = srt.x;
+    myvid.gfx.src.rt.s32Ypos = srt.y;
+    myvid.gfx.src.rt.u32Width = srt.w;
+    myvid.gfx.src.rt.u32Height = srt.h;
+    myvid.gfx.src.surf.u32Width = srt.w;
+    myvid.gfx.src.surf.u32Height = srt.h;
+    myvid.gfx.src.surf.u32Stride = pitch;
+    myvid.gfx.src.surf.eColorFmt = fmt;
+    myvid.gfx.src.surf.phyAddr = myvid.gfx.src.phy;
+
+    myvid.gfx.dst.rt.s32Xpos = drt.x;
+    myvid.gfx.dst.rt.s32Ypos = drt.y;
+    myvid.gfx.dst.rt.u32Width = drt.w;
+    myvid.gfx.dst.rt.u32Height = drt.h;
+    myvid.gfx.dst.surf.u32Width = FB_W;
+    myvid.gfx.dst.surf.u32Height = FB_H;
+    myvid.gfx.dst.surf.u32Stride = FB_W * FB_BPP;
+    myvid.gfx.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
+    myvid.gfx.dst.surf.phyAddr = myvid.gfx.dst.phy + (myvid.fb.var_info.yoffset * FB_W * FB_BPP);
+
+    MI_GFX_BitBlit(&myvid.gfx.src.surf, &myvid.gfx.src.rt, &myvid.gfx.dst.surf, &myvid.gfx.dst.rt, &opt, &fence);
+    MI_GFX_WaitAllDone(TRUE, fence);
 #endif
 
     return 0;
@@ -1322,9 +1435,13 @@ int init_video(_THIS)
     init_miyoo_lcd();
 #endif
 
+#if defined(MIYOO_MINI) || defined(UT)
+    init_mini_lcd();
+#endif
+
     init_event();
 
-#if defined(SFOS_EGL) || defined(MIYOO_EGL)
+#if defined(SFOS_EGL) || defined(MIYOO_EGL) || defined(MIYOO_MINI)
     myvid.thread.running = 1;
     pthread_create(&myvid.thread.id, NULL, screen_handler, (void *)NULL);
 #endif
@@ -1391,6 +1508,10 @@ void quit_video(_THIS)
 
 #if defined(MIYOO_EGL) || defined(UT)
     quit_miyoo_lcd();
+#endif
+
+#if defined(MIYOO_MINI) || defined(UT)
+    quit_mini_lcd();
 #endif
 
     quit_hook();

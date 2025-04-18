@@ -279,7 +279,7 @@ void prehook_cb_init_backup(backup_struct *backup, backup_type_enum backup_type,
     uint32_t desmume_footer_position = 0;
     uint32_t clean_pages_loaded = 0;
 
-    debug(DTR"call %s()\n");
+    debug(DTR"call %s()\n", __func__);
 
     if (path && path[0]) {
         data_file_name = malloc(MAX_PATH);

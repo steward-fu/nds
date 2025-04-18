@@ -25,6 +25,11 @@
 #include <wayland-egl.h>
 #endif
 
+#if defined(MIYOO_MINI) || defined(UT)
+#include "mi_sys.h"
+#include "mi_gfx.h"
+#endif
+
 #include "../../SDL_internal.h"
 #include "../../events/SDL_events_c.h"
 #include "../SDL_sysvideo.h"
@@ -53,6 +58,16 @@
 #define NDS_LCD_NUM             2
 
 #if defined(UT)
+#define SCREEN_W                640
+#define SCREEN_H                480
+#endif
+
+#if defined(MIYOO_MINI)
+#define FB_W                    640
+#define FB_H                    480
+#define FB_BPP                  4
+#define FB_SIZE                 (FB_W * FB_H * FB_BPP * 2)
+#define FB_DEV                  "/dev/fb0"
 #define SCREEN_W                640
 #define SCREEN_H                480
 #endif
@@ -158,6 +173,17 @@ typedef struct {
             pthread_t id;
         } thread;
     } wl;
+#endif
+
+#if defined(MIYOO_MINI) || defined(UT)
+    struct {
+        struct {
+            void *virt;
+            MI_PHY phy;
+            MI_GFX_Rect_t rt;
+            MI_GFX_Surface_t surf;
+        } src, dst;
+    } gfx;
 #endif
 
     struct {

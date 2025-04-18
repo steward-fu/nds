@@ -43,7 +43,6 @@ extern nds_pb_cfg mycfg;
 static int init_queue(queue_t *q, size_t size);
 static int put_queue(queue_t *q, uint8_t *buf, size_t size);
 static int quit_queue(queue_t *q);
-void* neon_memcpy(void *dest, const void *src, size_t n);
 
 #if defined(UT)
 TEST_GROUP(alsa_snd);
@@ -848,9 +847,6 @@ int snd_pcm_start(snd_pcm_t *pcm)
     chn.u32ChnId = myalsa.mi.channel;
     chn.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&chn, 12, 13);
-    if (set_volume(mycfg.system_volume) < 0) {
-        return -1;
-    }
 #endif
 
 #if defined(MIYOO_A30)

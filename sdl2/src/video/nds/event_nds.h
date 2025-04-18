@@ -12,6 +12,10 @@
 #define INPUT_DEV "/dev/input/event3"
 #endif
 
+#if defined(MIYOO_MINI)
+#define INPUT_DEV "/dev/input/event0"
+#endif
+
 #if defined(SFOS_XT897)
 #define INPUT_DEV "/dev/input/event1"
 #endif
@@ -36,6 +40,31 @@
 #define DEV_KEY_CODE_QLOAD      -2
 #define DEV_KEY_CODE_FFORWARD   -3
 #define DEV_KEY_CODE_EXIT       316
+#define DEV_KEY_CODE_VOL_UP     115
+#define DEV_KEY_CODE_VOL_DOWN   114
+#define DEV_KEY_CODE_POWER      -5
+#endif
+
+#if defined(MIYOO_MINI)
+#define DEV_KEY_CODE_UP         103
+#define DEV_KEY_CODE_DOWN       108
+#define DEV_KEY_CODE_LEFT       105
+#define DEV_KEY_CODE_RIGHT      106
+#define DEV_KEY_CODE_A          57
+#define DEV_KEY_CODE_B          29
+#define DEV_KEY_CODE_X          42
+#define DEV_KEY_CODE_Y          56
+#define DEV_KEY_CODE_L1         18
+#define DEV_KEY_CODE_R1         20
+#define DEV_KEY_CODE_L2         15
+#define DEV_KEY_CODE_R2         14
+#define DEV_KEY_CODE_SELECT     97
+#define DEV_KEY_CODE_START      28
+#define DEV_KEY_CODE_MENU       1
+#define DEV_KEY_CODE_QSAVE      -1
+#define DEV_KEY_CODE_QLOAD      -2
+#define DEV_KEY_CODE_FFORWARD   -3
+#define DEV_KEY_CODE_EXIT       -4
 #define DEV_KEY_CODE_VOL_UP     115
 #define DEV_KEY_CODE_VOL_DOWN   114
 #define DEV_KEY_CODE_POWER      -5

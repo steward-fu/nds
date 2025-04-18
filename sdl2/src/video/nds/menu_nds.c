@@ -265,10 +265,15 @@ TEST(sdl2_menu, WndProc)
 
 static int run_ucgui(void)
 {
+    int rotate = 0;
     void *fb_pixels = NULL;
     SDL_Rect rt = { 0, 0, LCD_XSIZE, LCD_YSIZE };
 
     debug(GUI"call %s(w=%d, h=%d)++\n", __func__, LCD_XSIZE, LCD_YSIZE);
+
+#if defined(MIYOO_MINI)
+    rotate = E_MI_GFX_ROTATE_180;
+#endif
 
     GUI_Init();
     GUI_SetBkColor(GUI_GRAY);
@@ -289,12 +294,12 @@ static int run_ucgui(void)
 
     running = 1;
     while (running) {
-        flush_lcd_screen(-1, fb_pixels, rt, rt, LCD_XSIZE * 2, 0, 0);
+        flush_lcd_screen(-1, fb_pixels, rt, rt, LCD_XSIZE * 2, 0, rotate);
         flip_lcd_screen();
         GUI_Delay(1000 / 30);
     }
 
-    debug(GUI"call %s()--\n");
+    debug(GUI"call %s()--\n", __func__);
     return 0;
 }
 
@@ -323,12 +328,17 @@ TEST(sdl2_menu, refresh_cb)
 
 static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
+    int rotate = 0;
     SDL_Rect rt = { 0, 0, LCD_XSIZE, LCD_YSIZE };
 
     debug(GUI"call %s()\n", __func__);
 
+#if defined(MIYOO_MINI)
+    rotate = E_MI_GFX_ROTATE_180;
+#endif
+
     lv_display_flush_ready(disp);
-    flush_lcd_screen(-1, lv_pixels, rt, rt, LCD_XSIZE * 2, 0, 0);
+    flush_lcd_screen(-1, lv_pixels, rt, rt, LCD_XSIZE * 2, 0, rotate);
 }
 
 #if defined(UT)
@@ -372,7 +382,7 @@ static int run_lvgl(void)
 
     free(lv_pixels);
     lv_pixels = NULL;
-    debug(GUI"call %s()--\n");
+    debug(GUI"call %s()--\n", __func__);
     return 0;
 }
 
