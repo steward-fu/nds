@@ -677,6 +677,7 @@ TEST(sdl2_video, init_egl)
 }
 #endif
 
+#if defined(SFOS_EGL) || defined(UT)
 static int quit_sfos_lcd(void)
 {
     debug(SDL"call %s()\n", __func__);
@@ -709,7 +710,6 @@ TEST(sdl2_video, quit_sfos_lcd)
 }
 #endif
 
-#if defined(SFOS_EGL) || defined(UT)
 static int init_sfos_lcd(void)
 {
     const uint32_t size = SCREEN_W * SCREEN_H * 4 * 2;
