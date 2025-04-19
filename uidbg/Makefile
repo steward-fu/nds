@@ -12,8 +12,7 @@ LDFLAGS += -lSDL
 LDFLAGS += ../lvgl/liblvgl.so
 LDFLAGS += ../ucgui/libucgui.so
 LDFLAGS += ../common/libcommon.so
-SRCS     = main.c \
-           menu_nds.c
+SRCS     = main.c menu_nds.c ucgui_font.c
 
 .PHONY: uidbg
 uidbg:

@@ -51,8 +51,149 @@ TEST_TEAR_DOWN(common_file)
 }
 #endif
 
-static int write_file(const char *fpath, const void *buf, int len)
+int get_file_line(const char *fpath)
 {
+    int r = 0;
+    FILE *f = NULL;
+    char buf[MAX_PATH] = { 0 };
+
+    debug(COM"call %s()\n", __func__);
+
+    if (!fpath) {
+        error(COM"invalid file path\n");
+        return -1;
+    }
+
+    f = fopen(fpath, "r");
+    if (!f) {
+        error(COM"failed to open file \"%s\"\n", fpath);
+        return -1;
+    }
+
+    r = 0;
+    while (fgets(buf, sizeof(buf), f)) {
+        r += 1;
+    }
+    debug(COM"line count=%d\n", r);
+
+    fclose(f);    
+    return r;
+}
+
+#if defined(UT)
+TEST(common_file, get_file_line)
+{
+    FILE *f = NULL;
+    const char *path = "/tmp/test";
+
+    TEST_ASSERT_EQUAL_INT(-1, get_file_line(NULL));
+
+    f = fopen(path, "w");
+    TEST_ASSERT_NOT_NULL(f);
+    fprintf(f, "1234567890");
+    fclose(f);
+    TEST_ASSERT_EQUAL_INT(1, get_file_line(path));
+
+    f = fopen(path, "w");
+    TEST_ASSERT_NOT_NULL(f);
+    fprintf(f, "1234567890\n");
+    fprintf(f, "1234567890");
+    fclose(f);
+
+    TEST_ASSERT_EQUAL_INT(2, get_file_line(path));
+
+    unlink(path);
+}
+#endif
+
+int get_file_size(const char *fpath)
+{
+    int r = 0;
+    FILE *f = NULL;
+
+    debug(COM"call %s()\n", __func__);
+
+    if (!fpath) {
+        error(COM"invalid file path\n");
+        return -1;
+    }
+
+    f = fopen(fpath, "r");
+    if (!f) {
+        error(COM"failed to open file \"%s\"\n", fpath);
+        return -1;
+    }
+
+    fseek(f, 0, SEEK_END);
+    r = ftell(f);
+    fclose(f);
+    
+    return r;
+}
+
+#if defined(UT)
+TEST(common_file, get_file_size)
+{
+    FILE *f = NULL;
+    const char *path = "/tmp/test";
+
+    f = fopen(path, "w");
+    TEST_ASSERT_NOT_NULL(f);
+
+    fprintf(f, "1234567890");
+    fclose(f);
+
+    TEST_ASSERT_EQUAL_INT(-1, get_file_size(NULL));
+    TEST_ASSERT_EQUAL_INT(10, get_file_size(path));
+
+    unlink(path);
+}
+#endif
+
+int read_file(const char *fpath, void *buf, int len)
+{
+    int r = 0;
+    int fd = -1;
+
+    debug(COM"call %s()\n", __func__);
+
+    if (!fpath || !buf) {
+        error(COM"invalid parameters(0x%x, 0x%x)\n", fpath, buf);
+        return -1;
+    }
+
+    fd = open(fpath, O_RDONLY);
+    if (fd < 0) {
+        error(COM"failed to open \"%s\"\n", fpath);
+        return -1;
+    }
+
+    r = read(fd, buf, len);
+    debug(COM"read %d bytes\n", r);
+
+    close(fd);
+    return r;
+}
+
+#if defined(UT)
+TEST(common_file, read_file)
+{
+    int len = 0;
+    char buf[32] = { "1234567890" };
+    const char *path = "/tmp/xxx";
+
+    TEST_ASSERT_EQUAL_INT(-1, read_file(NULL, NULL, 0));
+
+    len = strlen(buf);
+    TEST_ASSERT_EQUAL_INT(len, write_file(path, buf, len));
+    TEST_ASSERT_EQUAL_INT(len, read_file(path, buf, sizeof(buf)));
+    unlink(path);
+}
+#endif
+
+int write_file(const char *fpath, const void *buf, int len)
+{
+    int r = 0;
     int fd = -1;
 
     debug(COM"call %s()\n", __func__);
@@ -73,23 +214,25 @@ static int write_file(const char *fpath, const void *buf, int len)
         return -1;
     }
 
-    if (write(fd, buf, len) != len) {
-        error(COM"failed to write data to \"%s\"\n", fpath);
-    }
+    r = write(fd, buf, len);
+    debug(COM"wrote %d bytes\n", r);
 
     close(fd);
-    return 0;
+    return r;
 }
 
 #if defined(UT)
 TEST(common_file, write_file)
 {
-    char buf[32] = { 0 };
-    const char *FPATH = "/tmp/xxx";
+    int len = 0;
+    char buf[32] = { "1234567890" };
+    const char *path = "/tmp/test";
 
     TEST_ASSERT_EQUAL_INT(-1, write_file(NULL, NULL, 0));
-    TEST_ASSERT_EQUAL_INT(0, write_file(FPATH, buf, sizeof(buf)));
-    unlink(FPATH);
+
+    len = strlen(buf);
+    TEST_ASSERT_EQUAL_INT(len, write_file(path, buf, len));
+    unlink(path);
 }
 #endif
 
@@ -145,6 +288,9 @@ TEST(common_file, create_bios_files)
 #if defined(UT)
 TEST_GROUP_RUNNER(common_file)
 {
+    RUN_TEST_CASE(common_file, get_file_line);
+    RUN_TEST_CASE(common_file, get_file_size);
+    RUN_TEST_CASE(common_file, read_file);
     RUN_TEST_CASE(common_file, write_file);
     RUN_TEST_CASE(common_file, create_bios_files);
 }

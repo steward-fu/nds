@@ -786,15 +786,16 @@ static int init_mini_lcd(void)
 {
     debug(SDL"call %s()\n", __func__);
 
-    MI_SYS_Init();
-    MI_GFX_Open();
-
     myvid.fb.fd = open(FB_DEV, O_RDWR);
     if (myvid.fb.fd < 0) {
         error(SDL"failed to open "FB_DEV"\n");
         return -1;
     }
     debug(SDL"fb handle=%d\n", myvid.fb.fd);
+
+#if !defined(UT)
+    MI_SYS_Init();
+    MI_GFX_Open();
 
     ioctl(myvid.fb.fd, FBIOGET_FSCREENINFO, &myvid.fb.fix_info);
     ioctl(myvid.fb.fd, FBIOGET_VSCREENINFO, &myvid.fb.var_info);
@@ -809,6 +810,8 @@ static int init_mini_lcd(void)
 
     MI_SYS_MMA_Alloc(NULL, FB_SIZE, &myvid.gfx.src.phy);
     MI_SYS_Mmap(myvid.gfx.src.phy, FB_SIZE, &myvid.gfx.src.virt, TRUE);
+#endif
+
     return 0;
 }
 
@@ -823,17 +826,21 @@ static int quit_mini_lcd(void)
 {
     debug(SDL"call %s()\n", __func__);
 
+#if !defined(UT)
     MI_SYS_Munmap(myvid.gfx.dst.virt, FB_SIZE);
     MI_SYS_Munmap(myvid.gfx.src.virt, FB_SIZE);
     MI_SYS_MMA_Free(myvid.gfx.src.phy);
 
     MI_GFX_Close();
     MI_SYS_Exit();
+#endif
 
-    myvid.fb.var_info.yoffset = 0;
-    ioctl(myvid.fb.fd, FBIOPUT_VSCREENINFO, &myvid.fb.var_info);
-    close(myvid.fb.fd);
-    myvid.fb.fd = -1;
+    if (myvid.fb.fd > 0) {
+        myvid.fb.var_info.yoffset = 0;
+        ioctl(myvid.fb.fd, FBIOPUT_VSCREENINFO, &myvid.fb.var_info);
+        close(myvid.fb.fd);
+        myvid.fb.fd = -1;
+    }
     return 0;
 }
 
@@ -1508,6 +1515,7 @@ void quit_video(_THIS)
 
     debug(SDL"update cfg to \"%s\"\n", path);
     update_cfg(path);
+    quit_cfg();
 }
 
 #if defined(UT)
@@ -1543,7 +1551,10 @@ static SDL_VideoDevice *create_device(int devindex)
 #if defined(UT)
 TEST(sdl2_video, create_device)
 {
-    TEST_ASSERT_NOT_NULL(create_device(0));
+    SDL_VideoDevice * r = create_device(0);
+
+    TEST_ASSERT_NOT_NULL(r);
+    delete_device(r);
 }
 #endif
 

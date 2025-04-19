@@ -9,7 +9,7 @@
 #define MAX_MALLOC_SIZE     4096
 
 #define DEF_CFG_VER         "20250101"
-#define DEF_CFG_LANG        "en_US"
+#define DEF_CFG_LANG        LANG_en_US
 #define DEF_CFG_DBG         LOG_LEVEL_DEBUG
 #define DEF_CFG_MODE        MODE_KEY
 

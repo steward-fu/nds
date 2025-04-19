@@ -25,7 +25,7 @@
 #include <wayland-egl.h>
 #endif
 
-#if defined(MIYOO_MINI) || defined(UT)
+#if defined(MIYOO_MINI)
 #include "mi_sys.h"
 #include "mi_gfx.h"
 #endif
@@ -57,12 +57,7 @@
 #define NDS_Hx2                 (NDS_H << 1)
 #define NDS_LCD_NUM             2
 
-#if defined(UT)
-#define SCREEN_W                640
-#define SCREEN_H                480
-#endif
-
-#if defined(MIYOO_MINI)
+#if defined(MIYOO_MINI) || defined(UT)
 #define SCREEN_W                640
 #define SCREEN_H                480
 #define FB_DEV                  "/dev/fb0"
@@ -171,7 +166,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(MIYOO_MINI) || defined(UT)
+#if defined(MIYOO_MINI)
     struct {
         struct {
             void *virt;

@@ -6,13 +6,13 @@ CFLAGS  += -Iextras/fixture/src
 LDFLAGS += -Wl,--no-undefined
 LDFLAGS += -Wl,-rpath .
 LDFLAGS += -Wl,-rpath-link .
+LDFLAGS += ../lvgl/liblvgl.so
 LDFLAGS += ../ucgui/libucgui.so
 LDFLAGS += ../alsa/libasound.so.2
 LDFLAGS += ../common/libcommon.so
 LDFLAGS += ../detour/libdetour.so
 LDFLAGS += ../sdl2/build/.libs/libSDL2-2.0.so.0
-SRCS     = main.c \
-           src/unity.c \
+SRCS     = main.c src/unity.c \
            extras/memory/src/unity_memory.c \
            extras/fixture/src/unity_fixture.c
 

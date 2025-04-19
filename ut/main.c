@@ -10,6 +10,7 @@ static void runAllTests(void)
     RUN_TEST_GROUP(common_log);
     RUN_TEST_GROUP(common_cfg);
     RUN_TEST_GROUP(common_file);
+    RUN_TEST_GROUP(common_lang);
 
     RUN_TEST_GROUP(detour_hook);
 

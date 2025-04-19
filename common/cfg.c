@@ -23,6 +23,7 @@
 #include "log.h"
 #include "cfg.h"
 #include "snd.h"
+#include "lang.h"
 #include "cfg.pb.h"
 
 nds_pb_cfg mycfg = nds_pb_cfg_init_zero;
@@ -101,7 +102,7 @@ int reset_cfg(void)
     debug(COM"call %s()\n", __func__);
 
     strncpy(mycfg.ver, DEF_CFG_VER, sizeof(mycfg.ver));
-    strncpy(mycfg.lang, DEF_CFG_LANG, sizeof(mycfg.lang));
+    mycfg.lang = DEF_CFG_LANG;
     getcwd(mycfg.home, sizeof(mycfg.home));
     mycfg.dbg = DEF_CFG_DBG;
     mycfg.mode = DEF_CFG_MODE;
@@ -192,6 +193,7 @@ int init_cfg(void)
         update_cfg(path);
     }
 
+    init_lang();
     set_debug_level(mycfg.dbg);
     return 0;
 }
@@ -203,10 +205,26 @@ TEST(common_cfg, init_cfg)
 }
 #endif
 
+int quit_cfg(void)
+{
+    debug(COM"call %s()\n", __func__);
+
+    quit_lang();
+    return 0;
+}
+
+#if defined(UT)
+TEST(common_cfg, quit_cfg)
+{
+    TEST_ASSERT_EQUAL_INT(0, quit_cfg());
+}
+#endif
+
 #if defined(UT)
 TEST_GROUP_RUNNER(common_cfg)
 {
     RUN_TEST_CASE(common_cfg, init_cfg);
+    RUN_TEST_CASE(common_cfg, quit_cfg);
     RUN_TEST_CASE(common_cfg, load_cfg);
     RUN_TEST_CASE(common_cfg, reset_cfg);
     RUN_TEST_CASE(common_cfg, update_cfg);

@@ -10,6 +10,13 @@
 #endif
 
 /* Enum definitions */
+typedef enum _LANG {
+    LANG_en_US = 0,
+    LANG_zh_CN = 1,
+    LANG_zh_TW = 2,
+    LANG_MAX = 3
+} LANG;
+
 typedef enum _UI {
     UI_LVGL = 0,
     UI_UCGUI = 1
@@ -23,7 +30,7 @@ typedef enum _MODE {
 /* Struct definitions */
 typedef struct _nds_pb_cfg {
     char ver[255];
-    char lang[255];
+    LANG lang;
     char home[255];
     bool dbg;
     MODE mode;
@@ -36,6 +43,10 @@ extern "C" {
 #endif
 
 /* Helper constants for enums */
+#define _LANG_MIN LANG_en_US
+#define _LANG_MAX LANG_MAX
+#define _LANG_ARRAYSIZE ((LANG)(LANG_MAX+1))
+
 #define _UI_MIN UI_LVGL
 #define _UI_MAX UI_UCGUI
 #define _UI_ARRAYSIZE ((UI)(UI_UCGUI+1))
@@ -44,13 +55,14 @@ extern "C" {
 #define _MODE_MAX MODE_TOUCH
 #define _MODE_ARRAYSIZE ((MODE)(MODE_TOUCH+1))
 
+#define nds_pb_cfg_lang_ENUMTYPE LANG
 #define nds_pb_cfg_mode_ENUMTYPE MODE
 #define nds_pb_cfg_ui_ENUMTYPE UI
 
 
 /* Initializer values for message structs */
-#define nds_pb_cfg_init_default                  {"", "", "", 0, _MODE_MIN, _UI_MIN}
-#define nds_pb_cfg_init_zero                     {"", "", "", 0, _MODE_MIN, _UI_MIN}
+#define nds_pb_cfg_init_default                  {"", _LANG_MIN, "", 0, _MODE_MIN, _UI_MIN}
+#define nds_pb_cfg_init_zero                     {"", _LANG_MIN, "", 0, _MODE_MIN, _UI_MIN}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define nds_pb_cfg_ver_tag                       1
@@ -63,7 +75,7 @@ extern "C" {
 /* Struct field encoding specification for nanopb */
 #define nds_pb_cfg_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   ver,               1) \
-X(a, STATIC,   SINGULAR, STRING,   lang,              2) \
+X(a, STATIC,   SINGULAR, UENUM,    lang,              2) \
 X(a, STATIC,   SINGULAR, STRING,   home,              3) \
 X(a, STATIC,   SINGULAR, BOOL,     dbg,               4) \
 X(a, STATIC,   SINGULAR, UENUM,    mode,              5) \
@@ -78,7 +90,7 @@ extern const pb_msgdesc_t nds_pb_cfg_msg;
 
 /* Maximum encoded size of messages (where known) */
 #define CFG_PB_H_MAX_SIZE                        nds_pb_cfg_size
-#define nds_pb_cfg_size                          777
+#define nds_pb_cfg_size                          522
 
 #ifdef __cplusplus
 } /* extern "C" */

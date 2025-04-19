@@ -1,5 +1,12 @@
 syntax = "proto3";
 
+enum LANG {
+    en_US           = 0;
+    zh_CN           = 1;
+    zh_TW           = 2;
+    MAX             = 3;
+}
+
 enum UI {
     LVGL            = 0;
     UCGUI           = 1;
@@ -12,7 +19,7 @@ enum MODE {
 
 message nds_pb_cfg {
     string ver      = 1;
-    string lang     = 2;
+    LANG lang       = 2;
     string home     = 3;
     bool dbg        = 4;
     MODE mode       = 5;

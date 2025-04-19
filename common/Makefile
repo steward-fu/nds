@@ -3,7 +3,7 @@ CFLAGS  += $(MOREFLAGS)
 LDFLAGS += -fPIC
 LDFLAGS += -shared
 LDFLAGS += -ljson-c
-SRCS     = log.c cfg.c file.c cfg.pb.c
+SRCS     = log.c cfg.c file.c cfg.pb.c lang.c
 
 ifneq ($(MOD),ut)
 ifneq ($(MOD),flip)

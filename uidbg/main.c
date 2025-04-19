@@ -11,6 +11,8 @@
 #include "GUI_Protected.h"
 #include "LCD_ConfDefaults.h"
 
+#include "cfg.h"
+#include "lang.h"
 #include "cfg.pb.h"
 #include "menu_nds.h"
 
@@ -42,6 +44,9 @@ static void* input_handler(void *param)
     while (running) {
         if (SDL_PollEvent(&event)) {
             switch (event.type) {
+            case SDL_QUIT:
+                exit(0);
+                break;
             case SDL_KEYDOWN:
                 GUI_StoreKeyMsg(event.key.keysym.sym, 1);
                 break;
@@ -74,9 +79,10 @@ static void* input_handler(void *param)
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
-    screen = SDL_SetVideoMode(LCD_XSIZE, LCD_YSIZE, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    screen = SDL_SetVideoMode(LCD_XSIZE, LCD_YSIZE, 16, SDL_SWSURFACE);
     SDL_ShowCursor(SDL_FALSE);
 
+    init_cfg();
     pthread_create(&thread_id, NULL, input_handler, NULL);
     prehook_cb_menu((void *)0xdeadbeef, 1);
 

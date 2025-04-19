@@ -67,6 +67,7 @@ endif
 ifeq ($(MOD),ut)
     export ASAN_OPTIONS=detect_odr_violation=0
     CFLAGS  += -DUT
+    CFLAGS  += -I../lvgl
     CFLAGS  += -I../ut/src
     CFLAGS  += -I../ut/extras/memory/src
     CFLAGS  += -I../ut/extras/fixture/src
@@ -92,6 +93,8 @@ endif
 endif
 
 MYDIR = rel
+MYLIB = $(MYLIB)
+
 export CC=${CROSS}gcc
 export AR=${CROSS}ar
 export AS=${CROSS}as
@@ -140,18 +143,18 @@ ifeq ($(MOD),mini)
 ifeq ($(DEBUG),1)
 	cp -a gdb/armhf/* $(MYDIR)
 endif
-	cp -a assets/nds/armhf/* $(MYDIR)
-	cp -a assets/lib/armhf/libz.so.1 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libEGL.so $(MYDIR)/lib
-	cp -a assets/lib/armhf/libGLESv2.so $(MYDIR)/lib
-	cp -a assets/lib/armhf/libpng16.so.16 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libjson-c.so.5 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libGLESv1_CM.so $(MYDIR)/lib
-	cp -a assets/lib/armhf/libSDL2_ttf-2.0.so.0 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libSDL2_image-2.0.so.0 $(MYDIR)/lib
 	cp -a assets/mini/* $(MYDIR)
-	cp -a lib/mini/libprotobuf-nanopb.so.0 $(MYDIR)/lib
-	cp -a alsa/libasound.so.2 $(MYDIR)/lib
+	cp -a assets/nds/armhf/* $(MYDIR)
+	cp assets/lib/armhf/libz.so.1 $(MYLIB)
+	cp assets/lib/armhf/libEGL.so $(MYLIB)
+	cp assets/lib/armhf/libGLESv2.so $(MYLIB)
+	cp assets/lib/armhf/libpng16.so.16 $(MYLIB)
+	cp assets/lib/armhf/libjson-c.so.5 $(MYLIB)
+	cp assets/lib/armhf/libGLESv1_CM.so $(MYLIB)
+	cp assets/lib/armhf/libSDL2_ttf-2.0.so.0 $(MYLIB)
+	cp assets/lib/armhf/libSDL2_image-2.0.so.0 $(MYLIB)
+	cp alsa/libasound.so.2 $(MYLIB)
+	cp lib/mini/libprotobuf-nanopb.so.0 $(MYLIB)
 endif
 
 ifeq ($(MOD),a30)
@@ -159,17 +162,17 @@ ifeq ($(DEBUG),1)
 	cp -a gdb/armhf/* $(MYDIR)
 endif
 	cp -a assets/nds/armhf/* $(MYDIR)
-	cp -a assets/lib/armhf/libz.so.1 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libpng16.so.16 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libjson-c.so.5 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libpcre2-8.so.0 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libharfbuzz.so.0 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libfreetype.so.6 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libglib-2.0.so.0 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libSDL2_ttf-2.0.so.0 $(MYDIR)/lib
-	cp -a assets/lib/armhf/libSDL2_image-2.0.so.0 $(MYDIR)/lib
-	cp -a assets/a30/* $(MYDIR)
-	cp -a lib/a30/libprotobuf-nanopb.so.0 $(MYDIR)/lib
+	cp assets/lib/armhf/libz.so.1 $(MYLIB)
+	cp assets/lib/armhf/libpng16.so.16 $(MYLIB)
+	cp assets/lib/armhf/libjson-c.so.5 $(MYLIB)
+	cp assets/lib/armhf/libpcre2-8.so.0 $(MYLIB)
+	cp assets/lib/armhf/libharfbuzz.so.0 $(MYLIB)
+	cp assets/lib/armhf/libfreetype.so.6 $(MYLIB)
+	cp assets/lib/armhf/libglib-2.0.so.0 $(MYLIB)
+	cp assets/lib/armhf/libSDL2_ttf-2.0.so.0 $(MYLIB)
+	cp assets/lib/armhf/libSDL2_image-2.0.so.0 $(MYLIB)
+	cp assets/a30/* $(MYDIR)
+	cp lib/a30/libprotobuf-nanopb.so.0 $(MYLIB)
 	adb shell rm -rf /mnt/SDCARD/rel && adb push rel /mnt/SDCARD
 endif
 
@@ -177,37 +180,38 @@ ifeq ($(MOD),flip)
 ifeq ($(DEBUG),1)
 	cp -a gdb/aarch64/* $(MYDIR)
 endif
-	cp -a assets/nds/aarch64/* $(MYDIR)
-	cp -a assets/lib/aarch64/libc.so.6 $(MYDIR)/lib
-	cp -a assets/lib/aarch64/libm.so.6 $(MYDIR)/lib
-	cp -a assets/lib/aarch64/libmpfr.so.6 $(MYDIR)/lib
-	cp -a assets/lib/aarch64/libgmp.so.10 $(MYDIR)/lib
-	cp -a assets/lib/aarch64/libstdc++.so.6 $(MYDIR)/lib
-	cp -a assets/lib/aarch64/ld-linux-aarch64.so.1 $(MYDIR)/lib
-	cp -a lib/flip/libprotobuf-nanopb.so.0 $(MYDIR)/lib
 	cp -a assets/flip/* $(MYDIR)
+	cp -a assets/nds/aarch64/* $(MYDIR)
+	cp assets/lib/aarch64/libc.so.6 $(MYLIB)
+	cp assets/lib/aarch64/libm.so.6 $(MYLIB)
+	cp assets/lib/aarch64/libmpfr.so.6 $(MYLIB)
+	cp assets/lib/aarch64/libgmp.so.10 $(MYLIB)
+	cp assets/lib/aarch64/libstdc++.so.6 $(MYLIB)
+	cp assets/lib/aarch64/ld-linux-aarch64.so.1 $(MYLIB)
+	cp lib/flip/libprotobuf-nanopb.so.0 $(MYLIB)
 	adb shell rm -rf /mnt/sdcard/rel && adb push rel /mnt/sdcard
 endif
 
 ifeq ($(MOD),xt897)
 	cp -a assets/nds/armhf/* $(MYDIR)
 	cp -a assets/sfos/* $(MYDIR)
-	cp -a alsa/libasound.so.2 $(MYDIR)/lib
+	cp alsa/libasound.so.2 $(MYLIB)
 endif
 
 .PHONY: prepare
 prepare:
-	cp -a sdl2/build/.libs/libSDL2-2.0.so.0.18.2 $(MYDIR)/lib/libSDL2-2.0.so.0
-	cp -a lvgl/liblvgl.so $(MYDIR)/lib
-	cp -a ucgui/libucgui.so $(MYDIR)/lib
-	cp -a common/libcommon.so $(MYDIR)/lib
-	cp -a detour/libdetour.so $(MYDIR)/lib
-	cp -a assets/res $(MYDIR)
+	#cp -a assets/bg $(MYDIR)
+	cp -a assets/lang $(MYDIR)
+	cp lvgl/liblvgl.so $(MYLIB)
+	cp ucgui/libucgui.so $(MYLIB)
+	cp detour/libdetour.so $(MYLIB)
+	cp common/libcommon.so $(MYLIB)
+	cp sdl2/build/.libs/libSDL2-2.0.so.0.18.2 $(MYLIB)/libSDL2-2.0.so.0
 
 .PHONY: mkdir
 mkdir:
 	rm -rf $(MYDIR)
-	mkdir -p $(MYDIR)/lib
+	mkdir -p $(MYLIB)
 	mkdir -p $(MYDIR)/system
 
 .PHONY: clean

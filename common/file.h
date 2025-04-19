@@ -12,6 +12,10 @@
 #define DRASTIC_BIOS_ARM9   "drastic_bios_arm9"
 
 int create_bios_files(void);
+int get_file_size(const char *);
+int get_file_line(const char *);
+int read_file(const char *, void *, int);
+int write_file(const char *, const void *, int);
 
 #endif
 
