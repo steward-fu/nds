@@ -76,7 +76,51 @@ TEST(common_lang, get_lang_idx)
 }
 #endif
 
-int utf8_to_gbk(const char* src, char* dst, int len)
+static int gbk_to_utf8(const char* src, char* dst, int len)
+{
+    int r = 0;
+    iconv_t cd;
+    size_t inlen = strlen(src) + 1;
+    size_t outlen = len;
+    char* inbuf = (char *)malloc(len);
+    char* inbuf_hold = inbuf;
+    char* outbuf2 = NULL;
+    char* outbuf = dst;
+
+    debug(COM"call %s()\n", __func__);
+
+    memcpy(inbuf, src, len);
+    if (src == dst) {
+        outbuf2 = (char*)malloc(len);
+        memset(outbuf2, 0, len);
+        outbuf = outbuf2;
+    }
+
+    cd = iconv_open("UTF-8", "GBK");
+    if (cd != (iconv_t)-1) {
+        r = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+        if (r != 0)
+            error(COM"failed to do iconv(r=%d)\n", r);
+
+        if (outbuf2 != NULL) {
+            strcpy(dst, outbuf2);
+            free(outbuf2);
+        }
+        iconv_close(cd);
+    }
+    free(inbuf_hold);
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(common_lang, gbk_to_utf8)
+{
+    TEST_ASSERT_EQUAL_INT(-1, gbk_to_utf8(NULL, NULL, 0));
+}
+#endif
+
+static int utf8_to_gbk(const char* src, char* dst, int len)
 {
     int r = 0;
     iconv_t cd;
@@ -162,7 +206,12 @@ static int parse_lang_file(const char *path, int idx)
     r = 0;
     while (fgets(buf, sizeof(buf), f)) {
         strip_newline(buf);
-        len = strlen(buf) + 1;
+        len = strlen(buf);
+        if (len == 0) {
+            continue;
+        }
+
+        len += 1;
         lang[idx][r] = malloc(len);
         if (!lang[idx][r]) {
             error(COM"failed to allocate buffer for string\n");
@@ -286,7 +335,7 @@ const char* l10n(const char *s)
 
     idx = 0;
     while (lang[mycfg.lang][idx]) {
-        if (memcmp(lang[mycfg.lang][idx], s, len) == 0) {
+        if ((memcmp(lang[mycfg.lang][idx], s, len) == 0) && (lang[mycfg.lang][idx][len] == '=')) {
             debug(COM"ret=\"%s\"\n", &lang[mycfg.lang][idx][len + 1]);
             return &lang[mycfg.lang][idx][len + 1];
         }
@@ -307,6 +356,7 @@ TEST(common_lang, l10n)
 #if defined(UT)
 TEST_GROUP_RUNNER(common_lang)
 {
+    RUN_TEST_CASE(common_lang, gbk_to_utf8)
     RUN_TEST_CASE(common_lang, utf8_to_gbk)
     RUN_TEST_CASE(common_lang, get_lang_idx)
     RUN_TEST_CASE(common_lang, strip_newline)
