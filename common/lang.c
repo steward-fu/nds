@@ -99,14 +99,18 @@ static int gbk_to_utf8(const char* src, char* dst, int len)
     cd = iconv_open("UTF-8", "GBK");
     if (cd != (iconv_t)-1) {
         r = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-        if (r != 0)
-            error(COM"failed to do iconv(r=%d)\n", r);
+        if (r != 0) {
+            error(COM"failed to do iconv(ret=%d)\n", r);
+        }
 
         if (outbuf2 != NULL) {
             strcpy(dst, outbuf2);
             free(outbuf2);
         }
         iconv_close(cd);
+    }
+    else {
+        error(COM"failed to open iconv(ret=%d)\n", cd);
     }
     free(inbuf_hold);
 
@@ -140,6 +144,9 @@ static int utf8_to_gbk(const char* src, char* dst, int len)
             error(COM"failed to do iconv(r=%d)\n", r);
         }
         iconv_close(cd);
+    }
+    else {
+        error(COM"failed to open iconv(ret=%d)\n", cd);
     }
     free(inbuf_hold);
     return 0;

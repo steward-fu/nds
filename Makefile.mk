@@ -93,7 +93,7 @@ endif
 endif
 
 MYDIR = rel
-MYLIB = $(MYLIB)
+MYLIB = $(MYDIR)/lib
 
 export CC=${CROSS}gcc
 export AR=${CROSS}ar
