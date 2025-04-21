@@ -37,8 +37,14 @@ int flush_lcd_screen(int tex_id, const void *pixels, SDL_Rect srt, SDL_Rect drt,
 
 static void* input_handler(void *param)
 {
+    const int MOV = 5;
     SDL_Event event = { 0 };
-    GUI_PID_STATE st = { 0 };
+
+    int up = 0;
+    int down = 0;
+    int left = 0;
+    int right = 0;
+    GUI_PID_STATE st = { LCD_XSIZE >> 1, LCD_YSIZE >>1, 0 };
 
     running = 1;
     while (running) {
@@ -48,7 +54,51 @@ static void* input_handler(void *param)
                 exit(0);
                 break;
             case SDL_KEYDOWN:
-                GUI_StoreKeyMsg(event.key.keysym.sym, 1);
+                switch (event.key.keysym.sym) {
+                case SDLK_w:
+                    up = 1;
+                    break;
+                case SDLK_s:
+                    down = 1;
+                    break;
+                case SDLK_a:
+                    left = 1;
+                    break;
+                case SDLK_d:
+                    right = 1;
+                    break;
+                case SDLK_l:
+                    if (st.Pressed == 0) {
+                        st.Pressed = 1;
+                        GUI_MOUSE_StoreState(&st);
+                    }
+                    break;
+                default:
+                    GUI_StoreKeyMsg(event.key.keysym.sym, 1);
+                    break;
+                }
+                break;
+            case SDL_KEYUP:
+                switch (event.key.keysym.sym) {
+                case SDLK_w:
+                    up = 0;
+                    break;
+                case SDLK_s:
+                    down = 0;
+                    break;
+                case SDLK_a:
+                    left = 0;
+                    break;
+                case SDLK_d:
+                    right = 0;
+                    break;
+                case SDLK_l:
+                    if (st.Pressed) {
+                        st.Pressed = 0;
+                        GUI_MOUSE_StoreState(&st);
+                    }
+                    break;
+                }
                 break;
             case SDL_MOUSEMOTION:
                 SDL_GetMouseState(&st.x, &st.y);
@@ -69,6 +119,23 @@ static void* input_handler(void *param)
                 GUI_TOUCH_StoreState(st.x, st.y);
                 break;
             }
+        }
+
+        if (up && (st.y > 0)) {
+            st.y -= MOV;
+            GUI_MOUSE_StoreState(&st);
+        }
+        if (down && (st.y < LCD_YSIZE)) {
+            st.y += MOV;
+            GUI_MOUSE_StoreState(&st);
+        }
+        if (left && (st.x > 0)) {
+            st.x -= MOV;
+            GUI_MOUSE_StoreState(&st);
+        }
+        if (right && (st.x < LCD_XSIZE)) {
+            st.x += MOV;
+            GUI_MOUSE_StoreState(&st);
         }
         usleep(1000000 / 30);
     }
