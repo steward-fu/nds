@@ -126,7 +126,7 @@ static int get_key_bit(uint32_t code)
     case DEV_KEY_CODE_MENU:     return KEY_BIT_MENU;
     case DEV_KEY_CODE_QSAVE:    return KEY_BIT_QSAVE;
     case DEV_KEY_CODE_QLOAD:    return KEY_BIT_QLOAD;
-    case DEV_KEY_CODE_FFORWARD: return KEY_BIT_FFORWARD;
+    case DEV_KEY_CODE_FF:       return KEY_BIT_FF;
     case DEV_KEY_CODE_EXIT:     return KEY_BIT_EXIT;
     case DEV_KEY_CODE_VOL_UP:   return KEY_BIT_VOL_UP;
     case DEV_KEY_CODE_VOL_DOWN: return KEY_BIT_VOL_DOWN;
@@ -201,10 +201,12 @@ TEST(sdl2_event, send_gui_event)
 
 static int input_handler(void *data)
 {
+#if !defined(UT)
     int fd = -1;
     int act = 0;
     int bit = 0;
     struct input_event ev = {{ 0 }};
+#endif
 
     debug(SDL"call %s()++\n", __func__);
 
@@ -236,7 +238,10 @@ static int input_handler(void *data)
 
         usleep(1000000 / 30);
     }
-    free_all_keys();
+
+    if (mycfg.mode == MODE_KEY) {
+        free_all_keys();
+    }
     close(fd);
 #endif
 
@@ -255,25 +260,25 @@ void init_event(void)
 {
     debug(SDL"call %s()\n", __func__);
 
-    myevt.key.code[KEY_BIT_UP] = SDLK_UP;
-    myevt.key.code[KEY_BIT_DOWN] = SDLK_DOWN;
-    myevt.key.code[KEY_BIT_LEFT] = SDLK_LEFT;
-    myevt.key.code[KEY_BIT_RIGHT] = SDLK_RIGHT;
-    myevt.key.code[KEY_BIT_A] = SDLK_SPACE;
-    myevt.key.code[KEY_BIT_B] = SDLK_LCTRL;
-    myevt.key.code[KEY_BIT_X] = SDLK_LSHIFT;
-    myevt.key.code[KEY_BIT_Y] = SDLK_LALT;
-    myevt.key.code[KEY_BIT_L1] = SDLK_e;
-    myevt.key.code[KEY_BIT_R1] = SDLK_t;
-    myevt.key.code[KEY_BIT_L2] = SDLK_TAB;
-    myevt.key.code[KEY_BIT_R2] = SDLK_BACKSPACE;
+    myevt.key.code[KEY_BIT_UP]     = SDLK_UP;
+    myevt.key.code[KEY_BIT_DOWN]   = SDLK_DOWN;
+    myevt.key.code[KEY_BIT_LEFT]   = SDLK_LEFT;
+    myevt.key.code[KEY_BIT_RIGHT]  = SDLK_RIGHT;
+    myevt.key.code[KEY_BIT_A]      = SDLK_SPACE;
+    myevt.key.code[KEY_BIT_B]      = SDLK_LCTRL;
+    myevt.key.code[KEY_BIT_X]      = SDLK_LSHIFT;
+    myevt.key.code[KEY_BIT_Y]      = SDLK_LALT;
+    myevt.key.code[KEY_BIT_L1]     = SDLK_e;
+    myevt.key.code[KEY_BIT_R1]     = SDLK_t;
+    myevt.key.code[KEY_BIT_L2]     = SDLK_TAB;
+    myevt.key.code[KEY_BIT_R2]     = SDLK_BACKSPACE;
     myevt.key.code[KEY_BIT_SELECT] = SDLK_RCTRL;
-    myevt.key.code[KEY_BIT_START] = SDLK_RETURN;
-    myevt.key.code[KEY_BIT_MENU] = SDLK_HOME;
-    myevt.key.code[KEY_BIT_QSAVE] = SDLK_0;
-    myevt.key.code[KEY_BIT_QLOAD] = SDLK_1;
-    myevt.key.code[KEY_BIT_FFORWARD] = SDLK_2;
-    myevt.key.code[KEY_BIT_EXIT] = SDLK_3;
+    myevt.key.code[KEY_BIT_START]  = SDLK_RETURN;
+    myevt.key.code[KEY_BIT_MENU]   = SDLK_HOME;
+    myevt.key.code[KEY_BIT_QSAVE]  = SDLK_0;
+    myevt.key.code[KEY_BIT_QLOAD]  = SDLK_1;
+    myevt.key.code[KEY_BIT_FF]     = SDLK_2;
+    myevt.key.code[KEY_BIT_EXIT]   = SDLK_3;
 
     myevt.thread = SDL_CreateThreadInternal(input_handler, "NDS Input Handler", 4096, NULL);
     if(myevt.thread == NULL) {

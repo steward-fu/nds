@@ -1,7 +1,6 @@
 TARGET   = uidbg
 CFLAGS  += -ggdb
 CFLAGS  += -DUIDBG
-CFLAGS  += -DLV_CONF_SKIP
 CFLAGS  += -DSDL_VIDEO_DRIVER_NDS=1
 CFLAGS  += -I/usr/include/SDL
 LDFLAGS += -Wl,--no-undefined

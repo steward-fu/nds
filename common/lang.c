@@ -78,16 +78,27 @@ TEST(common_lang, get_lang_idx)
 
 static int gbk_to_utf8(const char* src, char* dst, int len)
 {
-    int r = 0;
-    iconv_t cd;
-    size_t inlen = strlen(src) + 1;
+    int r = -1;
+    iconv_t cd = 0;
+
+    size_t inlen = 0;
+    char *inbuf = NULL;
+    char *inbuf_hold = NULL;
+
     size_t outlen = len;
-    char* inbuf = (char *)malloc(len);
-    char* inbuf_hold = inbuf;
-    char* outbuf2 = NULL;
-    char* outbuf = dst;
+    char *outbuf2 = NULL;
+    char *outbuf = dst;
 
     debug(COM"call %s()\n", __func__);
+
+    if (!src || !dst) {
+        error(COM"invalid parameters(0x%x, 0x%x, %d)\n", src, dst, len);
+        return r;
+    }
+
+    inlen = strlen(src) + 1;
+    inbuf = (char *)malloc(len);
+    inbuf_hold = inbuf;
 
     memcpy(inbuf, src, len);
     if (src == dst) {
@@ -98,9 +109,10 @@ static int gbk_to_utf8(const char* src, char* dst, int len)
 
     cd = iconv_open("UTF-8", "GBK");
     if (cd != (iconv_t)-1) {
-        r = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-        if (r != 0) {
-            error(COM"failed to do iconv(ret=%d)\n", r);
+        r = 0;
+        if (iconv(cd, &inbuf, &inlen, &outbuf, &outlen) != 0) {
+            error(COM"failed to do iconv\n");
+            r = -1;
         }
 
         if (outbuf2 != NULL) {
@@ -112,9 +124,10 @@ static int gbk_to_utf8(const char* src, char* dst, int len)
     else {
         error(COM"failed to open iconv(ret=%d)\n", cd);
     }
+
     free(inbuf_hold);
 
-    return 0;
+    return r;
 }
 
 #if defined(UT)
@@ -126,30 +139,41 @@ TEST(common_lang, gbk_to_utf8)
 
 static int utf8_to_gbk(const char* src, char* dst, int len)
 {
-    int r = 0;
-    iconv_t cd;
-    size_t inlen = strlen(src) + 1;
-    char* inbuf = (char *)malloc(len);
-    char* inbuf_hold = inbuf;
+    int r = -1;
+    iconv_t cd = 0;
+    size_t inlen = 0;
+    char* inbuf = NULL;
+    char* inbuf_hold = NULL;
     size_t outlen = len;
     char* outbuf = dst;
 
     debug(COM"call %s()\n", __func__);
 
+    if (!src || !dst) {
+        error(COM"invalid parameters(0x%x, 0x%x, %d)\n", src, dst, len);
+        return r;
+    }
+
+    inlen = strlen(src) + 1;
+    inbuf = (char *)malloc(len);
+    inbuf_hold = inbuf;
+
     memcpy(inbuf, src, len);
     cd = iconv_open("GBK", "UTF-8");
     if (cd != (iconv_t)-1) {
-        r = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-        if (r != 0) {
-            error(COM"failed to do iconv(r=%d)\n", r);
+        r = 0;
+        if (iconv(cd, &inbuf, &inlen, &outbuf, &outlen) != 0) {
+            error(COM"failed to do iconv\n");
+            r = -1;
         }
         iconv_close(cd);
     }
     else {
         error(COM"failed to open iconv(ret=%d)\n", cd);
     }
+
     free(inbuf_hold);
-    return 0;
+    return r;
 }
 
 #if defined(UT)
@@ -162,7 +186,7 @@ TEST(common_lang, utf8_to_gbk)
 static int strip_newline(char *s)
 {
     int cc = 0;
-    int len = strlen(s);
+    int len = 0;
 
     debug(COM"call %s()\n", __func__);
 
@@ -171,6 +195,7 @@ static int strip_newline(char *s)
         return -1;
     }
 
+    len = strlen(s);
     for (cc = 0; cc < len; cc++) {
         if (s[cc] == '\r') {
             s[cc] = 0;
@@ -190,6 +215,28 @@ TEST(common_lang, strip_newline)
 }
 #endif
 
+static int is_iconv_supported(void)
+{
+    iconv_t cd = 0;
+
+    debug(COM"call %s()\n", __func__);
+
+    cd = iconv_open("GBK", "UTF-8");
+    if (cd == (iconv_t)-1) {
+        error(COM"iconv doesn't be supported in this platform\n");
+        return -1;
+    }
+    iconv_close(cd);
+    return 0; 
+}
+
+#if defined(UT)
+TEST(common_lang, is_iconv_supported)
+{
+    TEST_ASSERT_EQUAL_INT(0, is_iconv_supported());
+}
+#endif
+
 static int parse_lang_file(const char *path, int idx)
 {
     int r = -1;
@@ -203,7 +250,11 @@ static int parse_lang_file(const char *path, int idx)
         error(COM"invalid path\n", __func__);
         return r;
     }
- 
+
+    if (is_iconv_supported() < 0) {
+        return r;
+    }
+
     f = fopen(path, "r");
     if (!f) {
         error(COM"failed to open \"%s\"\n", path);
@@ -363,10 +414,11 @@ TEST(common_lang, l10n)
 #if defined(UT)
 TEST_GROUP_RUNNER(common_lang)
 {
+    RUN_TEST_CASE(common_lang, get_lang_idx)
     RUN_TEST_CASE(common_lang, gbk_to_utf8)
     RUN_TEST_CASE(common_lang, utf8_to_gbk)
-    RUN_TEST_CASE(common_lang, get_lang_idx)
     RUN_TEST_CASE(common_lang, strip_newline)
+    RUN_TEST_CASE(common_lang, is_iconv_supported)
     RUN_TEST_CASE(common_lang, parse_lang_file)
     RUN_TEST_CASE(common_lang, init_lang)
     RUN_TEST_CASE(common_lang, quit_lang)

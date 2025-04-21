@@ -10,6 +10,7 @@ CFLAGS  += -I../ucgui/GUI_X
 CFLAGS  += -I../ucgui/GUI/Core
 CFLAGS  += -I../ucgui/GUI/Widget
 CFLAGS  += -I../ucgui/GUI/WM
+CFLAGS  += -DLV_CONF_SKIP
 
 ifeq ($(MOD),mini)
     CFLAGS  += -DNDS_ARM32
@@ -132,10 +133,10 @@ lvgl: $(LVGL_OBJS)
 	$(CXX) -shared -fPIC $^ -o lvgl/liblvgl.so
 
 %.o: %.c
-	$(CC) -fPIC -DLV_CONF_SKIP $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	$(CC) -std=gnu99 -fPIC $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 %.o: %.cpp
-	$(CXX) -fPIC -DLV_CONF_SKIP $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	$(CXX) -fPIC $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 .PHONY: rel
 rel: mkdir prepare

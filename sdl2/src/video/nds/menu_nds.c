@@ -60,10 +60,12 @@ static uint16_t *lv_pixels = NULL;
 static lv_display_t *lv_disp = NULL;
 static const GUI_FONT *cur_font = &GUI_Font24_ASCII;
 
+#if !defined(UT)
 static GUI_WIDGET_CREATE_INFO info[] = {
     { FRAMEWIN_CreateIndirect,  "",     100, 0, 0, LCD_XSIZE, LCD_YSIZE, WM_CF_SHOW | FRAMEWIN_SF_ICON24, 0 },
     { TEXT_CreateIndirect,      "",     101, 10, 20, 150, 20, 0, GUI_TA_LEFT },
 };
+#endif
 
 #if defined(UIDBG)
 int flip_lcd_screen(void);
@@ -115,7 +117,7 @@ static int add_or_update_menu(MENU_Handle hMenu, MENU_Handle hSubMenu, const cha
 #if defined(UT)
 TEST(sdl2_menu, add_or_update_menu)
 {
-    TEST_ASSERT_EQUAL_INT(-1, add_or_update_menu(0, 0, NULL, 0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, add_or_update_menu(0, 0, NULL, 0, 0, 0));
 }
 #endif
 
@@ -698,7 +700,8 @@ static int create_menu(WM_HWIN hParent, int is_add)
 #if defined(UT)
 TEST(sdl2_menu, create_menu)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_menu(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_menu(0, 1));
+    TEST_ASSERT_EQUAL_INT( 0, create_menu(0, 0));
 }
 #endif
 
@@ -770,9 +773,12 @@ TEST(sdl2_menu, WndProc)
 
 static int run_ucgui(void)
 {
-    int rotate = 0;
     void *fb_pixels = NULL;
+
+#if !defined(UT)
+    int rotate = 0;
     SDL_Rect rt = { 0, 0, LCD_XSIZE, LCD_YSIZE };
+#endif
 
     debug(GUI"call %s(w=%d, h=%d)++\n", __func__, LCD_XSIZE, LCD_YSIZE);
 
@@ -957,9 +963,20 @@ TEST(sdl2_menu, prehook_cb_menu)
 TEST_GROUP_RUNNER(sdl2_menu)
 {
     RUN_TEST_CASE(sdl2_menu, add_or_update_menu)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_file_recent)
     RUN_TEST_CASE(sdl2_menu, create_submenu_file)
     RUN_TEST_CASE(sdl2_menu, create_submenu_view)
     RUN_TEST_CASE(sdl2_menu, create_submenu_system)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_language)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_audio)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_swap_screen)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_show_fps)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_frameskip_type)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_frameskip_value)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_fastforward)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_speed)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_hires_3d)
+    RUN_TEST_CASE(sdl2_menu, create_submenu_config_debug_log)
     RUN_TEST_CASE(sdl2_menu, create_submenu_config)
     RUN_TEST_CASE(sdl2_menu, create_submenu_tools)
     RUN_TEST_CASE(sdl2_menu, create_submenu_help)

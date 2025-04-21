@@ -4,7 +4,7 @@
 #ifndef __COMMON_CFG_H__
 #define __COMMON_CFG_H__
 
-#define CFG_PATH            "res/settings.pb"
+#define CFG_PATH            "nds.pb"
 #define MAX_PATH            255
 #define MAX_MALLOC_SIZE     4096
 
@@ -13,6 +13,7 @@
 #define DEF_CFG_DBG         LOG_LEVEL_DEBUG
 #define DEF_CFG_MODE        MODE_KEY
 
+int quit_cfg(void);
 int init_cfg(void);
 int load_cfg(const char *);
 int reset_cfg(void);

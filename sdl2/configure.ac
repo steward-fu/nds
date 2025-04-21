@@ -2433,6 +2433,7 @@ CheckSailfishEGL()
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DSFOS_EGL"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DLV_CONF_SKIP"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
@@ -2510,6 +2511,7 @@ CheckMiyooEGL()
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_EGL"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DLV_CONF_SKIP"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
@@ -2613,6 +2615,7 @@ CheckMiyooMini()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_MINI"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM32"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DLV_CONF_SKIP"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
@@ -2685,6 +2688,7 @@ CheckUT()
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUT"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DLV_CONF_SKIP"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/usr/include/libdrm"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/nanopb"

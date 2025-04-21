@@ -38,7 +38,7 @@
 #define DEV_KEY_CODE_MENU       1
 #define DEV_KEY_CODE_QSAVE      -1
 #define DEV_KEY_CODE_QLOAD      -2
-#define DEV_KEY_CODE_FFORWARD   -3
+#define DEV_KEY_CODE_FF         -3
 #define DEV_KEY_CODE_EXIT       316
 #define DEV_KEY_CODE_VOL_UP     115
 #define DEV_KEY_CODE_VOL_DOWN   114
@@ -63,7 +63,7 @@
 #define DEV_KEY_CODE_MENU       1
 #define DEV_KEY_CODE_QSAVE      -1
 #define DEV_KEY_CODE_QLOAD      -2
-#define DEV_KEY_CODE_FFORWARD   -3
+#define DEV_KEY_CODE_FF         -3
 #define DEV_KEY_CODE_EXIT       -4
 #define DEV_KEY_CODE_VOL_UP     115
 #define DEV_KEY_CODE_VOL_DOWN   114
@@ -88,7 +88,7 @@
 #define DEV_KEY_CODE_MENU       1
 #define DEV_KEY_CODE_QSAVE      -1
 #define DEV_KEY_CODE_QLOAD      -2
-#define DEV_KEY_CODE_FFORWARD   -3
+#define DEV_KEY_CODE_FF         -3
 #define DEV_KEY_CODE_EXIT       -4
 #define DEV_KEY_CODE_VOL_UP     115
 #define DEV_KEY_CODE_VOL_DOWN   114
@@ -113,7 +113,7 @@
 #define DEV_KEY_CODE_MENU       57
 #define DEV_KEY_CODE_QSAVE      2
 #define DEV_KEY_CODE_QLOAD      11
-#define DEV_KEY_CODE_FFORWARD   -3
+#define DEV_KEY_CODE_FF         -3
 #define DEV_KEY_CODE_EXIT       29
 #define DEV_KEY_CODE_VOL_UP     -4
 #define DEV_KEY_CODE_VOL_DOWN   -5
@@ -138,7 +138,7 @@ enum key_bits {
     KEY_BIT_MENU,
     KEY_BIT_QSAVE,
     KEY_BIT_QLOAD,
-    KEY_BIT_FFORWARD,
+    KEY_BIT_FF,
     KEY_BIT_EXIT,
     KEY_BIT_VOL_UP,
     KEY_BIT_VOL_DOWN,

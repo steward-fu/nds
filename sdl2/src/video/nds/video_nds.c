@@ -310,7 +310,6 @@ TEST(sdl2_video, update_wayland_client_size)
 {
     const int w = 3;
     const int h = 3;
-    const int bpp = 32;
     uint8_t buf[3 * 3 * 32] = { 0 };
 
     myvid.wl.data = buf;
