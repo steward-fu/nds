@@ -162,6 +162,7 @@ ifeq ($(MOD),a30)
 ifeq ($(DEBUG),1)
 	cp -a gdb/armhf/* $(MYDIR)
 endif
+	cp -a assets/a30/* $(MYDIR)
 	cp -a assets/nds/armhf/* $(MYDIR)
 	cp assets/lib/armhf/libz.so.1 $(MYLIB)
 	cp assets/lib/armhf/libpng16.so.16 $(MYLIB)
@@ -172,7 +173,6 @@ endif
 	cp assets/lib/armhf/libglib-2.0.so.0 $(MYLIB)
 	cp assets/lib/armhf/libSDL2_ttf-2.0.so.0 $(MYLIB)
 	cp assets/lib/armhf/libSDL2_image-2.0.so.0 $(MYLIB)
-	cp assets/a30/* $(MYDIR)
 	cp lib/a30/libprotobuf-nanopb.so.0 $(MYLIB)
 	adb shell rm -rf /mnt/SDCARD/rel && adb push rel /mnt/SDCARD
 endif

@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <iconv.h>
+#include <errno.h>
 
 #if defined(UT)
 #include "unity_fixture.h"
@@ -223,7 +224,7 @@ static int is_iconv_supported(void)
 
     cd = iconv_open("GBK", "UTF-8");
     if (cd == (iconv_t)-1) {
-        error(COM"iconv doesn't be supported in this platform\n");
+        error(COM"iconv doesn't be supported in this platform(errno=%d)\n", errno);
         return -1;
     }
     iconv_close(cd);

@@ -3,6 +3,7 @@ MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
 export LD_LIBRARY_PATH=lib:/usr/miyoo/lib:/usr/lib
+export GCONV_PATH=$MYDIR/lib
 
 sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
