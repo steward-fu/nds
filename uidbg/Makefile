@@ -24,5 +24,5 @@ a30 mini flip xt897 ut pc:
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET) mynds.log
+	rm -rf $(TARGET) mynds.log nds.pb
 
