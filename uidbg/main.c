@@ -145,6 +145,8 @@ static void* input_handler(void *param)
 
 int main(int argc, char **argv)
 {
+    char path[320] = { 0 };
+
     SDL_Init(SDL_INIT_VIDEO);
     screen = SDL_SetVideoMode(LCD_XSIZE, LCD_YSIZE, 16, SDL_SWSURFACE);
     SDL_ShowCursor(SDL_FALSE);
@@ -155,6 +157,10 @@ int main(int argc, char **argv)
 
     running = 0;
     pthread_join(thread_id, NULL);
+
+    getcwd(mycfg.home, sizeof(mycfg.home));
+    snprintf(path, sizeof(path), "%s/%s", mycfg.home, CFG_PATH);
+    update_cfg(path);
 
     SDL_Quit();
     return 0;
