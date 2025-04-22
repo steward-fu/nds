@@ -231,15 +231,15 @@ static int create_submenu_system(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("Continue"),  MENU_SYSTEM_CONTINUE,  0,                 is_add);
-    add_or_update_menu(h,     0, l10n("Reset"),     MENU_SYSTEM_RESET,     0,                 is_add);
+    add_or_update_menu(h,     0, l10n("Continue"),  MENU_SYS_CONTINUE,  0,                 is_add);
+    add_or_update_menu(h,     0, l10n("Reset"),     MENU_SYS_RESET,     0,                 is_add);
     add_or_update_menu(h,     0, NULL,              0,                     MENU_IF_SEPARATOR, is_add);
-    add_or_update_menu(h,     0, l10n("Firmware"),  MENU_SYSTEM_FIRMWARE,  0,                 is_add);
-    add_or_update_menu(h,     0, l10n("Date Time"), MENU_SYSTEM_DATE_TIME, 0,                 is_add);
+    add_or_update_menu(h,     0, l10n("Firmware"),  MENU_SYS_FIRMWARE,  0,                 is_add);
+    add_or_update_menu(h,     0, l10n("Date Time"), MENU_SYS_DATE_TIME, 0,                 is_add);
     add_or_update_menu(h,     0, NULL,              0,                     MENU_IF_SEPARATOR, is_add);
-    add_or_update_menu(h,     0, l10n("Cheat"),     MENU_SYSTEM_CHEAT,     0,                 is_add);
-    add_or_update_menu(h,     0, l10n("ROM Info"),  MENU_SYSTEM_ROM_INFO,  0,                 is_add);
-    add_or_update_menu(hMenu, h, l10n("System"),    MENU_SYSTEM,           0,                 is_add);
+    add_or_update_menu(h,     0, l10n("Cheat"),     MENU_SYS_CHEAT,     0,                 is_add);
+    add_or_update_menu(h,     0, l10n("ROM Info"),  MENU_SYS_ROM_INFO,  0,                 is_add);
+    add_or_update_menu(hMenu, h, l10n("System"),    MENU_SYS,           0,                 is_add);
 
     return 0;
 }
@@ -267,10 +267,10 @@ static int create_submenu_config_language(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("en_US"),    MENU_CONFIG_LANG_US, 0, is_add);
-    add_or_update_menu(h,     0, l10n("zh_CN"),    MENU_CONFIG_LANG_CN, 0, is_add);
-    add_or_update_menu(h,     0, l10n("zh_TW"),    MENU_CONFIG_LANG_TW, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Language"), MENU_CONFIG_LANG,    0, is_add);
+    add_or_update_menu(h,     0, l10n("en_US"),    MENU_CFG_LANG_US, (mycfg.lang == LANG_en_US) ? MENU_IF_CHECKED : 0, is_add);
+    add_or_update_menu(h,     0, l10n("zh_CN"),    MENU_CFG_LANG_CN, (mycfg.lang == LANG_zh_CN) ? MENU_IF_CHECKED : 0, is_add);
+    add_or_update_menu(h,     0, l10n("zh_TW"),    MENU_CFG_LANG_TW, (mycfg.lang == LANG_zh_TW) ? MENU_IF_CHECKED : 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Language"), MENU_CFG_LANG,    0, is_add);
 
     return 0;
 }
@@ -298,9 +298,9 @@ static int create_submenu_config_audio(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("On"),    MENU_CONFIG_AUDIO_ON,  0, is_add);
-    add_or_update_menu(h,     0, l10n("Off"),   MENU_CONFIG_AUDIO_OFF, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Audio"), MENU_CONFIG_AUDIO,     0, is_add);
+    add_or_update_menu(h,     0, l10n("On"),    MENU_CFG_AUDIO_ON,  0, is_add);
+    add_or_update_menu(h,     0, l10n("Off"),   MENU_CFG_AUDIO_OFF, 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Audio"), MENU_CFG_AUDIO,     0, is_add);
 
     return 0;
 }
@@ -328,9 +328,9 @@ static int create_submenu_config_swap_screen(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("On"),          MENU_CONFIG_SWAP_SCREEN_ON,  0, is_add);
-    add_or_update_menu(h,     0, l10n("Off"),         MENU_CONFIG_SWAP_SCREEN_OFF, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Swap Screen"), MENU_CONFIG_SWAP_SCREEN,     0, is_add);
+    add_or_update_menu(h,     0, l10n("On"),          MENU_CFG_SWAP_SCREEN_ON,  0, is_add);
+    add_or_update_menu(h,     0, l10n("Off"),         MENU_CFG_SWAP_SCREEN_OFF, 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Swap Screen"), MENU_CFG_SWAP_SCREEN,     0, is_add);
 
     return 0;
 }
@@ -358,9 +358,9 @@ static int create_submenu_config_show_fps(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("On"),       MENU_CONFIG_SHOWFPS_ON,  0, is_add);
-    add_or_update_menu(h,     0, l10n("Off"),      MENU_CONFIG_SHOWFPS_OFF, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Show FPS"), MENU_CONFIG_SHOWFPS,     0, is_add);
+    add_or_update_menu(h,     0, l10n("On"),       MENU_CFG_SHOWFPS_ON,  0, is_add);
+    add_or_update_menu(h,     0, l10n("Off"),      MENU_CFG_SHOWFPS_OFF, 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Show FPS"), MENU_CFG_SHOWFPS,     0, is_add);
 
     return 0;
 }
@@ -388,10 +388,10 @@ static int create_submenu_config_frameskip_type(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("None"),           MENU_CONFIG_FRAMESKIP_NONE,   0, is_add);
-    add_or_update_menu(h,     0, l10n("Automatic"),      MENU_CONFIG_FRAMESKIP_AUTO,   0, is_add);
-    add_or_update_menu(h,     0, l10n("Manual"),         MENU_CONFIG_FRAMESKIP_MANUAL, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Frameskip Type"), MENU_CONFIG_FRAMESKIP_TYPE,   0, is_add);
+    add_or_update_menu(h,     0, l10n("None"),           MENU_CFG_FRAMESKIP_NONE,   0, is_add);
+    add_or_update_menu(h,     0, l10n("Automatic"),      MENU_CFG_FRAMESKIP_AUTO,   0, is_add);
+    add_or_update_menu(h,     0, l10n("Manual"),         MENU_CFG_FRAMESKIP_MANUAL, 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Frameskip Type"), MENU_CFG_FRAMESKIP_TYPE,   0, is_add);
 
     return 0;
 }
@@ -419,13 +419,13 @@ static int create_submenu_config_frameskip_value(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("0"),               MENU_CONFIG_FRAMESKIP_0,     0, is_add);
-    add_or_update_menu(h,     0, l10n("1"),               MENU_CONFIG_FRAMESKIP_1,     0, is_add);
-    add_or_update_menu(h,     0, l10n("2"),               MENU_CONFIG_FRAMESKIP_2,     0, is_add);
-    add_or_update_menu(h,     0, l10n("3"),               MENU_CONFIG_FRAMESKIP_3,     0, is_add);
-    add_or_update_menu(h,     0, l10n("4"),               MENU_CONFIG_FRAMESKIP_4,     0, is_add);
-    add_or_update_menu(h,     0, l10n("5"),               MENU_CONFIG_FRAMESKIP_5,     0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Frameskip Value"), MENU_CONFIG_FRAMESKIP_VALUE, 0, is_add);
+    add_or_update_menu(h,     0, l10n("0"),               MENU_CFG_FRAMESKIP_0,     0, is_add);
+    add_or_update_menu(h,     0, l10n("1"),               MENU_CFG_FRAMESKIP_1,     0, is_add);
+    add_or_update_menu(h,     0, l10n("2"),               MENU_CFG_FRAMESKIP_2,     0, is_add);
+    add_or_update_menu(h,     0, l10n("3"),               MENU_CFG_FRAMESKIP_3,     0, is_add);
+    add_or_update_menu(h,     0, l10n("4"),               MENU_CFG_FRAMESKIP_4,     0, is_add);
+    add_or_update_menu(h,     0, l10n("5"),               MENU_CFG_FRAMESKIP_5,     0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Frameskip Value"), MENU_CFG_FRAMESKIP_VALUE, 0, is_add);
 
     return 0;
 }
@@ -453,13 +453,13 @@ static int create_submenu_config_fastforward(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("0"),            MENU_CONFIG_FASTFORWARD_0, 0, is_add);
-    add_or_update_menu(h,     0, l10n("1"),            MENU_CONFIG_FASTFORWARD_1, 0, is_add);
-    add_or_update_menu(h,     0, l10n("2"),            MENU_CONFIG_FASTFORWARD_2, 0, is_add);
-    add_or_update_menu(h,     0, l10n("3"),            MENU_CONFIG_FASTFORWARD_3, 0, is_add);
-    add_or_update_menu(h,     0, l10n("4"),            MENU_CONFIG_FASTFORWARD_4, 0, is_add);
-    add_or_update_menu(h,     0, l10n("5"),            MENU_CONFIG_FASTFORWARD_5, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Fast Forward"), MENU_CONFIG_FASTFORWARD,   0, is_add);
+    add_or_update_menu(h,     0, l10n("0"),            MENU_CFG_FASTFORWARD_0, 0, is_add);
+    add_or_update_menu(h,     0, l10n("1"),            MENU_CFG_FASTFORWARD_1, 0, is_add);
+    add_or_update_menu(h,     0, l10n("2"),            MENU_CFG_FASTFORWARD_2, 0, is_add);
+    add_or_update_menu(h,     0, l10n("3"),            MENU_CFG_FASTFORWARD_3, 0, is_add);
+    add_or_update_menu(h,     0, l10n("4"),            MENU_CFG_FASTFORWARD_4, 0, is_add);
+    add_or_update_menu(h,     0, l10n("5"),            MENU_CFG_FASTFORWARD_5, 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Fast Forward"), MENU_CFG_FASTFORWARD,   0, is_add);
 
     return 0;
 }
@@ -487,15 +487,15 @@ static int create_submenu_config_speed(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("None"),           MENU_CONFIG_SPEED_NONE, 0, is_add);
-    add_or_update_menu(h,     0, l10n("50%"),            MENU_CONFIG_SPEED_50,   0, is_add);
-    add_or_update_menu(h,     0, l10n("150%"),           MENU_CONFIG_SPEED_150,  0, is_add);
-    add_or_update_menu(h,     0, l10n("200%"),           MENU_CONFIG_SPEED_200,  0, is_add);
-    add_or_update_menu(h,     0, l10n("250%"),           MENU_CONFIG_SPEED_250,  0, is_add);
-    add_or_update_menu(h,     0, l10n("300%"),           MENU_CONFIG_SPEED_300,  0, is_add);
-    add_or_update_menu(h,     0, l10n("350%"),           MENU_CONFIG_SPEED_350,  0, is_add);
-    add_or_update_menu(h,     0, l10n("400%"),           MENU_CONFIG_SPEED_400,  0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Speed Override"), MENU_CONFIG_SPEED,      0, is_add);
+    add_or_update_menu(h,     0, l10n("None"),           MENU_CFG_SPEED_NONE, 0, is_add);
+    add_or_update_menu(h,     0, l10n("50%"),            MENU_CFG_SPEED_50,   0, is_add);
+    add_or_update_menu(h,     0, l10n("150%"),           MENU_CFG_SPEED_150,  0, is_add);
+    add_or_update_menu(h,     0, l10n("200%"),           MENU_CFG_SPEED_200,  0, is_add);
+    add_or_update_menu(h,     0, l10n("250%"),           MENU_CFG_SPEED_250,  0, is_add);
+    add_or_update_menu(h,     0, l10n("300%"),           MENU_CFG_SPEED_300,  0, is_add);
+    add_or_update_menu(h,     0, l10n("350%"),           MENU_CFG_SPEED_350,  0, is_add);
+    add_or_update_menu(h,     0, l10n("400%"),           MENU_CFG_SPEED_400,  0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Speed Override"), MENU_CFG_SPEED,      0, is_add);
 
     return 0;
 }
@@ -523,9 +523,9 @@ static int create_submenu_config_hires_3d(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("On"),                 MENU_CONFIG_HIRES_3D_ON,  0, is_add);
-    add_or_update_menu(h,     0, l10n("Off"),                MENU_CONFIG_HIRES_3D_OFF, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("High Resolution 3D"), MENU_CONFIG_HIRES_3D,     0, is_add);
+    add_or_update_menu(h,     0, l10n("On"),                 MENU_CFG_HIRES_3D_ON,  0, is_add);
+    add_or_update_menu(h,     0, l10n("Off"),                MENU_CFG_HIRES_3D_OFF, 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("High Resolution 3D"), MENU_CFG_HIRES_3D,     0, is_add);
 
     return 0;
 }
@@ -553,9 +553,9 @@ static int create_submenu_config_debug_log(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h,     0, l10n("On"),        MENU_CONFIG_DEBUG_LOG_ON,  0, is_add);
-    add_or_update_menu(h,     0, l10n("Off"),       MENU_CONFIG_DEBUG_LOG_OFF, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Debug Log"), MENU_CONFIG_DEBUG_LOG,     0, is_add);
+    add_or_update_menu(h,     0, l10n("On"),        MENU_CFG_DEBUG_LOG_ON,  mycfg.log_level == 0 ? MENU_IF_CHECKED : 0, is_add);
+    add_or_update_menu(h,     0, l10n("Off"),       MENU_CFG_DEBUG_LOG_OFF, mycfg.log_level != 0 ? MENU_IF_CHECKED : 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Debug Log"), MENU_CFG_DEBUG_LOG, 0, is_add);
 
     return 0;
 }
@@ -593,11 +593,11 @@ static int create_submenu_config(MENU_Handle hMenu, int is_add)
     create_submenu_config_swap_screen(h,     is_add);
     create_submenu_config_hires_3d(h,        is_add);
     create_submenu_config_debug_log(h,       is_add);
-    add_or_update_menu(h,     0, l10n("Microphone"), MENU_CONFIG_MICROPHONE, 0, is_add);
-    add_or_update_menu(h,     0, l10n("Keypad"),     MENU_CONFIG_KEYPAD,     0, is_add);
-    add_or_update_menu(h,     0, l10n("Joystick"),   MENU_CONFIG_JOYSTICK,   0, is_add);
-    add_or_update_menu(h,     0, l10n("Hotkey"),     MENU_CONFIG_HOTKEY,     0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Config"),     MENU_CONFIG,            0, is_add);
+    add_or_update_menu(h,     0, l10n("Microphone"), MENU_CFG_MICROPHONE, 0, is_add);
+    add_or_update_menu(h,     0, l10n("Keypad"),     MENU_CFG_KEYPAD,     0, is_add);
+    add_or_update_menu(h,     0, l10n("Joystick"),   MENU_CFG_JOYSTICK,   0, is_add);
+    add_or_update_menu(h,     0, l10n("Hotkey"),     MENU_CFG_HOTKEY,     0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Config"),     MENU_CFG,            0, is_add);
 
     return 0;
 }
@@ -738,17 +738,17 @@ static void WndProc(WM_MESSAGE* pMsg)
                     emu_quit();
 #endif
                     break;
-                case MENU_CONFIG_LANG_US:
+                case MENU_CFG_LANG_US:
                     mycfg.lang = LANG_en_US;
                     debug(GUI"set language as en_US\n");
                     create_menu(0, 0);
                     break;
-                case MENU_CONFIG_LANG_CN:
+                case MENU_CFG_LANG_CN:
                     mycfg.lang = LANG_zh_CN;
                     debug(GUI"set language as zh_CN\n");
                     create_menu(0, 0);
                     break;
-                case MENU_CONFIG_LANG_TW:
+                case MENU_CFG_LANG_TW:
                     mycfg.lang = LANG_zh_TW;
                     debug(GUI"set language as zh_TW\n");
                     create_menu(0, 0);
