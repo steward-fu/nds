@@ -32,7 +32,7 @@ typedef struct _nds_pb_cfg {
     char ver[255];
     LANG lang;
     char home[255];
-    bool dbg;
+    bool log_level;
     MODE mode;
     UI ui;
 } nds_pb_cfg;
@@ -68,7 +68,7 @@ extern "C" {
 #define nds_pb_cfg_ver_tag                       1
 #define nds_pb_cfg_lang_tag                      2
 #define nds_pb_cfg_home_tag                      3
-#define nds_pb_cfg_dbg_tag                       4
+#define nds_pb_cfg_log_level_tag                 4
 #define nds_pb_cfg_mode_tag                      5
 #define nds_pb_cfg_ui_tag                        6
 
@@ -77,7 +77,7 @@ extern "C" {
 X(a, STATIC,   SINGULAR, STRING,   ver,               1) \
 X(a, STATIC,   SINGULAR, UENUM,    lang,              2) \
 X(a, STATIC,   SINGULAR, STRING,   home,              3) \
-X(a, STATIC,   SINGULAR, BOOL,     dbg,               4) \
+X(a, STATIC,   SINGULAR, BOOL,     log_level,         4) \
 X(a, STATIC,   SINGULAR, UENUM,    mode,              5) \
 X(a, STATIC,   SINGULAR, UENUM,    ui,                6)
 #define nds_pb_cfg_CALLBACK NULL

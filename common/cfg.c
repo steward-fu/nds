@@ -104,7 +104,7 @@ int reset_cfg(void)
     strncpy(mycfg.ver, DEF_CFG_VER, sizeof(mycfg.ver));
     mycfg.lang = DEF_CFG_LANG;
     getcwd(mycfg.home, sizeof(mycfg.home));
-    mycfg.dbg = DEF_CFG_DBG;
+    mycfg.log_level = DEF_CFG_LOG_LEVEL;
     mycfg.mode = DEF_CFG_MODE;
     return 0;
 }
@@ -114,7 +114,7 @@ TEST(common_cfg, reset_cfg)
 {
     memset(&mycfg, 0, sizeof(mycfg));
     TEST_ASSERT_EQUAL_INT(0, reset_cfg());
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_DBG, mycfg.dbg);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_LOG_LEVEL, mycfg.log_level);
     TEST_ASSERT_EQUAL_STRING(DEF_CFG_VER, mycfg.ver);
     TEST_ASSERT_EQUAL_STRING(DEF_CFG_LANG, mycfg.lang);
 }
@@ -194,7 +194,7 @@ int init_cfg(void)
     }
 
     init_lang();
-    set_debug_level(mycfg.dbg);
+    set_debug_level(mycfg.log_level);
     return 0;
 }
 
