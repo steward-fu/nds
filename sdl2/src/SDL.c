@@ -155,7 +155,9 @@ SDL_InitSubSystem(Uint32 flags)
 
 #if SDL_VIDEO_DRIVER_NDS
 	SDL_setenv("SDL_VIDEODRIVER", "NDS", 1);
-	SDL_setenv("SDL_AUDIODRIVER", "NDS", 1);
+#if defined(MIYOO_FLIP)
+	SDL_setenv("SDL_AUDIODRIVER", "alsa", 1);
+#endif
 #endif
 
     if(!SDL_MainIsReady) {
