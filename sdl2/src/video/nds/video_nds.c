@@ -108,16 +108,16 @@ static const char *frag_shader_code =
     "varying vec2 frag_coord;                                           \n"
     "uniform int frag_swap_color;                                       \n"
     "uniform float frag_aspect;                                         \n"
-    "uniform float frag_angle;                                          \n"
+    "uniform float frag_rotate;                                         \n"
     "uniform sampler2D frag_sampler;                                    \n"
     "const vec2 HALF = vec2(0.5);                                       \n"
     "void main()                                                        \n"
     "{                                                                  \n"
+    "    vec3 tex;                                                      \n"
 
 #if defined(SFOS_EGL)
-    "    vec3 tex;                                                      \n"
-    "    float aSin = sin(frag_angle);                                  \n"
-    "    float aCos = cos(frag_angle);                                  \n"
+    "    float aSin = sin(frag_rotate);                                 \n"
+    "    float aCos = cos(frag_rotate);                                 \n"
     "    vec2 tc = frag_coord;                                          \n"
     "    mat2 rotMat = mat2(aCos, -aSin, aSin, aCos);                   \n"
     "    mat2 scaleMat = mat2(frag_aspect, 0.0, 0.0, 1.0);              \n"
@@ -134,7 +134,12 @@ static const char *frag_shader_code =
 #endif
 
 #if defined(MIYOO_EGL)
-    "    vec3 tex = texture2D(frag_sampler, frag_coord).rgb;            \n"
+    "    if (frag_swap_color >= 1) {                                    \n"
+    "        tex = texture2D(frag_sampler, frag_coord).bgr;             \n"
+    "    }                                                              \n"
+    "    else {                                                         \n"
+    "        tex = texture2D(frag_sampler, frag_coord).rgb;             \n"
+    "    }                                                              \n"
 #endif
 
     "    gl_FragColor = vec4(tex, 1.0);                                 \n"
@@ -628,18 +633,20 @@ static int init_egl(void)
     myvid.egl.pos = glGetAttribLocation(myvid.egl.prog, "vert_pos");
     myvid.egl.coord = glGetAttribLocation(myvid.egl.prog, "vert_coord");
     myvid.egl.sampler = glGetUniformLocation(myvid.egl.prog, "frag_sampler");
-    glUniform1f(glGetUniformLocation(myvid.egl.prog, "frag_aspect"), 1.0);
+    myvid.egl.aspect = glGetUniformLocation(myvid.egl.prog, "frag_aspect");
+    myvid.egl.rotate = glGetUniformLocation(myvid.egl.prog, "frag_rotate");
+    myvid.egl.swap_color = glGetUniformLocation(myvid.egl.prog, "frag_swap_color");
 
-#if defined(MIYOO_A30)
-    glUniform1f(glGetUniformLocation(myvid.egl.prog, "frag_angle"), 0);
-#else
-    glUniform1f(glGetUniformLocation(myvid.egl.prog, "frag_angle"), 90 * (3.1415 * 2.0) / 360.0);
+    glUniform1f(myvid.egl.rotate, 0.0);
+    glUniform1f(myvid.egl.aspect, 1.0);
+    glUniform1i(myvid.egl.swap_color, 0);
+
+#if !defined(MIYOO_A30)
+    glUniform1f(myvid.egl.rotate, 90 * (3.1415 * 2.0) / 360.0);
 #endif
 
-#if defined(SFOS_XT897) || defined(MIYOO_A30)
-    glUniform1i(glGetUniformLocation(myvid.egl.prog, "frag_swap_color"), 0);
-#else
-    glUniform1i(glGetUniformLocation(myvid.egl.prog, "frag_swap_color"), 1);
+#if defined(MIYOO_FLIP)
+    glUniform1i(myvid.egl.swap_color, 1);
 #endif
 
     glGenTextures(TEXTURE_MAX, myvid.egl.tex);

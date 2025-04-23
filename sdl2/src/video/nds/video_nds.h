@@ -138,6 +138,9 @@ typedef struct {
         GLint coord;
         GLint alpha;
         GLint sampler;
+        GLint aspect;
+        GLint rotate;
+        GLint swap_color;
     } egl;
 #endif
 
