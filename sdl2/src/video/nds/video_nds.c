@@ -894,7 +894,7 @@ static int update_nds_screen(void)
     int bpp = 0;
     int hires = { 0 };
     SDL_Rect lcd = { 0 };
-    uint32_t *pixels = { 0 };
+    uintptr_t *pixels = { 0 };
 
     debug(SDL"call %s()\n", __func__);
 
@@ -906,7 +906,7 @@ static int update_nds_screen(void)
     bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
     for (cc = 0; cc < NDS_LCD_NUM; cc++) {
         hires = *((uint8_t *)myhook.var.sdl.screen[cc].hires_mode);
-        pixels = (uint32_t *)(uintptr_t)(*((uint32_t *)myhook.var.sdl.screen[cc].pixels));
+        pixels = (uintptr_t *)(uintptr_t)(*((uintptr_t *)myhook.var.sdl.screen[cc].pixels));
 
         lcd.x = *((uint32_t *)myhook.var.sdl.screen[cc].x);
         lcd.y = *((uint32_t *)myhook.var.sdl.screen[cc].y);
