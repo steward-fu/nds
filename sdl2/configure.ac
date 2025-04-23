@@ -2591,7 +2591,9 @@ CheckMiyooEGL()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lgbm"
 
+        AC_DEFINE(SDL_AUDIO_DRIVER_NDS, 1, [ ])
         AC_DEFINE(SDL_JOYSTICK_DRIVER_NDS, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/audio/nds/*.c"
         SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
         have_joystick=yes
 
