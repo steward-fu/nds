@@ -11,6 +11,13 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
+#if defined(UT)
+#include "unity_fixture.h"
+#endif
+
+#include "log.h"
+#include "cfg.h"
+
 #include "../../SDL_internal.h"
 #include "SDL_timer.h"
 #include "SDL_audio.h"
@@ -18,19 +25,53 @@
 #include "../SDL_audio_c.h"
 #include "../SDL_audiodev_c.h"
 
+#if defined(UT)
+TEST_GROUP(sdl2_audio);
+
+TEST_SETUP(sdl2_audio)
+{
+    debug(SDL"call %s()\n", __func__);
+}
+
+TEST_TEAR_DOWN(sdl2_audio)
+{
+    debug(SDL"call %s()\n", __func__);
+}
+#endif
+
 static void nds_close_device(_THIS)
 {
-    SDL_free(this->hidden->mixbuf);
-    this->hidden->mixbuf = NULL;
+    debug(SDL"call %s()\n", __func__);
 
-    SDL_free(this->hidden);
-    this->hidden = NULL;
+    if (this && this->hidden->mixbuf) {
+        SDL_free(this->hidden->mixbuf);
+        this->hidden->mixbuf = NULL;
+    }
+
+    if (this && this->hidden) {
+        SDL_free(this->hidden);
+        this->hidden = NULL;
+    }
 }
+
+#if defined(UT)
+TEST(sdl2_audio, nds_close_device)
+{
+    nds_close_device(NULL);
+    TEST_PASS();
+}
+#endif
 
 static int nds_open_device(_THIS, void *handle, const char *devname, int iscapture)
 {
-    this->hidden = (struct SDL_PrivateAudioData *)SDL_malloc((sizeof * this->hidden));
+    debug(SDL"call %s()\n", __func__);
 
+    if (!this) {
+        error(SDL"this is null\n");
+        return -1;
+    }
+
+    this->hidden = (struct SDL_PrivateAudioData *)SDL_malloc((sizeof * this->hidden));
     if (this->hidden == NULL) {
         return SDL_OutOfMemory();
     }
@@ -45,17 +86,47 @@ static int nds_open_device(_THIS, void *handle, const char *devname, int iscaptu
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_audio, nds_open_device)
+{
+    TEST_ASSERT_EQUAL_INT(-1, nds_open_device(NULL, NULL, NULL, 0));
+}
+#endif
+
 static void nds_play_device(_THIS)
 {
+    debug(SDL"call %s()\n", __func__);
 }
+
+#if defined(UT)
+TEST(sdl2_audio, nds_play_device)
+{
+    nds_play_device(NULL);
+    TEST_PASS();
+}
+#endif
 
 static Uint8 *nds_get_device_buf(_THIS)
 {
-    return (this->hidden->mixbuf);
+    debug(SDL"call %s()\n", __func__);
+
+    if (this)  {
+        return (this->hidden->mixbuf);
+    }
+    return NULL;
 }
 
-static int nds_Init(SDL_AudioDriverImpl *impl)
+#if defined(UT)
+TEST(sdl2_audio, nds_get_device_buf)
 {
+    TEST_ASSERT_NULL(nds_get_device_buf(NULL));
+}
+#endif
+
+static int nds_audio_init(SDL_AudioDriverImpl *impl)
+{
+    debug(SDL"call %s()\n", __func__);
+
     if (impl == NULL) {
         return -1;
     }
@@ -68,10 +139,28 @@ static int nds_Init(SDL_AudioDriverImpl *impl)
     return 1;
 }
 
+#if defined(UT)
+TEST(sdl2_audio, nds_audio_init)
+{
+    TEST_ASSERT_EQUAL_INT(-1, nds_audio_init(NULL));
+}
+#endif
+
 AudioBootStrap NDS_AudioDriver = {
     "NDS",
     "NDS Audio Driver",
-    nds_Init,
+    nds_audio_init,
     0
 };
+
+#if defined(UT)
+TEST_GROUP_RUNNER(sdl2_audio)
+{
+    RUN_TEST_CASE(sdl2_audio, nds_close_device)
+    RUN_TEST_CASE(sdl2_audio, nds_open_device)
+    RUN_TEST_CASE(sdl2_audio, nds_play_device)
+    RUN_TEST_CASE(sdl2_audio, nds_get_device_buf)
+    RUN_TEST_CASE(sdl2_audio, nds_audio_init)
+}
+#endif
 

@@ -2729,6 +2729,9 @@ CheckUT()
         SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
         have_joystick=yes
 
+        AC_DEFINE(SDL_AUDIO_DRIVER_NDS, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/audio/nds/*.c"
+
         SUMMARY_video="${SUMMARY_video} NDS_UT"
         SUMMARY_input="${SUMMARY_input} NDS_UT"
 

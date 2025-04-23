@@ -267,10 +267,12 @@ static int create_submenu_config_language(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
+#if !defined(UT)
     add_or_update_menu(h,     0, l10n("en_US"),    MENU_CFG_LANG_US, (mycfg.lang == LANG_en_US) ? MENU_IF_CHECKED : 0, is_add);
     add_or_update_menu(h,     0, l10n("zh_CN"),    MENU_CFG_LANG_CN, (mycfg.lang == LANG_zh_CN) ? MENU_IF_CHECKED : 0, is_add);
     add_or_update_menu(h,     0, l10n("zh_TW"),    MENU_CFG_LANG_TW, (mycfg.lang == LANG_zh_TW) ? MENU_IF_CHECKED : 0, is_add);
     add_or_update_menu(hMenu, h, l10n("Language"), MENU_CFG_LANG,    0, is_add);
+#endif
 
     return 0;
 }
@@ -553,9 +555,11 @@ static int create_submenu_config_debug_log(MENU_Handle hMenu, int is_add)
         MENU_SetFont(h, cur_font);
     }
 
+#if !defined(UT)
     add_or_update_menu(h,     0, l10n("On"),        MENU_CFG_DEBUG_LOG_ON,  mycfg.log_level == 0 ? MENU_IF_CHECKED : 0, is_add);
     add_or_update_menu(h,     0, l10n("Off"),       MENU_CFG_DEBUG_LOG_OFF, mycfg.log_level != 0 ? MENU_IF_CHECKED : 0, is_add);
     add_or_update_menu(hMenu, h, l10n("Debug Log"), MENU_CFG_DEBUG_LOG, 0, is_add);
+#endif
 
     return 0;
 }
