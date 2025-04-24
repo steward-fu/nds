@@ -5,7 +5,7 @@
 #define __EVENT_NDS_H__
 
 #if defined(MIYOO_FLIP)
-#define INPUT_DEV "/dev/input/event5"
+#define INPUT_DEV "/dev/miyooio"
 #endif
 
 #if defined(MIYOO_A30) || defined(UT)
@@ -21,27 +21,30 @@
 #endif
 
 #if defined(MIYOO_FLIP)
-#define DEV_KEY_CODE_UP         103
-#define DEV_KEY_CODE_DOWN       108
-#define DEV_KEY_CODE_LEFT       105
-#define DEV_KEY_CODE_RIGHT      106
-#define DEV_KEY_CODE_A          57
-#define DEV_KEY_CODE_B          29
-#define DEV_KEY_CODE_X          42
-#define DEV_KEY_CODE_Y          56
-#define DEV_KEY_CODE_L1         15
-#define DEV_KEY_CODE_R1         14
-#define DEV_KEY_CODE_L2         18
-#define DEV_KEY_CODE_R2         20
-#define DEV_KEY_CODE_SELECT     97
-#define DEV_KEY_CODE_START      28
-#define DEV_KEY_CODE_MENU       1
+#define DEV_KEY_BUF_MAX         32
+#define DEV_KEY_IDX_MAX         19
+
+#define DEV_KEY_CODE_UP         1
+#define DEV_KEY_CODE_DOWN       2
+#define DEV_KEY_CODE_LEFT       3
+#define DEV_KEY_CODE_RIGHT      4
+#define DEV_KEY_CODE_A          5
+#define DEV_KEY_CODE_B          6
+#define DEV_KEY_CODE_X          7
+#define DEV_KEY_CODE_Y          8
+#define DEV_KEY_CODE_L1         9
+#define DEV_KEY_CODE_L2         10
+#define DEV_KEY_CODE_R1         11
+#define DEV_KEY_CODE_R2         12
+#define DEV_KEY_CODE_SELECT     13
+#define DEV_KEY_CODE_START      14
+#define DEV_KEY_CODE_MENU       15
 #define DEV_KEY_CODE_QSAVE      -1
 #define DEV_KEY_CODE_QLOAD      -2
 #define DEV_KEY_CODE_FF         -3
-#define DEV_KEY_CODE_EXIT       316
-#define DEV_KEY_CODE_VOL_UP     115
-#define DEV_KEY_CODE_VOL_DOWN   114
+#define DEV_KEY_CODE_EXIT       -4
+#define DEV_KEY_CODE_VOL_UP     16
+#define DEV_KEY_CODE_VOL_DOWN   17
 #define DEV_KEY_CODE_POWER      -5
 #endif
 

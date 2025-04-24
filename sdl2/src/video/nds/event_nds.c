@@ -206,6 +206,33 @@ static int input_handler(void *data)
     int act = 0;
     int bit = 0;
     struct input_event ev = {{ 0 }};
+#if defined(MIYOO_FLIP)
+    int cc = 0;
+    int pre_bits = 0;
+    int buf[DEV_KEY_BUF_MAX] = { 0 };
+    int idx[DEV_KEY_BUF_MAX] = {
+        /* 0  */ DEV_KEY_CODE_B,
+        /* 1  */ DEV_KEY_CODE_Y,
+        /* 2  */ DEV_KEY_CODE_SELECT,
+        /* 3  */ DEV_KEY_CODE_START,
+        /* 4  */ DEV_KEY_CODE_UP,
+        /* 5  */ DEV_KEY_CODE_DOWN,
+        /* 6  */ DEV_KEY_CODE_LEFT,
+        /* 7  */ DEV_KEY_CODE_RIGHT,
+        /* 8  */ DEV_KEY_CODE_A,
+        /* 9  */ DEV_KEY_CODE_X,
+        /* 10 */ DEV_KEY_CODE_L1,
+        /* 11 */ DEV_KEY_CODE_R1,
+        /* 12 */ DEV_KEY_CODE_L2,
+        /* 13 */ DEV_KEY_CODE_R2,
+        /* 14 */ -1,
+        /* 15 */ -1,
+        /* 16 */ DEV_KEY_CODE_MENU,
+        /* 17 */ DEV_KEY_CODE_VOL_UP,
+        /* 18 */ DEV_KEY_CODE_VOL_DOWN,
+        /* 19 */ -1
+    };
+#endif
 #endif
 
     debug(SDL"call %s()++\n", __func__);
@@ -220,6 +247,30 @@ static int input_handler(void *data)
     myevt.running = 1;
     while (myevt.running) {
         act = 0;
+
+#if defined(MIYOO_FLIP)
+        if (read(fd, buf, sizeof(buf))) {
+            for (cc = 0; cc < DEV_KEY_IDX_MAX; cc++) {
+                if ((!!buf[cc]) == (!!(pre_bits & (1 << cc)))) {
+                    continue;
+                }
+                debug(SDL"%s, idx=%d, value=%d\n", INPUT_DEV, idx[cc], !!buf[cc]);
+
+                bit = get_key_bit(idx[cc]);
+                if (bit >= 0) {
+                    act = 1;
+                    set_key_bit(bit, !!buf[cc]);
+                }
+
+                if (buf[cc]) {
+                    pre_bits |= (1 << cc);
+                }
+                else {
+                    pre_bits &= ~(1 << cc);
+                }
+            }
+        }
+#else
         if (read(fd, &ev, sizeof(struct input_event))) {
             if ((ev.type == EV_KEY) && (ev.value != 2)) {
                 debug(SDL"%s, code=%d, value=%d\n", INPUT_DEV, ev.code, ev.value);
@@ -231,6 +282,7 @@ static int input_handler(void *data)
                 }
             }
         }
+#endif
 
         if (myvid.mode == MENU) {
             send_gui_event();
