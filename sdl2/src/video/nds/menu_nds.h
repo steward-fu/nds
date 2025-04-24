@@ -31,10 +31,13 @@
 #define MENU_VIEW_FILTER             123
 
 #define MENU_CFG                     130
-#define MENU_CFG_LANG                131
-#define MENU_CFG_LANG_US             132
-#define MENU_CFG_LANG_CN             133
-#define MENU_CFG_LANG_TW             134
+#define MENU_CFG_STYLE               131
+#define MENU_CFG_STYLE_LVGL          132
+#define MENU_CFG_STYLE_UCGUI         133
+#define MENU_CFG_LANG                134
+#define MENU_CFG_LANG_US             135
+#define MENU_CFG_LANG_CN             136
+#define MENU_CFG_LANG_TW             137
 
 #define MENU_CFG_AUDIO               140
 #define MENU_CFG_AUDIO_ON            141

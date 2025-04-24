@@ -463,9 +463,9 @@ static int create_submenu_config_gui(MENU_Handle hMenu, int is_add)
     }
 
 #if !defined(UT)
-    add_or_update_menu(h,     0, l10n("uC/GUI"), MENU_CFG_LANG_US, (mycfg.lang == LANG_en_US) ? MENU_IF_CHECKED : 0, is_add);
-    add_or_update_menu(h,     0, l10n("LVGL"),   MENU_CFG_LANG_CN, (mycfg.lang == LANG_zh_CN) ? MENU_IF_CHECKED : 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("UI"),     MENU_CFG_LANG,                                                   0, is_add);
+    add_or_update_menu(h,     0, l10n("LVGL"),   MENU_CFG_STYLE_LVGL,  (mycfg.ui == UI_LVGL)  ? MENU_IF_CHECKED : 0, is_add);
+    add_or_update_menu(h,     0, l10n("uC/GUI"), MENU_CFG_STYLE_UCGUI, (mycfg.ui == UI_UCGUI) ? MENU_IF_CHECKED : 0, is_add);
+    add_or_update_menu(hMenu, h, l10n("Style"),  MENU_CFG_STYLE,                                                  0, is_add);
 #endif
 
     return 0;

@@ -2,6 +2,7 @@
 MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
+export GCONV_PATH=$MYDIR/lib
 
 sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
