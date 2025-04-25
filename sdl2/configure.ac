@@ -2557,6 +2557,7 @@ CheckMiyooEGL()
         enable_dummyaudio=no
 
         enable_libudev=no
+        enable_joystick=no
     fi
 
     AC_ARG_ENABLE(nds-miyoo-a30,
@@ -2574,6 +2575,7 @@ CheckMiyooEGL()
         AC_DEFINE(SDL_JOYSTICK_DRIVER_NDS, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
         have_joystick=yes
+        enable_joystick=yes
 
         SUMMARY_video="${SUMMARY_video} NDS_MIYOO_A30"
         SUMMARY_input="${SUMMARY_input} NDS_MIYOO_A30"
@@ -2596,7 +2598,9 @@ CheckMiyooEGL()
         SOURCES="$SOURCES $srcdir/src/audio/nds/*.c"
         SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
         enable_alsa=yes
+
         have_joystick=yes
+        enable_joystick=yes
 
         SUMMARY_video="${SUMMARY_video} NDS_MIYOO_FLIP"
         SUMMARY_input="${SUMMARY_input} NDS_MIYOO_FLIP"
