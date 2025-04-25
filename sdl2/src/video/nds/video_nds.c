@@ -531,6 +531,21 @@ TEST(sdl2_video, quit_egl)
 }
 #endif
 
+int swap_frag_color(int s)
+{
+    debug(SDL"call %s(%d)\n", __func__, s);
+
+    glUniform1i(myvid.egl.swap_color, s);
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, swap_frag_color)
+{
+    TEST_ASSERT_EQUAL_INT(0, swap_frag_color(0));
+}
+#endif
+
 static int init_egl(void)
 {
 #if !defined(UT)
@@ -646,7 +661,7 @@ static int init_egl(void)
 #endif
 
 #if defined(MIYOO_FLIP)
-    glUniform1i(myvid.egl.swap_color, 1);
+    swap_frag_color(1);
 #endif
 
     glGenTextures(TEXTURE_MAX, myvid.egl.tex);
@@ -1410,8 +1425,7 @@ int init_video(_THIS)
     r |= patch_elf(0x00093460, (uint64_t)prehook_cb_menu);
     r |= patch_elf(0x0009a350, (uint64_t)prehook_cb_update_screen);
     if (r) {
-        system("touch rerun");
-        error(SDL"must rerun after drastic is patched\n");
+        error(SDL"user must rerun drastic manually after patched\n");
         exit(-1);
     }
 #endif
@@ -1481,11 +1495,9 @@ TEST(sdl2_video, set_disp_mode)
 
 void quit_video(_THIS)
 {
-    char path[320] = { 0 };
+    char path[MAX_PATH + 32] = { 0 };
 
     debug(SDL"%s\n", __func__);
-
-    getcwd(mycfg.home, sizeof(mycfg.home));
     snprintf(path, sizeof(path), "%s/%s", mycfg.home, CFG_PATH);
 
     debug(SDL"wait for savestate complete\n");
@@ -1584,11 +1596,14 @@ TEST_GROUP_RUNNER(sdl2_video)
     RUN_TEST_CASE(sdl2_video, init_wl)
     RUN_TEST_CASE(sdl2_video, drm_flip_handler)
     RUN_TEST_CASE(sdl2_video, quit_egl)
+    RUN_TEST_CASE(sdl2_video, swap_frag_color)
     RUN_TEST_CASE(sdl2_video, init_egl)
-    RUN_TEST_CASE(sdl2_video, init_sfos_lcd)
     RUN_TEST_CASE(sdl2_video, quit_sfos_lcd)
+    RUN_TEST_CASE(sdl2_video, init_sfos_lcd)
     RUN_TEST_CASE(sdl2_video, init_miyoo_lcd)
     RUN_TEST_CASE(sdl2_video, quit_miyoo_lcd)
+    RUN_TEST_CASE(sdl2_video, init_mini_lcd)
+    RUN_TEST_CASE(sdl2_video, quit_mini_lcd)
     RUN_TEST_CASE(sdl2_video, flip_lcd_screen)
     RUN_TEST_CASE(sdl2_video, update_nds_screen)
     RUN_TEST_CASE(sdl2_video, sigterm_handler)

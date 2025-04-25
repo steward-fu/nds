@@ -192,6 +192,7 @@ typedef struct {
     } fb;
 } nds_video;
 
+int swap_frag_color(int);
 int flip_lcd_screen(void);
 int flush_lcd_screen(int, const void *, SDL_Rect, SDL_Rect, int, int, int);
 int update_wayland_client_size(int, int);
