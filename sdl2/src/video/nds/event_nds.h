@@ -178,6 +178,7 @@ void init_event(void);
 void quit_event(void);
 void pump_event(_THIS);
 void prehook_cb_platform_get_input(uintptr_t);
+int generate_update_keys(uint32_t [2][CONTROL_INDEX_MAX]);
 
 #endif
 

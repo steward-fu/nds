@@ -145,6 +145,7 @@ static int send_gui_event(void)
 {
     int cc = 0;
     uint32_t v = 0;
+    static uint32_t pre_bit[KEY_BIT_MAX] = { 0 };
 
     const int MOV = 5;
     GUI_PID_STATE mouse = { 0 };
@@ -177,6 +178,18 @@ static int send_gui_event(void)
             break;
         case KEY_BIT_A:
             myevt.mouse.pressed = v;
+            break;
+        case KEY_BIT_B:
+            if (v && (v != pre_bit[KEY_BIT_B])) {
+                GUI_StoreKeyMsg(SDLK_LALT, 1);
+            }
+            pre_bit[KEY_BIT_B] = v;
+            break;
+        case KEY_BIT_MENU:
+            if (v && (v != pre_bit[KEY_BIT_MENU])) {
+                GUI_StoreKeyMsg(SDLK_LALT, 1);
+            }
+            pre_bit[KEY_BIT_MENU] = v;
             break;
         }
     }
@@ -215,7 +228,7 @@ TEST(sdl2_event, remap_key)
 }
 #endif
 
-static int generate_update_keys(uint32_t k[2][CONTROL_INDEX_MAX])
+int generate_update_keys(uint32_t k[2][CONTROL_INDEX_MAX])
 {
     debug(SDL"call %s()\n", __func__);
 
@@ -255,9 +268,6 @@ TEST(sdl2_event, generate_update_keys)
 
 static int input_handler(void *data)
 {
-    int need_gen_key = 1;
-    uint32_t new_update_keys[2][CONTROL_INDEX_MAX] = { 0 };
-
 #if !defined(UT)
     int fd = -1;
     int act = 0;
@@ -308,12 +318,6 @@ static int input_handler(void *data)
     myevt.running = 1;
     while (myevt.running) {
         act = 0;
-
-        if (need_gen_key && *myhook.var.system.config.controls_a[CONTROL_INDEX_UP]) {
-            need_gen_key = 0;
-            generate_update_keys(new_update_keys);
-            update_keys(new_update_keys);
-        }
 
 #if defined(MIYOO_FLIP)
         if (read(fd, buf, sizeof(buf))) {
@@ -405,6 +409,10 @@ void init_event(void)
     myevt.key.code[KEY_BIT_ROM]     = SDLK_4;
     myevt.key.code[KEY_BIT_QUIT]    = SDLK_5;
     myevt.key.code[KEY_BIT_MIC]     = SDLK_6;
+
+    myevt.mouse.x = SCREEN_W >> 1;
+    myevt.mouse.y = SCREEN_H >> 1;
+    myevt.mouse.pressed = 0;
 
     myevt.thread = SDL_CreateThreadInternal(input_handler, "NDS Input Handler", 4096, NULL);
     if(myevt.thread == NULL) {
@@ -502,6 +510,10 @@ void pump_event(_THIS)
                         input->button_status |= NDS_KEY_BIT_R;
                         debug(SDL"set r1 key (button_status=0x%x)\n", input->button_status);
                         break;
+                    case KEY_BIT_R2:
+                        input->button_status |= NDS_KEY_BIT_SWAP;
+                        debug(SDL"set swap key (button_status=0x%x)\n", input->button_status);
+                        break;
                     case KEY_BIT_SELECT:
                         input->button_status |= NDS_KEY_BIT_SELECT;
                         debug(SDL"set select key (button_status=0x%x)\n", input->button_status);
@@ -511,6 +523,7 @@ void pump_event(_THIS)
                         debug(SDL"set start key (button_status=0x%x)\n", input->button_status);
                         break;
                     case KEY_BIT_SWAP:
+                        mycfg.screen_swap = 1;
                         input->button_status |= NDS_KEY_BIT_SWAP;
                         debug(SDL"set swap key (button_status=0x%x)\n", input->button_status);
                         break;
@@ -566,6 +579,10 @@ void pump_event(_THIS)
                         input->button_status &= ~NDS_KEY_BIT_R;
                         debug(SDL"clear r1 key (button_status=0x%x)\n", input->button_status);
                         break;
+                    case KEY_BIT_R2:
+                        input->button_status &= ~NDS_KEY_BIT_SWAP;
+                        debug(SDL"clear swap key (button_status=0x%x)\n", input->button_status);
+                        break;
                     case KEY_BIT_SELECT:
                         input->button_status &= ~NDS_KEY_BIT_SELECT;
                         debug(SDL"clear select key (button_status=0x%x)\n", input->button_status);
@@ -575,6 +592,7 @@ void pump_event(_THIS)
                         debug(SDL"clear start key (button_status=0x%x)\n", input->button_status);
                         break;
                     case KEY_BIT_SWAP:
+                        mycfg.screen_swap = 0;
                         input->button_status &= ~NDS_KEY_BIT_SWAP;
                         debug(SDL"clear swap key (button_status=0x%x)\n", input->button_status);
                         break;
