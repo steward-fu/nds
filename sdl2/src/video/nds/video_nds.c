@@ -917,7 +917,8 @@ static int update_nds_screen(void)
     int cc = 0;
     int bpp = 0;
     int hires = { 0 };
-    SDL_Rect lcd = { 0 };
+    SDL_Rect srt = { 0 };
+    SDL_Rect drt = { 0 };
     uintptr_t *pixels = { 0 };
 
     debug(SDL"call %s()\n", __func__);
@@ -932,12 +933,24 @@ static int update_nds_screen(void)
         hires = *((uint8_t *)myhook.var.sdl.screen[cc].hires_mode);
         pixels = (uintptr_t *)(uintptr_t)(*((uintptr_t *)myhook.var.sdl.screen[cc].pixels));
 
-        lcd.x = *((uint32_t *)myhook.var.sdl.screen[cc].x);
-        lcd.y = *((uint32_t *)myhook.var.sdl.screen[cc].y);
-        lcd.w = hires ? NDS_Wx2 : NDS_W;
-        lcd.h = hires ? NDS_Hx2 : NDS_H;
+        srt.x = *((uint32_t *)myhook.var.sdl.screen[cc].x);
+        srt.y = *((uint32_t *)myhook.var.sdl.screen[cc].y);
+        srt.w = hires ? NDS_Wx2 : NDS_W;
+        srt.h = hires ? NDS_Hx2 : NDS_H;
 
-        flush_lcd_screen(-1, pixels, lcd, lcd, lcd.w * bpp, 0, 0);
+        if (cc == 0) {
+            drt.w = (640 - 160);
+            drt.h = (480 - 120);
+            drt.x = (640 - drt.w) >> 1;
+            drt.y = 0;
+        }
+        else {
+            drt.w = 160;
+            drt.h = 120;
+            drt.x = (640 - drt.w) >> 1;
+            drt.y = (480 - 120);
+        }
+        flush_lcd_screen(-1, pixels, srt, drt, srt.w * bpp, 0, 0);
     }
     flip_lcd_screen();
 
