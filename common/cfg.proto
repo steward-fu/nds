@@ -17,6 +17,12 @@ enum MODE {
     TOUCH           = 1;
 }
 
+enum FRAMESKIP_TYPE {
+    NONE            = 0;
+    MANUAL          = 1;
+    AUTOMATIC       = 2;
+}
+
 message nds_pb_cfg {
     string ver      = 1;
     LANG lang       = 2;
@@ -24,5 +30,13 @@ message nds_pb_cfg {
     bool dbg        = 4;
     MODE mode       = 5;
     STYLE style     = 6;
+
+    FRAMESKIP_TYPE frameskip_type   = 7;
+    int32 frameskip_value           = 8;
+    bool show_frame_counter         = 9;
+    bool screen_swap                = 10;
+    int32 fast_forward              = 11;
+    bool enable_sound               = 12;
+    bool hires_3d                   = 13;
 }
 

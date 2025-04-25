@@ -106,6 +106,13 @@ int reset_cfg(void)
     getcwd(mycfg.home, sizeof(mycfg.home));
     mycfg.dbg = DEF_CFG_DBG;
     mycfg.mode = DEF_CFG_MODE;
+    mycfg.frameskip_type = DEF_CFG_FRAMESKIP_TYPE;
+    mycfg.frameskip_value = DEF_CFG_FRAMESKIP_VALUE;
+    mycfg.show_frame_counter = DEF_CFG_SHOW_FRAME_COUNTER;
+    mycfg.screen_swap = DEF_CFG_SCREEN_SWAP;
+    mycfg.fast_forward = DEF_CFG_FAST_FORWARD;
+    mycfg.enable_sound = DEF_CFG_ENABL_SOUND;
+    mycfg.hires_3d = DEF_CFG_HIRES_3D;
     return 0;
 }
 

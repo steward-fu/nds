@@ -27,6 +27,12 @@ typedef enum _MODE {
     MODE_TOUCH = 1
 } MODE;
 
+typedef enum _FRAMESKIP_TYPE {
+    FRAMESKIP_TYPE_NONE = 0,
+    FRAMESKIP_TYPE_MANUAL = 1,
+    FRAMESKIP_TYPE_AUTOMATIC = 2
+} FRAMESKIP_TYPE;
+
 /* Struct definitions */
 typedef struct _nds_pb_cfg {
     char ver[255];
@@ -35,6 +41,13 @@ typedef struct _nds_pb_cfg {
     bool dbg;
     MODE mode;
     STYLE style;
+    FRAMESKIP_TYPE frameskip_type;
+    int32_t frameskip_value;
+    bool show_frame_counter;
+    bool screen_swap;
+    int32_t fast_forward;
+    bool enable_sound;
+    bool hires_3d;
 } nds_pb_cfg;
 
 
@@ -55,14 +68,19 @@ extern "C" {
 #define _MODE_MAX MODE_TOUCH
 #define _MODE_ARRAYSIZE ((MODE)(MODE_TOUCH+1))
 
+#define _FRAMESKIP_TYPE_MIN FRAMESKIP_TYPE_NONE
+#define _FRAMESKIP_TYPE_MAX FRAMESKIP_TYPE_AUTOMATIC
+#define _FRAMESKIP_TYPE_ARRAYSIZE ((FRAMESKIP_TYPE)(FRAMESKIP_TYPE_AUTOMATIC+1))
+
 #define nds_pb_cfg_lang_ENUMTYPE LANG
 #define nds_pb_cfg_mode_ENUMTYPE MODE
 #define nds_pb_cfg_style_ENUMTYPE STYLE
+#define nds_pb_cfg_frameskip_type_ENUMTYPE FRAMESKIP_TYPE
 
 
 /* Initializer values for message structs */
-#define nds_pb_cfg_init_default                  {"", _LANG_MIN, "", 0, _MODE_MIN, _STYLE_MIN}
-#define nds_pb_cfg_init_zero                     {"", _LANG_MIN, "", 0, _MODE_MIN, _STYLE_MIN}
+#define nds_pb_cfg_init_default                  {"", _LANG_MIN, "", 0, _MODE_MIN, _STYLE_MIN, _FRAMESKIP_TYPE_MIN, 0, 0, 0, 0, 0, 0}
+#define nds_pb_cfg_init_zero                     {"", _LANG_MIN, "", 0, _MODE_MIN, _STYLE_MIN, _FRAMESKIP_TYPE_MIN, 0, 0, 0, 0, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define nds_pb_cfg_ver_tag                       1
@@ -71,6 +89,13 @@ extern "C" {
 #define nds_pb_cfg_dbg_tag                       4
 #define nds_pb_cfg_mode_tag                      5
 #define nds_pb_cfg_style_tag                     6
+#define nds_pb_cfg_frameskip_type_tag            7
+#define nds_pb_cfg_frameskip_value_tag           8
+#define nds_pb_cfg_show_frame_counter_tag        9
+#define nds_pb_cfg_screen_swap_tag               10
+#define nds_pb_cfg_fast_forward_tag              11
+#define nds_pb_cfg_enable_sound_tag              12
+#define nds_pb_cfg_hires_3d_tag                  13
 
 /* Struct field encoding specification for nanopb */
 #define nds_pb_cfg_FIELDLIST(X, a) \
@@ -79,7 +104,14 @@ X(a, STATIC,   SINGULAR, UENUM,    lang,              2) \
 X(a, STATIC,   SINGULAR, STRING,   home,              3) \
 X(a, STATIC,   SINGULAR, BOOL,     dbg,               4) \
 X(a, STATIC,   SINGULAR, UENUM,    mode,              5) \
-X(a, STATIC,   SINGULAR, UENUM,    style,             6)
+X(a, STATIC,   SINGULAR, UENUM,    style,             6) \
+X(a, STATIC,   SINGULAR, UENUM,    frameskip_type,    7) \
+X(a, STATIC,   SINGULAR, INT32,    frameskip_value,   8) \
+X(a, STATIC,   SINGULAR, BOOL,     show_frame_counter,   9) \
+X(a, STATIC,   SINGULAR, BOOL,     screen_swap,      10) \
+X(a, STATIC,   SINGULAR, INT32,    fast_forward,     11) \
+X(a, STATIC,   SINGULAR, BOOL,     enable_sound,     12) \
+X(a, STATIC,   SINGULAR, BOOL,     hires_3d,         13)
 #define nds_pb_cfg_CALLBACK NULL
 #define nds_pb_cfg_DEFAULT NULL
 
@@ -90,7 +122,7 @@ extern const pb_msgdesc_t nds_pb_cfg_msg;
 
 /* Maximum encoded size of messages (where known) */
 #define CFG_PB_H_MAX_SIZE                        nds_pb_cfg_size
-#define nds_pb_cfg_size                          522
+#define nds_pb_cfg_size                          554
 
 #ifdef __cplusplus
 } /* extern "C" */
