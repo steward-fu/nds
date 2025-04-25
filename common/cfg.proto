@@ -7,7 +7,7 @@ enum LANG {
     MAX             = 3;
 }
 
-enum UI {
+enum STYLE {
     LVGL            = 0;
     UCGUI           = 1;
 }
@@ -21,8 +21,8 @@ message nds_pb_cfg {
     string ver      = 1;
     LANG lang       = 2;
     string home     = 3;
-    bool log_level  = 4;
+    bool dbg        = 4;
     MODE mode       = 5;
-    UI ui           = 6;
+    STYLE style     = 6;
 }
 

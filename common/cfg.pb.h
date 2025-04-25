@@ -17,10 +17,10 @@ typedef enum _LANG {
     LANG_MAX = 3
 } LANG;
 
-typedef enum _UI {
-    UI_LVGL = 0,
-    UI_UCGUI = 1
-} UI;
+typedef enum _STYLE {
+    STYLE_LVGL = 0,
+    STYLE_UCGUI = 1
+} STYLE;
 
 typedef enum _MODE {
     MODE_KEY = 0,
@@ -32,9 +32,9 @@ typedef struct _nds_pb_cfg {
     char ver[255];
     LANG lang;
     char home[255];
-    bool log_level;
+    bool dbg;
     MODE mode;
-    UI ui;
+    STYLE style;
 } nds_pb_cfg;
 
 
@@ -47,9 +47,9 @@ extern "C" {
 #define _LANG_MAX LANG_MAX
 #define _LANG_ARRAYSIZE ((LANG)(LANG_MAX+1))
 
-#define _UI_MIN UI_LVGL
-#define _UI_MAX UI_UCGUI
-#define _UI_ARRAYSIZE ((UI)(UI_UCGUI+1))
+#define _STYLE_MIN STYLE_LVGL
+#define _STYLE_MAX STYLE_UCGUI
+#define _STYLE_ARRAYSIZE ((STYLE)(STYLE_UCGUI+1))
 
 #define _MODE_MIN MODE_KEY
 #define _MODE_MAX MODE_TOUCH
@@ -57,29 +57,29 @@ extern "C" {
 
 #define nds_pb_cfg_lang_ENUMTYPE LANG
 #define nds_pb_cfg_mode_ENUMTYPE MODE
-#define nds_pb_cfg_ui_ENUMTYPE UI
+#define nds_pb_cfg_style_ENUMTYPE STYLE
 
 
 /* Initializer values for message structs */
-#define nds_pb_cfg_init_default                  {"", _LANG_MIN, "", 0, _MODE_MIN, _UI_MIN}
-#define nds_pb_cfg_init_zero                     {"", _LANG_MIN, "", 0, _MODE_MIN, _UI_MIN}
+#define nds_pb_cfg_init_default                  {"", _LANG_MIN, "", 0, _MODE_MIN, _STYLE_MIN}
+#define nds_pb_cfg_init_zero                     {"", _LANG_MIN, "", 0, _MODE_MIN, _STYLE_MIN}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define nds_pb_cfg_ver_tag                       1
 #define nds_pb_cfg_lang_tag                      2
 #define nds_pb_cfg_home_tag                      3
-#define nds_pb_cfg_log_level_tag                 4
+#define nds_pb_cfg_dbg_tag                       4
 #define nds_pb_cfg_mode_tag                      5
-#define nds_pb_cfg_ui_tag                        6
+#define nds_pb_cfg_style_tag                     6
 
 /* Struct field encoding specification for nanopb */
 #define nds_pb_cfg_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   ver,               1) \
 X(a, STATIC,   SINGULAR, UENUM,    lang,              2) \
 X(a, STATIC,   SINGULAR, STRING,   home,              3) \
-X(a, STATIC,   SINGULAR, BOOL,     log_level,         4) \
+X(a, STATIC,   SINGULAR, BOOL,     dbg,               4) \
 X(a, STATIC,   SINGULAR, UENUM,    mode,              5) \
-X(a, STATIC,   SINGULAR, UENUM,    ui,                6)
+X(a, STATIC,   SINGULAR, UENUM,    style,             6)
 #define nds_pb_cfg_CALLBACK NULL
 #define nds_pb_cfg_DEFAULT NULL
 

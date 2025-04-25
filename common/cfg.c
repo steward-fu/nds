@@ -104,7 +104,7 @@ int reset_cfg(void)
     strncpy(mycfg.ver, DEF_CFG_VER, sizeof(mycfg.ver));
     mycfg.lang = DEF_CFG_LANG;
     getcwd(mycfg.home, sizeof(mycfg.home));
-    mycfg.log_level = DEF_CFG_LOG_LEVEL;
+    mycfg.dbg = DEF_CFG_DBG;
     mycfg.mode = DEF_CFG_MODE;
     return 0;
 }
@@ -179,13 +179,13 @@ int init_cfg(void)
 {
     char path[MAX_PATH] = { 0 };
 
-    debug(COM"call %s()\n", __func__);
+    error(COM"call %s()\n", __func__);
 
     getcwd(mycfg.home, sizeof(mycfg.home));
-    debug(COM"HOME=\"%s\"\n", mycfg.home);
+    error(COM"HOME=\"%s\"\n", mycfg.home);
 
     snprintf(path, sizeof(path), "%s/%s", mycfg.home, CFG_PATH);
-    debug(COM"cfg=\"%s\"\n", path);
+    error(COM"cfg=\"%s\"\n", path);
 
     if (load_cfg(path) < 0) {
         error(COM"failed to load config, use default settings\n");
@@ -194,7 +194,6 @@ int init_cfg(void)
     }
 
     init_lang();
-    set_debug_level(mycfg.log_level);
     return 0;
 }
 

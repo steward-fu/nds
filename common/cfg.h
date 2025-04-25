@@ -10,7 +10,7 @@
 
 #define DEF_CFG_VER         "20250101"
 #define DEF_CFG_LANG        LANG_en_US
-#define DEF_CFG_LOG_LEVEL   LOG_LEVEL_DEBUG
+#define DEF_CFG_DBG         1
 #define DEF_CFG_MODE        MODE_KEY
 
 int quit_cfg(void);
