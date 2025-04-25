@@ -174,7 +174,7 @@ endif
 	cp assets/lib/armhf/libSDL2_ttf-2.0.so.0 $(MYLIB)
 	cp assets/lib/armhf/libSDL2_image-2.0.so.0 $(MYLIB)
 	cp lib/a30/libprotobuf-nanopb.so.0 $(MYLIB)
-	adb shell rm -rf /mnt/SDCARD/rel && adb push rel /mnt/SDCARD
+	adb shell rm -rf /mnt/SDCARD/Emu/drastic && adb push rel /mnt/SDCARD/drastic
 endif
 
 ifeq ($(MOD),flip)
@@ -190,7 +190,7 @@ endif
 	cp assets/lib/aarch64/libstdc++.so.6 $(MYLIB)
 	cp assets/lib/aarch64/ld-linux-aarch64.so.1 $(MYLIB)
 	cp lib/flip/libprotobuf-nanopb.so.0 $(MYLIB)
-	adb shell rm -rf /mnt/sdcard/rel && adb push rel /mnt/sdcard
+	adb shell rm -rf /mnt/sdcard/Emu/drastic && adb push rel /mnt/sdcard/Emu/drastic
 endif
 
 ifeq ($(MOD),xt897)
