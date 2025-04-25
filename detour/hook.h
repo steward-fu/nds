@@ -222,6 +222,20 @@
         uint8_t capture_timer;
     } spu_channel_struct;
 
+    typedef struct {
+        uintptr_t capture_ptr;
+        uintptr_t system;
+        uint32_t button_status;
+        uint32_t touch_x;
+        uint32_t touch_y;
+        uint8_t touch_status;
+        uint8_t touch_pressure;
+        uint32_t last_button_status;
+        uint32_t last_touch_x;
+        uint32_t last_touch_y;
+        uint8_t last_touch_pressure;
+    } input_struct;
+
     typedef void (*nds_free)(void *);
     typedef void (*nds_set_screen_swap)(uint32_t);
     typedef void (*nds_set_screen_menu_on)(void);
