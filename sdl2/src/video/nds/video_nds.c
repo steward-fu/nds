@@ -875,6 +875,13 @@ TEST(sdl2_video, quit_mini_lcd)
 
 int flip_lcd_screen(void)
 {
+#if defined(MIYOO_FLIP)
+    fd_set fds = { 0 };
+    time_t cur = { 0 };
+    time_t start = { 0 };
+	struct timeval v = { 0 };
+#endif
+
     debug(SDL"call %s()\n", __func__);
 
 #if defined(SFOS_EGL) || defined(MIYOO_EGL)
@@ -888,10 +895,32 @@ int flip_lcd_screen(void)
     drmModeSetCrtc(myvid.drm.fd, myvid.drm.crtc->crtc_id, myvid.drm.fb, 0, 0, (uint32_t *)myvid.drm.conn, 1, &myvid.drm.crtc->mode);
     drmModePageFlip(myvid.drm.fd, myvid.drm.crtc->crtc_id, myvid.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvid.drm.wait_for_flip);
 
-    drmHandleEvent(myvid.drm.fd, &drm_evctx);
+    srand(time(&start));
+	FD_ZERO(&fds);
+	memset(&v, 0, sizeof(v));
+
+//    drmHandleEvent(myvid.drm.fd, &drm_evctx);
+//    while (myvid.drm.wait_for_flip) {
+//        usleep(10);
+//    }
+
     while (myvid.drm.wait_for_flip) {
-        usleep(10);
-    }
+        time(&cur);
+		FD_SET(0, &fds);
+		FD_SET(myvid.drm.fd, &fds);
+		v.tv_sec = start + 5 - cur;
+
+		if (select(myvid.drm.fd + 1, &fds, NULL, NULL, &v) < 0) {
+			fprintf(stderr, "select() failed\n");
+			break;
+		} else if (FD_ISSET(0, &fds)) {
+			fprintf(stderr, "exit due to user-input\n");
+			break;
+		} else if (FD_ISSET(myvid.drm.fd, &fds)) {
+			drmHandleEvent(myvid.drm.fd, &drm_evctx);
+		}
+	}
+
     gbm_surface_release_buffer(myvid.drm.gs, myvid.drm.bo);
 #endif
 

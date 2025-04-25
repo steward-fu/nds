@@ -108,7 +108,7 @@ typedef struct {
     struct {
         int fd;
         int fb;
-        int wait_for_flip;
+        volatile int wait_for_flip;
 
         drmModeRes *res;
         drmModeCrtc *crtc;
