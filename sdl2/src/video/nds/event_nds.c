@@ -59,6 +59,7 @@ TEST_TEAR_DOWN(sdl2_event)
 }
 #endif
 
+#if !defined(MIYOO_FLIP)
 static uint32_t free_all_keys(void)
 {
     int cc = 0;
@@ -81,6 +82,7 @@ TEST(sdl2_event, release_all_keys)
     TEST_ASSERT_EQUAL_INT(0, free_all_keys());
     TEST_ASSERT_EQUAL_INT(0, myevt.key.cur_bits);
 }
+#endif
 #endif
 
 static uint32_t set_key_bit(uint32_t bit, int val)
@@ -356,9 +358,12 @@ static int input_handler(void *data)
         usleep(1000000 / 30);
     }
 
+#if !defined(MIYOO_FLIP)
     if (mycfg.mode == MODE_KEY) {
         free_all_keys();
     }
+#endif
+
     close(fd);
 #endif
 
@@ -437,6 +442,10 @@ TEST(sdl2_event, quit_event)
 
 void pump_event(_THIS)
 {
+#if defined(MIYOO_FLIP)
+    input_struct *input = (input_struct *)_this;
+#endif
+
     if (mycfg.mode == MODE_KEY) {
         int cc = 0;
         uint32_t bit = 0;
@@ -449,11 +458,145 @@ void pump_event(_THIS)
 #if !defined(UT)
                 int pressed = myevt.key.cur_bits & bit ? SDL_PRESSED : SDL_RELEASED;
 
-                debug("send key=%d, press=%d\n", myevt.key.code[cc], pressed);
+#if defined(MIYOO_FLIP)
+                debug(SDL"handle keybit at %d\n", cc);
+                if (pressed) {
+                    switch (cc) {
+                    case KEY_BIT_UP:
+                        input->button_status |= NDS_KEY_BIT_UP;
+                        debug(SDL"set up key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_DOWN:
+                        input->button_status |= NDS_KEY_BIT_DOWN;
+                        debug(SDL"set down key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_LEFT:
+                        input->button_status |= NDS_KEY_BIT_LEFT;
+                        debug(SDL"set left key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_RIGHT:
+                        input->button_status |= NDS_KEY_BIT_RIGHT;
+                        debug(SDL"set right key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_A:
+                        input->button_status |= NDS_KEY_BIT_A;
+                        debug(SDL"set a key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_B:
+                        input->button_status |= NDS_KEY_BIT_B;
+                        debug(SDL"set b key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_X:
+                        input->button_status |= NDS_KEY_BIT_X;
+                        debug(SDL"set x key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_Y:
+                        input->button_status |= NDS_KEY_BIT_Y;
+                        debug(SDL"set y key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_L1:
+                        input->button_status |= NDS_KEY_BIT_L;
+                        debug(SDL"set l1 key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_R1:
+                        input->button_status |= NDS_KEY_BIT_R;
+                        debug(SDL"set r1 key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_SELECT:
+                        input->button_status |= NDS_KEY_BIT_SELECT;
+                        debug(SDL"set select key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_START:
+                        input->button_status |= NDS_KEY_BIT_START;
+                        debug(SDL"set start key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_SWAP:
+                        input->button_status |= NDS_KEY_BIT_SWAP;
+                        debug(SDL"set swap key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_MENU:
+                        input->button_status |= NDS_KEY_BIT_MENU;
+                        debug(SDL"set menu key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_QUIT:
+                        input->button_status |= NDS_KEY_BIT_QUIT;
+                        debug(SDL"set quit key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    }
+                }
+                else {
+                    switch (cc) {
+                    case KEY_BIT_UP:
+                        input->button_status &= ~NDS_KEY_BIT_UP;
+                        debug(SDL"clear up key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_DOWN:
+                        input->button_status &= ~NDS_KEY_BIT_DOWN;
+                        debug(SDL"clear down key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_LEFT:
+                        input->button_status &= ~NDS_KEY_BIT_LEFT;
+                        debug(SDL"clear left key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_RIGHT:
+                        input->button_status &= ~NDS_KEY_BIT_RIGHT;
+                        debug(SDL"clear right key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_A:
+                        input->button_status &= ~NDS_KEY_BIT_A;
+                        debug(SDL"clear a key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_B:
+                        input->button_status &= ~NDS_KEY_BIT_B;
+                        debug(SDL"clear b key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_X:
+                        input->button_status &= ~NDS_KEY_BIT_X;
+                        debug(SDL"clear x key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_Y:
+                        input->button_status &= ~NDS_KEY_BIT_Y;
+                        debug(SDL"clear y key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_L1:
+                        input->button_status &= ~NDS_KEY_BIT_L;
+                        debug(SDL"clear l1 key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_R1:
+                        input->button_status &= ~NDS_KEY_BIT_R;
+                        debug(SDL"clear r1 key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_SELECT:
+                        input->button_status &= ~NDS_KEY_BIT_SELECT;
+                        debug(SDL"clear select key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_START:
+                        input->button_status &= ~NDS_KEY_BIT_START;
+                        debug(SDL"clear start key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_SWAP:
+                        input->button_status &= ~NDS_KEY_BIT_SWAP;
+                        debug(SDL"clear swap key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_MENU:
+                        input->button_status &= ~NDS_KEY_BIT_MENU;
+                        debug(SDL"clear menu key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    case KEY_BIT_QUIT:
+                        input->button_status &= ~NDS_KEY_BIT_QUIT;
+                        debug(SDL"clear quit key (button_status=0x%x)\n", input->button_status);
+                        break;
+                    }
+                }
+#else
+                debug(SDL"send key=%d, press=%d\n", myevt.key.code[cc], pressed);
                 SDL_SendKeyboardKey(pressed, SDL_GetScancodeFromKey(myevt.key.code[cc]));
+#endif
 #endif
             }
         }
+
+        myevt.key.pre_bits = myevt.key.cur_bits;
     }
 }
 
@@ -465,9 +608,13 @@ TEST(sdl2_event, pump_event)
 }
 #endif
 
-void prehook_cb_platform_get_input(uintptr_t param)
+void prehook_cb_platform_get_input(uintptr_t p)
 {
-    debug(SDL"call %s()\n", __func__);
+    input_struct *input = (input_struct *)(((uint8_t *)p) + 0x80000);
+
+    debug(SDL"call %s(%p)\n", __func__, input);
+
+    pump_event((SDL_VideoDevice *)input);
 }
 
 #if defined(UT)

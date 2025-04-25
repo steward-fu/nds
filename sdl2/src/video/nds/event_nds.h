@@ -4,6 +4,8 @@
 #ifndef __EVENT_NDS_H__
 #define __EVENT_NDS_H__
 
+#include "hook.h"
+
 #if defined(MIYOO_FLIP)
 #define INPUT_DEV "/dev/miyooio"
 #endif
@@ -129,6 +131,30 @@ enum key_bits {
     KEY_BIT_VOL_UP,
     KEY_BIT_VOL_DOWN,
     KEY_BIT_MAX
+};
+
+enum nds_key_bits {
+    NDS_KEY_BIT_UP       = (1 << 0),
+    NDS_KEY_BIT_DOWN     = (1 << 1),
+    NDS_KEY_BIT_LEFT     = (1 << 2),
+    NDS_KEY_BIT_RIGHT    = (1 << 3),
+    NDS_KEY_BIT_A        = (1 << 4),
+    NDS_KEY_BIT_B        = (1 << 5),
+    NDS_KEY_BIT_X        = (1 << 6),
+    NDS_KEY_BIT_Y        = (1 << 7),
+    NDS_KEY_BIT_L        = (1 << 8),
+    NDS_KEY_BIT_R        = (1 << 9),
+    NDS_KEY_BIT_START    = (1 << 10),
+    NDS_KEY_BIT_SELECT   = (1 << 11),
+
+    NDS_KEY_BIT_SAVE     = 0x0080000,
+    NDS_KEY_BIT_LOAD     = 0x0100000,
+    NDS_KEY_BIT_FAST     = 0x0200000,
+    NDS_KEY_BIT_SWAP     = 0x0400000,
+    NDS_KEY_BIT_SCREEN_V = 0x0800000,
+    NDS_KEY_BIT_SCREEN_H = 0x1000000,
+    NDS_KEY_BIT_MENU     = 0x2000000,
+    NDS_KEY_BIT_QUIT     = 0x4000000,
 };
 
 typedef struct {
