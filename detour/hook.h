@@ -272,7 +272,9 @@
     int32_t save_state(void *, uint32_t, uint16_t *, uint16_t *);
     int32_t load_state(void *, uint32_t, uint16_t *, uint16_t *, uint32_t);
 
-    int update_keys(const uint32_t [2][CONTROL_INDEX_MAX]);
+    void set_screen_swap(uint32_t);
+    int init_drastic_key(const uint32_t [2][CONTROL_INDEX_MAX]);
+    int init_drastic_config(void);
     int patch_elf(uint64_t, uint64_t);
     int prehook_cb_load_state_index(int);
     void prehook_cb_init_backup(backup_struct *, backup_type_enum, uint8_t *, uint32_t, char *);

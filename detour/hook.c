@@ -174,6 +174,28 @@ TEST(detour_hook, emu_quit)
 }
 #endif
 
+void set_screen_swap(uint32_t s)
+{
+    nds_set_screen_swap pfn = (nds_set_screen_swap)myhook.fun.set_screen_swap;
+
+    debug(DTR"call %s(pfn=%p)\n", __func__, pfn);
+
+    if (!pfn) {
+        error(DTR"pfn is null\n");
+    }
+    else {
+        pfn(s);
+    }
+}
+
+#if defined(UT)
+TEST(detour_hook, set_screen_swap)
+{
+    set_screen_swap(0);
+    TEST_PASS();
+}
+#endif
+
 int set_fast_forward(uint8_t v)
 {
     uint32_t *ff = (uint32_t*)myhook.var.fast_forward;
@@ -876,7 +898,7 @@ TEST(detour_hook, patch_elf)
 }
 #endif
 
-int update_keys(const uint32_t k[2][CONTROL_INDEX_MAX])
+int init_drastic_key(const uint32_t k[2][CONTROL_INDEX_MAX])
 {
     int cc = 0;
 
@@ -902,12 +924,57 @@ int update_keys(const uint32_t k[2][CONTROL_INDEX_MAX])
 }
 
 #if defined(UT)
-TEST(detour_hook, update_keys)
+TEST(detour_hook, init_drastic_key)
 {
     uint32_t k[2][CONTROL_INDEX_MAX] = { 0 };
 
     k[0][CONTROL_INDEX_LEFT] = 10;
-    TEST_ASSERT_EQUAL_INT(0, update_keys(k));
+    TEST_ASSERT_EQUAL_INT(0, init_drastic_key(k));
+}
+#endif
+
+int init_drastic_config(void)
+{
+    debug(SDL"call %s()\n", __func__);
+
+    *myhook.var.system.config.frameskip_type = mycfg.frameskip_type;
+    *myhook.var.system.config.frameskip_value = mycfg.frameskip_value;
+    *myhook.var.system.config.show_frame_counter = mycfg.show_frame_counter;
+    *myhook.var.system.config.screen_orientation = 0;
+    *myhook.var.system.config.screen_scaling = 0;
+    *myhook.var.system.config.screen_swap = mycfg.screen_swap;
+    *myhook.var.system.config.savestate_number = 0;
+    *myhook.var.system.config.fast_forward = mycfg.fast_forward ? 1 : 0;
+    *myhook.var.system.config.enable_sound = mycfg.enable_sound;
+    *myhook.var.system.config.clock_speed = 0;
+    *myhook.var.system.config.threaded_3d = 0;
+    *myhook.var.system.config.mirror_touch = 0;
+    *myhook.var.system.config.compress_savestates = 0;
+    *myhook.var.system.config.savestate_snapshot = 1;
+    *myhook.var.system.config.unzip_roms = 1;
+    *myhook.var.system.config.backup_in_savestates = 0;
+    *myhook.var.system.config.ignore_gamecard_limit = 0;
+    *myhook.var.system.config.frame_interval = 0;
+    *myhook.var.system.config.trim_roms = 0;
+    *myhook.var.system.config.fix_main_2d_screen = 0;
+    *myhook.var.system.config.disable_edge_marking = 0;
+    *myhook.var.system.config.hires_3d = mycfg.hires_3d;
+    *myhook.var.system.config.use_rtc_custom_time = 0;
+    *myhook.var.system.config.rtc_custom_time = 0;
+    *myhook.var.system.config.rtc_system_time = 0;
+    *myhook.var.system.config.screen_scaling = 0;
+
+    set_screen_swap(mycfg.screen_swap);
+    set_fast_forward(mycfg.fast_forward);
+    return 0;
+}
+
+#if defined(UT)
+TEST(detour_hook, init_drastic_config)
+{
+    uint32_t k[2][CONTROL_INDEX_MAX] = { 0 };
+
+    TEST_ASSERT_EQUAL_INT(0, init_drastic_config(k));
 }
 #endif
 
@@ -917,6 +984,7 @@ TEST_GROUP_RUNNER(detour_hook)
     RUN_TEST_CASE(detour_hook, prehook_cb_save_state_index)
     RUN_TEST_CASE(detour_hook, prehook_cb_load_state_index)
     RUN_TEST_CASE(detour_hook, emu_quit)
+    RUN_TEST_CASE(detour_hook, set_screen_swap)
     RUN_TEST_CASE(detour_hook, set_fast_forward)
     RUN_TEST_CASE(detour_hook, load_state)
     RUN_TEST_CASE(detour_hook, save_state)
@@ -931,7 +999,8 @@ TEST_GROUP_RUNNER(detour_hook)
     RUN_TEST_CASE(detour_hook, prehook_cb_render_polygon_steps)
     RUN_TEST_CASE(detour_hook, install_render_handler)
     RUN_TEST_CASE(detour_hook, patch_elf)
-    RUN_TEST_CASE(detour_hook, update_keys)
+    RUN_TEST_CASE(detour_hook, init_drastic_key)
+    RUN_TEST_CASE(detour_hook, init_drastic_config)
 }
 #endif
 
