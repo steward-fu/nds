@@ -165,6 +165,7 @@
         uintptr_t spu_adpcm_decode_block;
         uintptr_t render_scanline_tiled_4bpp;
         uintptr_t render_polygon_setup_perspective_steps;
+        uintptr_t platform_get_input;
     } fun_t;
 
     typedef struct {
@@ -257,6 +258,7 @@
     int32_t save_state(void *, uint32_t, uint16_t *, uint16_t *);
     int32_t load_state(void *, uint32_t, uint16_t *, uint16_t *, uint32_t);
 
+    int update_keys(const uint32_t [2][CONTROL_INDEX_MAX]);
     int patch_elf(uint64_t, uint64_t);
     int prehook_cb_load_state_index(int);
     void prehook_cb_init_backup(backup_struct *, backup_type_enum, uint8_t *, uint32_t, char *);

@@ -887,8 +887,10 @@ int flip_lcd_screen(void)
     drmModeAddFB(myvid.drm.fd, SCREEN_W, SCREEN_H, 24, 32, gbm_bo_get_stride(myvid.drm.bo), gbm_bo_get_handle(myvid.drm.bo).u32, (uint32_t *)&myvid.drm.fb);
     drmModeSetCrtc(myvid.drm.fd, myvid.drm.crtc->crtc_id, myvid.drm.fb, 0, 0, (uint32_t *)myvid.drm.conn, 1, &myvid.drm.crtc->mode);
     drmModePageFlip(myvid.drm.fd, myvid.drm.crtc->crtc_id, myvid.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvid.drm.wait_for_flip);
+
+    drmHandleEvent(myvid.drm.fd, &drm_evctx);
     while (myvid.drm.wait_for_flip) {
-        drmHandleEvent(myvid.drm.fd, &drm_evctx);
+        usleep(10);
     }
     gbm_surface_release_buffer(myvid.drm.gs, myvid.drm.bo);
 #endif
@@ -937,7 +939,6 @@ static int update_nds_screen(void)
 
         flush_lcd_screen(-1, pixels, lcd, lcd, lcd.w * bpp, 0, 0);
     }
-
     flip_lcd_screen();
 
     return 0;
@@ -1424,8 +1425,10 @@ int init_video(_THIS)
     r = 0;
     r |= patch_elf(0x00093460, (uint64_t)prehook_cb_menu);
     r |= patch_elf(0x0009a350, (uint64_t)prehook_cb_update_screen);
+    r |= patch_elf(0x0009aaf0, (uint64_t)prehook_cb_platform_get_input);
     if (r) {
-        error(SDL"user must rerun drastic manually after patched\n");
+        system("touch rerun");
+        error(SDL"must rerun drastic after patched\n");
         exit(-1);
     }
 #endif

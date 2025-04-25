@@ -39,13 +39,8 @@
 #define DEV_KEY_CODE_SELECT     13
 #define DEV_KEY_CODE_START      14
 #define DEV_KEY_CODE_MENU       15
-#define DEV_KEY_CODE_QSAVE      -1
-#define DEV_KEY_CODE_QLOAD      -2
-#define DEV_KEY_CODE_FF         -3
-#define DEV_KEY_CODE_EXIT       -4
 #define DEV_KEY_CODE_VOL_UP     16
 #define DEV_KEY_CODE_VOL_DOWN   17
-#define DEV_KEY_CODE_POWER      -5
 #endif
 
 #if defined(MIYOO_MINI)
@@ -64,13 +59,8 @@
 #define DEV_KEY_CODE_SELECT     97
 #define DEV_KEY_CODE_START      28
 #define DEV_KEY_CODE_MENU       1
-#define DEV_KEY_CODE_QSAVE      -1
-#define DEV_KEY_CODE_QLOAD      -2
-#define DEV_KEY_CODE_FF         -3
-#define DEV_KEY_CODE_EXIT       -4
 #define DEV_KEY_CODE_VOL_UP     115
 #define DEV_KEY_CODE_VOL_DOWN   114
-#define DEV_KEY_CODE_POWER      -5
 #endif
 
 #if defined(MIYOO_A30) || defined(UT)
@@ -89,13 +79,8 @@
 #define DEV_KEY_CODE_SELECT     97
 #define DEV_KEY_CODE_START      28
 #define DEV_KEY_CODE_MENU       1
-#define DEV_KEY_CODE_QSAVE      -1
-#define DEV_KEY_CODE_QLOAD      -2
-#define DEV_KEY_CODE_FF         -3
-#define DEV_KEY_CODE_EXIT       -4
 #define DEV_KEY_CODE_VOL_UP     115
 #define DEV_KEY_CODE_VOL_DOWN   114
-#define DEV_KEY_CODE_POWER      -5
 #endif
 
 #if defined(SFOS_XT897)
@@ -114,13 +99,8 @@
 #define DEV_KEY_CODE_SELECT     51
 #define DEV_KEY_CODE_START      52
 #define DEV_KEY_CODE_MENU       57
-#define DEV_KEY_CODE_QSAVE      2
-#define DEV_KEY_CODE_QLOAD      11
-#define DEV_KEY_CODE_FF         -3
-#define DEV_KEY_CODE_EXIT       29
 #define DEV_KEY_CODE_VOL_UP     -4
 #define DEV_KEY_CODE_VOL_DOWN   -5
-#define DEV_KEY_CODE_POWER      -6
 #endif
 
 enum key_bits {
@@ -139,13 +119,15 @@ enum key_bits {
     KEY_BIT_SELECT,
     KEY_BIT_START,
     KEY_BIT_MENU,
-    KEY_BIT_QSAVE,
-    KEY_BIT_QLOAD,
-    KEY_BIT_FF,
-    KEY_BIT_EXIT,
+    KEY_BIT_SAVE,
+    KEY_BIT_LOAD,
+    KEY_BIT_FAST,
+    KEY_BIT_SWAP,
+    KEY_BIT_ROM,
+    KEY_BIT_QUIT,
+    KEY_BIT_MIC,
     KEY_BIT_VOL_UP,
     KEY_BIT_VOL_DOWN,
-    KEY_BIT_POWER,
     KEY_BIT_MAX
 };
 
@@ -169,6 +151,7 @@ typedef struct {
 void init_event(void);
 void quit_event(void);
 void pump_event(_THIS);
+void prehook_cb_platform_get_input(uintptr_t);
 
 #endif
 

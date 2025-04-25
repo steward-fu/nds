@@ -619,6 +619,7 @@ static int init_table(void)
     myhook.fun.set_screen_hires_mode    = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x00199f90);
     myhook.fun.set_screen_orientation   = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019a7b0);
     myhook.fun.set_screen_scale_factor  = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019a790);
+    myhook.fun.platform_get_input       = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019aaf0);
 #endif
 
 #if defined(NDS_ARM32)
@@ -673,7 +674,6 @@ static int init_table(void)
     myhook.fun.render_scanline_tiled_4bpp               = 0x080bcf74;
     myhook.fun.render_polygon_setup_perspective_steps   = 0x080c1cd4;
 #endif
-
     return 0;
 }
 
@@ -876,6 +876,41 @@ TEST(detour_hook, patch_elf)
 }
 #endif
 
+int update_keys(const uint32_t k[2][CONTROL_INDEX_MAX])
+{
+    int cc = 0;
+
+    debug(DTR"call %s()\n", __func__);
+
+    for (cc = 0; cc < CONTROL_INDEX_MAX; cc++) {
+        if (k[0][cc] <= 0) {
+            debug(DTR"skip invalid key at %d\n", cc);
+            continue;
+        }
+
+        if (myhook.var.system.config.controls_a[cc]) {
+            debug(DTR"update key(%d => %d) at %d\n", *myhook.var.system.config.controls_a[cc], k[0][cc], cc);
+
+            *myhook.var.system.config.controls_a[cc] = k[0][cc];
+        }
+        else {
+            error(DTR"controls is null at %d\n", cc);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+#if defined(UT)
+TEST(detour_hook, update_keys)
+{
+    uint32_t k[2][CONTROL_INDEX_MAX] = { 0 };
+
+    k[0][CONTROL_INDEX_LEFT] = 10;
+    TEST_ASSERT_EQUAL_INT(0, update_keys(k));
+}
+#endif
+
 #if defined(UT)
 TEST_GROUP_RUNNER(detour_hook)
 {
@@ -896,6 +931,7 @@ TEST_GROUP_RUNNER(detour_hook)
     RUN_TEST_CASE(detour_hook, prehook_cb_render_polygon_steps)
     RUN_TEST_CASE(detour_hook, install_render_handler)
     RUN_TEST_CASE(detour_hook, patch_elf)
+    RUN_TEST_CASE(detour_hook, update_keys)
 }
 #endif
 
