@@ -72,32 +72,28 @@
 #define MENU_CFG_FASTFORWARD_4      194
 #define MENU_CFG_FASTFORWARD_5      195
 
-#define MENU_CFG_SPEED              200
-#define MENU_CFG_SPEED_NONE         201
-#define MENU_CFG_SPEED_50           202
-#define MENU_CFG_SPEED_150          203
-#define MENU_CFG_SPEED_200          204
-#define MENU_CFG_SPEED_250          205
-#define MENU_CFG_SPEED_300          206
-#define MENU_CFG_SPEED_350          207
-#define MENU_CFG_SPEED_400          208
+#define MENU_CFG_HIRES_3D           200
+#define MENU_CFG_HIRES_3D_ON        201
+#define MENU_CFG_HIRES_3D_OFF       202
+#define MENU_CFG_MICROPHONE         203
+#define MENU_CFG_KEYPAD             204
+#define MENU_CFG_JOYSTICK           205
+#define MENU_CFG_HOTKEY             206
+#define MENU_CFG_DBG                207
+#define MENU_CFG_DBG_ON             208
+#define MENU_CFG_DBG_OFF            209
 
-#define MENU_CFG_HIRES_3D           210
-#define MENU_CFG_HIRES_3D_ON        211
-#define MENU_CFG_HIRES_3D_OFF       212
-#define MENU_CFG_MICROPHONE         213
-#define MENU_CFG_KEYPAD             214
-#define MENU_CFG_JOYSTICK           215
-#define MENU_CFG_HOTKEY             216
-#define MENU_CFG_DBG                217
-#define MENU_CFG_DBG_ON             218
-#define MENU_CFG_DBG_OFF            219
+#define MENU_TOOLS                  210
+#define MENU_TOOLS_WALKTHROUGH      211
 
-#define MENU_TOOLS                  230
-#define MENU_TOOLS_WALKTHROUGH      231
+#define MENU_HELP                   220
+#define MENU_HELP_ABOUT_EMU         221
 
-#define MENU_HELP                   240
-#define MENU_HELP_ABOUT_EMU         241
+typedef enum {
+    MENU_ADD = 0,
+    MENU_UPDATE,
+    MENU_DEL
+} MENU_TYPE;
 
 void prehook_cb_menu(void *, uint32_t);
 

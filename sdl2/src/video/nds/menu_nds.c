@@ -55,6 +55,7 @@ extern nds_video myvid;
 extern nds_event myevt;
 #endif
 
+static int quit = 0;
 static int running = 0;
 static uint16_t *lv_pixels = NULL;
 static lv_display_t *lv_disp = NULL;
@@ -95,13 +96,13 @@ TEST_TEAR_DOWN(sdl2_menu)
 }
 #endif
 
-static int add_or_update_menu(MENU_Handle hMenu, MENU_Handle hSub, const char *s, U16 id, U16 flags, int add)
+static int add_or_update_menu(MENU_Handle hMenu, MENU_Handle hSub, const char *s, U16 id, U16 flags, MENU_TYPE t)
 {
     MENU_ITEM_DATA m = { 0 };
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
@@ -111,10 +112,10 @@ static int add_or_update_menu(MENU_Handle hMenu, MENU_Handle hSub, const char *s
     m.Flags = flags;
     m.Id = id;
 
-    if (add) {
+    if (t == MENU_ADD) {
         MENU_AddItem(hMenu, &m);
     }
-    else {
+    else if (t == MENU_UPDATE) {
         if (id) {
             MENU_SetItem(hMenu, id, &m);
         }
@@ -126,347 +127,604 @@ static int add_or_update_menu(MENU_Handle hMenu, MENU_Handle hSub, const char *s
 #if defined(UT)
 TEST(sdl2_menu, add_or_update_menu)
 {
-    TEST_ASSERT_EQUAL_INT(-1, add_or_update_menu(0, 0, NULL, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, add_or_update_menu(0, 0, NULL, 0, 0, MENU_ADD));
 }
 #endif
 
-static int create_submenu_file_recent(MENU_Handle hMenu, int is_add)
+static int create_or_delete_submenu_file_recent(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (is_add) {
-        h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
-        MENU_SetFont(h, cur_font);
-    }
-
-    add_or_update_menu(h, 0, "XXX", 0, 0, is_add);
-    add_or_update_menu(h, 0, "XXX", 0, 0, is_add);
-    add_or_update_menu(hMenu, h, l10n("Open Recent"), MENU_FILE_OPEN_RECENT, 0, is_add);
-    return 0;
-}
-
-#if defined(UT)
-TEST(sdl2_menu, create_submenu_file_recent)
-{
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_file_recent(0, 0));
-}
-#endif
-
-static int create_submenu_file(MENU_Handle hMenu, int add)
-{
-    static MENU_Handle h = 0;
-
-    debug(GUI"call %s()\n", __func__);
-
-    if (!hMenu) {
-        error(GUI"invalid menu handle\n");
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
         return -1;
     }
 
-    if (add) {
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("Open ROM"), MENU_FILE_OPEN_ROM, 0, add);
-    create_submenu_file_recent(h, add);
-    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, add);
-    add_or_update_menu(h, 0, l10n("Save State"), MENU_FILE_SAVE_STATE, 0, add);
-    add_or_update_menu(h, 0, l10n("Load State"), MENU_FILE_LOAD_STATE, 0, add);
-    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, add);
-    add_or_update_menu(h, 0, l10n("Quit"), MENU_FILE_QUIT, 0, add);
-    add_or_update_menu(hMenu, h, l10n("File"), MENU_FILE, 0, add);
+    add_or_update_menu(h, 0, "XXX", 0, 0, t);
+    add_or_update_menu(hMenu, h, l10n("Open Recent"), MENU_FILE_OPEN_RECENT, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_file)
+TEST(sdl2_menu, create_or_delete_submenu_file_recent)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_file(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_file_recent(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_show_fps(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_file(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("On"), MENU_CFG_SHOWFPS_ON, 0, add);
-    add_or_update_menu(h, 0, l10n("Off"), MENU_CFG_SHOWFPS_OFF, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Show FPS"), MENU_CFG_SHOWFPS, 0, add);
+    add_or_update_menu(h, 0, l10n("Open ROM"), MENU_FILE_OPEN_ROM, 0, t);
+    create_or_delete_submenu_file_recent(h, t);
+    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, t);
+    add_or_update_menu(h, 0, l10n("Save State"), MENU_FILE_SAVE_STATE, 0, t);
+    add_or_update_menu(h, 0, l10n("Load State"), MENU_FILE_LOAD_STATE, 0, t);
+    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, t);
+    add_or_update_menu(h, 0, l10n("Quit"), MENU_FILE_QUIT, 0, t);
+    add_or_update_menu(hMenu, h, l10n("File"), MENU_FILE, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_show_fps)
+TEST(sdl2_menu, create_or_delete_submenu_file)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_show_fps(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_file(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_swap_screen(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_show_fps(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("On"), MENU_CFG_SWAP_SCREEN_ON, 0, add);
-    add_or_update_menu(h, 0, l10n("Off"), MENU_CFG_SWAP_SCREEN_OFF, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Swap Screen"), MENU_CFG_SWAP_SCREEN, 0, add);
+    add_or_update_menu(
+        h,
+        0,
+        l10n("On"),
+        MENU_CFG_SHOWFPS_ON,
+        mycfg.show_frame_counter ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("Off"),
+        MENU_CFG_SHOWFPS_OFF,
+        !mycfg.show_frame_counter ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(hMenu, h, l10n("Show FPS"), MENU_CFG_SHOWFPS, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_swap_screen)
+TEST(sdl2_menu, create_or_delete_submenu_config_show_fps)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_swap_screen(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_show_fps(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_frameskip_type(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_swap_screen(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("None"), MENU_CFG_FRAMESKIP_NONE, 0, add);
-    add_or_update_menu(h, 0, l10n("Automatic"), MENU_CFG_FRAMESKIP_AUTO, 0, add);
-    add_or_update_menu(h, 0, l10n("Manual"), MENU_CFG_FRAMESKIP_MANUAL, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Frameskip Type"), MENU_CFG_FRAMESKIP_TYPE, 0, add);
+    add_or_update_menu(
+        h,
+        0,
+        l10n("On"),
+        MENU_CFG_SWAP_SCREEN_ON,
+        mycfg.screen_swap ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("Off"),
+        MENU_CFG_SWAP_SCREEN_OFF,
+        !mycfg.screen_swap ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(hMenu, h, l10n("Swap Screen"), MENU_CFG_SWAP_SCREEN, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_frameskip_type)
+TEST(sdl2_menu, create_or_delete_submenu_config_swap_screen)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_frameskip_type(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_swap_screen(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_frameskip_value(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_frameskip_type(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("0"), MENU_CFG_FRAMESKIP_0, 0, add);
-    add_or_update_menu(h, 0, l10n("1"), MENU_CFG_FRAMESKIP_1, 0, add);
-    add_or_update_menu(h, 0, l10n("2"), MENU_CFG_FRAMESKIP_2, 0, add);
-    add_or_update_menu(h, 0, l10n("3"), MENU_CFG_FRAMESKIP_3, 0, add);
-    add_or_update_menu(h, 0, l10n("4"), MENU_CFG_FRAMESKIP_4, 0, add);
-    add_or_update_menu(h, 0, l10n("5"), MENU_CFG_FRAMESKIP_5, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Frameskip Value"), MENU_CFG_FRAMESKIP_VALUE, 0, add);
+    add_or_update_menu(
+        h,
+        0,
+        l10n("None"),
+        MENU_CFG_FRAMESKIP_NONE,
+        mycfg.frameskip_type == FRAMESKIP_TYPE_NONE ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("Automatic"),
+        MENU_CFG_FRAMESKIP_AUTO,
+        mycfg.frameskip_type == FRAMESKIP_TYPE_AUTOMATIC ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("Manual"),
+        MENU_CFG_FRAMESKIP_MANUAL,
+        mycfg.frameskip_type == FRAMESKIP_TYPE_MANUAL ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(hMenu, h, l10n("Frameskip Type"), MENU_CFG_FRAMESKIP_TYPE, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_frameskip_value)
+TEST(sdl2_menu, create_or_delete_submenu_config_frameskip_type)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_frameskip_value(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_frameskip_type(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_hires_3d(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_frameskip_value(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("On"), MENU_CFG_HIRES_3D_ON, 0, add);
-    add_or_update_menu(h, 0, l10n("Off"), MENU_CFG_HIRES_3D_OFF, 0, add);
-    add_or_update_menu(hMenu, h, l10n("High Resolution 3D"), MENU_CFG_HIRES_3D, 0, add);
+    add_or_update_menu(
+        h,
+        0,
+        l10n("0"),
+        MENU_CFG_FRAMESKIP_0,
+        mycfg.frameskip_value == 0 ? MENU_IF_CHECKED : 0 ,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("1"),
+        MENU_CFG_FRAMESKIP_1,
+        mycfg.frameskip_value == 1 ? MENU_IF_CHECKED : 0 ,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("2"),
+        MENU_CFG_FRAMESKIP_2,
+        mycfg.frameskip_value == 2 ? MENU_IF_CHECKED : 0 ,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("3"),
+        MENU_CFG_FRAMESKIP_3,
+        mycfg.frameskip_value == 3 ? MENU_IF_CHECKED : 0 ,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("4"),
+        MENU_CFG_FRAMESKIP_4,
+        mycfg.frameskip_value == 4 ? MENU_IF_CHECKED : 0 ,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("5"),
+        MENU_CFG_FRAMESKIP_5,
+        mycfg.frameskip_value == 5 ? MENU_IF_CHECKED : 0 ,
+        t
+    );
+
+    add_or_update_menu(hMenu, h, l10n("Frameskip Value"), MENU_CFG_FRAMESKIP_VALUE, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_hires_3d)
+TEST(sdl2_menu, create_or_delete_submenu_config_frameskip_value)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_hires_3d(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_frameskip_value(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_fastforward(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_hires_3d(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("0"), MENU_CFG_FASTFORWARD_0, 0, add);
-    add_or_update_menu(h, 0, l10n("1"), MENU_CFG_FASTFORWARD_1, 0, add);
-    add_or_update_menu(h, 0, l10n("2"), MENU_CFG_FASTFORWARD_2, 0, add);
-    add_or_update_menu(h, 0, l10n("3"), MENU_CFG_FASTFORWARD_3, 0, add);
-    add_or_update_menu(h, 0, l10n("4"), MENU_CFG_FASTFORWARD_4, 0, add);
-    add_or_update_menu(h, 0, l10n("5"), MENU_CFG_FASTFORWARD_5, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Fast Forward"), MENU_CFG_FASTFORWARD, 0, add);
+    add_or_update_menu(h, 0, l10n("On"), MENU_CFG_HIRES_3D_ON, 0, t);
+    add_or_update_menu(h, 0, l10n("Off"), MENU_CFG_HIRES_3D_OFF, 0, t);
+    add_or_update_menu(hMenu, h, l10n("High Resolution 3D"), MENU_CFG_HIRES_3D, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_fastforward)
+TEST(sdl2_menu, create_or_delete_submenu_config_hires_3d)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_fastforward(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_hires_3d(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_view(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_fastforward(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    create_submenu_config_show_fps(h, add);
-    create_submenu_config_swap_screen(h, add);
-    create_submenu_config_fastforward(h, add);
-    create_submenu_config_frameskip_type(h, add);
-    create_submenu_config_frameskip_value(h, add);
-    create_submenu_config_hires_3d(h, add);
-    add_or_update_menu(h, 0, l10n("Layout"), MENU_VIEW_LAYOUT, 0, add);
-    add_or_update_menu(h, 0, l10n("Filter"), MENU_VIEW_FILTER, 0, add);
-    add_or_update_menu(hMenu, h, l10n("View"), MENU_VIEW, 0, add);
+    add_or_update_menu(
+        h,
+        0,
+        l10n("0"),
+        MENU_CFG_FASTFORWARD_0,
+        mycfg.fast_forward == 0 ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("1"),
+        MENU_CFG_FASTFORWARD_1,
+        mycfg.fast_forward == 1 ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("2"),
+        MENU_CFG_FASTFORWARD_2,
+        mycfg.fast_forward == 2 ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("3"),
+        MENU_CFG_FASTFORWARD_3,
+        mycfg.fast_forward == 3 ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("4"),
+        MENU_CFG_FASTFORWARD_4,
+        mycfg.fast_forward == 4 ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("5"),
+        MENU_CFG_FASTFORWARD_5,
+        mycfg.fast_forward == 5 ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(hMenu, h, l10n("Fast Forward"), MENU_CFG_FASTFORWARD, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_view)
+TEST(sdl2_menu, create_or_delete_submenu_config_fastforward)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_view(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_fastforward(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_system(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_view(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("Continue"), MENU_SYS_CONTINUE,  0, add);
-    add_or_update_menu(h, 0, l10n("Reset"), MENU_SYS_RESET, 0, add);
-    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, add);
-    add_or_update_menu(h, 0, l10n("Firmware"), MENU_SYS_FIRMWARE, 0, add);
-    add_or_update_menu(h, 0, l10n("Date Time"), MENU_SYS_DATE_TIME, 0, add);
-    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, add);
-    add_or_update_menu(h, 0, l10n("Cheat"), MENU_SYS_CHEAT, 0, add);
-    add_or_update_menu(h, 0, l10n("ROM Info"), MENU_SYS_ROM_INFO, 0, add);
-    add_or_update_menu(hMenu, h, l10n("System"), MENU_SYS, 0, add);
+    create_or_delete_submenu_config_show_fps(h, t);
+    create_or_delete_submenu_config_swap_screen(h, t);
+    create_or_delete_submenu_config_fastforward(h, t);
+    create_or_delete_submenu_config_frameskip_type(h, t);
+    create_or_delete_submenu_config_frameskip_value(h, t);
+    create_or_delete_submenu_config_hires_3d(h, t);
+    add_or_update_menu(h, 0, l10n("Layout"), MENU_VIEW_LAYOUT, 0, t);
+    add_or_update_menu(h, 0, l10n("Filter"), MENU_VIEW_FILTER, 0, t);
+    add_or_update_menu(hMenu, h, l10n("View"), MENU_VIEW, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_system)
+TEST(sdl2_menu, create_or_delete_submenu_view)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_system(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_view(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_gui(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_system(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
+        h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
+        MENU_SetFont(h, cur_font);
+    }
+
+    add_or_update_menu(h, 0, l10n("Continue"), MENU_SYS_CONTINUE,  0, t);
+    add_or_update_menu(h, 0, l10n("Reset"), MENU_SYS_RESET, 0, t);
+    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, t);
+    add_or_update_menu(h, 0, l10n("Firmware"), MENU_SYS_FIRMWARE, 0, t);
+    add_or_update_menu(h, 0, l10n("Date Time"), MENU_SYS_DATE_TIME, 0, t);
+    add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, t);
+    add_or_update_menu(h, 0, l10n("Cheat"), MENU_SYS_CHEAT, 0, t);
+    add_or_update_menu(h, 0, l10n("ROM Info"), MENU_SYS_ROM_INFO, 0, t);
+    add_or_update_menu(hMenu, h, l10n("System"), MENU_SYS, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, create_or_delete_submenu_system)
+{
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_system(0, MENU_UPDATE));
+}
+#endif
+
+static int create_or_delete_submenu_config_gui(MENU_Handle hMenu, MENU_TYPE t)
+{
+    static MENU_Handle h = 0;
+
+    debug(GUI"call %s()\n", __func__);
+
+    if ((t == MENU_ADD) && !hMenu) {
+        error(GUI"invalid menu handle\n");
+        return -1;
+    }
+
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
@@ -478,7 +736,7 @@ static int create_submenu_config_gui(MENU_Handle hMenu, int add)
         l10n("LVGL"),
         MENU_CFG_STYLE_LVGL,
         (mycfg.style == STYLE_LVGL)  ? MENU_IF_CHECKED : 0,
-        add
+        t
     );
 
     add_or_update_menu(h,
@@ -486,34 +744,44 @@ static int create_submenu_config_gui(MENU_Handle hMenu, int add)
         l10n("uC/GUI"),
         MENU_CFG_STYLE_UCGUI,
         (mycfg.style == STYLE_UCGUI) ? MENU_IF_CHECKED : 0,
-        add
+        t
     );
 
-    add_or_update_menu(hMenu, h, l10n("Style"), MENU_CFG_STYLE, 0, add);
+    add_or_update_menu(hMenu, h, l10n("Style"), MENU_CFG_STYLE, 0, t);
 #endif
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_language)
+TEST(sdl2_menu, create_or_delete_submenu_config_language)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_language(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_language(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_language(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_language(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
@@ -525,7 +793,7 @@ static int create_submenu_config_language(MENU_Handle hMenu, int add)
         l10n("en_US"),
         MENU_CFG_LANG_US,
         (mycfg.lang == LANG_en_US) ? MENU_IF_CHECKED : 0,
-        add
+        t
     );
 
     add_or_update_menu(
@@ -534,7 +802,7 @@ static int create_submenu_config_language(MENU_Handle hMenu, int add)
         l10n("zh_CN"),
         MENU_CFG_LANG_CN,
         (mycfg.lang == LANG_zh_CN) ? MENU_IF_CHECKED : 0,
-        add
+        t
     );
 
     add_or_update_menu(
@@ -543,100 +811,84 @@ static int create_submenu_config_language(MENU_Handle hMenu, int add)
         l10n("zh_TW"),
         MENU_CFG_LANG_TW,
         (mycfg.lang == LANG_zh_TW) ? MENU_IF_CHECKED : 0,
-        add
+        t
     );
 
-    add_or_update_menu(hMenu, h, l10n("Language"), MENU_CFG_LANG, 0, add);
+    add_or_update_menu(hMenu, h, l10n("Language"), MENU_CFG_LANG, 0, t);
 #endif
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_language)
+TEST(sdl2_menu, create_or_delete_submenu_config_language)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_language(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_language(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_audio(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_audio(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("On"),    MENU_CFG_AUDIO_ON,  0, add);
-    add_or_update_menu(h, 0, l10n("Off"),   MENU_CFG_AUDIO_OFF, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Audio"), MENU_CFG_AUDIO, 0, add);
+    add_or_update_menu(h, 0, l10n("On"),    MENU_CFG_AUDIO_ON,  0, t);
+    add_or_update_menu(h, 0, l10n("Off"),   MENU_CFG_AUDIO_OFF, 0, t);
+    add_or_update_menu(hMenu, h, l10n("Audio"), MENU_CFG_AUDIO, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_audio)
+TEST(sdl2_menu, create_or_delete_submenu_config_audio)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_audio(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_audio(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config_speed(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config_debug_log(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
-        h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
-        MENU_SetFont(h, cur_font);
-    }
-
-    add_or_update_menu(h, 0, l10n("None"), MENU_CFG_SPEED_NONE, 0, add);
-    add_or_update_menu(h, 0, l10n("50%"), MENU_CFG_SPEED_50, 0, add);
-    add_or_update_menu(h, 0, l10n("150%"), MENU_CFG_SPEED_150, 0, add);
-    add_or_update_menu(h, 0, l10n("200%"), MENU_CFG_SPEED_200, 0, add);
-    add_or_update_menu(h, 0, l10n("250%"), MENU_CFG_SPEED_250, 0, add);
-    add_or_update_menu(h, 0, l10n("300%"), MENU_CFG_SPEED_300, 0, add);
-    add_or_update_menu(h, 0, l10n("350%"), MENU_CFG_SPEED_350, 0, add);
-    add_or_update_menu(h, 0, l10n("400%"), MENU_CFG_SPEED_400, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Speed Override"), MENU_CFG_SPEED, 0, add);
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(sdl2_menu, create_submenu_config_speed)
-{
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_speed(0, 0));
-}
-#endif
-
-static int create_submenu_config_debug_log(MENU_Handle hMenu, int add)
-{
-    static MENU_Handle h = 0;
-
-    debug(GUI"call %s()\n", __func__);
-
-    if (!hMenu) {
-        error(GUI"invalid menu handle\n");
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
         return -1;
     }
 
-    if (add) {
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
@@ -648,7 +900,7 @@ static int create_submenu_config_debug_log(MENU_Handle hMenu, int add)
         l10n("On"),
         MENU_CFG_DBG_ON,
         mycfg.dbg ? MENU_IF_CHECKED : 0,
-        add
+        t
     );
 
     add_or_update_menu(
@@ -657,7 +909,7 @@ static int create_submenu_config_debug_log(MENU_Handle hMenu, int add)
         l10n("Off"),
         MENU_CFG_DBG_OFF,
         !mycfg.dbg ? MENU_IF_CHECKED : 0,
-        add
+        t
     );
 
     add_or_update_menu(
@@ -666,156 +918,417 @@ static int create_submenu_config_debug_log(MENU_Handle hMenu, int add)
         l10n("Debug Log"),
         MENU_CFG_DBG,
         0,
-        add
+        t
     );
 #endif
 
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
+
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config_debug_log)
+TEST(sdl2_menu, create_or_delete_submenu_config_debug_log)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config_debug_log(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config_debug_log(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_config(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_config(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    create_submenu_config_gui(h, add);
-    create_submenu_config_language(h, add);
-    create_submenu_config_audio(h, add);
-    create_submenu_config_speed(h, add);
-    create_submenu_config_debug_log(h, add);
-    add_or_update_menu(h, 0, l10n("Microphone"), MENU_CFG_MICROPHONE, 0, add);
-    add_or_update_menu(h, 0, l10n("Keypad"), MENU_CFG_KEYPAD, 0, add);
-    add_or_update_menu(h, 0, l10n("Joystick"), MENU_CFG_JOYSTICK, 0, add);
-    add_or_update_menu(h, 0, l10n("Hotkey"), MENU_CFG_HOTKEY, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Config"), MENU_CFG, 0, add);
+    create_or_delete_submenu_config_gui(h, t);
+    create_or_delete_submenu_config_language(h, t);
+    create_or_delete_submenu_config_audio(h, t);
+    create_or_delete_submenu_config_debug_log(h, t);
+    add_or_update_menu(h, 0, l10n("Microphone"), MENU_CFG_MICROPHONE, 0, t);
+    add_or_update_menu(h, 0, l10n("Keypad"), MENU_CFG_KEYPAD, 0, t);
+    add_or_update_menu(h, 0, l10n("Joystick"), MENU_CFG_JOYSTICK, 0, t);
+    add_or_update_menu(h, 0, l10n("Hotkey"), MENU_CFG_HOTKEY, 0, t);
+    add_or_update_menu(hMenu, h, l10n("Config"), MENU_CFG, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_config)
+TEST(sdl2_menu, create_or_delete_submenu_config)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_config(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_config(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_tools(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_tools(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("Walkthrough"), MENU_TOOLS_WALKTHROUGH, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Tools"), MENU_TOOLS, 0, add);
+    add_or_update_menu(h, 0, l10n("Walkthrough"), MENU_TOOLS_WALKTHROUGH, 0, t);
+    add_or_update_menu(hMenu, h, l10n("Tools"), MENU_TOOLS, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_tools)
+TEST(sdl2_menu, create_or_delete_submenu_tools)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_tools(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_tools(0, MENU_UPDATE));
 }
 #endif
 
-static int create_submenu_help(MENU_Handle hMenu, int add)
+static int create_or_delete_submenu_help(MENU_Handle hMenu, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (!hMenu) {
+    if ((t == MENU_ADD) && !hMenu) {
         error(GUI"invalid menu handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_VERTICAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("About EMU"), MENU_HELP_ABOUT_EMU, 0, add);
-    add_or_update_menu(hMenu, h, l10n("Help"), MENU_HELP, 0, add);
+    add_or_update_menu(h, 0, l10n("About EMU"), MENU_HELP_ABOUT_EMU, 0, t);
+    add_or_update_menu(hMenu, h, l10n("Help"), MENU_HELP, 0, t);
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
+    }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_submenu_help)
+TEST(sdl2_menu, create_or_delete_submenu_help)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_submenu_help(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_submenu_help(0, MENU_UPDATE));
 }
 #endif
 
-static int create_menu(WM_HWIN hParent, int add)
+static int create_or_delete_menu(WM_HWIN hParent, MENU_TYPE t)
 {
     static MENU_Handle h = 0;
 
     debug(GUI"call %s()\n", __func__);
 
-    if (add && !hParent) {
+    if ((t == MENU_ADD) && !hParent) {
         error(GUI"invalid parent handle\n");
         return -1;
     }
 
-    if (add) {
+    if ((t == MENU_ADD) && h) {
+        error(GUI"menu has been created already\n");
+        return -1;
+    }
+
+    if (t == MENU_ADD) {
         h = MENU_CreateEx(0, 0, 0, 0, WM_UNATTACHED, 0, MENU_CF_HORIZONTAL, 0);
         MENU_SetFont(h, cur_font);
     }
 
-    create_submenu_file(h, add);
-    create_submenu_system(h, add);
-    create_submenu_view(h, add);
-    create_submenu_config(h, add);
-    create_submenu_tools(h, add);
-    create_submenu_help(h, add);
+    create_or_delete_submenu_file(h, t);
+    create_or_delete_submenu_system(h, t);
+    create_or_delete_submenu_view(h, t);
+    create_or_delete_submenu_config(h, t);
+    create_or_delete_submenu_tools(h, t);
+    create_or_delete_submenu_help(h, t);
 
-    if (add) {
+    if (t == MENU_ADD) {
         FRAMEWIN_AddMenu(hParent, h);
+    }
+
+    if ((t == MENU_DEL) && h) {
+        MENU_Delete(h);
+        h = 0;
     }
 
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_menu, create_menu)
+TEST(sdl2_menu, create_or_delete_menu)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_menu(0, 1));
-    TEST_ASSERT_EQUAL_INT( 0, create_menu(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_or_delete_menu(0, MENU_ADD));
+    TEST_ASSERT_EQUAL_INT( 0, create_or_delete_menu(0, MENU_UPDATE));
+}
+#endif
+
+static int handle_lang(uint32_t id)
+{
+    debug(GUI"call %s()\n", __func__);
+
+    switch (id) {
+    case MENU_CFG_LANG_US:
+        mycfg.lang = LANG_en_US;
+        debug(GUI"MENU_CFG_LANG_US\n");
+        break;
+    case MENU_CFG_LANG_CN:
+        mycfg.lang = LANG_zh_CN;
+        debug(GUI"MENU_CFG_LANG_CN\n");
+        break;
+    case MENU_CFG_LANG_TW:
+        mycfg.lang = LANG_zh_TW;
+        debug(GUI"MENU_CFG_LANG_TW\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_lang)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_lang(0));
+}
+#endif
+
+static int handle_dbg(uint32_t id)
+{
+    debug(GUI"call %s()\n", __func__);
+
+    switch (id) {
+    case MENU_CFG_DBG_ON:
+        mycfg.dbg = 1;
+        error(GUI"MENU_CFG_DBG_ON\n");
+        break;
+    case MENU_CFG_DBG_OFF:
+        mycfg.dbg = 0;
+        error(GUI"MENU_CFG_DBG_OFF\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_dbg)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_dbg(0));
+}
+#endif
+
+static int handle_showfps(uint32_t id)
+{
+    debug(GUI"call %s()\n", __func__);
+
+    switch (id) {
+    case MENU_CFG_SHOWFPS_ON:
+        mycfg.show_frame_counter = 1;
+        debug(GUI"MENU_CFG_SHOWFPS_ON\n");
+        break;
+    case MENU_CFG_SHOWFPS_OFF:
+        mycfg.show_frame_counter = 0;
+        debug(GUI"MENU_CFG_SHOWFPS_OFF\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_showfps)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_showfps(0));
+}
+#endif
+
+static int handle_swap_screen(uint32_t id)
+{
+    debug(GUI"call %s()\n", __func__);
+
+    switch (id) {
+    case MENU_CFG_SWAP_SCREEN_ON:
+        mycfg.screen_swap = 1;
+        debug(GUI"MENU_CFG_SWAP_SCREEN_ON\n");
+        break;
+    case MENU_CFG_SWAP_SCREEN_OFF:
+        mycfg.screen_swap = 0;
+        debug(GUI"MENU_CFG_SWAP_SCREEN_OFF\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_swap_screen)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_swap_screen(0));
+}
+#endif
+
+static int handle_fast_forward(uint32_t id)
+{
+    debug(GUI"call %s()\n", __func__);
+
+    switch (id) {
+    case MENU_CFG_FASTFORWARD_0:
+        mycfg.fast_forward = 0;
+        debug(GUI"MENU_CFG_FASTFORWARD_0\n");
+        break;
+    case MENU_CFG_FASTFORWARD_1:
+        mycfg.fast_forward = 1;
+        debug(GUI"MENU_CFG_FASTFORWARD_1\n");
+        break;
+    case MENU_CFG_FASTFORWARD_2:
+        mycfg.fast_forward = 2;
+        debug(GUI"MENU_CFG_FASTFORWARD_2\n");
+        break;
+    case MENU_CFG_FASTFORWARD_3:
+        mycfg.fast_forward = 3;
+        debug(GUI"MENU_CFG_FASTFORWARD_3\n");
+        break;
+    case MENU_CFG_FASTFORWARD_4:
+        mycfg.fast_forward = 4;
+        debug(GUI"MENU_CFG_FASTFORWARD_4\n");
+        break;
+    case MENU_CFG_FASTFORWARD_5:
+        mycfg.fast_forward = 5;
+        debug(GUI"MENU_CFG_FASTFORWARD_5\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_fast_forward)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_fast_forward(0));
+}
+#endif
+
+static int handle_frameskip(uint32_t id)
+{
+    debug(GUI"call %s()\n", __func__);
+
+    switch (id) {
+    case MENU_CFG_FRAMESKIP_NONE:
+        mycfg.frameskip_type = FRAMESKIP_TYPE_NONE;
+        debug(GUI"MENU_CFG_FRAMESKIP_NONE\n");
+        break;
+    case MENU_CFG_FRAMESKIP_AUTO:
+        mycfg.frameskip_type = FRAMESKIP_TYPE_AUTOMATIC;
+        debug(GUI"MENU_CFG_FRAMESKIP_AUTOMATIC\n");
+        break;
+    case MENU_CFG_FRAMESKIP_MANUAL:
+        mycfg.frameskip_type = FRAMESKIP_TYPE_MANUAL;
+        debug(GUI"MENU_CFG_FRAMESKIP_MANUAL\n");
+        break;
+    case MENU_CFG_FRAMESKIP_0:
+        mycfg.frameskip_value = 0;
+        debug(GUI"MENU_CFG_FRAMESKIP_0\n");
+        break;
+    case MENU_CFG_FRAMESKIP_1:
+        mycfg.frameskip_value = 1;
+        debug(GUI"MENU_CFG_FRAMESKIP_1\n");
+        break;
+    case MENU_CFG_FRAMESKIP_2:
+        mycfg.frameskip_value = 2;
+        debug(GUI"MENU_CFG_FRAMESKIP_2\n");
+        break;
+    case MENU_CFG_FRAMESKIP_3:
+        mycfg.frameskip_value = 3;
+        debug(GUI"MENU_CFG_FRAMESKIP_3\n");
+        break;
+    case MENU_CFG_FRAMESKIP_4:
+        mycfg.frameskip_value = 4;
+        debug(GUI"MENU_CFG_FRAMESKIP_4\n");
+        break;
+    case MENU_CFG_FRAMESKIP_5:
+        mycfg.frameskip_value = 5;
+        debug(GUI"MENU_CFG_FRAMESKIP_5\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_frameskip)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_frameskip(0));
 }
 #endif
 
 static void WndProc(WM_MESSAGE* pMsg)
 {
-    char buf[MAX_PATH + 32] = { 0 };
+    char buf[MAX_PATH] = { 0 };
+    WM_KEY_INFO* pKeyInfo = NULL;
     MENU_MSG_DATA *pMenuInfo = NULL;
 
     debug(GUI"call %s(pMsg=%p)\n", __func__, pMsg);
@@ -831,7 +1344,16 @@ static void WndProc(WM_MESSAGE* pMsg)
             snprintf(buf, sizeof(buf), "%s - %s", NDS_VER, __DATE__);
             FRAMEWIN_SetText(pMsg->hWin, buf);
             FRAMEWIN_SetFont(pMsg->hWin, cur_font);
-            create_menu(pMsg->hWin, 1);
+            create_or_delete_menu(pMsg->hWin, MENU_ADD);
+            break;
+        case WM_DELETE:
+            create_or_delete_menu(pMsg->hWin, MENU_DEL);
+            break;
+        case WM_KEY:
+            pKeyInfo = (WM_KEY_INFO *)pMsg->Data.p;
+            if (pKeyInfo->Key == SDLK_LALT) {
+                running = 0;
+            }
             break;
         case WM_MENU:
             pMenuInfo = (MENU_MSG_DATA *)pMsg->Data.p;
@@ -839,42 +1361,54 @@ static void WndProc(WM_MESSAGE* pMsg)
             case MENU_ON_ITEMSELECT:
                 switch (pMenuInfo->ItemId) {
                 case MENU_FILE_QUIT:
-                    snprintf(buf, sizeof(buf), "%s/%s", mycfg.home, CFG_PATH);
-                    update_cfg(buf);
-
-                    debug(GUI"quit from MENU_FILE_QUIT\n");
+                    quit = 1;
                     running = 0;
-                    GUI_EndDialog(pMsg->hWin, 0);
-#if !defined(UIDBG)
-                    emu_quit();
-#endif
+                    debug(GUI"MENU_FILE_QUIT\n");
                     break;
                 case MENU_SYS_CONTINUE:
                     running = 0;
-                    debug(GUI"continue to run game\n");
+                    debug(GUI"MENU_SYS_CONTINUE\n");
                     break;
                 case MENU_CFG_LANG_US:
-                    mycfg.lang = LANG_en_US;
-                    debug(GUI"set language as en_US\n");
-                    break;
                 case MENU_CFG_LANG_CN:
-                    mycfg.lang = LANG_zh_CN;
-                    debug(GUI"set language as zh_CN\n");
-                    break;
                 case MENU_CFG_LANG_TW:
-                    mycfg.lang = LANG_zh_TW;
-                    debug(GUI"set language as zh_TW\n");
+                    handle_lang(pMenuInfo->ItemId);
                     break;
                 case MENU_CFG_DBG_ON:
-                    mycfg.dbg = 1;
-                    error(GUI"enable debug log\n");
-                    break;
                 case MENU_CFG_DBG_OFF:
-                    mycfg.dbg = 0;
-                    error(GUI"disable debug log\n");
+                    handle_dbg(pMenuInfo->ItemId);
+                    break;
+                case MENU_CFG_SHOWFPS_ON:
+                case MENU_CFG_SHOWFPS_OFF:
+                    handle_showfps(pMenuInfo->ItemId);
+                    break;
+                case MENU_CFG_SWAP_SCREEN_ON:
+                case MENU_CFG_SWAP_SCREEN_OFF:
+                    handle_swap_screen(pMenuInfo->ItemId);
+                    break;
+                case MENU_CFG_FASTFORWARD_0:
+                case MENU_CFG_FASTFORWARD_1:
+                case MENU_CFG_FASTFORWARD_2:
+                case MENU_CFG_FASTFORWARD_3:
+                case MENU_CFG_FASTFORWARD_4:
+                case MENU_CFG_FASTFORWARD_5:
+                    handle_fast_forward(pMenuInfo->ItemId);
+                    break;
+                case MENU_CFG_FRAMESKIP_NONE:
+                case MENU_CFG_FRAMESKIP_AUTO:
+                case MENU_CFG_FRAMESKIP_MANUAL:
+                case MENU_CFG_FRAMESKIP_0:
+                case MENU_CFG_FRAMESKIP_1:
+                case MENU_CFG_FRAMESKIP_2:
+                case MENU_CFG_FRAMESKIP_3:
+                case MENU_CFG_FRAMESKIP_4:
+                case MENU_CFG_FRAMESKIP_5:
+                    handle_frameskip(pMenuInfo->ItemId);
                     break;
                 }
-                create_menu(0, 0);
+
+                init_drastic_config();
+                create_or_delete_menu(0, MENU_UPDATE);
                 break;
             }
             break;
@@ -894,7 +1428,9 @@ TEST(sdl2_menu, WndProc)
 
 static int run_ucgui(void)
 {
+    WM_HWIN hWin = 0;
     void *fb_pixels = NULL;
+    char buf[MAX_PATH + 32] = { 0 };
 
 #if !defined(UT)
     int rotate = 0;
@@ -921,12 +1457,6 @@ static int run_ucgui(void)
         return -1;
     }
 
-#if !defined(UIDBG)
-    myevt.mouse.x = LCD_XSIZE >> 1;
-    myevt.mouse.y = LCD_YSIZE >> 1;
-    myevt.mouse.pressed = 0;
-#endif
-
     cur_font = &myFont;
 
 #if !defined(UT)
@@ -934,9 +1464,9 @@ static int run_ucgui(void)
 
     GUI_CURSOR_Select(&GUI_CursorArrowL);
     GUI_CURSOR_Show();
-    GUI_CURSOR_SetPosition(LCD_XSIZE >> 1, LCD_YSIZE >> 1);
+    GUI_CURSOR_SetPosition(myevt.mouse.x, myevt.mouse.y);
 
-    GUI_CreateDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
+    hWin = GUI_CreateDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
     GUI_Delay(100);
 
     running = 1;
@@ -947,6 +1477,15 @@ static int run_ucgui(void)
             flip_lcd_screen();
         }
     }
+    GUI_EndDialog(hWin, 0);
+
+#if !defined(UIDBG)
+    if (quit) {
+        snprintf(buf, sizeof(buf), "%s/%s", mycfg.home, CFG_PATH);
+        update_cfg(buf);
+        emu_quit();
+    }
+#endif
 #endif
 
     debug(GUI"call %s()--\n", __func__);
@@ -1092,24 +1631,23 @@ TEST(sdl2_menu, prehook_cb_menu)
 TEST_GROUP_RUNNER(sdl2_menu)
 {
     RUN_TEST_CASE(sdl2_menu, add_or_update_menu)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_file_recent)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_file)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_view)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_system)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_language)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_audio)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_swap_screen)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_show_fps)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_frameskip_type)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_frameskip_value)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_fastforward)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_speed)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_hires_3d)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config_debug_log)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_config)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_tools)
-    RUN_TEST_CASE(sdl2_menu, create_submenu_help)
-    RUN_TEST_CASE(sdl2_menu, create_menu)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_file_recent)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_file)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_view)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_system)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_language)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_audio)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_swap_screen)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_show_fps)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_frameskip_type)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_frameskip_value)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_fastforward)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_hires_3d)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config_debug_log)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_config)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_tools)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_submenu_help)
+    RUN_TEST_CASE(sdl2_menu, create_or_delete_menu)
     RUN_TEST_CASE(sdl2_menu, WndProc)
     RUN_TEST_CASE(sdl2_menu, run_ucgui)
     RUN_TEST_CASE(sdl2_menu, refresh_cb)
