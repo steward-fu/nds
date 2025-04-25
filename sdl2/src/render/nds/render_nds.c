@@ -11,14 +11,18 @@
 #include "SDL_hints.h"
 #include "../SDL_sysrender.h"
 
+#include "hook.h"
 #include "log.h"
 #include "render_nds.h"
+
 #include "../../video/nds/video_nds.h"
 #include "../../video/nds/event_nds.h"
 
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
+
+extern nds_hook myhook;
 
 #if defined(UT)
 TEST_GROUP(sdl2_render);
@@ -455,6 +459,10 @@ static SDL_Renderer* create_renderer(SDL_Window *w, uint32_t flags)
 {
     SDL_Renderer *r = NULL;
 
+#if defined(MIYOO_FLIP)
+    uint32_t new_update_keys[2][CONTROL_INDEX_MAX] = { 0 };
+#endif
+
     debug(SDL"call %s()\n", __func__);
 
     if (!w) {
@@ -493,7 +501,11 @@ static SDL_Renderer* create_renderer(SDL_Window *w, uint32_t flags)
     r->info.flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
     r->window = w;
 
+    generate_update_keys(new_update_keys);
+    init_drastic_key(new_update_keys);
+    init_drastic_config();
     debug(SDL"created renderer=%p\n", r);
+
     return r;
 }
 
