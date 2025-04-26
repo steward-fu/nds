@@ -77,7 +77,7 @@ TEST(common_lang, get_lang_idx)
 }
 #endif
 
-static int gbk_to_utf8(const char* src, char* dst, int len)
+int gbk_to_utf8(const char* src, char* dst, int len)
 {
     int r = -1;
     iconv_t cd = 0;
@@ -138,7 +138,7 @@ TEST(common_lang, gbk_to_utf8)
 }
 #endif
 
-static int utf8_to_gbk(const char* src, char* dst, int len)
+int utf8_to_gbk(const char* src, char* dst, int len)
 {
     int r = -1;
     iconv_t cd = 0;

@@ -7,6 +7,8 @@
 int init_lang(void);
 int quit_lang(void);
 const char* l10n(const char *);
+int utf8_to_gbk(const char *, char *, int);
+int gbk_to_utf8(const char *, char *, int);
 
 #endif
 
