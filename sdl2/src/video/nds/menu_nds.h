@@ -19,7 +19,7 @@
 
 #define MENU_SYS                    110
 #define MENU_SYS_CONTINUE           111
-#define MENU_SYS_RESET              112
+#define MENU_SYS_RESTART            112
 #define MENU_SYS_FIRMWARE           113
 #define MENU_SYS_DATE_TIME          114
 #define MENU_SYS_CHEAT              115

@@ -152,7 +152,72 @@ TEST(detour_hook, prehook_cb_load_state_index)
 }
 #endif
 
-int emu_quit(void)
+void reset_system(void)
+{
+    nds_reset_system pfn = (nds_reset_system)myhook.fun.reset_system;
+
+    debug(DTR"call %s(pfn=%p)\n", __func__, pfn);
+
+    if (pfn) {
+        pfn((uintptr_t)myhook.var.system.base);
+    }
+    else {
+        error(DTR"pfn is null");
+    }
+}
+
+#if defined(UT)
+TEST(detour_hook, reset_system)
+{
+    reset_system();
+    TESTR_PASS();
+}
+#endif
+
+uint8_t audio_pause(void)
+{
+    nds_audio_pause pfn = (nds_audio_pause)myhook.fun.audio_pause;
+
+    debug(DTR"call %s(pfn=%p)\n", __func__, pfn);
+
+    if (pfn) {
+        return pfn((uintptr_t)(((uint8_t *)myhook.var.system.base) + 0x1586000));
+    }
+    else {
+        error(DTR"pfn is null");
+    }
+}
+
+#if defined(UT)
+TEST(detour_hook, audio_pause)
+{
+    TEST_ASSERT_EQUAL_INT(0, audio_pause());
+}
+#endif
+
+void audio_revert_pause_state(uint8_t v)
+{
+    nds_audio_revert_pause_state pfn = (nds_audio_revert_pause_state)myhook.fun.audio_revert_pause_state;
+
+    debug(DTR"call %s(pfn=%p)\n", __func__, pfn);
+
+    if (pfn) {
+        pfn((uintptr_t)(((uint8_t *)myhook.var.system.base) + 0x1586000), 0);//v);
+    }
+    else {
+        error(DTR"pfn is null");
+    }
+}
+
+#if defined(UT)
+TEST(detour_hook, audio_revert_pause_state)
+{
+    audio_revert_pause_state(0);
+    TESTR_PASS();
+}
+#endif
+
+int quit_nds(void)
 {
     nds_quit pfn = (nds_quit)myhook.fun.quit;
 
@@ -162,15 +227,15 @@ int emu_quit(void)
         error(DTR"pfn is null\n");
         return -1;
     }
-    pfn((void *)myhook.var.system.base);
 
+    pfn((void *)myhook.var.system.base);
     return 0;
 }
 
 #if defined(UT)
-TEST(detour_hook, emu_quit)
+TEST(detour_hook, quit_nds)
 {
-    TEST_ASSERT_EQUAL_INT(-1, emu_quit());
+    TEST_ASSERT_EQUAL_INT(-1, quit_nds());
 }
 #endif
 
@@ -180,11 +245,11 @@ void set_screen_swap(uint32_t s)
 
     debug(DTR"call %s(pfn=%p)\n", __func__, pfn);
 
-    if (!pfn) {
-        error(DTR"pfn is null\n");
+    if (pfn) {
+        pfn(s);
     }
     else {
-        pfn(s);
+        error(DTR"pfn is null\n");
     }
 }
 
@@ -200,10 +265,13 @@ int set_fast_forward(uint8_t v)
 {
     uint32_t *ff = (uint32_t*)myhook.var.fast_forward;
 
-    if (ff) {
-        unlock_protected_area((uintptr_t)myhook.var.fast_forward);
-        *ff = 0xe3a03000 | v;
+    if(!ff) {
+        error(DTR"fast_forward is null");
+        return -1;
     }
+
+    unlock_protected_area((uintptr_t)myhook.var.fast_forward);
+    *ff = 0xe3a03000 | v;
 
     return 0;
 }
@@ -642,6 +710,9 @@ static int init_table(void)
     myhook.fun.set_screen_orientation   = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019a7b0);
     myhook.fun.set_screen_scale_factor  = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019a790);
     myhook.fun.platform_get_input       = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019aaf0);
+    myhook.fun.reset_system             = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x00110e90);
+    myhook.fun.audio_pause              = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019ce30);
+    myhook.fun.audio_revert_pause_state = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x00198420);
 #endif
 
 #if defined(NDS_ARM32)
@@ -983,7 +1054,10 @@ TEST_GROUP_RUNNER(detour_hook)
 {
     RUN_TEST_CASE(detour_hook, prehook_cb_save_state_index)
     RUN_TEST_CASE(detour_hook, prehook_cb_load_state_index)
-    RUN_TEST_CASE(detour_hook, emu_quit)
+    RUN_TEST_CASE(detour_hook, reset_system)
+    RUN_TEST_CASE(detour_hook, audio_pause)
+    RUN_TEST_CASE(detour_hook, audio_revert_pause_state)
+    RUN_TEST_CASE(detour_hook, quit_nds)
     RUN_TEST_CASE(detour_hook, set_screen_swap)
     RUN_TEST_CASE(detour_hook, set_fast_forward)
     RUN_TEST_CASE(detour_hook, load_state)

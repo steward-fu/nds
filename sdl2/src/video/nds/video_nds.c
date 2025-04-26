@@ -1001,7 +1001,7 @@ static void sigterm_handler(int sig)
 
     if (running == 0) {
         running = 1;
-        emu_quit();
+        quit_nds();
     }
 
     debug(SDL"%s()--\n", __func__);

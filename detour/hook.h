@@ -166,6 +166,9 @@
         uintptr_t render_scanline_tiled_4bpp;
         uintptr_t render_polygon_setup_perspective_steps;
         uintptr_t platform_get_input;
+        uintptr_t reset_system;
+        uintptr_t audio_pause;
+        uintptr_t audio_revert_pause_state;
     } fun_t;
 
     typedef struct {
@@ -246,14 +249,17 @@
     typedef void (*nds_quit)(void *);
     typedef void (*nds_screen_copy16)(uint16_t *, uint32_t);
     typedef void (*nds_spu_adpcm_decode_block)(spu_channel_struct *);
+    typedef void (*nds_reset_system)(uintptr_t);
+    typedef void (*nds_audio_revert_pause_state)(uintptr_t, uint32_t);
 
     typedef void* (*nds_get_screen_ptr)(uint32_t);
     typedef void* (*nds_realloc)(void *, size_t);
     typedef void* (*nds_malloc)(size_t);
 
+    typedef uint8_t (*nds_audio_pause)(uintptr_t);
+
     typedef int32_t (*nds_load_state_index)(void *, uint32_t, uint16_t *, uint16_t *, uint32_t);
     typedef int32_t (*nds_save_state_index)(void *, uint32_t, uint16_t *, uint16_t *);
-
     typedef int32_t (*nds_load_state)(void *, const char *, uint16_t *, uint16_t *, uint32_t);
     typedef int32_t (*nds_save_state)(void *, const char *, char *, uint16_t *, uint16_t *);
 
@@ -266,17 +272,23 @@
     int unlock_protected_area(uintptr_t);
     size_t set_page_size(size_t);
 
-    int emu_quit(void);
+    int quit_nds(void);
     int save_state_index(int);
     int load_state_index(int);
+
     int32_t save_state(void *, uint32_t, uint16_t *, uint16_t *);
     int32_t load_state(void *, uint32_t, uint16_t *, uint16_t *, uint32_t);
 
+    uint8_t audio_pause(void);
+    void reset_system(void);
     void set_screen_swap(uint32_t);
+    void audio_revert_pause_state(uint8_t);
+
     int init_drastic_key(const uint32_t [2][CONTROL_INDEX_MAX]);
     int init_drastic_config(void);
     int patch_elf(uint64_t, uint64_t);
     int prehook_cb_load_state_index(int);
+
     void prehook_cb_init_backup(backup_struct *, backup_type_enum, uint8_t *, uint32_t, char *);
     void prehook_cb_render_polygon_steps(void);
 

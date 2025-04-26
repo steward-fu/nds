@@ -1,6 +1,9 @@
 // LGPL-2.1 License
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
+#include <stdio.h>
+#include <setjmp.h>
+
 #if !defined(UIDBG)
 #include "../../SDL_internal.h"
 #endif
@@ -56,6 +59,7 @@ extern nds_event myevt;
 #endif
 
 static int quit = 0;
+static int restart = 0;
 static int running = 0;
 static uint16_t *lv_pixels = NULL;
 static lv_display_t *lv_disp = NULL;
@@ -684,7 +688,7 @@ static int create_or_delete_submenu_system(MENU_Handle hMenu, MENU_TYPE t)
     }
 
     add_or_update_menu(h, 0, l10n("Continue"), MENU_SYS_CONTINUE,  0, t);
-    add_or_update_menu(h, 0, l10n("Reset"), MENU_SYS_RESET, 0, t);
+    add_or_update_menu(h, 0, l10n("Restart"), MENU_SYS_RESTART, 0, t);
     add_or_update_menu(h, 0, NULL, 0, MENU_IF_SEPARATOR, t);
     add_or_update_menu(h, 0, l10n("Firmware"), MENU_SYS_FIRMWARE, 0, t);
     add_or_update_menu(h, 0, l10n("Date Time"), MENU_SYS_DATE_TIME, 0, t);
@@ -1369,6 +1373,12 @@ static void WndProc(WM_MESSAGE* pMsg)
                     running = 0;
                     debug(GUI"MENU_SYS_CONTINUE\n");
                     break;
+                case MENU_SYS_RESTART:
+                    restart = 1;
+                    running = 0;
+                    reset_system();
+                    debug("MENU_SYS_RESTART\n");
+                    break;
                 case MENU_CFG_LANG_US:
                 case MENU_CFG_LANG_CN:
                 case MENU_CFG_LANG_TW:
@@ -1430,7 +1440,6 @@ static int run_ucgui(void)
 {
     WM_HWIN hWin = 0;
     void *fb_pixels = NULL;
-    char buf[MAX_PATH + 32] = { 0 };
 
 #if !defined(UT)
     int rotate = 0;
@@ -1478,14 +1487,6 @@ static int run_ucgui(void)
         }
     }
     GUI_EndDialog(hWin, 0);
-
-#if !defined(UIDBG)
-    if (quit) {
-        snprintf(buf, sizeof(buf), "%s/%s", mycfg.home, CFG_PATH);
-        update_cfg(buf);
-        emu_quit();
-    }
-#endif
 #endif
 
     debug(GUI"call %s()--\n", __func__);
@@ -1587,7 +1588,13 @@ TEST(sdl2_menu, run_lvgl)
 
 void prehook_cb_menu(void *sys, uint32_t show_dlg)
 {
+    uint8_t aret = 0;
+    char buf[MAX_PATH + 32] = { 0 };
+
     debug(GUI"call %s(system=%p, show_dlg=%d)\n", __func__, sys, show_dlg);
+
+    aret = audio_pause();
+    debug(GUI"audio_pause r=%d\n", aret);
 
 #if !defined(UIDBG)
     myvid.mode = MENU;
@@ -1603,6 +1610,10 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
 
     mycfg.style = STYLE_UCGUI;
 
+    quit = 0;
+    restart = 0;
+    running = 0;
+
     if (mycfg.style == STYLE_LVGL) {
         run_lvgl();
     }
@@ -1616,6 +1627,20 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
 
 #if defined(MIYOO_FLIP)
     swap_frag_color(1);
+#endif
+
+    audio_revert_pause_state(aret);
+
+#if !defined(UIDBG)
+    if (quit) {
+        snprintf(buf, sizeof(buf), "%s/%s", mycfg.home, CFG_PATH);
+        update_cfg(buf);
+        quit_nds();
+    }
+
+    if (restart) {
+        longjmp((struct __jmp_buf_tag *)(((uint8_t *)myhook.var.system.base) + 0x3b29840), 0);
+    }
 #endif
 }
 
