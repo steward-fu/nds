@@ -509,8 +509,24 @@ static int create_or_delete_submenu_config_hires_3d(MENU_Handle hMenu, MENU_TYPE
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("On"), MENU_CFG_HIRES_3D_ON, 0, t);
-    add_or_update_menu(h, 0, l10n("Off"), MENU_CFG_HIRES_3D_OFF, 0, t);
+    add_or_update_menu(
+        h,
+        0,
+        l10n("On"),
+        MENU_CFG_HIRES_3D_ON,
+        mycfg.hires_3d ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("Off"),
+        MENU_CFG_HIRES_3D_OFF,
+        !mycfg.hires_3d ? MENU_IF_CHECKED : 0,
+        t
+    );
+
     add_or_update_menu(hMenu, h, l10n("High Resolution 3D"), MENU_CFG_HIRES_3D, 0, t);
 
     if ((t == MENU_DEL) && h) {
@@ -1329,6 +1345,32 @@ TEST(sdl2_menu, handle_frameskip)
 }
 #endif
 
+static int handle_hires_3d(uint32_t id)
+{
+    switch (id) {
+    case MENU_CFG_HIRES_3D_ON:
+        mycfg.hires_3d = 1;
+        debug(GUI"MENU_CFG_HIRES_3D_ON\n");
+        break;
+    case MENU_CFG_HIRES_3D_OFF:
+        mycfg.hires_3d = 0;
+        debug(GUI"MENU_CFG_HIRES_3D_OFF\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_hires_3d)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_hires_3d(0));
+}
+#endif
+
 static void WndProc(WM_MESSAGE* pMsg)
 {
     char buf[MAX_PATH] = { 0 };
@@ -1414,6 +1456,10 @@ static void WndProc(WM_MESSAGE* pMsg)
                 case MENU_CFG_FRAMESKIP_4:
                 case MENU_CFG_FRAMESKIP_5:
                     handle_frameskip(pMenuInfo->ItemId);
+                    break;
+                case MENU_CFG_HIRES_3D_ON:
+                case MENU_CFG_HIRES_3D_OFF:
+                    handle_hires_3d(pMenuInfo->ItemId);
                     break;
                 }
 
@@ -1639,7 +1685,7 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
     }
 
     if (restart) {
-        longjmp((struct __jmp_buf_tag *)(((uint8_t *)myhook.var.system.base) + 0x3b29840), 0);
+        longjmp(myhook.var.system.reset_jmp, 0);
     }
 #endif
 }
