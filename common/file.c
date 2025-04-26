@@ -1,6 +1,7 @@
 // LGPL-2.1 License
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
+#define _GNU_SOURCE
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
@@ -282,6 +283,44 @@ TEST(common_file, create_bios_files)
 
     snprintf(buf, sizeof(buf), "%s%s/"DRASTIC_BIOS_ARM7".bin", mycfg.home, BIOS_PATH);
     TEST_ASSERT_EQUAL_INT(0, access(buf, F_OK));
+}
+#endif
+
+int dir_get_file_count(const char *dir)
+{
+    int c = 0;
+    int n = 0;
+    int r = 0;
+    struct dirent **namelist = NULL;
+
+    debug(COM"call %s()\n", __func__);
+
+    n = scandir(dir, &namelist, NULL, alphasort);
+    if (n == -1) {
+        error(COM"failed to scan dir\n");
+        return -1;
+    }
+
+    for (c = 0; c < n; c++) {
+        if (strcasestr(namelist[c]->d_name, ".nds") ||
+            strcasestr(namelist[c]->d_name, ".7z") ||
+            strcasestr(namelist[c]->d_name, ".zip") ||
+            strcasestr(namelist[c]->d_name, ".rar"))
+        {
+            printf("%s\n", namelist[c]->d_name);
+            r += 1;
+        }
+        free(namelist[c]);
+    }
+    free(namelist);
+
+    return r;
+}
+
+#if defined(UT)
+TEST(common_file, dir_get_file_count)
+{
+    TEST_ASSERT_EQUAL_INT(-1, dir_get_file_count(NULL));
 }
 #endif
 

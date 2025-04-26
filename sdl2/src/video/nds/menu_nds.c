@@ -1,8 +1,10 @@
 // LGPL-2.1 License
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <setjmp.h>
+#include <string.h>
 
 #if !defined(UIDBG)
 #include "../../SDL_internal.h"
@@ -27,6 +29,7 @@
 #include "MENU.h"
 #include "FRAMEWIN.h"
 #include "MULTIPAGE.h"
+#include "LISTVIEW.h"
 #include "io_fb.h"
 
 #include <stdint.h>
@@ -35,6 +38,7 @@
 
 #include "cfg.h"
 #include "log.h"
+#include "file.h"
 #include "lang.h"
 #include "menu_nds.h"
 
@@ -58,6 +62,7 @@ extern nds_video myvid;
 extern nds_event myevt;
 #endif
 
+static int cur_sel = MENU_FILE_OPEN_ROM;
 static int quit = 0;
 static int restart = 0;
 static int running = 0;
@@ -1451,10 +1456,25 @@ static int draw_nds_icon(const char *path, int x, int y)
     int idx = 0;
     int left = 0;
     int right = 0;
+
+#if !defined(UIDBG)
     nds_icon_struct icon = { 0 };
+#endif
 
     debug(GUI"call %s()\n", __func__);
 
+#if defined(UIDBG)
+    for (y1 = 0; y1 < 32; y1++) {
+        for (x1 = 0; x1 < 16; x1++) {
+            for (cc = 0; cc < 2; cc++) {
+                draw_rgb16(0x000f, x + (x1 << 2) + 0, y + (y1 << 1) + cc);
+                draw_rgb16(0x000f, x + (x1 << 2) + 1, y + (y1 << 1) + cc);
+                draw_rgb16(0x000f, x + (x1 << 2) + 2, y + (y1 << 1) + cc);
+                draw_rgb16(0x000f, x + (x1 << 2) + 3, y + (y1 << 1) + cc);
+            }
+        }
+    }
+#else
     if (file_get_icon_data(path, &icon)) {
         error(GUI"failed to get nds icon from \"%s\"\n", path);
         return -1;
@@ -1474,7 +1494,7 @@ static int draw_nds_icon(const char *path, int x, int y)
             }
         }
     }
-
+#endif
     return 0;
 }
 
@@ -1482,6 +1502,40 @@ static int draw_nds_icon(const char *path, int x, int y)
 TEST(sdl2_menu, draw_nds_icon)
 {
     TEST_ASSERT_EQUAL_INT(-1, draw_nds_icon(NULL, 0, 0));
+}
+#endif
+
+static int handle_open_rom(WM_HWIN hWin)
+{
+    int w = 0;
+    int h = 0;
+    int fcnt = 0;
+    GUI_RECT rt = { 0 };
+
+    debug(GUI"call %s()\n", __func__);
+
+    if (!hWin) {
+        error(GUI"invalid window handle\n");
+        return -1;
+    }
+
+    WM_GetInsideRectEx(hWin, &rt);
+    w = rt.x1 - rt.x0;
+    h = rt.y1 - rt.y0;
+
+    fcnt = dir_get_file_count("/home/steward/Data/ROM/NDS/CN/");
+    printf(GUI"total file count %d\n", fcnt);
+    draw_nds_icon("/tmp/", 10, 10 + 0);
+    draw_nds_icon("/tmp/", 10, 10 + 80);
+    draw_nds_icon("/tmp/", 10, 10 + 160);
+    draw_nds_icon("/tmp/", 10, 10 + 240);
+    draw_nds_icon("/tmp/", 10, 10 + 320);
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_open_rom)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_open_rom());
 }
 #endif
 
@@ -1511,6 +1565,11 @@ static void WndProc(WM_MESSAGE* pMsg)
             create_or_delete_menu(pMsg->hWin, MENU_DEL);
             break;
         case WM_PAINT:
+            switch (cur_sel) {
+            case MENU_FILE_OPEN_ROM:
+                handle_open_rom(pMsg->hWin);
+                break;
+            }
             break;
         case WM_KEY:
             pKeyInfo = (WM_KEY_INFO *)pMsg->Data.p;
@@ -1535,7 +1594,10 @@ static void WndProc(WM_MESSAGE* pMsg)
                 case MENU_SYS_RESTART:
                     restart = 1;
                     running = 0;
+
+#if !defined(UIDBG)
                     reset_system();
+#endif
                     debug("MENU_SYS_RESTART\n");
                     break;
                 case MENU_CFG_LANG_US:
@@ -1582,9 +1644,16 @@ static void WndProc(WM_MESSAGE* pMsg)
                 case MENU_CFG_AUDIO_OFF:
                     handle_audio(pMenuInfo->ItemId);
                     break;
+                case MENU_FILE_OPEN_ROM:
+                    cur_sel = MENU_FILE_OPEN_ROM;
+                    handle_open_rom(pMsg->hWin);
+                    break;
                 }
 
+#if !defined(UIDBG)
                 init_drastic_config();
+#endif
+
                 create_or_delete_menu(0, MENU_UPDATE);
                 break;
             }
@@ -1640,7 +1709,12 @@ static int run_ucgui(void)
 
     GUI_CURSOR_Select(&GUI_CursorArrowL);
     GUI_CURSOR_Show();
+
+#if defined(UIDBG)
+    GUI_CURSOR_SetPosition(LCD_XSIZE >> 1, LCD_YSIZE >> 1);
+#else
     GUI_CURSOR_SetPosition(myevt.mouse.x, myevt.mouse.y);
+#endif
 
     hWin = GUI_CreateDialogBox(info, GUI_COUNTOF(info), WndProc, 0, 0, 0);
     GUI_Delay(100);
@@ -1760,10 +1834,10 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
 
     debug(GUI"call %s(system=%p, show_dlg=%d)\n", __func__, sys, show_dlg);
 
+#if !defined(UIDBG)
     aret = audio_pause();
     debug(GUI"audio_pause r=%d\n", aret);
 
-#if !defined(UIDBG)
     myvid.mode = MENU;
 #endif
 
@@ -1796,9 +1870,9 @@ void prehook_cb_menu(void *sys, uint32_t show_dlg)
     swap_frag_color(1);
 #endif
 
+#if !defined(UIDBG)
     audio_revert_pause_state(aret);
 
-#if !defined(UIDBG)
     if (quit) {
         snprintf(buf, sizeof(buf), "%s/%s", mycfg.home, CFG_PATH);
         update_cfg(buf);
