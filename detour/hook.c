@@ -717,6 +717,7 @@ static int init_table(void)
     myhook.fun.reset_system             = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x00110e90);
     myhook.fun.audio_pause              = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0019ce30);
     myhook.fun.audio_revert_pause_state = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x00198420);
+    myhook.fun.nds_file_get_icon_data   = FUN_BASE_OFFSET - (FUN_START_OFFSET - 0x0018a1e0);
 #endif
 
 #if defined(NDS_ARM32)
@@ -811,6 +812,28 @@ int quit_hook(void)
 TEST(detour_hook, quit_hook)
 {
     TEST_ASSERT_EQUAL_INT(0, quit_hook());
+}
+#endif
+
+int file_get_icon_data(const char *path, nds_icon_struct *r)
+{
+    nds_file_get_icon_data pfn = (nds_file_get_icon_data)myhook.fun.nds_file_get_icon_data;
+
+    debug(DTR"call %s()\n", __func__);
+
+    if (!pfn) {
+        error(DTR"pfn is null\n");
+        return -1;
+    }
+
+    pfn(path, r);
+    return 0;
+}
+
+#if defined(UT)
+TEST(detour_hook, nds_file_get_icon_data)
+{
+    TEST_ASSERT_EQUAL_INT(0, nds_file_get_icon_data(NULL, NULL));
 }
 #endif
 

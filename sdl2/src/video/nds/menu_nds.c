@@ -1414,6 +1414,77 @@ TEST(sdl2_menu, handle_audio)
 }
 #endif
 
+static int draw_rgb16(uint32_t c, int x, int y)
+{
+    uint32_t r = 0;
+    uint32_t g = 0;
+    uint32_t b = 0;
+
+    debug(GUI"call %s()\n", __func__);
+
+    r = c & 0x1f;
+    g = (c >> 5) & 0x1f;
+    b = (c >> 10) & 0x1f;
+    r = (r << 3) | (r >> 2);
+    g = (g << 3) | (g >> 2);
+    b = (b << 3) | (b >> 2);
+    c = (b << 16) | (g << 8) | r;
+
+    GUI_SetColor(c);
+    GUI_DrawPixel(x, y);
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, draw_rgb16)
+{
+    TEST_ASSERT_EQUAL_INT(-1, draw_rgb16(0, 0, 0));
+}
+#endif
+
+static int draw_nds_icon(const char *path, int x, int y)
+{
+    int cc = 0;
+    int y1 = 0;
+    int x1 = 0;
+    int idx = 0;
+    int left = 0;
+    int right = 0;
+    nds_icon_struct icon = { 0 };
+
+    debug(GUI"call %s()\n", __func__);
+
+    if (file_get_icon_data(path, &icon)) {
+        error(GUI"failed to get nds icon from \"%s\"\n", path);
+        return -1;
+    }
+
+    for (y1 = 0; y1 < 32; y1++) {
+        for (x1 = 0; x1 < 16; x1++) {
+            left = icon.pixels[idx] & 0xf;
+            right = (icon.pixels[idx] >> 4) & 0xf;
+            idx += 1;
+
+            for (cc = 0; cc < 2; cc++) {
+                draw_rgb16(icon.palette[left],  x + (x1 << 2) + 0, y + (y1 << 1) + cc);
+                draw_rgb16(icon.palette[left],  x + (x1 << 2) + 1, y + (y1 << 1) + cc);
+                draw_rgb16(icon.palette[right], x + (x1 << 2) + 2, y + (y1 << 1) + cc);
+                draw_rgb16(icon.palette[right], x + (x1 << 2) + 3, y + (y1 << 1) + cc);
+            }
+        }
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, draw_nds_icon)
+{
+    TEST_ASSERT_EQUAL_INT(-1, draw_nds_icon(NULL, 0, 0));
+}
+#endif
+
 static void WndProc(WM_MESSAGE* pMsg)
 {
     char buf[MAX_PATH] = { 0 };
@@ -1433,10 +1504,13 @@ static void WndProc(WM_MESSAGE* pMsg)
             snprintf(buf, sizeof(buf), "%s - %s", NDS_VER, __DATE__);
             FRAMEWIN_SetText(pMsg->hWin, buf);
             FRAMEWIN_SetFont(pMsg->hWin, cur_font);
+
             create_or_delete_menu(pMsg->hWin, MENU_ADD);
             break;
         case WM_DELETE:
             create_or_delete_menu(pMsg->hWin, MENU_DEL);
+            break;
+        case WM_PAINT:
             break;
         case WM_KEY:
             pKeyInfo = (WM_KEY_INFO *)pMsg->Data.p;

@@ -175,6 +175,7 @@
         uintptr_t reset_system;
         uintptr_t audio_pause;
         uintptr_t audio_revert_pause_state;
+        uintptr_t nds_file_get_icon_data;
     } fun_t;
 
     typedef struct {
@@ -245,6 +246,13 @@
         uint8_t last_touch_pressure;
     } input_struct;
 
+    typedef struct {
+        uint8_t pixels[512];
+        uint16_t palette[16];
+        uint16_t title_en_utf16[128];
+    } nds_icon_struct;
+
+    typedef void (*nds_file_get_icon_data)(const char *, nds_icon_struct *);
     typedef void (*nds_free)(void *);
     typedef void (*nds_set_screen_swap)(uint32_t);
     typedef void (*nds_set_screen_menu_on)(void);
@@ -294,6 +302,7 @@
     int init_drastic_config(void);
     int patch_elf(uint64_t, uint64_t);
     int prehook_cb_load_state_index(int);
+    int file_get_icon_data(const char *, nds_icon_struct *);
 
     void prehook_cb_init_backup(backup_struct *, backup_type_enum, uint8_t *, uint32_t, char *);
     void prehook_cb_render_polygon_steps(void);
