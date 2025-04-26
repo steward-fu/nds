@@ -76,18 +76,19 @@
 #define MENU_CFG_HIRES_3D_ON        201
 #define MENU_CFG_HIRES_3D_OFF       202
 #define MENU_CFG_MICROPHONE         203
-#define MENU_CFG_KEYPAD             204
-#define MENU_CFG_JOYSTICK           205
-#define MENU_CFG_HOTKEY             206
-#define MENU_CFG_DBG                207
-#define MENU_CFG_DBG_ON             208
-#define MENU_CFG_DBG_OFF            209
+#define MENU_CFG_TOUCH              204
+#define MENU_CFG_KEYPAD             205
+#define MENU_CFG_JOYSTICK           206
+#define MENU_CFG_HOTKEY             207
+#define MENU_CFG_DBG                208
+#define MENU_CFG_DBG_ON             209
+#define MENU_CFG_DBG_OFF            210
 
-#define MENU_TOOLS                  210
-#define MENU_TOOLS_WALKTHROUGH      211
+#define MENU_TOOLS                  220
+#define MENU_TOOLS_WALKTHROUGH      221
 
-#define MENU_HELP                   220
-#define MENU_HELP_ABOUT_EMU         221
+#define MENU_HELP                   230
+#define MENU_HELP_ABOUT_EMU         231
 
 typedef enum {
     MENU_ADD = 0,

@@ -873,8 +873,24 @@ static int create_or_delete_submenu_config_audio(MENU_Handle hMenu, MENU_TYPE t)
         MENU_SetFont(h, cur_font);
     }
 
-    add_or_update_menu(h, 0, l10n("On"),    MENU_CFG_AUDIO_ON,  0, t);
-    add_or_update_menu(h, 0, l10n("Off"),   MENU_CFG_AUDIO_OFF, 0, t);
+    add_or_update_menu(
+        h,
+        0,
+        l10n("On"),
+        MENU_CFG_AUDIO_ON,
+        mycfg.enable_sound ? MENU_IF_CHECKED : 0,
+        t
+    );
+
+    add_or_update_menu(
+        h,
+        0,
+        l10n("Off"),
+        MENU_CFG_AUDIO_OFF,
+        !mycfg.enable_sound ? MENU_IF_CHECKED : 0,
+        t
+    );
+
     add_or_update_menu(hMenu, h, l10n("Audio"), MENU_CFG_AUDIO, 0, t);
 
     if ((t == MENU_DEL) && h) {
@@ -980,11 +996,12 @@ static int create_or_delete_submenu_config(MENU_Handle hMenu, MENU_TYPE t)
 
     create_or_delete_submenu_config_gui(h, t);
     create_or_delete_submenu_config_language(h, t);
-    create_or_delete_submenu_config_audio(h, t);
     create_or_delete_submenu_config_debug_log(h, t);
-    add_or_update_menu(h, 0, l10n("Microphone"), MENU_CFG_MICROPHONE, 0, t);
+    create_or_delete_submenu_config_audio(h, t);
+    add_or_update_menu(h, 0, l10n("Touch"), MENU_CFG_TOUCH, 0, t);
     add_or_update_menu(h, 0, l10n("Keypad"), MENU_CFG_KEYPAD, 0, t);
     add_or_update_menu(h, 0, l10n("Joystick"), MENU_CFG_JOYSTICK, 0, t);
+    add_or_update_menu(h, 0, l10n("Microphone"), MENU_CFG_MICROPHONE, 0, t);
     add_or_update_menu(h, 0, l10n("Hotkey"), MENU_CFG_HOTKEY, 0, t);
     add_or_update_menu(hMenu, h, l10n("Config"), MENU_CFG, 0, t);
 
@@ -1371,6 +1388,32 @@ TEST(sdl2_menu, handle_hires_3d)
 }
 #endif
 
+static int handle_audio(uint32_t id)
+{
+    switch (id) {
+    case MENU_CFG_AUDIO_ON:
+        mycfg.enable_sound = 1;
+        debug(GUI"MENU_CFG_AUDIO_ON\n");
+        break;
+    case MENU_CFG_AUDIO_OFF:
+        mycfg.enable_sound = 0;
+        debug(GUI"MENU_CFG_AUDIO_OFF\n");
+        break;
+    default:
+        error(GUI"invalid id(%d)\n", id);
+        return -1;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_menu, handle_audio)
+{
+    TEST_ASSERT_EQUAL_INT(-1, handle_audio(0));
+}
+#endif
+
 static void WndProc(WM_MESSAGE* pMsg)
 {
     char buf[MAX_PATH] = { 0 };
@@ -1460,6 +1503,10 @@ static void WndProc(WM_MESSAGE* pMsg)
                 case MENU_CFG_HIRES_3D_ON:
                 case MENU_CFG_HIRES_3D_OFF:
                     handle_hires_3d(pMenuInfo->ItemId);
+                    break;
+                case MENU_CFG_AUDIO_ON:
+                case MENU_CFG_AUDIO_OFF:
+                    handle_audio(pMenuInfo->ItemId);
                     break;
                 }
 

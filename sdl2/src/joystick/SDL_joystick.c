@@ -101,7 +101,7 @@ static SDL_JoystickDriver *SDL_joystick_drivers[] = {
 #if defined(SDL_JOYSTICK_DUMMY) || defined(SDL_JOYSTICK_DISABLED)
     &SDL_DUMMY_JoystickDriver,
 #endif
-#if defined(SDL_JOYSTICK_NDS)
+#if defined(SDL_JOYSTICK_DRIVER_NDS)
     &NDS_JoystickDriver,
 #endif
 };

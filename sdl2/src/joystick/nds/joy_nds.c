@@ -5,7 +5,7 @@
 
 #if SDL_JOYSTICK_DRIVER_NDS
 
-#if defined(MIYOO_A30) || defined(UT)
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP) || defined(UT)
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -37,13 +37,20 @@
 #include "cfg.pb.h"
 #include "joy_nds.h"
 
+#include "io_fb.h"
+#include "GUIConf.h"
+#include "GUI_Protected.h"
+#include "LCD_ConfDefaults.h"
+
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
 
-#if defined(MIYOO_A30) || defined(UT)
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP) || defined(UT)
 nds_joy myjoy = { 0 };
 #endif
+
+extern nds_event myevt;
 
 #if defined(UT)
 TEST_GROUP(sdl2_joy);
@@ -55,12 +62,12 @@ TEST_SETUP(sdl2_joy)
     debug(SDL"call %s()\n", __func__);
 
     if (f) {
-        fprintf(f, "x_min=%d\n",  DEF_CFG_JOY_MIN);
-        fprintf(f, "x_max=%d\n",  DEF_CFG_JOY_MAX);
-        fprintf(f, "x_zero=%d\n", DEF_CFG_JOY_ZERO);
-        fprintf(f, "y_min=%d\n",  DEF_CFG_JOY_MIN);
-        fprintf(f, "y_max=%d\n",  DEF_CFG_JOY_MAX);
-        fprintf(f, "y_zero=%d\n", DEF_CFG_JOY_ZERO);
+        fprintf(f, "x.min=%d\n",  DEF_CFG_JOY_MIN);
+        fprintf(f, "x.max=%d\n",  DEF_CFG_JOY_MAX);
+        fprintf(f, "x.zero=%d\n", DEF_CFG_JOY_ZERO);
+        fprintf(f, "y.min=%d\n",  DEF_CFG_JOY_MIN);
+        fprintf(f, "y.max=%d\n",  DEF_CFG_JOY_MAX);
+        fprintf(f, "y.zero=%d\n", DEF_CFG_JOY_ZERO);
         fclose(f);
     }
 }
@@ -73,7 +80,7 @@ TEST_TEAR_DOWN(sdl2_joy)
 }
 #endif
 
-#if defined(MIYOO_A30) || defined(UT)
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP) || defined(UT)
 static int open_uart(const char *port)
 {
     int fd = -1;
@@ -307,13 +314,11 @@ TEST(sdl2_joy, read_uart)
 }
 #endif
 
-static int filter_dead_zone(int idx, int newAxis, int oldAxis)
+static int filter_dead_zone(int dead, int newAxis, int oldAxis)
 {
-    int dead = (idx == 0) ? myjoy.left.x_dead : myjoy.left.y_dead;
-
     debug(SDL"call %s()\n", __func__);
 
-    if (abs(newAxis - oldAxis) < dead) {
+    if (abs(newAxis - oldAxis) < abs(dead)) {
         return 1;
     }
     return 0;
@@ -322,17 +327,17 @@ static int filter_dead_zone(int idx, int newAxis, int oldAxis)
 #if defined(UT)
 TEST(sdl2_joy, filter_dead_zone)
 {
-    myjoy.left.x_dead = 10;
+    myjoy.left.x.dead = 10;
     TEST_ASSERT_EQUAL_INT(0, filter_dead_zone(0, 100, 0));
 
-    myjoy.left.y_dead = 100;
+    myjoy.left.y.dead = 100;
     TEST_ASSERT_EQUAL_INT(1, filter_dead_zone(1, 10, 0));
 }
 #endif
 
 static int limit_value(int value)
 {
-    debug(SDL"call %s()\n", __func__);
+    debug(SDL"call %s(%d)\n", __func__, value);
 
     if (value > 127) {
         value = 127;
@@ -352,82 +357,138 @@ TEST(sdl2_joy, limit_value)
 }
 #endif
 
+static int send_gui_event(void)
+{
+    #define RMIN 30
+    const int MOV = 5;
+    GUI_PID_STATE mouse = { 0 };
+
+    debug(SDL"call %s()\n", __func__);
+
+    if ((myjoy.left.last.x < -RMIN) && (myevt.mouse.x > 0)) {
+        myevt.mouse.x -= MOV;
+    }
+    if ((myjoy.left.last.x > RMIN) && (myevt.mouse.x < SCREEN_W)) {
+        myevt.mouse.x += MOV;
+    }
+    if ((myjoy.left.last.y < -RMIN) && (myevt.mouse.y > 0)) {
+        myevt.mouse.y -= MOV;
+    }
+    if ((myjoy.left.last.y > RMIN) && (myevt.mouse.y < SCREEN_H)) {
+        myevt.mouse.y += MOV;
+    }
+
+    mouse.x = myevt.mouse.x;
+    mouse.y = myevt.mouse.y;
+    mouse.Pressed = 0;
+    debug(SDL"mouse event(x=%d, y=%d)\n", mouse.x, mouse.y);
+
+    GUI_MOUSE_StoreState(&mouse);
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, send_gui_event)
+{
+    TEST_ASSERT_EQUAL_INT(0, send_gui_event());
+}
+#endif
+
 static void update_axis_values(void)
 {
     int i = 0;
+    int r = 0;
 
     debug(SDL"call %s()\n", __func__);
 
     for (i = 0; i < AXIS_MAX_LEN; i++) {
-        if (myjoy.left.cur_axis[i] != myjoy.left.last_axis[i]) {
-            if (!filter_dead_zone(i, myjoy.left.cur_axis[i], myjoy.left.last_axis[i])) {
-                if (i == 0) {
-                    myjoy.left.last_x = limit_value(myjoy.left.cur_axis[i]);
-                    debug(SDL"joy x=%d\n", myjoy.left.last_x);
+        if (myjoy.cur_axis[i] != myjoy.last_axis[i]) {
+            r = limit_value(myjoy.cur_axis[i]);
+
+            switch (i) {
+            case 0:
+                if (!filter_dead_zone(myjoy.left.cali.x.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
+                    myjoy.left.last.x = r;
+                    debug(SDL"left joy x=%d\n", r);
                 }
-                else if (i == 1) {
-                    myjoy.left.last_y = limit_value(myjoy.left.cur_axis[i]);
-                    debug(SDL"joy y:%d\n", myjoy.left.last_y);
+                break;
+            case 1:
+                if (!filter_dead_zone(myjoy.left.cali.y.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
+                    myjoy.left.last.y = r;
+                    debug(SDL"left joy y=%d\n", r);
                 }
+                break;
+            case 2:
+                if (!filter_dead_zone(myjoy.right.cali.x.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
+                    myjoy.right.last.x = r;
+                    debug(SDL"right joy x=%d\n", r);
+                }
+                break;
+            case 3:
+                if (!filter_dead_zone(myjoy.right.cali.y.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
+                    myjoy.right.last.y = r;
+                    debug(SDL"right joy y=%d\n", r);
+                }
+                break;
             }
         }
-        myjoy.left.last_axis[i] = myjoy.left.cur_axis[i];
+        myjoy.last_axis[i] = myjoy.cur_axis[i];
     }
 }
 
 #if defined(UT)
 TEST(sdl2_joy, update_axis_values)
 {
-    myjoy.left.x_dead = 0;
-    myjoy.left.last_x = 0;
-    myjoy.left.cur_axis[0] = 100;
-    myjoy.left.last_axis[0] = 0;
+    myjoy.left.x.dead = 0;
+    myjoy.left.last.x = 0;
+    myjoy.cur_axis[0] = 100;
+    myjoy.last_axis[0] = 0;
 
-    myjoy.left.y_dead = 0;
-    myjoy.left.last_y = 0;
-    myjoy.left.cur_axis[1] = 100;
-    myjoy.left.last_axis[1] = 0;
+    myjoy.left.y.dead = 0;
+    myjoy.left.last.y = 0;
+    myjoy.cur_axis[1] = 100;
+    myjoy.last_axis[1] = 0;
     update_axis_values();
-    TEST_ASSERT_EQUAL_INT(100, myjoy.left.last_x);
-    TEST_ASSERT_EQUAL_INT(100, myjoy.left.last_y);
+    TEST_ASSERT_EQUAL_INT(100, myjoy.left.last.x);
+    TEST_ASSERT_EQUAL_INT(100, myjoy.left.last.y);
 
-    myjoy.left.x_dead = 110;
-    myjoy.left.last_x = 0;
-    myjoy.left.cur_axis[0] = 100;
-    myjoy.left.last_axis[0] = 0;
+    myjoy.left.x.dead = 110;
+    myjoy.left.last.x = 0;
+    myjoy.cur_axis[0] = 100;
+    myjoy.last_axis[0] = 0;
 
-    myjoy.left.y_dead = 110;
-    myjoy.left.last_y = 0;
-    myjoy.left.cur_axis[1] = 100;
-    myjoy.left.last_axis[1] = 0;
+    myjoy.left.y.dead = 110;
+    myjoy.left.last.y = 0;
+    myjoy.cur_axis[1] = 100;
+    myjoy.last_axis[1] = 0;
     update_axis_values();
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.last_x);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.last_y);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.left.last.x);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.left.last.y);
 }
 #endif
 
-static int frame_to_axis_x(uint8_t x)
+static int frame_to_axis(cali_t *c, uint8_t v)
 {
     int div = 0;
     int value = 0;
 
     debug(SDL"call %s()\n", __func__);
 
-    div = myjoy.left.x_max - myjoy.left.x_zero;
-    if ((x > myjoy.left.x_zero) && (div > 0)) {
-        value = ((x - myjoy.left.x_zero) * 126) / div;
+    div = c->max - c->zero;
+    if ((v > c->zero) && (div > 0)) {
+        value = ((v - c->zero) * 126) / div;
     }
 
-    div = myjoy.left.x_zero - myjoy.left.x_min;
-    if ((x < myjoy.left.x_zero) && (div > 0)) {
-        value = ((x - myjoy.left.x_zero) * 126) / div;
+    div = c->zero - c->min;
+    if ((v < c->zero) && (div > 0)) {
+        value = ((v - c->zero) * 126) / div;
     }
 
-    if (value > 0 && value < myjoy.left.x_dead) {
+    if ((value > 0) && (value < c->dead)) {
         return 0;
     }
 
-    if (value < 0 && value > -(myjoy.left.x_dead)) {
+    if ((value < 0) && (value > -(c->dead))) {
         return 0;
     }
 
@@ -435,70 +496,22 @@ static int frame_to_axis_x(uint8_t x)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, frame_to_axis_x)
+TEST(sdl2_joy, frame_to_axis)
 {
-    myjoy.left.x_max = 0;
-    myjoy.left.x_zero = 0;
-    myjoy.left.x_dead = 0;
-    TEST_ASSERT_EQUAL_INT(0, frame_to_axis_x(0));
+    myjoy.left.x.max = 0;
+    myjoy.left.x.zero = 0;
+    myjoy.left.x.dead = 0;
+    TEST_ASSERT_EQUAL_INT(0, frame_to_axis(0));
 
-    myjoy.left.x_max = 1;
-    myjoy.left.x_zero = 0;
-    myjoy.left.x_dead = 0;
-    TEST_ASSERT_EQUAL_INT(32130, frame_to_axis_x(255));
+    myjoy.left.x.max = 1;
+    myjoy.left.x.zero = 0;
+    myjoy.left.x.dead = 0;
+    TEST_ASSERT_EQUAL_INT(32130, frame_to_axis(255));
 
-    myjoy.left.x_max = 1;
-    myjoy.left.x_zero = 0;
-    myjoy.left.x_dead = 32131;
-    TEST_ASSERT_EQUAL_INT(0, frame_to_axis_x(255));
-}
-#endif
-
-static int frame_to_axis_y(uint8_t y)
-{
-    int div = 0;
-    int value = 0;
-
-    debug(SDL"call %s()\n", __func__);
-
-    div = myjoy.left.y_max - myjoy.left.y_zero;
-    if ((y > myjoy.left.y_zero) && (div > 0)) {
-        value = ((y - myjoy.left.y_zero) * 126) / div;
-    }
-
-    div = myjoy.left.y_zero - myjoy.left.y_min;
-    if ((y < myjoy.left.y_zero) && (div > 0)) {
-        value = ((y - myjoy.left.y_zero) * 126) / div;
-    }
-
-    if ((value > 0) && (value < myjoy.left.y_dead)) {
-        return 0;
-    }
-
-    if ((value < 0) && (value > -(myjoy.left.y_dead))) {
-        return 0;
-    }
-
-    return value;
-}
-
-#if defined(UT)
-TEST(sdl2_joy, frame_to_axis_y)
-{
-    myjoy.left.y_max = 0;
-    myjoy.left.y_zero = 0;
-    myjoy.left.y_dead = 0;
-    TEST_ASSERT_EQUAL_INT(0, frame_to_axis_y(0));
-
-    myjoy.left.y_max = 1;
-    myjoy.left.y_zero = 0;
-    myjoy.left.y_dead = 0;
-    TEST_ASSERT_EQUAL_INT(32130, frame_to_axis_y(255));
-
-    myjoy.left.y_max = 1;
-    myjoy.left.y_zero = 0;
-    myjoy.left.y_dead = 32131;
-    TEST_ASSERT_EQUAL_INT(0, frame_to_axis_y(255));
+    myjoy.left.x.max = 1;
+    myjoy.left.x.zero = 0;
+    myjoy.left.x.dead = 32131;
+    TEST_ASSERT_EQUAL_INT(0, frame_to_axis(255));
 }
 #endif
 
@@ -528,7 +541,7 @@ static int parse_serial_buf(const char *cmd, int len)
             if ((cmd[i] == (char)FRAME_START) &&
                 (cmd[tail] == (char)FRAME_STOP))
             {
-                memcpy(&myjoy.left.cur_frame, cmd + i, sizeof(myjoy.left.cur_frame));
+                memcpy(&myjoy.cur_frame, cmd + i, sizeof(myjoy.cur_frame));
                 break;
             }
             else {
@@ -536,8 +549,11 @@ static int parse_serial_buf(const char *cmd, int len)
             }
         }
     }
-    myjoy.left.cur_axis[ABS_X] = frame_to_axis_x(myjoy.left.cur_frame.axis0);
-    myjoy.left.cur_axis[ABS_Y] = frame_to_axis_y(myjoy.left.cur_frame.axis1);
+    myjoy.cur_axis[0] = frame_to_axis(&myjoy.left.cali.x, myjoy.cur_frame.axisLX);
+    myjoy.cur_axis[1] = frame_to_axis(&myjoy.left.cali.y, myjoy.cur_frame.axisLY);
+    myjoy.cur_axis[2] = frame_to_axis(&myjoy.right.cali.x, myjoy.cur_frame.axisRX);
+    myjoy.cur_axis[3] = frame_to_axis(&myjoy.right.cali.y, myjoy.cur_frame.axisRY);
+
     update_axis_values();
 
     return 0;
@@ -554,29 +570,29 @@ TEST(sdl2_joy, parse_serial_buf)
     TEST_ASSERT_EQUAL_INT(-1, parse_serial_buf(buf0, 0));
 
     TEST_ASSERT_EQUAL_INT(0, parse_serial_buf(buf0, sizeof(buf0)));
-    TEST_ASSERT_EQUAL_INT(FRAME_START, myjoy.left.cur_frame.magic_start);
-    TEST_ASSERT_EQUAL_INT(buf0[1], myjoy.left.cur_frame.unused0);
-    TEST_ASSERT_EQUAL_INT(buf0[2], myjoy.left.cur_frame.unused1);
-    TEST_ASSERT_EQUAL_INT(buf0[3], myjoy.left.cur_frame.axis0);
-    TEST_ASSERT_EQUAL_INT(buf0[4], myjoy.left.cur_frame.axis1);
-    TEST_ASSERT_EQUAL_INT(FRAME_STOP, myjoy.left.cur_frame.magic_end);
+    TEST_ASSERT_EQUAL_INT(FRAME_START, myjoy.cur_frame.magic_start);
+    TEST_ASSERT_EQUAL_INT(buf0[1], myjoy.cur_frame.unused0);
+    TEST_ASSERT_EQUAL_INT(buf0[2], myjoy.cur_frame.unused1);
+    TEST_ASSERT_EQUAL_INT(buf0[3], myjoy.cur_frame.axis0);
+    TEST_ASSERT_EQUAL_INT(buf0[4], myjoy.cur_frame.axis1);
+    TEST_ASSERT_EQUAL_INT(FRAME_STOP, myjoy.cur_frame.magic_end);
 
     TEST_ASSERT_EQUAL_INT(0, parse_serial_buf(buf1, sizeof(buf1)));
-    TEST_ASSERT_EQUAL_INT(FRAME_START, myjoy.left.cur_frame.magic_start);
-    TEST_ASSERT_EQUAL_INT(buf1[3], myjoy.left.cur_frame.unused0);
-    TEST_ASSERT_EQUAL_INT(buf1[4], myjoy.left.cur_frame.unused1);
-    TEST_ASSERT_EQUAL_INT(buf1[5], myjoy.left.cur_frame.axis0);
-    TEST_ASSERT_EQUAL_INT(buf1[6], myjoy.left.cur_frame.axis1);
-    TEST_ASSERT_EQUAL_INT(FRAME_STOP, myjoy.left.cur_frame.magic_end);
+    TEST_ASSERT_EQUAL_INT(FRAME_START, myjoy.cur_frame.magic_start);
+    TEST_ASSERT_EQUAL_INT(buf1[3], myjoy.cur_frame.unused0);
+    TEST_ASSERT_EQUAL_INT(buf1[4], myjoy.cur_frame.unused1);
+    TEST_ASSERT_EQUAL_INT(buf1[5], myjoy.cur_frame.axis0);
+    TEST_ASSERT_EQUAL_INT(buf1[6], myjoy.cur_frame.axis1);
+    TEST_ASSERT_EQUAL_INT(FRAME_STOP, myjoy.cur_frame.magic_end);
 
-    memset(&myjoy.left.cur_frame, 0, sizeof(myjoy.left.cur_frame));
+    memset(&myjoy.cur_frame, 0, sizeof(myjoy.cur_frame));
     TEST_ASSERT_EQUAL_INT(0, parse_serial_buf(buf2, sizeof(buf2)));
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_frame.magic_start);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_frame.unused0);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_frame.unused1);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_frame.axis0);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_frame.axis1);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_frame.magic_end);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.magic_start);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.unused0);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.unused1);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.axis0);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.axis1);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.magic_end);
 }
 #endif
 
@@ -584,20 +600,21 @@ static int init_serial(void)
 {
     debug(SDL"call %s()\n", __func__);
 
-    myjoy.left.last_x = 0;
-    myjoy.left.last_y = 0;
-    memset(myjoy.left.cur_axis, 0, sizeof(myjoy.left.cur_axis));
-    memset(myjoy.left.last_axis, 0, sizeof(myjoy.left.last_axis));
-    memset(&(myjoy.left.cur_frame), 0, sizeof(myjoy.left.cur_frame));
+    myjoy.left.last.x = 0;
+    myjoy.left.last.y = 0;
+    memset(myjoy.cur_axis, 0, sizeof(myjoy.cur_axis));
+    memset(myjoy.last_axis, 0, sizeof(myjoy.last_axis));
+    memset(&(myjoy.cur_frame), 0, sizeof(myjoy.cur_frame));
 
-    myjoy.dev_fd = open_uart(JOY_DEV);
-    if (myjoy.dev_fd < 0) {
+    myjoy.fd = open_uart(JOY_DEV);
+    if (myjoy.fd < 0) {
         return -1;
     }
 
-    if (init_uart(myjoy.dev_fd, 9600, 0, 8, 1, 'N') < 0) {
+    if (init_uart(myjoy.fd, 9600, 0, 8, 1, 'N') < 0) {
         return -1;
     }
+    debug(SDL"joy fd=%d\n", myjoy.fd);
 
     return 0;
 }
@@ -606,50 +623,85 @@ static int init_serial(void)
 TEST(sdl2_joy, init_serial)
 {
     TEST_ASSERT_EQUAL_INT(-1, init_serial());
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_frame.magic_start);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.cur_axis[0]);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.left.last_axis[0]);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.magic_start);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_axis[0]);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.last_axis[0]);
 }
 #endif
 
-static int read_joy_cfg(void)
+static int read_joy_cfg(const char *path, cali_t *x, cali_t *y)
 {
     FILE *f = NULL;
     char buf[MAX_PATH] = { 0 };
 
-    debug(SDL"call %s()\n", __func__);
+    debug(SDL"call %s(%s)\n", __func__, path);
 
-    f = fopen(JOY_CFG_FILE, "r");
+    f = fopen(path, "r");
     if (!f) {
-        debug(SDL"failed to open \"%s\"\n", JOY_CFG_FILE);
+        debug(SDL"failed to open \"%s\"\n", path);
         return -1;
     }
 
     while (fgets(buf, sizeof(buf), f)) {
+#if defined(MIYOO_A30)
+        if (strcasestr(buf, "x.min=")) {
+            x->min = atoi(&buf[6]);
+            debug(SDL"joy x.min=%d\n", x->min);
+        }
+        else if (strcasestr(buf, "x.max=")) {
+            x->max = atoi(&buf[6]);
+            debug(SDL"joy x.max=%d\n", x->max);
+        }
+        else if (strcasestr(buf, "x.zero=")) {
+            x->zero = atoi(&buf[7]);
+            debug(SDL"joy x.zero=%d\n", x->zero);
+        }
+        else if (strcasestr(buf, "y.min=")) {
+            y->min = atoi(&buf[6]);
+            debug(SDL"joy y.min=%d\n", y->min);
+        }
+        else if (strcasestr(buf, "y.max=")) {
+            y->max = atoi(&buf[6]);
+            debug(SDL"joy y.max=%d\n", y->max);
+        }
+        else if (strcasestr(buf, "y.zero=")) {
+            y->zero = atoi(&buf[7]);
+            debug(SDL"joy y.zero=%d\n", y->zero);
+        }
+        else {
+            debug(SDL"invalid string=\"%s\"\n", buf);
+        }
+#endif
+
+#if defined(MIYOO_FLIP)
         if (strcasestr(buf, "x_min=")) {
-            myjoy.left.x_min = atoi(&buf[6]);
-            debug(SDL"joy x_min=%d\n", myjoy.left.x_min);
+            x->min = atoi(&buf[6]);
+            debug(SDL"joy x_min=%d\n", x->min);
         }
         else if (strcasestr(buf, "x_max=")) {
-            myjoy.left.x_max = atoi(&buf[6]);
-            debug(SDL"joy x_max=%d\n", myjoy.left.x_min);
+            x->max = atoi(&buf[6]);
+            debug(SDL"joy x_max=%d\n", x->max);
         }
         else if (strcasestr(buf, "x_zero=")) {
-            myjoy.left.x_zero = atoi(&buf[7]);
-            debug(SDL"joy x_zero=%d\n", myjoy.left.x_zero);
+            x->zero = atoi(&buf[7]);
+            debug(SDL"joy x_zero=%d\n", x->zero);
         }
         else if (strcasestr(buf, "y_min=")) {
-            myjoy.left.y_min = atoi(&buf[6]);
-            debug(SDL"joy y_min=%d\n", myjoy.left.y_min);
+            y->min = atoi(&buf[6]);
+            debug(SDL"joy y_min=%d\n", y->min);
         }
         else if (strcasestr(buf, "y_max=")) {
-            myjoy.left.y_max = atoi(&buf[6]);
-            debug(SDL"joy y_max=%d\n", myjoy.left.y_max);
+            y->max = atoi(&buf[6]);
+            debug(SDL"joy y_max=%d\n", y->max);
         }
         else if (strcasestr(buf, "y_zero=")) {
-            myjoy.left.y_zero = atoi(&buf[7]);
-            debug(SDL"joy y_zero=%d\n", myjoy.left.y_zero);
+            y->zero = atoi(&buf[7]);
+            debug(SDL"joy y_zero=%d\n", y->zero);
         }
+        else {
+            debug(SDL"invalid string=\"%s\"\n", buf);
+        }
+#endif
     }
     fclose(f);
 
@@ -659,13 +711,13 @@ static int read_joy_cfg(void)
 #if defined(UT)
 TEST(sdl2_joy, read_joy_cfg)
 {
-    TEST_ASSERT_EQUAL_INT(0, read_joy_cfg());
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  myjoy.left.x_min);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  myjoy.left.x_max);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, myjoy.left.x_zero);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  myjoy.left.y_min);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  myjoy.left.y_max);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, myjoy.left.y_zero);
+    TEST_ASSERT_EQUAL_INT(0, read_joy_cfg(DEF_CFG_PATH, r));
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  myjoy.left.x.min);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  myjoy.left.x.max);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, myjoy.left.x.zero);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  myjoy.left.y.min);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  myjoy.left.y.max);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, myjoy.left.y.zero);
 }
 #endif
 
@@ -680,13 +732,18 @@ int joy_handler(void *param)
 
 #if !defined(UT)
     while (myjoy.running) {
-        r = read_uart(myjoy.dev_fd, buf, sizeof(buf));
+        r = read_uart(myjoy.fd, buf, sizeof(buf));
 
         if (r > 0) {
             buf[r] = 0;
             parse_serial_buf(buf, r);
         }
-        usleep(10000);
+
+        if (mycfg.mode == MODE_KEY) {
+            send_gui_event();
+        }
+
+        usleep(1000000 / 60);
     }
 #endif
 
@@ -707,8 +764,13 @@ int JoystickInit(void)
 {
     debug(SDL"call %s()\n", __func__);
 
-#if defined(MIYOO_A30) || defined(UT)
-    read_joy_cfg();
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP) || defined(UT)
+    read_joy_cfg(JOY_CFG_FILE, &myjoy.left.cali.x, &myjoy.left.cali.y);
+
+#if defined(MIYOO_FLIP)
+    read_joy_cfg(JOY_RIGHT_CFG_FILE, &myjoy.right.cali.x, &myjoy.right.cali.y);
+#endif
+
     init_serial();
 
     myjoy.running = 1;
@@ -733,7 +795,7 @@ void JoystickQuit(void)
 {
     debug(SDL"call %s()\n", __func__);
 
-#if defined(MIYOO_A30) || defined(UT)
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP) || defined(UT)
     myjoy.running = 0;
 
     if (myjoy.thread) {
@@ -741,9 +803,9 @@ void JoystickQuit(void)
         myjoy.thread = NULL;
     }
 
-    if (myjoy.dev_fd > 0) {
-        close(myjoy.dev_fd);
-        myjoy.dev_fd = -1;
+    if (myjoy.fd > 0) {
+        close(myjoy.fd);
+        myjoy.fd = -1;
     }
 #endif
 }
@@ -990,9 +1052,11 @@ TEST(sdl2_joy, JoystickSetSensorsEnabled)
 
 void JoystickUpdate(SDL_Joystick *j)
 {
-#if defined(MIYOO_A30)
-    static int pre_x = -1;
-    static int pre_y = -1;
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP) || defined(MIYOO_FLIP)
+    static int pre_lx = -1;
+    static int pre_ly = -1;
+    static int pre_rx = -1;
+    static int pre_ry = -1;
 #endif
 
     do {
@@ -1001,15 +1065,25 @@ void JoystickUpdate(SDL_Joystick *j)
             break;
         }
 
-#if defined(MIYOO_A30)
-        if (myjoy.left.last_x != pre_x) {
-            pre_x = myjoy.left.last_x;
-            SDL_PrivateJoystickAxis(j, 0, pre_x);
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP) || defined(MIYOO_FLIP)
+        if (myjoy.left.last.x != pre_lx) {
+            pre_lx = myjoy.left.last.x;
+            SDL_PrivateJoystickAxis(j, 0, pre_lx);
         }
 
-        if (myjoy.left.last_y != pre_y) {
-            pre_y = myjoy.left.last_y;
-            SDL_PrivateJoystickAxis(j, 1, pre_x);
+        if (myjoy.left.last.y != pre_ly) {
+            pre_ly = myjoy.left.last.y;
+            SDL_PrivateJoystickAxis(j, 1, pre_ly);
+        }
+
+        if (myjoy.right.last.x != pre_rx) {
+            pre_rx = myjoy.right.last.x;
+            SDL_PrivateJoystickAxis(j, 0, pre_rx);
+        }
+
+        if (myjoy.right.last.y != pre_ry) {
+            pre_ry = myjoy.left.last.y;
+            SDL_PrivateJoystickAxis(j, 1, pre_ry);
         }
 #endif
     } while (0);

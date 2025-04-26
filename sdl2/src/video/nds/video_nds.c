@@ -875,6 +875,10 @@ TEST(sdl2_video, quit_mini_lcd)
 
 int flip_lcd_screen(void)
 {
+#if defined(MIYOO_FLIP)
+    int wait_cnt = 0;
+#endif
+
     debug(SDL"call %s()\n", __func__);
 
 #if defined(SFOS_EGL) || defined(MIYOO_EGL)
@@ -888,10 +892,11 @@ int flip_lcd_screen(void)
     drmModeSetCrtc(myvid.drm.fd, myvid.drm.crtc->crtc_id, myvid.drm.fb, 0, 0, (uint32_t *)myvid.drm.conn, 1, &myvid.drm.crtc->mode);
     drmModePageFlip(myvid.drm.fd, myvid.drm.crtc->crtc_id, myvid.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvid.drm.wait_for_flip);
 
-//    drmHandleEvent(myvid.drm.fd, &drm_evctx);
-//    while (myvid.drm.wait_for_flip) {
-//        usleep(10);
-//    }
+    wait_cnt = 10;
+    while (wait_cnt-- && myvid.drm.wait_for_flip) {
+        usleep(10);
+        drmHandleEvent(myvid.drm.fd, &drm_evctx);
+    }
 
     gbm_surface_release_buffer(myvid.drm.gs, myvid.drm.bo);
 #endif

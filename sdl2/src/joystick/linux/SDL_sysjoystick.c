@@ -691,6 +691,10 @@ LINUX_JoystickInit(void)
 {
     const char *devices = SDL_GetHint(SDL_HINT_JOYSTICK_DEVICE);
 
+#if defined(MIYOO_A30) || defined(MIYOO_FLIP)
+    return -1;
+#endif
+
     SDL_classic_joysticks = SDL_GetHintBoolean(SDL_HINT_LINUX_JOYSTICK_CLASSIC, SDL_FALSE);
 
 #if SDL_USE_LIBUDEV
