@@ -53,6 +53,12 @@
         uintptr_t *base;
         uint32_t *gamecard_name;
         uint32_t *savestate_num;
+        struct __jmp_buf_tag *reset_jmp;
+
+        struct {
+            uintptr_t audio;
+        } spu;
+
         struct {
             uint32_t *frameskip_type;
             uint32_t *frameskip_value;

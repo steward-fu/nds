@@ -181,7 +181,7 @@ uint8_t audio_pause(void)
     debug(DTR"call %s(pfn=%p)\n", __func__, pfn);
 
     if (pfn) {
-        return pfn((uintptr_t)(((uint8_t *)myhook.var.system.base) + 0x1586000));
+        return pfn(myhook.var.system.spu.audio);
     }
     else {
         error(DTR"pfn is null");
@@ -202,7 +202,7 @@ void audio_revert_pause_state(uint8_t v)
     debug(DTR"call %s(pfn=%p)\n", __func__, pfn);
 
     if (pfn) {
-        pfn((uintptr_t)(((uint8_t *)myhook.var.system.base) + 0x1586000), 0);//v);
+        pfn(myhook.var.system.spu.audio, v);
     }
     else {
         error(DTR"pfn is null");
@@ -555,7 +555,11 @@ static int init_table(void)
     debug(DTR"call %s()\n", __func__);
 
 #if defined(NDS_ARM64)
-    myhook.var.system.base                              = (uintptr_t *) 0x7ff4496000;
+    myhook.var.system.base                              = (uintptr_t *) VAR_BASE_OFFSET;
+
+    myhook.var.system.reset_jmp                         = (struct __jmp_buf_tag *)(VAR_BASE_OFFSET + 0x3b29840);
+    myhook.var.system.spu.audio                         = (uintptr_t)  (VAR_BASE_OFFSET + 0x1586000);
+
     myhook.var.system.config.frameskip_type             = (uint32_t *)  0x7ff451b9a8;
     myhook.var.system.config.frameskip_value            = (uint32_t *)  0x7ff451b9ac;
     myhook.var.system.config.safe_frameskip             = (uint32_t *)  0x7ff451ba10;
