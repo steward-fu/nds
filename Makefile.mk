@@ -50,13 +50,14 @@ rel:
 
 .PHONY: clean
 clean:
-	rm -rf unittest/unittest
 	make -C alsa clean
 	make -C detour clean
 	make -C loader clean
-	make -C sdl2 distclean
+	make -C sdl2 distclean > /dev/null 2>&1 || true
+	rm -rf unittest/unittest
 	rm -rf drastic/libs2
 	rm -rf drastic/cpuclock
+	rm -rf drastic/run.sh
 	rm -rf drastic/launch.sh
 	rm -rf drastic/config.json
 	rm -rf drastic/show_hotkeys

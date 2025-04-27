@@ -1,31 +1,5 @@
-/*
-  Special customized version for the DraStic emulator that runs on
-      Miyoo Mini (Plus)
-      TRIMUI-SMART
-      Miyoo A30
-      Miyoo Flip
-      Anbernic RG28XX
-      Fxtec Pro1 (QX1000)
-
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
-  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-*/
+// LGPL-2.1 License
+// (C) 2025 Steward Fu <steward.fu@gmail.com>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,23 +74,23 @@
 #endif
 
 #ifdef FLIP
-    #define UP      1
-    #define DOWN    2
-    #define LEFT    3
-    #define RIGHT   4
-    #define A       5
-    #define B       6
-    #define X       7
-    #define Y       8
-    #define L1      9
-    #define L2      10
-    #define R1      11
-    #define R2      12
-    #define START   13
-    #define SELECT  14
-    #define MENU    15
-    #define VOLUP   16
-    #define VOLDOWN 18
+    #define UP      103
+    #define DOWN    108
+    #define LEFT    105
+    #define RIGHT   106
+    #define A       57
+    #define B       29
+    #define X       42
+    #define Y       56
+    #define L1      15
+    #define L2      18
+    #define R1      14
+    #define R2      20
+    #define START   28
+    #define SELECT  97
+    #define MENU    1
+    #define VOLUP   115
+    #define VOLDOWN 114
 #endif
 
 #ifdef A30
@@ -998,9 +972,16 @@ static int handle_hotkey(void)
 
 int EventUpdate(void *data)
 {
-#ifdef RG28XX
+#if defined(RG28XX)
     char tbuf[16] = {0};
 #endif
+
+#if defined(FLIP)
+    int cc = 0;
+    int pre_bits = 0;
+    int tbuf[DEV_KEY_BUF_MAX] = { 0 };
+#endif
+
     struct input_event ev = {0};
 
     uint32_t l1 = L1;
@@ -1010,6 +991,7 @@ int EventUpdate(void *data)
     uint32_t r2 = R2;
 #endif
 
+    int r = 0;
     uint32_t a = A;
     uint32_t b = B;
     uint32_t x = X;
@@ -1091,149 +1073,196 @@ int EventUpdate(void *data)
         }
 #endif
 
-        if (event_fd > 0) {
-            int r = 0;
+        r = 0;
+        ev.code = 0;
+#if defined(FLIP)
+        if (read(event_fd, tbuf, sizeof(tbuf)) == 0) {
+            continue;
+        }
 
-#ifdef RG28XX
-            ev.code = 0;
-            if (read(event_fd, tbuf, 16)) {
-                ev.value = !!tbuf[12];
+        for (cc = 0; cc < DEV_KEY_IDX_MAX; cc++) {
+            uint32_t kval[DEV_KEY_BUF_MAX] = {
+                /* 0  */ b,
+                /* 1  */ y,
+                /* 2  */ SELECT,
+                /* 3  */ START,
+                /* 4  */ up,
+                /* 5  */ down,
+                /* 6  */ left,
+                /* 7  */ right,
+                /* 8  */ a,
+                /* 9  */ x,
+                /* 10 */ l1,
+                /* 11 */ r1,
+                /* 12 */ l2,
+                /* 13 */ r2,
+                /* 14 */ -1, 
+                /* 15 */ -1, 
+                /* 16 */ MENU,
+                /* 17 */ -1,
+                /* 18 */ -1,
+                /* 19 */ -1
+            }; 
 
-                switch (tbuf[10]) {
-                case 0x11: 
-                    if (ev.value) {
-                        ev.code = (tbuf[12] == 0xff) ? up : down;
-                    }
-                    else {
-                        ev.code = up;
-                        set_key(MYKEY_UP, 0);
-                        set_key(MYKEY_DOWN, 0);
-                    }
-                    break;
-                case 0x10:
-                    if (ev.value) {
-                        ev.code = (tbuf[12] == 0xff) ? left : right;
-                    }
-                    else {
-                        ev.code = left;
-                        set_key(MYKEY_LEFT, 0);
-                        set_key(MYKEY_RIGHT, 0);
-                    }
-                    break;
-                case 0x30: ev.code = a; break;
-                case 0x31: ev.code = b; break;
-                case 0x33: ev.code = x; break;
-                case 0x32: ev.code = y; break;
-                case 0x34: ev.code = l1; break;
-                case 0x3a: ev.code = l2; break;
-                case 0x35: ev.code = r1; break;
-                case 0x3b: ev.code = r2; break;
-                case 0x38: ev.code = MENU; break;
-                case 0x36: ev.code = SELECT; break;
-                case 0x37: ev.code = START; break;
-                case 0x73: ev.code = VOLUP; break;
-                case 0x72: ev.code = VOLDOWN; break;
-                }
+            if ((!!tbuf[cc]) == (!!(pre_bits & (1 << cc)))) {
+                continue;
+            }
 
-                if (ev.code > 0) {
-#else
-            if (read(event_fd, &ev, sizeof(struct input_event))) {
-                if ((ev.type == EV_KEY) && (ev.value != 2)) {
+            if (tbuf[cc]) {
+                pre_bits |= (1 << cc);
+            }
+            else {
+                pre_bits &= ~(1 << cc);
+            }
+
+            ev.code = kval[cc];
+            ev.value = !!tbuf[cc];
+
+            debug("%d, %d\n", ev.code, ev.value);
+            if (ev.code > 0) {
 #endif
-                    r = 1;
-                    //printf(PREFIX"code:%d, value:%d\n", ev.code, ev.value);
-                    if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
-                    if (ev.code == r1)      { set_key(MYKEY_R1,    ev.value); }
-                    if (ev.code == up)      { set_key(MYKEY_UP,    ev.value); }
-                    if (ev.code == down)    { set_key(MYKEY_DOWN,  ev.value); }
-                    if (ev.code == left)    { set_key(MYKEY_LEFT,  ev.value); }
-                    if (ev.code == right)   { set_key(MYKEY_RIGHT, ev.value); }
-                    if (ev.code == a)       { set_key(MYKEY_A,     ev.value); }
-                    if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
-                    if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
-                    if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
+
+#if defined(RG28XX)
+        if (read(event_fd, tbuf, sizeof(tbuf))) {
+            ev.value = !!tbuf[12];
+
+            switch (tbuf[10]) {
+            case 0x11: 
+                if (ev.value) {
+                    ev.code = (tbuf[12] == 0xff) ? up : down;
+                }
+                else {
+                    ev.code = up;
+                    set_key(MYKEY_UP, 0);
+                    set_key(MYKEY_DOWN, 0);
+                }
+                break;
+            case 0x10:
+                if (ev.value) {
+                    ev.code = (tbuf[12] == 0xff) ? left : right;
+                }
+                else {
+                    ev.code = left;
+                    set_key(MYKEY_LEFT, 0);
+                    set_key(MYKEY_RIGHT, 0);
+                }
+                break;
+            case 0x30: ev.code = a; break;
+            case 0x31: ev.code = b; break;
+            case 0x33: ev.code = x; break;
+            case 0x32: ev.code = y; break;
+            case 0x34: ev.code = l1; break;
+            case 0x3a: ev.code = l2; break;
+            case 0x35: ev.code = r1; break;
+            case 0x3b: ev.code = r2; break;
+            case 0x38: ev.code = MENU; break;
+            case 0x36: ev.code = SELECT; break;
+            case 0x37: ev.code = START; break;
+            case 0x73: ev.code = VOLUP; break;
+            case 0x72: ev.code = VOLDOWN; break;
+            }
+
+            if (ev.code > 0) {
+#else
+#if !defined(FLIP)
+        if (read(event_fd, &ev, sizeof(struct input_event))) {
+            if ((ev.type == EV_KEY) && (ev.value != 2)) {
+#endif
+#endif
+                r = 1;
+                debug("code=%d, value=%d\n", ev.code, ev.value);
+                if (ev.code == l1)      { set_key(MYKEY_L1,    ev.value); }
+                if (ev.code == r1)      { set_key(MYKEY_R1,    ev.value); }
+                if (ev.code == up)      { set_key(MYKEY_UP,    ev.value); }
+                if (ev.code == down)    { set_key(MYKEY_DOWN,  ev.value); }
+                if (ev.code == left)    { set_key(MYKEY_LEFT,  ev.value); }
+                if (ev.code == right)   { set_key(MYKEY_RIGHT, ev.value); }
+                if (ev.code == a)       { set_key(MYKEY_A,     ev.value); }
+                if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
+                if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
+                if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
 #if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
 #ifdef A30
-                    if (ev.code == r2) {
-                        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
-                            nds.joy.show_cnt = MYJOY_SHOW_CNT;
-                            SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
-                        }
-                        set_key(MYKEY_L2, ev.value);
+                if (ev.code == r2) {
+                    if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+                        nds.joy.show_cnt = MYJOY_SHOW_CNT;
+                        SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
                     }
-                    if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
+                    set_key(MYKEY_L2, ev.value);
+                }
+                if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
 #else
-                    if (ev.code == r2)      { set_key(MYKEY_L2,    ev.value); }
-                    if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
+                if (ev.code == r2)      { set_key(MYKEY_L2,    ev.value); }
+                if (ev.code == l2)      { set_key(MYKEY_R2,    ev.value); }
 #endif
 #endif
 
 #ifdef QX1000
-                    if (ev.code == L10)     { set_key(MYKEY_L1,    ev.value); }
-                    if (ev.code == R10)     { set_key(MYKEY_R1,    ev.value); }
+                if (ev.code == L10)     { set_key(MYKEY_L1,    ev.value); }
+                if (ev.code == R10)     { set_key(MYKEY_R1,    ev.value); }
 #endif
-                    switch (ev.code) {
-                    case START:  set_key(MYKEY_START, ev.value);  break;
-                    case SELECT: set_key(MYKEY_SELECT, ev.value); break;
-                    case MENU:   set_key(MYKEY_MENU, ev.value);   break;
+                switch (ev.code) {
+                case START:  set_key(MYKEY_START, ev.value);  break;
+                case SELECT: set_key(MYKEY_SELECT, ev.value); break;
+                case MENU:   set_key(MYKEY_MENU, ev.value);   break;
 #ifdef QX1000
-                    case QSAVE:  set_key(MYKEY_QSAVE, ev.value);  break;
-                    case QLOAD:  set_key(MYKEY_QLOAD, ev.value);  break;
-                    case EXIT:   set_key(MYKEY_EXIT, ev.value);   break;
+                case QSAVE:  set_key(MYKEY_QSAVE, ev.value);  break;
+                case QLOAD:  set_key(MYKEY_QLOAD, ev.value);  break;
+                case EXIT:   set_key(MYKEY_EXIT, ev.value);   break;
 #endif
 #ifdef MMIYOO
-                    case POWER:  set_key(MYKEY_POWER, ev.value);  break;
-                    case VOLUP:
-                        set_key(MYKEY_VOLUP, ev.value);
-                        if (is_stock_os) {
-                            if (ev.value == 0) {
-                                nds.volume = volume_inc();
-                            }
-                        }
-                        else {
-                            nds.defer_update_bg = 60;
-                        }
-                        break;
-                    case VOLDOWN:
-                        set_key(MYKEY_VOLDOWN, ev.value);
-                        if (is_stock_os) {
-                            if (ev.value == 0) {
-                                nds.volume = volume_dec();
-                            }
-                        }
-                        else {
-                            nds.defer_update_bg = 60;
-                        }
-                        break;
-#endif
-
-#if defined(A30) || defined(RG28XX)
-                    case VOLUP:
-                        set_key(MYKEY_VOLUP, ev.value);
+                case POWER:  set_key(MYKEY_POWER, ev.value);  break;
+                case VOLUP:
+                    set_key(MYKEY_VOLUP, ev.value);
+                    if (is_stock_os) {
                         if (ev.value == 0) {
                             nds.volume = volume_inc();
                         }
-                        break;
-                    case VOLDOWN:
-                        set_key(MYKEY_VOLDOWN, ev.value);
+                    }
+                    else {
+                        nds.defer_update_bg = 60;
+                    }
+                    break;
+                case VOLDOWN:
+                    set_key(MYKEY_VOLDOWN, ev.value);
+                    if (is_stock_os) {
                         if (ev.value == 0) {
                             nds.volume = volume_dec();
                         }
-                        break;
-#endif
                     }
+                    else {
+                        nds.defer_update_bg = 60;
+                    }
+                    break;
+#endif
+
+#if defined(A30) || defined(RG28XX)
+                case VOLUP:
+                    set_key(MYKEY_VOLUP, ev.value);
+                    if (ev.value == 0) {
+                        nds.volume = volume_inc();
+                    }
+                    break;
+                case VOLDOWN:
+                    set_key(MYKEY_VOLDOWN, ev.value);
+                    if (ev.value == 0) {
+                        nds.volume = volume_dec();
+                    }
+                    break;
+#endif
                 }
             }
+        }
 
 #if defined(A30) && USE_MYJOY
-            r |= update_joystick();
+        r |= update_joystick();
 #endif
-            if (r > 0) {
-                handle_hotkey();
-            }
+        if (r > 0) {
+            handle_hotkey();
         }
+
         SDL_SemPost(event_sem);
-        usleep(1000000 / 60);
+        usleep(1000000 / 30);
     }
     
     return 0;
@@ -1275,12 +1304,11 @@ void MMIYOO_EventInit(void)
 
     event_fd = open(INPUT_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if(event_fd < 0){
-        printf(PREFIX"Failed to open %s\n", INPUT_DEV);
         exit(-1);
     }
 
-    if((event_sem =  SDL_CreateSemaphore(1)) == NULL) {
-        SDL_SetError("Can't create input semaphore");
+    event_sem = SDL_CreateSemaphore(1);
+    if(event_sem == NULL) {
         exit(-1);
     }
 
@@ -1289,8 +1317,8 @@ void MMIYOO_EventInit(void)
 #endif
 
     running = 1;
-    if((thread = SDL_CreateThreadInternal(EventUpdate, "MMIYOOInputThread", 4096, NULL)) == NULL) {
-        SDL_SetError("Can't create input thread");
+    thread = SDL_CreateThreadInternal(EventUpdate, "NDS Input Handler", 4096, NULL);
+    if(thread == NULL) {
         exit(-1);
     }
 

@@ -107,10 +107,15 @@ const char *vShaderSrc =
     "varying vec2 v_texCoord;     \n"
     "void main()                  \n"
     "{                            \n"
+#if !defined(FLIP)
     "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;                                                                            \n"
     "    mat4 rot = mat4(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); \n"
     "    gl_Position = a_position * rot; \n"
     "    v_texCoord = a_texCoord;        \n"
+#else
+    "    gl_Position = a_position; \n"
+    "    v_texCoord = a_texCoord;        \n"
+#endif
     "}                                   \n";
     
 const char *fShaderSrc =
@@ -325,7 +330,7 @@ void update_wayland_res(int w, int h)
     memset(wl.data, 0, LCD_W * LCD_H * 2);
     wl.pixels[0] = (uint16_t*)wl.data;
     wl.pixels[1] = (uint16_t*)(wl.data + wl.info.size);
-    printf(PREFIX"Updated wayland width=%d height=%d scale=%d\n", w, h, scale);
+    debug("new wayland width=%d height=%d scale=%d\n", w, h, scale);
 }
 
 static void* wl_thread(void* pParam)
@@ -443,7 +448,7 @@ void egl_create(void)
         if (len > 1) {
             char* info = malloc(sizeof(char) * len);
             glGetShaderInfoLog(wl.egl.vShader, len, NULL, info);
-            printf(PREFIX"%s, failed to compile vShader: %s\n", __func__, info);
+            debug("%s, failed to compile vShader: %s\n", __func__, info);
             free(info);
         }
     }
@@ -459,7 +464,7 @@ void egl_create(void)
         if (len > 1) {
             char* info = malloc(sizeof(char) * len);
             glGetShaderInfoLog(wl.egl.fShader, len, NULL, info);
-            printf(PREFIX"%s, failed to compile fShader: %s\n", __func__, info);
+            debug("%s, failed to compile fShader: %s\n", __func__, info);
             free(info);
         }
     }
@@ -1996,7 +2001,7 @@ static int process_screen(void)
             break;
         }
 #else
-        printf(PREFIX"Unsupported platform\n");
+        debug("unsupported platform\n");
         return 0;
 #endif
 
@@ -2172,15 +2177,15 @@ static int process_screen(void)
     return 0;
 }
 
-void sdl_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+void prehook_cb_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
 }
 
-void sdl_update_screen(void)
+void prehook_cb_update_screen(void)
 {
     static int prepare_time = 30;
 
-    printf("call %s(%d)\n", __func__, prepare_time);
+    debug("call %s(%d)\n", __func__, prepare_time);
 
     if (prepare_time) {
         process_screen();
@@ -2199,7 +2204,7 @@ void sdl_update_screen(void)
     }
 }
 
-void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
+void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
     int w = 0, h = 0;
     SDL_Color col = {0};
@@ -2218,7 +2223,7 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
             strcpy(drastic_menu.item[drastic_menu.cnt].msg, p);
             drastic_menu.cnt+= 1;
         }
-        printf("x:%d, y:%d, fg:0x%x, bg:0x%x, \'%s\'\n", x, y, fg, bg, p);
+        debug("x=%d, y=%d, fg=0x%x, bg=0x%x, \'%s\'\n", x, y, fg, bg, p);
     }
 
     if ((x == 0) && (y == 0) && (fg == 0xffff) && (bg == 0x0000)) {
@@ -2257,7 +2262,7 @@ void sdl_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
     }
 }
 
-void sdl_savestate_pre(void)
+void prehook_cb_savestate_pre(void)
 {
 #if !defined(UNITTEST)
     asm volatile (
@@ -2291,7 +2296,7 @@ void sigterm_handler(int sig)
 
     if (ran == 0) {
         ran = 1;
-        printf(PREFIX"Oops sigterm !\n");
+        debug("Oops sigterm !\n");
         dtr_quit();
     }
 }
@@ -2403,10 +2408,10 @@ static void *video_handler(void *threadid)
     gfx.lcd.virAddr[0][1] = malloc(SCREEN_DMA_SIZE);
     gfx.lcd.virAddr[1][0] = malloc(SCREEN_DMA_SIZE);
     gfx.lcd.virAddr[1][1] = malloc(SCREEN_DMA_SIZE);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][1]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
+    debug("buffer0=%p\n", gfx.lcd.virAddr[0][0]);
+    debug("buffer1=%p\n", gfx.lcd.virAddr[0][1]);
+    debug("buffer2=%p\n", gfx.lcd.virAddr[1][0]);
+    debug("buffer3=%p\n", gfx.lcd.virAddr[1][1]);
 #endif
 
 #if defined(A30) || defined(RG28XX)
@@ -2474,10 +2479,10 @@ static void *video_handler(void *threadid)
     gfx.lcd.virAddr[0][1] = malloc(SCREEN_DMA_SIZE);
     gfx.lcd.virAddr[1][0] = malloc(SCREEN_DMA_SIZE);
     gfx.lcd.virAddr[1][1] = malloc(SCREEN_DMA_SIZE);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][1]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
+    debug("buffer0=%p\n", gfx.lcd.virAddr[0][0]);
+    debug("buffer1=%p\n", gfx.lcd.virAddr[0][1]);
+    debug("buffer2=%p\n", gfx.lcd.virAddr[1][0]);
+    debug("buffer3=%p\n", gfx.lcd.virAddr[1][1]);
 #endif
 
     while (is_video_thread_running) {
@@ -2583,7 +2588,7 @@ static int lang_load(const char *lang)
                 translate[cc] = malloc(len);
                 if (translate[cc] != NULL) {
                     memcpy(translate[cc], buf, len);
-                    //printf(PREFIX"Translate: \'%s\'(len=%d)\n", translate[cc], len);
+                    debug("lang=\"%s\", len=%d\n", translate[cc], len);
                 }
                 cc+= 1;
                 if (cc >= MAX_LANG_LINE) {
@@ -2594,7 +2599,7 @@ static int lang_load(const char *lang)
             fclose(f);
         }
         else {
-            printf(PREFIX"Failed to open lang folder \'%s\'\n", nds.lang.path);
+            debug("failed to open lang folder \'%s\'\n", nds.lang.path);
         }
     }
     return 0;
@@ -2621,7 +2626,7 @@ static void lang_enum(void)
                 continue;
             }
 
-            //printf(PREFIX"found lang \'lang[%d]=%s\'\n", idx, dir->d_name);
+            debug("found lang \'lang[%d]=%s\'\n", idx, dir->d_name);
             strcpy(nds.lang.trans[idx], dir->d_name);
             idx+= 1;
             if (idx >= MAX_LANG_FILE) {
@@ -2643,7 +2648,7 @@ static int read_config(void)
 
     jfile = json_object_from_file(nds.cfg.path);
     if (jfile == NULL) {
-        printf(PREFIX"Failed to read settings from json file (%s)\n", nds.cfg.path);
+        debug("Failed to read settings from json file (%s)\n", nds.cfg.path);
         return -1;
     }
 
@@ -2845,7 +2850,7 @@ static int read_config(void)
 
             if (stat(nds.states.path, &st) == -1) {
                 mkdir(nds.states.path, 0755);
-                printf(PREFIX"Create states folder in \'%s\'\n", nds.states.path);
+                debug("Create states folder in \'%s\'\n", nds.states.path);
             }
         }
     }
@@ -2914,7 +2919,7 @@ static int write_config(void)
 
     jfile = json_object_from_file(nds.cfg.path);
     if (jfile == NULL) {
-        printf(PREFIX"Failed to write settings to json file (%s)\n", nds.cfg.path);
+        debug("failed to write settings to json file (%s)\n", nds.cfg.path);
         return -1;
     }
 
@@ -2961,7 +2966,7 @@ static int write_config(void)
 
     json_object_to_file_ext(nds.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
     json_object_put(jfile);
-    printf(PREFIX"Wrote changed settings back !\n");
+    debug("updated config !\n");
     return 0;
 }
 
@@ -2995,7 +3000,7 @@ static int get_cpuclock(void)
         if (lpf_value && post_div) {
             rate = (divsrc / lpf_value * 2 / post_div * 16);
         }
-        printf(PREFIX"Current cpuclock=%u (lpf=%u, post_div=%u)\n", rate, lpf_value, post_div);
+        debug("Current cpuclock=%u (lpf=%u, post_div=%u)\n", rate, lpf_value, post_div);
         munmap(pll_map, PLL_SIZE);
     }
     close(fd_mem);
@@ -3022,7 +3027,7 @@ static int set_cpuclock(uint32_t newclock)
 
     pll_map = mmap(0, PLL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_mem, BASE_REG_MPLL_PA);
     if (pll_map) {
-        printf(PREFIX"Set CPU %dMHz\n", newclock);
+        debug("Set CPU %dMHz\n", newclock);
 
         newclock*= 1000;
         sprintf(clockstr, "%d", newclock);
@@ -3241,8 +3246,6 @@ int fb_init(void)
 
 int fb_quit(void)
 {
-    printf("call %s()\n", __func__);
-
     return 0;
 }
 #endif
@@ -4150,8 +4153,11 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
 {
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     int tex = (id >= 0) ? id : TEX_TMP;
+#endif
 
-    printf("call %s()++\n", __func__);
+    debug("call %s()\n", __func__);
+
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
     if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH1) || (nds.dis_mode == NDS_DIS_MODE_HH3))) {
         vVertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
         vVertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
@@ -5415,7 +5421,6 @@ int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int
     }
 #endif
 
-    printf("call %s()--\n", __func__);
     return 0;
 }
 
@@ -5479,6 +5484,7 @@ void GFX_Flip(void)
         glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bgVertices[3]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
     }
+
 #endif
 
 #ifdef MMIYOO
@@ -5844,7 +5850,7 @@ int reload_bg(void)
                     if (t) {
                         SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
                         SDL_FreeSurface(t);
-#if !defined(A30) && !defined(RG28XX) || defined(FLIP)
+#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
                         GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #endif
                     }
@@ -5856,7 +5862,7 @@ int reload_bg(void)
         }
         else {
             if (nds.theme.img) {
-#if !defined(A30) && !defined(RG28XX) || defined(FLIP)
+#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
                 GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #else
                 glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
@@ -6199,17 +6205,20 @@ int MMIYOO_VideoInit(_THIS)
 
     detour_init(sysconf(_SC_PAGESIZE), nds.states.path);
 
-    detour_hook(FUN_PRINT_STRING, (intptr_t)sdl_print_string);
-    detour_hook(FUN_SAVESTATE_PRE, (intptr_t)sdl_savestate_pre);
-    detour_hook(FUN_SAVESTATE_POST, (intptr_t)sdl_savestate_post);
-    detour_hook(FUN_BLIT_SCREEN_MENU, (intptr_t)sdl_blit_screen_menu);
-    detour_hook(FUN_UPDATE_SCREEN, (intptr_t)sdl_update_screen);
-    detour_hook(FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS, (intptr_t)render_polygon_setup_perspective_steps);
+    detour_hook(FUN_PRINT_STRING,       (intptr_t)prehook_cb_print_string);
+    detour_hook(FUN_SAVESTATE_PRE,      (intptr_t)prehook_cb_savestate_pre);
+    detour_hook(FUN_SAVESTATE_POST,     (intptr_t)sdl_savestate_post);
+    detour_hook(FUN_BLIT_SCREEN_MENU,   (intptr_t)prehook_cb_blit_screen_menu);
+    detour_hook(FUN_UPDATE_SCREEN,      (intptr_t)prehook_cb_update_screen);
+    detour_hook(
+        FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS,
+        (intptr_t)render_polygon_setup_perspective_steps
+    );
 
 #if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
-    detour_hook(FUN_MALLOC,  (intptr_t)prehook_cb_malloc);
-    detour_hook(FUN_REALLOC, (intptr_t)prehook_cb_realloc);
-    detour_hook(FUN_FREE,    (intptr_t)prehook_cb_free);
+    detour_hook(FUN_MALLOC,     (intptr_t)prehook_cb_malloc);
+    detour_hook(FUN_REALLOC,    (intptr_t)prehook_cb_realloc);
+    detour_hook(FUN_FREE,       (intptr_t)prehook_cb_free);
 #endif
     return 0;
 }
