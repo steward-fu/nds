@@ -3,6 +3,7 @@
       Miyoo Mini (Plus)
       TRIMUI-SMART
       Miyoo A30
+      Miyoo Flip
       Anbernic RG28XX
       Fxtec Pro1 (QX1000)
 
@@ -50,6 +51,8 @@
     #define INPUT_DEV "/dev/input/event4"
 #elif defined(QX1000) || defined(A30)
     #define INPUT_DEV "/dev/input/event3"
+#elif defined(FLIP)
+    #define INPUT_DEV "/dev/miyooio"
 #elif defined(RG28XX)
     #define INPUT_DEV "/dev/input/event1"
 #else
@@ -94,6 +97,26 @@
     #define MENU    1
     #define VOLUP   115
     #define VOLDOWN 114
+#endif
+
+#ifdef FLIP
+    #define UP      1
+    #define DOWN    2
+    #define LEFT    3
+    #define RIGHT   4
+    #define A       5
+    #define B       6
+    #define X       7
+    #define Y       8
+    #define L1      9
+    #define L2      10
+    #define R1      11
+    #define R2      12
+    #define START   13
+    #define SELECT  14
+    #define MENU    15
+    #define VOLUP   16
+    #define VOLDOWN 18
 #endif
 
 #ifdef A30
@@ -353,7 +376,7 @@ static void release_all_keys(void)
 
 static int hit_hotkey(uint32_t bit)
 {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UNITTEST)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UNITTEST) || defined(FLIP)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU));
 #endif
 
@@ -377,7 +400,7 @@ static void set_key(uint32_t bit, int val)
         }
 #endif
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == MYKEY_SELECT) {
                 evt.keypad.cur_keys = (1 << MYKEY_SELECT);
@@ -678,7 +701,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_UP)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (evt.mode == MMIYOO_MOUSE_MODE) {
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
@@ -701,7 +724,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_DOWN)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (evt.mode == MMIYOO_MOUSE_MODE) {
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
@@ -724,7 +747,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_LEFT)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (nds.hres_mode == 0) {
             if (nds.dis_mode > 0) {
                 nds.dis_mode -= 1;
@@ -749,7 +772,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_RIGHT)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (nds.hres_mode == 0) {
             if (nds.dis_mode < NDS_DIS_MODE_LAST) {
                 nds.dis_mode += 1;
@@ -767,7 +790,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_A)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if ((evt.mode == MMIYOO_KEYPAD_MODE) && (nds.hres_mode == 0)) {
             uint32_t tmp = nds.alt_mode;
             nds.alt_mode = nds.dis_mode;
@@ -783,7 +806,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_B)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         pixel_filter = pixel_filter ? 0 : 1;
 #endif
         set_key(MYKEY_B, 0);
@@ -867,7 +890,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_START)) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (nds.menu.enable == 0) {
 #ifdef QX1000
             update_wayland_res(640, 480);
@@ -885,7 +908,7 @@ static int handle_hotkey(void)
         set_key(MYKEY_START, 0);
     }
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
     if (nds.hotkey == HOTKEY_BIND_MENU) {
         if (hotkey_mask && hit_hotkey(MYKEY_SELECT)) {
             set_key(MYKEY_MENU_ONION, 1);
@@ -902,7 +925,7 @@ static int handle_hotkey(void)
 #endif
 
     if (hotkey_mask && hit_hotkey(MYKEY_R1)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         static int pre_ff = 0;
 
         if (pre_ff != nds.fast_forward) {
@@ -919,7 +942,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_L1)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         set_key(MYKEY_EXIT, 1);
 #endif
 
@@ -929,9 +952,9 @@ static int handle_hotkey(void)
         set_key(MYKEY_L1, 0);
     }
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
     if (hotkey_mask && hit_hotkey(MYKEY_R2)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         set_key(MYKEY_QLOAD, 1);
 #else
         set_key(MYKEY_QSAVE, 1);
@@ -940,7 +963,7 @@ static int handle_hotkey(void)
     }
 
     if (hotkey_mask && hit_hotkey(MYKEY_L2)) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
         set_key(MYKEY_QSAVE, 1);
 #else
         set_key(MYKEY_QLOAD, 1);
@@ -982,7 +1005,7 @@ int EventUpdate(void *data)
 
     uint32_t l1 = L1;
     uint32_t r1 = R1;
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
     uint32_t l2 = L2;
     uint32_t r2 = R2;
 #endif
@@ -1036,7 +1059,7 @@ int EventUpdate(void *data)
             y = Y;
         }
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (nds.swap_l1l2) {
             l1 = L2;
             l2 = L1;
@@ -1129,7 +1152,7 @@ int EventUpdate(void *data)
                     if (ev.code == b)       { set_key(MYKEY_B,     ev.value); }
                     if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                     if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
 #ifdef A30
                     if (ev.code == r2) {
                         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
@@ -1312,7 +1335,7 @@ void MMIYOO_PumpEvents(_THIS)
 {
     SDL_SemWait(event_sem);
     if (nds.menu.enable) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
         int cc = 0;
         uint32_t bit = 0;
         uint32_t changed = evt.keypad.pre_keys ^ evt.keypad.cur_keys;
@@ -1338,7 +1361,7 @@ void MMIYOO_PumpEvents(_THIS)
                 for (cc=0; cc<=MYKEY_LAST_BITS; cc++) {
                     bit = 1 << cc;
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
                     if ((nds.hotkey == HOTKEY_BIND_MENU) && (cc == MYKEY_MENU)) {
                         continue;
                     }

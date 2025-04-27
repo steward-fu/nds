@@ -1,30 +1,5 @@
-/*
-  Special customized version for the DraStic emulator that runs on
-      Miyoo Mini (Plus)
-      TRIMUI-SMART
-      Miyoo A30
-      Anbernic RG28XX
-      Fxtec Pro1 (QX1000)
-
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
-  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-*/
+// LGPL-2.1 License
+// (C) 2025 Steward Fu <steward.fu@gmail.com>
 
 #include <unistd.h>
 #include <stdbool.h>
@@ -62,12 +37,14 @@ extern int pre_dismode;
 
 static void MMIYOO_WindowEvent(SDL_Renderer *renderer, const SDL_WindowEvent *event)
 {
+    debug("call %s()\n", __func__);
 }
 
 static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
 {
     MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData *)SDL_calloc(1, sizeof(*mmiyoo_texture));
 
+    debug("call %s()\n", __func__);
     if(!mmiyoo_texture) {
         printf(PREFIX"Failed to create texture\n");
         return SDL_OutOfMemory();
@@ -108,6 +85,7 @@ static int MMIYOO_LockTexture(SDL_Renderer *renderer, SDL_Texture *texture, cons
 {
     MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
 
+    debug("call %s()\n", __func__);
     *pixels = mmiyoo_texture->data;
     *pitch = mmiyoo_texture->pitch;
     return 0;
@@ -115,6 +93,7 @@ static int MMIYOO_LockTexture(SDL_Renderer *renderer, SDL_Texture *texture, cons
 
 static int MMIYOO_UpdateTexture(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *rect, const void *pixels, int pitch)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
@@ -123,6 +102,7 @@ static void MMIYOO_UnlockTexture(SDL_Renderer *renderer, SDL_Texture *texture)
     SDL_Rect rect = {0};
     MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
 
+    debug("call %s()\n", __func__);
     rect.x = 0;
     rect.y = 0;
     rect.w = texture->w;
@@ -132,20 +112,24 @@ static void MMIYOO_UnlockTexture(SDL_Renderer *renderer, SDL_Texture *texture)
 
 static void MMIYOO_SetTextureScaleMode(SDL_Renderer *renderer, SDL_Texture *texture, SDL_ScaleMode scaleMode)
 {
+    debug("call %s()\n", __func__);
 }
 
 static int MMIYOO_SetRenderTarget(SDL_Renderer *renderer, SDL_Texture *texture)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
 static int MMIYOO_QueueSetViewport(SDL_Renderer *renderer, SDL_RenderCommand *cmd)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
 static int MMIYOO_QueueDrawPoints(SDL_Renderer *renderer, SDL_RenderCommand *cmd, const SDL_FPoint *points, int count)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
@@ -165,16 +149,20 @@ static int MMIYOO_QueueGeometry(SDL_Renderer *renderer,
     float scale_x,
     float scale_y)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
 static int MMIYOO_QueueFillRects(SDL_Renderer *renderer, SDL_RenderCommand *cmd, const SDL_FRect *rects, int count)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
 static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_FRect *dstrect)
 {
+    debug("call %s()\n", __func__);
+
 #ifdef QX1000
     if (nds.menu.drastic.enable == 0) {
         update_wayland_res(640, 480);
@@ -200,27 +188,32 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
 static int MMIYOO_QueueCopyEx(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture,
     const SDL_Rect *srcrect, const SDL_FRect *dstrect, const double angle, const SDL_FPoint *center, const SDL_RendererFlip flip)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
 static int MMIYOO_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, void *vertices, size_t vertsize)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
 static int MMIYOO_RenderReadPixels(SDL_Renderer *renderer, const SDL_Rect *rect, Uint32 pixel_format, void *pixels, int pitch)
 {
+    debug("call %s()\n", __func__);
     return SDL_Unsupported();
 }
 
 static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
 {
+    debug("call %s()\n", __func__);
 }
 
 static void MMIYOO_DestroyTexture(SDL_Renderer *renderer, SDL_Texture *texture)
 {
     MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
 
+    debug("call %s()\n", __func__);
     if (mmiyoo_texture) {
         if (mmiyoo_texture->data) {
             SDL_free(mmiyoo_texture->data);
@@ -234,6 +227,7 @@ static void MMIYOO_DestroyRenderer(SDL_Renderer *renderer)
 {
     MMIYOO_RenderData *data = (MMIYOO_RenderData *)renderer->driverdata;
 
+    debug("call %s()\n", __func__);
     if(data) {
         if(!data->initialized) {
             return;
@@ -247,6 +241,7 @@ static void MMIYOO_DestroyRenderer(SDL_Renderer *renderer)
 
 static int MMIYOO_SetVSync(SDL_Renderer *renderer, const int vsync)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
 
@@ -256,6 +251,7 @@ SDL_Renderer *MMIYOO_CreateRenderer(SDL_Window *window, Uint32 flags)
     SDL_Renderer *renderer = NULL;
     MMIYOO_RenderData *data = NULL;
 
+    debug("call %s()\n", __func__);
     renderer = (SDL_Renderer *) SDL_calloc(1, sizeof(*renderer));
     if(!renderer) {
         printf(PREFIX"Failed to create render\n");
@@ -328,7 +324,7 @@ SDL_RenderDriver MMIYOO_RenderDriver = {
         .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE,
         .num_texture_formats = 2,
         .texture_formats = {
-            [0] = SDL_PIXELFORMAT_RGB565, [2] = SDL_PIXELFORMAT_ARGB8888,
+            [0] = SDL_PIXELFORMAT_RGB565, [1] = SDL_PIXELFORMAT_ARGB8888,
         },
         .max_texture_width = 800,
         .max_texture_height = 600,

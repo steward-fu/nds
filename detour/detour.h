@@ -82,6 +82,9 @@
     #define CODE_FAST_FORWARD   0x08006ad0
     #define ALIGN_ADDR(addr)    ((void*)((size_t)(addr) & ~(page_size - 1)))
 
+    #define DEBUG 1
+    #define debug(...)  if (DEBUG) { printf("[NDS] "__VA_ARGS__); }
+
     typedef enum _backup_type_enum {
         BACKUP_TYPE_NONE   = 0,
         BACKUP_TYPE_FLASH  = 1,
@@ -152,5 +155,6 @@
     int dtr_savestate(int slot);
     int dtr_loadstate(int slot);
     int dtr_fastforward(uint8_t v);
+    int patch_elf(uintptr_t pos, uintptr_t pfn);
 
 #endif

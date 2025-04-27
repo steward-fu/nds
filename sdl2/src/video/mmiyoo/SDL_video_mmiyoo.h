@@ -1,30 +1,5 @@
-/*
-  Special customized version for the DraStic emulator that runs on
-      Miyoo Mini (Plus)
-      TRIMUI-SMART
-      Miyoo A30
-      Anbernic RG28XX
-      Fxtec Pro1 (QX1000)
-
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
-  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-*/
+// LGPL-2.1 License
+// (C) 2025 Steward Fu <steward.fu@gmail.com>
 
 #ifndef __SDL_VIDEO_MMIYOO_H__
 #define __SDL_VIDEO_MMIYOO_H__
@@ -32,13 +7,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <linux/fb.h>
-#ifdef PANDORA
+
+#if defined(PANDORA)
 #include <linux/omapfb.h>
 #endif
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
+#endif
+
+#if defined(FLIP)
+#include <gbm.h>
+#include <xf86drm.h>
+#include <xf86drmMode.h>
+#include <EGL/eglext.h>
 #endif
 
 #include "../../SDL_internal.h"
@@ -49,6 +32,7 @@
 
 #include <SDL_ttf.h>
 #include <SDL_image.h>
+
 #include "SDL_version.h"
 #include "SDL_syswm.h"
 #include "SDL_loadso.h"
@@ -65,14 +49,14 @@
 #include "mi_gfx.h"
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
 #include <wayland-client.h>
 #include <wayland-egl.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
 #include "trimui.h"
 #endif
 
@@ -84,7 +68,7 @@
     #define E_MI_GFX_FMT_ARGB8888   1
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
     struct _wayland {
         struct wl_shell *shell;
         struct wl_region *region;
@@ -141,7 +125,7 @@
     #define MAX_PATH                128
 #endif
 
-#ifdef UNITTEST
+#if defined(UNITTEST)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
@@ -152,7 +136,7 @@
     #define DEF_FONT_SIZE           24
 #endif
 
-#ifdef RG28XX
+#if defined(RG28XX)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
@@ -165,6 +149,35 @@
     #define DEF_FONT_SIZE           24
     #define BAT_MAX_VAL             4080000
     #define BAT_MIN_VAL             3400000
+#endif
+
+#ifdef FLIP
+    #define DEF_FB_W                640
+    #define DEF_FB_H                480
+    #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+    #define RELOAD_BG_COUNT         120
+    #define USE_MYJOY               1
+    #define MYJOY_MODE_DISABLE      0
+    #define MYJOY_MODE_KEYPAD       1
+    #define MYJOY_MODE_STYLUS       2
+    #define MYJOY_MODE_CUSKEY       3
+    #define MYJOY_MODE_LAST         3
+    #define MYJOY_SHOW_CNT          300
+    #define MYJOY_MOVE_SPEED        4
+    #define INIT_CPU_CORE           2
+    #define INIT_CPU_CLOCK          1200
+    #define DEINIT_CPU_CORE         2
+    #define DEINIT_CPU_CLOCK        648
+    #define DEF_FONT_SIZE           24
+    #define DAC_BASE                0x1c22000
+    #define CCU_BASE                0x01c20000
+    #define BAT_CHK_CNT             300
+    #define BAT_MAX_CMD             "cat /sys/class/power_supply/battery/voltage_max_design"
+    #define BAT_MIN_CMD             "cat /sys/class/power_supply/battery/voltage_min_design"
+    #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/voltage_now"
 #endif
 
 #ifdef A30
@@ -365,7 +378,7 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
 enum _TEX_TYPE {
     TEX_SCR0 = 0,
     TEX_SCR1,
@@ -379,7 +392,7 @@ enum _TEX_TYPE {
 typedef struct MMIYOO_VideoInfo {
     SDL_Window *window;
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
     EGLConfig eglConfig;
     EGLDisplay eglDisplay;
     EGLContext eglContext;
@@ -398,6 +411,24 @@ typedef struct MMIYOO_VideoInfo {
     uint8_t* dac_mem;
     uint32_t *vol_ptr;
     uint32_t *cpu_ptr;
+#endif
+
+#ifdef FLIP
+    struct {
+        int fd;
+        int fb;
+        volatile int wait_for_flip;
+
+        drmModeRes *res;
+        drmModeCrtc *crtc;
+        drmModeEncoder *enc;
+        drmModeConnector *conn;
+        PFNEGLGETPLATFORMDISPLAYEXTPROC pfn;
+
+        struct gbm_bo *bo;
+        struct gbm_device *gbm;
+        struct gbm_surface *gs;
+    } drm;
 #endif
 
 #ifdef MMIYOO
@@ -424,7 +455,7 @@ typedef struct _GFX {
     struct fb_fix_screeninfo finfo;
 
     struct {
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
         void *virAddr;
 #endif
 
@@ -445,7 +476,7 @@ typedef struct _GFX {
     } mask;
 #endif
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
     struct {
         int cur_sel;
         void *virAddr[2][2];
@@ -588,6 +619,24 @@ typedef struct _NDS {
     } pen;
 
 #ifdef A30
+    struct _JOY {
+        int max_x;
+        int zero_x;
+        int min_x;
+
+        int max_y;
+        int zero_y;
+        int min_y;
+
+        int mode;
+        int dzone;
+        int show_cnt;
+
+        int cuskey[4];
+    } joy;
+#endif
+
+#ifdef FLIP
     struct _JOY {
         int max_x;
         int zero_x;

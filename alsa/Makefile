@@ -6,6 +6,12 @@ LDFLAGS+= -L../detour -ldtr
 MOD     = mmiyoo
 SRC     = main.c
 
+ifeq ($(MOD),flip)
+    CFLAGS += -DFLIP
+    CFLAGS += -O3
+    LDFLAGS+= -Wl,--no-undefined -ljson-c
+endif
+
 ifeq ($(MOD),a30)
     SRC    += neon.S
     CFLAGS += -DA30

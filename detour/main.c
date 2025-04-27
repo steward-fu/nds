@@ -1,29 +1,5 @@
-/*
-  Special customized version for the DraStic emulator that runs on
-      Miyoo Mini (Plus)
-      TRIMUI-SMART
-      Miyoo A30
-      Anbernic RG28XX
-      Fxtec Pro1 (QX1000)
-
-  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-*/
+// LGPL-2.1 License
+// (C) 2025 Steward Fu <steward.fu@gmail.com>
 
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -50,7 +26,7 @@ int dtr_fastforward(uint8_t v)
     uint32_t *ff = (uint32_t*)CODE_FAST_FORWARD;
 
     // 0xe3a03006
-    mprotect(ALIGN_ADDR(CODE_FAST_FORWARD), page_size, PROT_READ | PROT_WRITE);
+    mprotect(ALIGN_ADDR(CODE_FAST_FORWARD), page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
     *ff = 0xe3a03000 | v;
     return 0;
 }
@@ -182,7 +158,7 @@ LAB_08092f94:
 int dtr_savestate(int slot)
 {
 #ifndef UNITTEST
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
     char buf[255] = {0};
     nds_screen_copy16 _func0 = (nds_screen_copy16)FUN_SCREEN_COPY16;
 
@@ -237,7 +213,7 @@ int dtr_savestate(int slot)
 
 int dtr_loadstate(int slot)
 {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
     char buf[255] = {0};
 
     if (is_hooked == 0) {
@@ -271,34 +247,36 @@ void detour_init(size_t page, const char *path)
 {
     page_size = page;
 
+    debug("call %s(page=%d, path=\"%s\")\n", __func__, page, path);
+
     is_hooked = 0;
-    if ((path != NULL) && (path[0] != 0)) {
+    if (path && path[0]) {
         is_hooked = 1;
         strcpy(states_path, path);
-#ifndef UNITTEST
         detour_hook(FUN_LOAD_STATE_INDEX, (intptr_t)dtr_load_state_index);
         detour_hook(FUN_SAVE_STATE_INDEX, (intptr_t)dtr_save_state_index);
         detour_hook(FUN_INITIALIZE_BACKUP, (intptr_t)dtr_initialize_backup);
-        printf(PREFIX"Enabled savestate hooking\n");
-#endif
     }
 }
 
-void detour_hook(uint32_t old_func, uint32_t new_func)
+void detour_hook(uintptr_t org, uintptr_t cb)
 {
-#ifndef UNITTEST
-    volatile uint8_t *base = (uint8_t *)(intptr_t)old_func;
+    int r = 0;
+    volatile uint8_t *m = (uint8_t *)(intptr_t)org;
 
-    mprotect(ALIGN_ADDR(base), page_size, PROT_READ | PROT_WRITE);
-    base[0] = 0x04;
-    base[1] = 0xf0;
-    base[2] = 0x1f;
-    base[3] = 0xe5;
-    base[4] = new_func >> 0;
-    base[5] = new_func >> 8;
-    base[6] = new_func >> 16;
-    base[7] = new_func >> 24;
-#endif
+    debug("call %s(org=%p, cb=%p)\n", __func__, m, cb);
+
+    r = mprotect(ALIGN_ADDR(m), page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
+    debug("mprotect()=%d\n", r);
+
+    m[0] = 0x04;
+    m[1] = 0xf0;
+    m[2] = 0x1f;
+    m[3] = 0xe5;
+    m[4] = cb >> 0;
+    m[5] = cb >> 8;
+    m[6] = cb >> 16;
+    m[7] = cb >> 24;
 }
 
 void detour_quit(void)

@@ -2411,6 +2411,19 @@ CheckRG28XXVideo()
     fi
 }
 
+CheckFlipVideo()
+{
+    if test x$enable_video = xyes; then
+        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
+        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        have_video=yes
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2 -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -ldrm -lgbm -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
+        SUMMARY_video="${SUMMARY_video} mmiyoo"
+    fi
+}
+
 CheckA30Video()
 {
     if test x$enable_video = xyes; then
@@ -3870,6 +3883,9 @@ case "$host" in
         case "$MOD" in
             *rg28xx*)           ARCH=rg28xx
                 CheckRG28XXVideo
+                ;;
+            *flip*)             ARCH=flip
+                CheckFlipVideo
                 ;;
             *a30*)              ARCH=a30
                 CheckA30Video

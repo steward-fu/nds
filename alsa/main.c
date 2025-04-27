@@ -506,14 +506,19 @@ static int queue_put(queue_t *q, uint8_t *buffer, size_t size)
         if ((q->write >= q->read) && ((q->write + size) > QUEUE_SIZE)) {
             tmp = QUEUE_SIZE - q->write;
             size-= tmp;
-#if !defined(UNITTEST)
+#if defined(UNITTEST) || defined(FLIP)
+            memcpy(&q->buffer[q->write], buffer, tmp);
+            memcpy(q->buffer, &buffer[tmp], size);
+#else
             neon_memcpy(&q->buffer[q->write], buffer, tmp);
             neon_memcpy(q->buffer, &buffer[tmp], size);
 #endif
             q->write = size;
         }
         else {
-#if !defined(UNITTEST)
+#if defined(UNITTEST) || defined(FLIP)
+            memcpy(&q->buffer[q->write], buffer, size);
+#else
             neon_memcpy(&q->buffer[q->write], buffer, size);
 #endif
             q->write += size;
@@ -538,14 +543,19 @@ static size_t queue_get(queue_t *q, uint8_t *buffer, size_t max)
         if ((q->read > q->write) && (q->read + size) > QUEUE_SIZE) {
             tmp = QUEUE_SIZE - q->read;
             size-= tmp;
-#if !defined(UNITTEST)
+#if defined(UNITTEST) || defined(FLIP)
+            memcpy(buffer, &q->buffer[q->read], tmp);
+            memcpy(&buffer[tmp], q->buffer, size);
+#else
             neon_memcpy(buffer, &q->buffer[q->read], tmp);
             neon_memcpy(&buffer[tmp], q->buffer, size);
 #endif
             q->read = size;
         }
         else {
-#if !defined(UNITTEST)
+#if defined(UNITTEST) || defined(FLIP)
+            memcpy(buffer, &q->buffer[q->read], size);
+#else
             neon_memcpy(buffer, &q->buffer[q->read], size);
 #endif
             q->read+= size;

@@ -7,7 +7,7 @@ LDFLAGS  = -Wl,--no-undefined
 LDFLAGS += libdtr.so libasound.so.2 libSDL2-2.0.so.0
 SRC      = src/unity.c extras/memory/src/unity_memory.c extras/fixture/src/unity_fixture.c main.c
 
-.PHONY: a30 mmiyoo trimui pandora qx1000 rg28xx
+.PHONY: a30 mmiyoo trimui pandora qx1000 rg28xx flip
 a30 mmiyoo trimui pandora qx1000:
 	rm -rf $(TARGET)
 

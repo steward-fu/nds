@@ -1,0 +1,21 @@
+export MOD=flip
+export PATH=/opt/mini/bin:$(shell echo $$PATH)
+export CROSS=/opt/mini/bin/arm-linux-gnueabihf-
+export CC=${CROSS}gcc
+export AR=${CROSS}ar
+export AS=${CROSS}as
+export LD=${CROSS}ld
+export CXX=${CROSS}g++
+export HOST=arm-linux
+ 
+SDL2_CFG+= --enable-loadso
+SDL2_CFG+= --enable-joystick
+SDL2_CFG+= --disable-video-opengl
+SDL2_CFG+= --disable-video-opengles
+SDL2_CFG+= --disable-video-opengles2
+
+include Makefile.mk
+
+.PHONY: push
+push:
+	adb push drastic/libs/* /mnt/sdcard/Emu/drastic/libs/
