@@ -1,5 +1,6 @@
 drastic_*.zip
 nds_*.opk
+drastic/miyoo355_rootfs_32.img
 
 sdl2/configure
 sdl2/config.log
