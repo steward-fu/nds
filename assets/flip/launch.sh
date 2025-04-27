@@ -20,9 +20,11 @@ mount --bind /dev mnt/dev
 mount --bind /proc mnt/proc
 mount --bind /var/run mnt/var/run
 mount --bind /mnt/sdcard mnt/sdcard
+mount --bind /userdata mnt/userdata
 
 chroot mnt /bin/sh -c "cd /sdcard/Emu/drastic && ./run.sh \"$1\""
 
+umount mnt/userdata
 umount mnt/sdcard
 umount mnt/var/run
 umount mnt/proc

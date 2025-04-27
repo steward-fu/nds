@@ -9,7 +9,7 @@
 #include <dirent.h>
 #include <linux/input.h>
 
-#ifdef RG28XX
+#if defined(RG28XX)
 #include <alsa/asoundlib.h>
 #endif
 
@@ -18,12 +18,15 @@
 #include "../../core/linux/SDL_evdev.h"
 #include "../../thread/SDL_systhread.h"
 
-#include "SDL_video_mmiyoo.h"
-#include "SDL_event_mmiyoo.h"
+#include "../../joystick/nds/nds_joy.h"
+#include "nds_video.h"
+#include "nds_event.h"
 
 #if defined(PANDORA)
     #define INPUT_DEV "/dev/input/event4"
-#elif defined(QX1000) || defined(A30)
+#elif defined(QX1000)
+    #define INPUT_DEV "/dev/input/event3"
+#elif defined(A30)
     #define INPUT_DEV "/dev/input/event3"
 #elif defined(FLIP)
     #define INPUT_DEV "/dev/miyooio"
@@ -33,7 +36,7 @@
     #define INPUT_DEV "/dev/input/event0"
 #endif
 
-#ifdef UNITTEST
+#if defined(UNITTEST)
     #define UP      1
     #define DOWN    2
     #define LEFT    3
@@ -53,7 +56,7 @@
     #define VOLDOWN 17
 #endif
 
-#ifdef RG28XX
+#if defined(RG28XX)
     #define UP      103
     #define DOWN    108
     #define LEFT    105
@@ -73,7 +76,7 @@
     #define VOLDOWN 114
 #endif
 
-#ifdef FLIP
+#if defined(FLIP)
     #define UP      103
     #define DOWN    108
     #define LEFT    105
@@ -93,7 +96,7 @@
     #define VOLDOWN 114
 #endif
 
-#ifdef A30
+#if defined(A30)
     #define UP      103
     #define DOWN    108
     #define LEFT    105
@@ -113,7 +116,7 @@
     #define VOLDOWN 114
 #endif
 
-#ifdef MMIYOO
+#if defined(MMIYOO)
     #define UP      103
     #define DOWN    108
     #define LEFT    105
@@ -134,7 +137,7 @@
     #define VOLDOWN 114
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
     #define UP      103
     #define DOWN    108
     #define LEFT    105
@@ -150,7 +153,7 @@
     #define MENU    1
 #endif
 
-#ifdef PANDORA
+#if defined(PANDORA)
     #define UP      103
     #define DOWN    108
     #define LEFT    105
@@ -166,7 +169,7 @@
     #define MENU    139
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
     #define UP      16 // 'Q'
     #define DOWN    30 // 'A'
     #define LEFT    43 // '\'
@@ -189,17 +192,19 @@
     #define EXIT    1  // 'ESC'
 #endif
 
-MMIYOO_EventInfo evt = {0};
+MMIYOO_EventInfo evt = { 0 };
 
 extern GFX gfx;
 extern NDS nds;
 extern MMIYOO_VideoInfo vid;
 extern int pixel_filter;
 
+extern nds_joy myjoy;
+
 static int running = 0;
 static int event_fd = -1;
 static int lower_speed = 0;
-#ifdef MMIYOO
+#if defined(MMIYOO)
 static int is_stock_os = 0;
 #endif
 static SDL_sem *event_sem = NULL;
@@ -207,10 +212,8 @@ static SDL_Thread *thread = NULL;
 
 extern int FB_W;
 extern int FB_H;
-extern int g_lastX;
-extern int g_lastY;
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
 typedef struct _cust_key_t {
     int fd;
     uint8_t *mem;
@@ -247,7 +250,7 @@ const SDL_Scancode code[]={
 int volume_inc(void);
 int volume_dec(void);
 
-#ifdef RG28XX
+#if defined(RG28XX)
 static int volume = 16;
 
 static int set_volume(void)
@@ -358,7 +361,7 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
     uint32_t mask = (1 << bit) | (1 << MYKEY_MENU);
 #endif
 
@@ -393,271 +396,304 @@ static void set_key(uint32_t bit, int val)
     }
 }
 
-#if defined(A30) && USE_MYJOY
-static int update_joystick(void)
+#if defined(A30) || defined(FLIP)
+static int trans_joy_to_keypad(jval_t *j)
 {
-    const int LTH = -30;
-    const int RTH = 30;
-    const int UTH = -30;
-    const int DTH = 30;
+    int r = 0;
+    static int pre_x = -1;
+    static int pre_y = -1;
+    static int pre_up = 0;
+    static int pre_down = 0;
+    static int pre_left = 0;
+    static int pre_right = 0;
 
+    uint32_t u_key = MYKEY_UP;
+    uint32_t d_key = MYKEY_DOWN;
+    uint32_t l_key = MYKEY_LEFT;
+    uint32_t r_key = MYKEY_RIGHT;
+
+    debug("call %s()\n", __func__);
+
+    if (j->x != pre_x) {
+        pre_x = j->x;
+        if (pre_x < LEFT_TH) {
+            if (pre_left == 0) {
+                r = 1;
+                pre_left = 1;
+                set_key(l_key, 1);
+            }
+        }
+        else if (pre_x > RIGHT_TH){
+            if (pre_right == 0) {
+                r = 1;
+                pre_right = 1;
+                set_key(r_key, 1);
+            }
+        }
+        else {
+            if (pre_left != 0) {
+                r = 1;
+                pre_left = 0;
+                set_key(l_key, 0);
+            }
+            if (pre_right != 0) {
+                r = 1;
+                pre_right = 0;
+                set_key(r_key, 0);
+            }
+        }
+    }
+
+    if (j->y != pre_y) {
+        pre_y = j->y;
+        if (pre_y < UP_TH) {
+            if (pre_up == 0) {
+                r = 1;
+                pre_up = 1;
+                set_key(u_key, 1);
+            }
+        }
+        else if (pre_y > DOWN_TH){
+            if (pre_down == 0) {
+                r = 1;
+                pre_down = 1;
+                set_key(d_key, 1);
+            }
+        }
+        else {
+            if (pre_up != 0) {
+                r = 1;
+                pre_up = 0;
+                set_key(u_key, 0);
+            }
+            if (pre_down != 0) {
+                r = 1;
+                pre_down = 0;
+                set_key(d_key, 0);
+            }
+        }
+    }
+
+    return r;
+}
+
+static int trans_joy_to_touch(jval_t *j)
+{
+    int r = 0;
     static int pre_x = -1;
     static int pre_y = -1;
 
-    int r = 0;
+    static int pre_up = 0;
+    static int pre_down = 0;
+    static int pre_left = 0;
+    static int pre_right = 0;
 
-    if (nds.joy.mode == MYJOY_MODE_KEYPAD) {
-        static int pre_up = 0;
-        static int pre_down = 0;
-        static int pre_left = 0;
-        static int pre_right = 0;
+    debug("call %s()\n", __func__);
 
-        uint32_t u_key = MYKEY_UP;
-        uint32_t d_key = MYKEY_DOWN;
-        uint32_t l_key = MYKEY_LEFT;
-        uint32_t r_key = MYKEY_RIGHT;
-
-        if (g_lastX != pre_x) {
-            pre_x = g_lastX;
-            if (pre_x < LTH) {
-                if (pre_left == 0) {
-                    r = 1;
-                    pre_left = 1;
-                    set_key(l_key, 1);
-                }
-            }
-            else if (pre_x > RTH){
-                if (pre_right == 0) {
-                    r = 1;
-                    pre_right = 1;
-                    set_key(r_key, 1);
-                }
-            }
-            else {
-                if (pre_left != 0) {
-                    r = 1;
-                    pre_left = 0;
-                    set_key(l_key, 0);
-                }
-                if (pre_right != 0) {
-                    r = 1;
-                    pre_right = 0;
-                    set_key(r_key, 0);
-                }
+    if (j->x != pre_x) {
+        pre_x = j->x;
+        if (pre_x < LEFT_TH) {
+            if (pre_left == 0) {
+                pre_left = 1;
             }
         }
-
-        if (g_lastY != pre_y) {
-            pre_y = g_lastY;
-            if (pre_y < UTH) {
-                if (pre_up == 0) {
-                    r = 1;
-                    pre_up = 1;
-                    set_key(u_key, 1);
-                }
+        else if (pre_x > RIGHT_TH){
+            if (pre_right == 0) {
+                pre_right = 1;
             }
-            else if (pre_y > DTH){
-                if (pre_down == 0) {
-                    r = 1;
-                    pre_down = 1;
-                    set_key(d_key, 1);
-                }
+        }
+        else {
+            if (pre_left != 0) {
+                pre_left = 0;
             }
-            else {
-                if (pre_up != 0) {
-                    r = 1;
-                    pre_up = 0;
-                    set_key(u_key, 0);
-                }
-                if (pre_down != 0) {
-                    r = 1;
-                    pre_down = 0;
-                    set_key(d_key, 0);
-                }
+            if (pre_right != 0) {
+                pre_right = 0;
             }
         }
     }
-    else if (nds.joy.mode == MYJOY_MODE_STYLUS) {
-        static int pre_up = 0;
-        static int pre_down = 0;
-        static int pre_left = 0;
-        static int pre_right = 0;
 
-        if (g_lastX != pre_x) {
-            pre_x = g_lastX;
-            if (pre_x < LTH) {
-                if (pre_left == 0) {
-                    pre_left = 1;
-                }
-            }
-            else if (pre_x > RTH){
-                if (pre_right == 0) {
-                    pre_right = 1;
-                }
-            }
-            else {
-                if (pre_left != 0) {
-                    pre_left = 0;
-                }
-                if (pre_right != 0) {
-                    pre_right = 0;
-                }
+    if (j->y != pre_y) {
+        pre_y = j->y;
+        if (pre_y < UP_TH) {
+            if (pre_up == 0) {
+                pre_up = 1;
             }
         }
-
-        if (g_lastY != pre_y) {
-            pre_y = g_lastY;
-            if (pre_y < UTH) {
-                if (pre_up == 0) {
-                    pre_up = 1;
-                }
-            }
-            else if (pre_y > DTH){
-                if (pre_down == 0) {
-                    pre_down = 1;
-                }
-            }
-            else {
-                if (pre_up != 0) {
-                    pre_up = 0;
-                }
-                if (pre_down != 0) {
-                    pre_down = 0;
-                }
+        else if (pre_y > DOWN_TH){
+            if (pre_down == 0) {
+                pre_down = 1;
             }
         }
-
-        if (pre_up || pre_down || pre_left || pre_right) {
-            if (evt.keypad.cur_keys &  (1 << MYKEY_Y)) {
-                if (pre_right) {
-                    static int cc = 0;
-
-                    if (cc == 0) {
-                        nds.pen.sel+= 1;
-                        if (nds.pen.sel >= nds.pen.max) {
-                            nds.pen.sel = 0;
-                        }
-                        reload_pen();
-                        cc = 30;
-                    }
-                    else {
-                        cc -= 1;
-                    }
-                }
+        else {
+            if (pre_up != 0) {
+                pre_up = 0;
             }
-            else {
-                int x = 0;
-                int y = 0;
-                const int v = MYJOY_MOVE_SPEED;
+            if (pre_down != 0) {
+                pre_down = 0;
+            }
+        }
+    }
 
-                if (is_hh_mode() && (nds.keys_rotate == 0)) {
-                    if (pre_down) {
-                        evt.mouse.x -= v;
+    if (pre_up || pre_down || pre_left || pre_right) {
+        if (evt.keypad.cur_keys &  (1 << MYKEY_Y)) {
+            if (pre_right) {
+                static int cc = 0;
+
+                if (cc == 0) {
+                    nds.pen.sel+= 1;
+                    if (nds.pen.sel >= nds.pen.max) {
+                        nds.pen.sel = 0;
                     }
-                    if (pre_up) {
-                        evt.mouse.x += v;
-                    }
-                    if (pre_left) {
-                        evt.mouse.y -= v;
-                    }
-                    if (pre_right) {
-                        evt.mouse.y += v;
-                    }
+                    reload_pen();
+                    cc = 30;
                 }
                 else {
-                    if (pre_left) {
-                        evt.mouse.x -= v;
-                    }
-                    if (pre_right) {
-                        evt.mouse.x += v;
-                    }
-                    if (pre_up) {
-                        evt.mouse.y -= v;
-                    }
-                    if (pre_down) {
-                        evt.mouse.y += v;
-                    }
+                    cc -= 1;
                 }
-                check_mouse_pos();
-
-                x = (evt.mouse.x * 160) / evt.mouse.maxx;
-                y = (evt.mouse.y * 120) / evt.mouse.maxy;
-                SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
             }
-            nds.joy.show_cnt = MYJOY_SHOW_CNT;
         }
+        else {
+            int x = 0;
+            int y = 0;
+            const int v = MYJOY_MOVE_SPEED;
+
+            if (is_hh_mode() && (nds.keys_rotate == 0)) {
+                if (pre_down) {
+                    evt.mouse.x -= v;
+                }
+                if (pre_up) {
+                    evt.mouse.x += v;
+                }
+                if (pre_left) {
+                    evt.mouse.y -= v;
+                }
+                if (pre_right) {
+                    evt.mouse.y += v;
+                }
+            }
+            else {
+                if (pre_left) {
+                    evt.mouse.x -= v;
+                }
+                if (pre_right) {
+                    evt.mouse.x += v;
+                }
+                if (pre_up) {
+                    evt.mouse.y -= v;
+                }
+                if (pre_down) {
+                    evt.mouse.y += v;
+                }
+            }
+            check_mouse_pos();
+
+            x = (evt.mouse.x * 160) / evt.mouse.maxx;
+            y = (evt.mouse.y * 120) / evt.mouse.maxy;
+            SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+        }
+        nds.joy.show_cnt = MYJOY_SHOW_CNT;
+    }
+
+    return r;
+}
+
+static int trans_joy_to_custkey(jval_t *j)
+{
+    int r = 0;
+    static int pre_x = -1;
+    static int pre_y = -1;
+
+    static int pre_up = 0;
+    static int pre_down = 0;
+    static int pre_left = 0;
+    static int pre_right = 0;
+
+    uint32_t u_key = nds.joy.cuskey[0];
+    uint32_t d_key = nds.joy.cuskey[1];
+    uint32_t l_key = nds.joy.cuskey[2];
+    uint32_t r_key = nds.joy.cuskey[3];
+
+    debug("call %s()\n", __func__);
+
+    if (j->x != pre_x) {
+        pre_x = j->x;
+        if (pre_x < LEFT_TH) {
+            if (pre_left == 0) {
+                r = 1;
+                pre_left = 1;
+                set_key(l_key, 1);
+            }
+        }
+        else if (pre_x > RIGHT_TH){
+            if (pre_right == 0) {
+                r = 1;
+                pre_right = 1;
+                set_key(r_key, 1);
+            }
+        }
+        else {
+            if (pre_left != 0) {
+                r = 1;
+                pre_left = 0;
+                set_key(l_key, 0);
+            }
+            if (pre_right != 0) {
+                r = 1;
+                pre_right = 0;
+                set_key(r_key, 0);
+            }
+        }
+    }
+
+    if (j->y != pre_y) {
+        pre_y = j->y;
+        if (pre_y < UP_TH) {
+            if (pre_up == 0) {
+                r = 1;
+                pre_up = 1;
+                set_key(u_key, 1);
+            }
+        }
+        else if (pre_y > DOWN_TH){
+            if (pre_down == 0) {
+                r = 1;
+                pre_down = 1;
+                set_key(d_key, 1);
+            }
+        }
+        else {
+            if (pre_up != 0) {
+                r = 1;
+                pre_up = 0;
+                set_key(u_key, 0);
+            }
+            if (pre_down != 0) {
+                r = 1;
+                pre_down = 0;
+                set_key(d_key, 0);
+            }
+        }
+    }
+
+    return r;
+}
+
+static int update_joy_state(void)
+{
+    int r = 0;
+
+    debug("call %s()\n", __func__);
+
+    if (nds.joy.mode == MYJOY_MODE_KEYPAD) {
+        r |= trans_joy_to_keypad(&myjoy.left.last);
+    }
+    else if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+        r |= trans_joy_to_touch(&myjoy.left.last);
     }
     else if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
-        static int pre_up = 0;
-        static int pre_down = 0;
-        static int pre_left = 0;
-        static int pre_right = 0;
-
-        uint32_t u_key = nds.joy.cuskey[0];
-        uint32_t d_key = nds.joy.cuskey[1];
-        uint32_t l_key = nds.joy.cuskey[2];
-        uint32_t r_key = nds.joy.cuskey[3];
-
-        if (g_lastX != pre_x) {
-            pre_x = g_lastX;
-            if (pre_x < LTH) {
-                if (pre_left == 0) {
-                    r = 1;
-                    pre_left = 1;
-                    set_key(l_key, 1);
-                }
-            }
-            else if (pre_x > RTH){
-                if (pre_right == 0) {
-                    r = 1;
-                    pre_right = 1;
-                    set_key(r_key, 1);
-                }
-            }
-            else {
-                if (pre_left != 0) {
-                    r = 1;
-                    pre_left = 0;
-                    set_key(l_key, 0);
-                }
-                if (pre_right != 0) {
-                    r = 1;
-                    pre_right = 0;
-                    set_key(r_key, 0);
-                }
-            }
-        }
-
-        if (g_lastY != pre_y) {
-            pre_y = g_lastY;
-            if (pre_y < UTH) {
-                if (pre_up == 0) {
-                    r = 1;
-                    pre_up = 1;
-                    set_key(u_key, 1);
-                }
-            }
-            else if (pre_y > DTH){
-                if (pre_down == 0) {
-                    r = 1;
-                    pre_down = 1;
-                    set_key(d_key, 1);
-                }
-            }
-            else {
-                if (pre_up != 0) {
-                    r = 1;
-                    pre_up = 0;
-                    set_key(u_key, 0);
-                }
-                if (pre_down != 0) {
-                    r = 1;
-                    pre_down = 0;
-                    set_key(d_key, 0);
-                }
-            }
-        }
+        r |= trans_joy_to_custkey(&myjoy.left.last);
     }
+
     return r;
 }
 #endif
@@ -665,7 +701,7 @@ static int update_joystick(void)
 static int handle_hotkey(void)
 {
     int hotkey_mask = 0;
-#ifdef TRIMUI
+#if defined(TRIMUI)
     char buf[MAX_PATH << 1] = {0};
 #endif
 
@@ -688,7 +724,7 @@ static int handle_hotkey(void)
                 break;
             }
         }
-#ifdef A30
+#if defined(A30)
         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.pen.pos = 1;
         }
@@ -711,7 +747,7 @@ static int handle_hotkey(void)
                 break;
             }
         }
-#ifdef A30
+#if defined(A30)
         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.pen.pos = 0;
         }
@@ -772,7 +808,7 @@ static int handle_hotkey(void)
         }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
         nds.dis_mode = (nds.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
         disp_resize();
 #endif
@@ -787,7 +823,7 @@ static int handle_hotkey(void)
     }
 
     if (hit_hotkey(MYKEY_X)) {
-#ifdef TRIMUI
+#if defined(TRIMUI)
         int w = FB_W;
         int h = FB_H;
         int pitch = FB_W * FB_BPP;
@@ -866,7 +902,7 @@ static int handle_hotkey(void)
     if (hotkey_mask && hit_hotkey(MYKEY_START)) {
 #if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
         if (nds.menu.enable == 0) {
-#ifdef QX1000
+#if defined(QX1000)
             update_wayland_res(640, 480);
 #endif
             nds.menu.enable = 1;
@@ -945,7 +981,7 @@ static int handle_hotkey(void)
         set_key(MYKEY_L2, 0);
     }
     else if (evt.keypad.cur_keys & (1 << MYKEY_L2)) {
-#ifdef A30
+#if defined(A30)
         if (nds.joy.mode != MYJOY_MODE_STYLUS) {
 #endif
             if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
@@ -957,7 +993,7 @@ static int handle_hotkey(void)
                 }
                 lower_speed = 0;
             }
-#ifdef A30
+#if defined(A30)
         }
 #endif
     }
@@ -970,7 +1006,7 @@ static int handle_hotkey(void)
     return 0;
 }
 
-int EventUpdate(void *data)
+int input_handler(void *data)
 {
 #if defined(RG28XX)
     char tbuf[16] = {0};
@@ -1061,7 +1097,7 @@ int EventUpdate(void *data)
         }
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
         if (cust_key.gpio != NULL) {
             static uint32_t pre_value = 0;
             uint32_t v = *cust_key.gpio & 0x800;
@@ -1182,7 +1218,7 @@ int EventUpdate(void *data)
                 if (ev.code == x)       { set_key(MYKEY_X,     ev.value); }
                 if (ev.code == y)       { set_key(MYKEY_Y,     ev.value); }
 #if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
-#ifdef A30
+#if defined(A30)
                 if (ev.code == r2) {
                     if (nds.joy.mode == MYJOY_MODE_STYLUS) {
                         nds.joy.show_cnt = MYJOY_SHOW_CNT;
@@ -1197,7 +1233,7 @@ int EventUpdate(void *data)
 #endif
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
                 if (ev.code == L10)     { set_key(MYKEY_L1,    ev.value); }
                 if (ev.code == R10)     { set_key(MYKEY_R1,    ev.value); }
 #endif
@@ -1205,12 +1241,12 @@ int EventUpdate(void *data)
                 case START:  set_key(MYKEY_START, ev.value);  break;
                 case SELECT: set_key(MYKEY_SELECT, ev.value); break;
                 case MENU:   set_key(MYKEY_MENU, ev.value);   break;
-#ifdef QX1000
+#if defined(QX1000)
                 case QSAVE:  set_key(MYKEY_QSAVE, ev.value);  break;
                 case QLOAD:  set_key(MYKEY_QLOAD, ev.value);  break;
                 case EXIT:   set_key(MYKEY_EXIT, ev.value);   break;
 #endif
-#ifdef MMIYOO
+#if defined(MMIYOO)
                 case POWER:  set_key(MYKEY_POWER, ev.value);  break;
                 case VOLUP:
                     set_key(MYKEY_VOLUP, ev.value);
@@ -1254,8 +1290,8 @@ int EventUpdate(void *data)
             }
         }
 
-#if defined(A30) && USE_MYJOY
-        r |= update_joystick();
+#if defined(A30) || defined(FLIP)
+        r |= update_joy_state();
 #endif
         if (r > 0) {
             handle_hotkey();
@@ -1270,7 +1306,7 @@ int EventUpdate(void *data)
 
 void MMIYOO_EventInit(void)
 {
-#ifdef MMIYOO
+#if defined(MMIYOO)
     DIR *dir = NULL;
 #endif
 
@@ -1281,7 +1317,7 @@ void MMIYOO_EventInit(void)
     evt.mouse.x = evt.mouse.maxx >> 1;
     evt.mouse.y = evt.mouse.maxy >> 1;
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
     cust_key.gpio = NULL;
     cust_key.fd = open("/dev/mem", O_RDWR);
     if (cust_key.fd > 0) {
@@ -1312,17 +1348,17 @@ void MMIYOO_EventInit(void)
         exit(-1);
     }
 
-#ifdef RG28XX
+#if defined(RG28XX)
     set_volume();
 #endif
 
     running = 1;
-    thread = SDL_CreateThreadInternal(EventUpdate, "NDS Input Handler", 4096, NULL);
+    thread = SDL_CreateThreadInternal(input_handler, "NDS Input Handler", 4096, NULL);
     if(thread == NULL) {
         exit(-1);
     }
 
-#ifdef MMIYOO
+#if defined(MMIYOO)
     dir = opendir("/mnt/SDCARD/.tmp_update");
     if (dir) {
         closedir(dir);
@@ -1344,7 +1380,7 @@ void MMIYOO_EventDeinit(void)
         event_fd = -1;
     }
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
     if (cust_key.fd > 0) {
         uint32_t *p = NULL;
 
@@ -1535,7 +1571,7 @@ void MMIYOO_PumpEvents(_THIS)
     SDL_SemPost(event_sem);
 }
 
-#ifdef UNITTEST
+#if defined(UNITTEST)
 #include "unity_fixture.h"
 
 TEST_GROUP(sdl2_event_mmiyoo);

@@ -1,10 +1,10 @@
 // LGPL-2.1 License
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
-#ifndef __JOY_NDS_H__
-#define __JOY_NDS_H__
+#ifndef __NDS_JOY_H__
+#define __NDS_JOY_H__
 
-#define JOY_NAME "NDS Joy"
+#define JOY_NAME "NDS Joystick"
 
 #define DEF_CFG_JOY_MIN     -128
 #define DEF_CFG_JOY_ZERO    0
@@ -46,6 +46,11 @@ typedef struct {
     int zero;
     int dead;
 } cali_t;
+
+typedef struct {
+    int x;
+    int y;
+} jval_t;
 #endif
 
 typedef struct {
@@ -65,10 +70,7 @@ typedef struct {
             cali_t y;
         } cali;
 
-        struct {
-            int x;
-            int y;
-        } last;
+        jval_t last;
     } left, right;
 #endif
 } nds_joy;

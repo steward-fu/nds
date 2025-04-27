@@ -2403,11 +2403,11 @@ CheckRG28XXVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DRG28XX -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/a30/arm-a30-linux-gnueabihf/sysroot/usr/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -2416,11 +2416,14 @@ CheckFlipVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
+        have_joystick=yes
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2 -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -ldrm -lgbm -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -2429,11 +2432,14 @@ CheckA30Video()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
+        have_joystick=yes
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30 -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/a30/arm-a30-linux-gnueabihf/sysroot/usr/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lMali -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -2442,11 +2448,11 @@ CheckMMiyooVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMMIYOO -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../mmiyoo/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -2455,11 +2461,11 @@ CheckTrimuiVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../trimui/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -2468,11 +2474,11 @@ CheckPandoraVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA -fPIC -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3 -I../detour -I/usr/local/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -2481,11 +2487,11 @@ CheckQX1000Video()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c $srcdir/src/video/mmiyoo/*.S"
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000 -fPIC -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -O3 -I../detour -I/usr/local/include/SDL2"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lwayland-client -lwayland-egl -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -2494,106 +2500,11 @@ CheckUnittestVideo()
     if test x$enable_video = xyes; then
         AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
         have_video=yes
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUNITTEST -fPIC -I/usr/include/SDL2 -I../detour -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} mmiyoo"
-    fi
-}
-
-CheckRG28XXAudio()
-{
-    if test x$enable_audio = xyes; then
-        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
-        have_audio=yes
-        if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
-            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lasound"
-        fi
-        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
-    fi
-}
-
-CheckA30Audio()
-{
-    if test x$enable_audio = xyes; then
-        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
-        have_audio=yes
-        if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
-            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
-        fi
-        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
-    fi
-}
-
-CheckMMiyooAudio()
-{
-    if test x$enable_audio = xyes; then
-        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
-        have_audio=yes
-        if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
-            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../mmiyoo/lib -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx -l:libasound.so.2"
-        fi
-        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
-    fi
-}
-
-CheckTrimuiAudio()
-{
-    if test x$enable_audio = xyes; then
-        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
-        have_audio=yes
-        if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
-            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
-        fi
-        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
-    fi
-}
-
-CheckPandoraAudio()
-{
-    if test x$enable_audio = xyes; then
-        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
-        have_audio=yes
-        if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -O3"
-            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
-        fi
-        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
-    fi
-}
-
-CheckQX1000Audio()
-{
-    if test x$enable_audio = xyes; then
-        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
-        have_audio=yes
-        if test x$HOST = xarm-linux; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -O3"
-            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
-        fi
-        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
-    fi
-}
-
-CheckUnittestAudio()
-{
-    if test x$enable_audio = xyes; then
-        AC_DEFINE(SDL_AUDIO_DRIVER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/audio/mmiyoo/*.c"
-        have_audio=yes
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -l:libasound.so.2"
-        SUMMARY_audio="${SUMMARY_audio} mmiyoo"
+        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
     fi
 }
 
@@ -4018,27 +3929,6 @@ case "$host" in
             nto)
                 CheckQNXAudio
             ;;
-            rg28xx)
-                CheckRG28XXAudio
-            ;;
-            a30)
-                CheckA30Audio
-            ;;
-            mmiyoo)
-                CheckMMiyooAudio
-            ;;
-            trimui)
-                CheckTrimuiAudio
-            ;;
-            pandora)
-                CheckPandoraAudio
-            ;;
-            qx1000)
-                CheckQX1000Audio
-            ;;
-            unittest)
-                CheckUnittestAudio
-            ;;
           esac
         fi
         # Set up files for the joystick library
@@ -4062,11 +3952,6 @@ case "$host" in
                 AC_DEFINE(SDL_JOYSTICK_ANDROID, 1, [ ])
                 SOURCES="$SOURCES $srcdir/src/joystick/android/*.c"
                 SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
-                have_joystick=yes
-            ;;
-            a30|mmiyoo|trimui|pandora|unittest|flip)
-                AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
-                SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
                 have_joystick=yes
             ;;
           esac

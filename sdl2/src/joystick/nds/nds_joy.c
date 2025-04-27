@@ -3,7 +3,7 @@
 
 #include "../../SDL_internal.h"
 
-#if SDL_JOYSTICK_MMIYOO
+#if SDL_JOYSTICK_NDS
 
 #if defined(A30) || defined(FLIP) || defined(UT)
 #include <stdio.h>
@@ -31,9 +31,9 @@
 #include "../SDL_sysjoystick.h"
 #include "../SDL_joystick_c.h"
 
-#include "../../video/mmiyoo/SDL_video_mmiyoo.h"
+#include "../../video/nds/nds_video.h"
 
-#include "joy_nds.h"
+#include "nds_joy.h"
 
 #if defined(UT)
 #include "unity_fixture.h"

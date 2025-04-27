@@ -5,10 +5,11 @@
 #include <stdbool.h>
 
 #include "../../SDL_internal.h"
-#include "../../video/mmiyoo/SDL_video_mmiyoo.h"
-#include "../../video/mmiyoo/SDL_event_mmiyoo.h"
 #include "../SDL_sysrender.h"
 #include "SDL_hints.h"
+
+#include "../../video/nds/nds_video.h"
+#include "../../video/nds/nds_event.h"
 
 typedef struct MMIYOO_TextureData {
     void *data;

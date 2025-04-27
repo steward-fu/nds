@@ -34,8 +34,9 @@
 #include "SDL_events.h"
 #include "SDL_video.h"
 #include "SDL_mouse.h"
-#include "SDL_video_mmiyoo.h"
-#include "SDL_event_mmiyoo.h"
+
+#include "nds_video.h"
+#include "nds_event.h"
 
 #include "hex_pen.h"
 #include "nds_firmware.h"
@@ -5852,6 +5853,9 @@ int reload_bg(void)
                         break;
                     case NDS_DIS_MODE_VH_S4:
                         strcat(buf, "/bg_vh_s4.png");
+                        break;
+                    case NDS_DIS_MODE_VH_S5:
+                        strcat(buf, "/bg_vh_s5.png");
                         break;
                     case NDS_DIS_MODE_VH_C0:
                         strcat(buf, "/bg_vh_c0.png");

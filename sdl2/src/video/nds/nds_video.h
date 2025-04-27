@@ -1,8 +1,8 @@
 // LGPL-2.1 License
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
-#ifndef __SDL_VIDEO_MMIYOO_H__
-#define __SDL_VIDEO_MMIYOO_H__
+#ifndef __NDS_VIDEO_H__
+#define __NDS_VIDEO_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -39,8 +39,9 @@
 #include "SDL_events.h"
 #include "SDL_video.h"
 #include "SDL_mouse.h"
-#include "SDL_video_mmiyoo.h"
-#include "SDL_event_mmiyoo.h"
+
+#include "nds_video.h"
+#include "nds_event.h"
 
 #include "detour.h"
 
@@ -159,7 +160,6 @@
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define RELOAD_BG_COUNT         120
-    #define USE_MYJOY               1
     #define MYJOY_MODE_DISABLE      0
     #define MYJOY_MODE_KEYPAD       1
     #define MYJOY_MODE_STYLUS       2
@@ -188,7 +188,6 @@
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define RELOAD_BG_COUNT         120
-    #define USE_MYJOY               1
     #define MYJOY_MODE_DISABLE      0
     #define MYJOY_MODE_KEYPAD       1
     #define MYJOY_MODE_STYLUS       2
