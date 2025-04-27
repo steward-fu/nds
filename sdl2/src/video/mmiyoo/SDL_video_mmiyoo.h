@@ -297,15 +297,19 @@
 #define NDS_DIS_MODE_VH_S0          8
 #define NDS_DIS_MODE_VH_S1          9
 #define NDS_DIS_MODE_VH_S2          10
-#define NDS_DIS_MODE_VH_C0          11
-#define NDS_DIS_MODE_VH_C1          12
-#define NDS_DIS_MODE_HH0            13
-#define NDS_DIS_MODE_HH1            14
-#define NDS_DIS_MODE_HH2            15
-#define NDS_DIS_MODE_HH3            16
-#define NDS_DIS_MODE_LAST           16
-#define NDS_DIS_MODE_HRES0          17
-#define NDS_DIS_MODE_HRES1          18
+#define NDS_DIS_MODE_VH_S3          11
+#define NDS_DIS_MODE_VH_S4          12
+#define NDS_DIS_MODE_VH_S5          13
+#define NDS_DIS_MODE_VH_C0          14
+#define NDS_DIS_MODE_VH_C1          15
+#define NDS_DIS_MODE_HH0            16
+#define NDS_DIS_MODE_HH1            17
+#define NDS_DIS_MODE_HH2            18
+#define NDS_DIS_MODE_HH3            19
+#define NDS_DIS_MODE_LAST           19
+
+#define NDS_DIS_MODE_HRES0          20
+#define NDS_DIS_MODE_HRES1          21
 
 #define NDS_ALPHA_MAX               7
 #define NDS_BORDER_MAX              7

@@ -4064,7 +4064,7 @@ case "$host" in
                 SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
                 have_joystick=yes
             ;;
-            a30|mmiyoo|trimui|pandora|unittest)
+            a30|mmiyoo|trimui|pandora|unittest|flip)
                 AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
                 SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
                 have_joystick=yes

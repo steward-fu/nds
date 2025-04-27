@@ -1943,6 +1943,24 @@ static int process_screen(void)
             drt.x = screen1 ? ((FB_W - drt.w) / 2) : ((FB_W - drt.w) / 2);
             drt.y = screen1 ? 120 : 0;
             break;
+        case NDS_DIS_MODE_VH_S3:
+            drt.w = screen1 ? (FB_W - 512) : 512;
+            drt.h = screen1 ? (FB_H - 384) : 384;
+            drt.x = screen1 ? ((FB_W - drt.w) / 2) : ((FB_W - drt.w) / 2);
+            drt.y = screen1 ? 0 : FB_H - 384;
+            break;
+        case NDS_DIS_MODE_VH_S4:
+            drt.w = screen1 ? (FB_W - 512) : 512;
+            drt.h = screen1 ? (FB_H - 384) : 384;
+            drt.x = screen1 ? (FB_W - drt.w) : 0;
+            drt.y = screen1 ? 0 : FB_H - 384;
+            break;
+        case NDS_DIS_MODE_VH_S5:
+            drt.w = screen1 ? (FB_W - 512) : 512;
+            drt.h = screen1 ? (FB_H - 384) : 384;
+            drt.x = screen1 ? 0 : (FB_W - drt.w);
+            drt.y = screen1 ? 0 : FB_H - 384;
+            break;
         case NDS_DIS_MODE_VH_C0:
             drt.w = screen0 ? NDS_W : (FB_W - NDS_W);
             drt.h = screen0 ? NDS_H : (FB_H - NDS_H);
@@ -5829,6 +5847,12 @@ int reload_bg(void)
                     case NDS_DIS_MODE_VH_S2:
                         strcat(buf, "/bg_vh_s2.png");
                         break;
+                    case NDS_DIS_MODE_VH_S3:
+                        strcat(buf, "/bg_vh_s3.png");
+                        break;
+                    case NDS_DIS_MODE_VH_S4:
+                        strcat(buf, "/bg_vh_s4.png");
+                        break;
                     case NDS_DIS_MODE_VH_C0:
                         strcat(buf, "/bg_vh_c0.png");
                         break;
@@ -6330,6 +6354,11 @@ static const char *DIS_MODE0_640[] = {
     "480*360",
     "384*288",
     "384*288",
+
+    "512x384",
+    "512x384",
+    "512x384",
+
     "384*288",
     "384*288",
     "427*320",
@@ -6350,6 +6379,11 @@ static const char *DIS_MODE1_640[] = {
     "160*120",
     "256*192",
     "256*192",
+
+    "128*96",
+    "128*96",
+    "128*96",
+
     "256*192",
     "256*192",
     "427*320",
@@ -6370,6 +6404,11 @@ static const char *DIS_MODE0_752[] = {
     "592*440",
     "496*368",
     "496*368",
+
+    "512*384",
+    "512*384",
+    "512*384",
+
     "496*368",
     "496*368",
     "501*376",
@@ -6390,6 +6429,11 @@ static const char *DIS_MODE1_752[] = {
     "160*120",
     "256*192",
     "256*192",
+
+    "240*176",
+    "240*176",
+    "240*176",
+
     "256*192",
     "256*192",
     "501*376",
@@ -7415,6 +7459,63 @@ int handle_menu(int key)
             rt.w = 32;
             rt.h = 24;
             rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + (96 - rt.h);
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+            break;
+        case NDS_DIS_MODE_VH_S3:
+            rt.x = sx;
+            rt.y = sy;
+            rt.w = 128;
+            rt.h = 96;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
+            
+            rt.w = 102;
+            rt.h = 77;
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
+            
+            rt.w = 26;
+            rt.h = 19;
+            rt.x = sx + ((128 - rt.w) / 2);
+            rt.y = sy + (96 - rt.h);
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+            break;
+        case NDS_DIS_MODE_VH_S4:
+            rt.x = sx;
+            rt.y = sy;
+            rt.w = 128;
+            rt.h = 96;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
+            
+            rt.w = 102;
+            rt.h = 77;
+            rt.x = sx + (128 - rt.w);
+            rt.y = sy;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
+            
+            rt.w = 26;
+            rt.h = 19;
+            rt.x = sx;
+            rt.y = sy + (96 - rt.h);
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
+            break;
+        case NDS_DIS_MODE_VH_S5:
+            rt.x = sx;
+            rt.y = sy;
+            rt.w = 128;
+            rt.h = 96;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x80, 0x00));
+            
+            rt.w = 102;
+            rt.h = 77;
+            rt.x = sx;
+            rt.y = sy;
+            SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x80, 0x00, 0x00));
+            
+            rt.w = 26;
+            rt.h = 19;
+            rt.x = sx + (128 - rt.w);
             rt.y = sy + (96 - rt.h);
             SDL_FillRect(cvt, &rt, SDL_MapRGB(cvt->format, 0x00, 0x00, 0x80));
             break;
