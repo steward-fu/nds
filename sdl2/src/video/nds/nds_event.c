@@ -397,7 +397,7 @@ static void set_key(uint32_t bit, int val)
 }
 
 #if defined(A30) || defined(FLIP)
-static int trans_joy_to_keypad(jval_t *j)
+static int trans_joy_to_keypad(jval_t *j, int rjoy)
 {
     int r = 0;
     static int pre_x = -1;
@@ -411,6 +411,13 @@ static int trans_joy_to_keypad(jval_t *j)
     uint32_t d_key = MYKEY_DOWN;
     uint32_t l_key = MYKEY_LEFT;
     uint32_t r_key = MYKEY_RIGHT;
+
+    if (rjoy) {
+        u_key = MYKEY_X;
+        d_key = MYKEY_B;
+        l_key = MYKEY_Y;
+        r_key = MYKEY_A;
+    }
 
     debug("call %s()\n", __func__);
 
@@ -685,13 +692,23 @@ static int update_joy_state(void)
     debug("call %s()\n", __func__);
 
     if (nds.joy.mode == MYJOY_MODE_KEYPAD) {
-        r |= trans_joy_to_keypad(&myjoy.left.last);
+        r |= trans_joy_to_keypad(&myjoy.left.last, 0);
     }
     else if (nds.joy.mode == MYJOY_MODE_STYLUS) {
         r |= trans_joy_to_touch(&myjoy.left.last);
     }
     else if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
         r |= trans_joy_to_custkey(&myjoy.left.last);
+    }
+
+    if (nds.rjoy.mode == MYJOY_MODE_KEYPAD) {
+        r |= trans_joy_to_keypad(&myjoy.right.last, 1);
+    }
+    else if (nds.rjoy.mode == MYJOY_MODE_STYLUS) {
+        r |= trans_joy_to_touch(&myjoy.right.last);
+    }
+    else if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+        r |= trans_joy_to_custkey(&myjoy.right.last);
     }
 
     return r;

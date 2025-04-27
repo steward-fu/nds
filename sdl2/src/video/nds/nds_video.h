@@ -352,6 +352,12 @@
 #define JSON_NDS_JOY_CUSKEY1        "joy_cuskey1"
 #define JSON_NDS_JOY_CUSKEY2        "joy_cuskey2"
 #define JSON_NDS_JOY_CUSKEY3        "joy_cuskey3"
+#define JSON_NDS_RJOY_MODE          "rjoy_mode"
+#define JSON_NDS_RJOY_DZONE         "rjoy_dzone"
+#define JSON_NDS_RJOY_CUSKEY0       "rjoy_cuskey0"
+#define JSON_NDS_RJOY_CUSKEY1       "rjoy_cuskey1"
+#define JSON_NDS_RJOY_CUSKEY2       "rjoy_cuskey2"
+#define JSON_NDS_RJOY_CUSKEY3       "rjoy_cuskey3"
 #define JSON_NDS_CHK_BAT            "chk_bat"
 
 #define DEF_LANG_SLOT               0
@@ -621,7 +627,7 @@ typedef struct _NDS {
         char path[MAX_PATH];
     } pen;
 
-#ifdef A30
+#if defined(A30) || defined(FLIP)
     struct _JOY {
         int max_x;
         int zero_x;
@@ -636,25 +642,7 @@ typedef struct _NDS {
         int show_cnt;
 
         int cuskey[4];
-    } joy;
-#endif
-
-#ifdef FLIP
-    struct _JOY {
-        int max_x;
-        int zero_x;
-        int min_x;
-
-        int max_y;
-        int zero_y;
-        int min_y;
-
-        int mode;
-        int dzone;
-        int show_cnt;
-
-        int cuskey[4];
-    } joy;
+    } joy, rjoy;
 #endif
 } NDS;
 

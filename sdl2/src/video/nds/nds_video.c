@@ -139,7 +139,7 @@ const char *fShaderSrc =
     "    }                                                     \n"
     "}                                                         \n";
 
-#ifdef A30
+#if defined(A30)
 static struct _cpu_clock cpu_clock[] = {
     {96, 0x80000110},
     {144, 0x80000120},
@@ -621,7 +621,7 @@ static int get_bat_val(void)
 }
 #endif
 
-#ifdef A30
+#if defined(A30)
 static int get_bat_val(void)
 {
     static int maxv = 0;
@@ -836,7 +836,7 @@ static int draw_drastic_menu_main(void)
     sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
 #endif
 
-#ifdef A30
+#if defined(A30)
     if (nds.chk_bat) {
         sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
     }
@@ -2033,7 +2033,7 @@ static int process_screen(void)
             drt.x = (drt.x == 0) ? 320 : 0;
         }
 
-#ifdef A30
+#if defined(A30) || defined(FLIP)
         if (show_pen && ((evt.mode == MMIYOO_MOUSE_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_STYLUS)))) {
 #else
         if (show_pen && (evt.mode == MMIYOO_MOUSE_MODE)) {
@@ -2043,7 +2043,7 @@ static int process_screen(void)
 #endif
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
 
-#ifdef A30
+#if defined(A30) || defined(FLIP)
             if (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_STYLUS)) {
                 nds.joy.show_cnt -= 1;
             }
@@ -2767,36 +2767,42 @@ static int read_config(void)
         nds.chk_bat = json_object_get_int(jval) ? 1: 0;
     }
 
-#ifdef A30
+#if defined(A30) || defined(FLIP)
     json_object_object_get_ex(jfile, JSON_NDS_JOY_MODE, &jval);
-    if (jval) {
-        nds.joy.mode = json_object_get_int(jval);
-    }
+    nds.joy.mode = json_object_get_int(jval);
 
     json_object_object_get_ex(jfile, JSON_NDS_JOY_DZONE, &jval);
-    if (jval) {
-        nds.joy.dzone = json_object_get_int(jval);
-    }
+    nds.joy.dzone = json_object_get_int(jval);
 
     json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY0, &jval);
-    if (jval) {
-        nds.joy.cuskey[0] = json_object_get_int(jval);
-    }
+    nds.joy.cuskey[0] = json_object_get_int(jval);
 
     json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY1, &jval);
-    if (jval) {
-        nds.joy.cuskey[1] = json_object_get_int(jval);
-    }
+    nds.joy.cuskey[1] = json_object_get_int(jval);
 
     json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY2, &jval);
-    if (jval) {
-        nds.joy.cuskey[2] = json_object_get_int(jval);
-    }
+    nds.joy.cuskey[2] = json_object_get_int(jval);
 
     json_object_object_get_ex(jfile, JSON_NDS_JOY_CUSKEY3, &jval);
-    if (jval) {
-        nds.joy.cuskey[3] = json_object_get_int(jval);
-    }
+    nds.joy.cuskey[3] = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_RJOY_MODE, &jval);
+    nds.rjoy.mode = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_RJOY_DZONE, &jval);
+    nds.rjoy.dzone = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_RJOY_CUSKEY0, &jval);
+    nds.rjoy.cuskey[0] = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_RJOY_CUSKEY1, &jval);
+    nds.rjoy.cuskey[1] = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_RJOY_CUSKEY2, &jval);
+    nds.rjoy.cuskey[2] = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_RJOY_CUSKEY3, &jval);
+    nds.rjoy.cuskey[3] = json_object_get_int(jval);
 #endif
 
     nds.menu.c0 = 0xffffff;
@@ -2921,7 +2927,7 @@ static int read_config(void)
     nds.dis_mode = NDS_DIS_MODE_H0;
 #endif
 
-#ifdef A30
+#if defined(A30)
     nds.joy.max_x = 200;
     nds.joy.zero_x = 135;
     nds.joy.min_x = 75;
@@ -2973,13 +2979,20 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_FAST_FORWARD, json_object_new_int(nds.fast_forward));
     json_object_object_add(jfile, JSON_NDS_CHK_BAT, json_object_new_int(nds.chk_bat));
 
-#ifdef A30
+#if defined(A30) || defined(FLIP)
     json_object_object_add(jfile, JSON_NDS_JOY_MODE, json_object_new_int(nds.joy.mode));
     json_object_object_add(jfile, JSON_NDS_JOY_DZONE, json_object_new_int(nds.joy.dzone));
     json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY0, json_object_new_int(nds.joy.cuskey[0]));
     json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY1, json_object_new_int(nds.joy.cuskey[1]));
     json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY2, json_object_new_int(nds.joy.cuskey[2]));
     json_object_object_add(jfile, JSON_NDS_JOY_CUSKEY3, json_object_new_int(nds.joy.cuskey[3]));
+
+    json_object_object_add(jfile, JSON_NDS_RJOY_MODE, json_object_new_int(nds.rjoy.mode));
+    json_object_object_add(jfile, JSON_NDS_RJOY_DZONE, json_object_new_int(nds.rjoy.dzone));
+    json_object_object_add(jfile, JSON_NDS_RJOY_CUSKEY0, json_object_new_int(nds.rjoy.cuskey[0]));
+    json_object_object_add(jfile, JSON_NDS_RJOY_CUSKEY1, json_object_new_int(nds.rjoy.cuskey[1]));
+    json_object_object_add(jfile, JSON_NDS_RJOY_CUSKEY2, json_object_new_int(nds.rjoy.cuskey[2]));
+    json_object_object_add(jfile, JSON_NDS_RJOY_CUSKEY3, json_object_new_int(nds.rjoy.cuskey[3]));
 #endif
     json_object_object_add(jfile, JSON_NDS_CHK_BAT, json_object_new_int(nds.chk_bat));
 
@@ -3611,7 +3624,7 @@ int fb_quit(void)
 }
 #endif
 
-#ifdef A30
+#if defined(A30)
 static int get_core(int index)
 {
     FILE *fd = NULL;
@@ -6462,9 +6475,13 @@ static const char *HOTKEY[] = {
     "MENU", "SELECT"
 };
 
-#ifdef A30
+#if defined(A30) || defined(FLIP)
 static const char *JOY_MODE[] = {
     "Disable", "D-Pad", "Stylus", "Customized Key"
+};
+
+static const char *RJOY_MODE[] = {
+    "Disable", "4-Btn", "Stylus", "Customized Key"
 };
 
 static const char *JOY_CUSKEY[] = {
@@ -6504,9 +6521,9 @@ static int lang_prev(void)
 
 enum {
     MENU_LANG = 0,
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX)
     MENU_CPU_CORE,
-#ifdef A30
+#if defined(A30)
     MENU_CPU_CLOCK,
 #endif
 #else
@@ -6526,13 +6543,21 @@ enum {
     MENU_PEN_YV,
     MENU_CURSOR,
     MENU_FAST_FORWARD,
-#ifdef A30
+#if defined(A30) || defined(FLIP)
     MENU_JOY_MODE,
     MENU_JOY_CUSKEY0,
     MENU_JOY_CUSKEY1,
     MENU_JOY_CUSKEY2,
     MENU_JOY_CUSKEY3,
     MENU_JOY_DZONE,
+#endif
+#if defined(FLIP)
+    MENU_RJOY_MODE,
+    MENU_RJOY_CUSKEY0,
+    MENU_RJOY_CUSKEY1,
+    MENU_RJOY_CUSKEY2,
+    MENU_RJOY_CUSKEY3,
+    MENU_RJOY_DZONE,
 #endif
 
 #if defined(MMIYOO) || defined(A30)
@@ -6545,7 +6570,7 @@ static const char *MENU_ITEM[] = {
     "Language",
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     "CPU Core",
-#ifdef A30
+#if defined(A30)
     "CPU Clock",
 #endif
 #else
@@ -6565,13 +6590,21 @@ static const char *MENU_ITEM[] = {
     "Pen Y Speed",
     "Cursor",
     "Fast Forward",
-#ifdef A30
-    "Joy Mode",
+#if defined(A30) || defined(FLIP)
+    "L Joy Mode",
     "  Joy Up",
     "  Joy Down",
     "  Joy Left",
     "  Joy Right",
-    "Joy Dead Zone",
+    "L Joy Dead Zone",
+#endif
+#if defined(FLIP)
+    "R Joy Mode",
+    "  Joy Up",
+    "  Joy Down",
+    "  Joy Left",
+    "  Joy Right",
+    "R Joy Dead Zone",
 #endif
     "Check Battery",
 };
@@ -6580,10 +6613,10 @@ int handle_menu(int key)
 {
     static int pre_ff = 0;
     static int cur_sel = 0;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX)
     static uint32_t cur_cpucore = INIT_CPU_CORE;
     static uint32_t pre_cpucore = INIT_CPU_CORE;
-#ifdef A30
+#if defined(A30)
     static uint32_t cur_cpuclock = INIT_CPU_CLOCK;
     static uint32_t pre_cpuclock = INIT_CPU_CLOCK;
 #endif
@@ -6641,13 +6674,13 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_prev();
             break;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX)
         case MENU_CPU_CORE:
             if (cur_cpucore > nds.mincore) {
                 cur_cpucore-= 1;
             }
             break;
-#ifdef A30
+#if defined(A30)
         case MENU_CPU_CLOCK:
             if (cur_cpuclock > nds.mincpu) {
                 cur_cpuclock-= 50;
@@ -6734,7 +6767,7 @@ int handle_menu(int key)
                 nds.fast_forward -= 1;
             }
             break;
-#ifdef A30
+#if defined(A30) || defined(FLIP)
         case MENU_JOY_MODE:
             if (nds.joy.mode > 0) {
                 nds.joy.mode -= 1;
@@ -6774,6 +6807,46 @@ int handle_menu(int key)
             }
             break;
 #endif
+#if defined(FLIP)
+        case MENU_RJOY_MODE:
+            if (nds.rjoy.mode > 0) {
+                nds.rjoy.mode -= 1;
+            }
+            break;
+        case MENU_RJOY_CUSKEY0:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[0] > 0) {
+                    nds.rjoy.cuskey[0] -= 1;
+                }
+            }
+            break;
+        case MENU_RJOY_CUSKEY1:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[1] > 0) {
+                    nds.rjoy.cuskey[1] -= 1;
+                }
+            }
+            break;
+        case MENU_RJOY_CUSKEY2:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[2] > 0) {
+                    nds.rjoy.cuskey[2] -= 1;
+                }
+            }
+            break;
+        case MENU_RJOY_CUSKEY3:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[3] > 0) {
+                    nds.rjoy.cuskey[3] -= 1;
+                }
+            }
+            break;
+        case MENU_RJOY_DZONE:
+            if (nds.rjoy.dzone > 0) {
+                nds.rjoy.dzone -= 1;
+            }
+            break;
+#endif
 #if defined(MMIYOO) || defined(A30)
         case MENU_CHK_BAT:
             nds.chk_bat = 0;
@@ -6788,13 +6861,13 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_next();
             break;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX)
         case MENU_CPU_CORE:
             if (cur_cpucore < nds.maxcore) {
                 cur_cpucore+= 1;
             }
             break;
-#ifdef A30
+#if defined(A30)
         case MENU_CPU_CLOCK:
             if (cur_cpuclock < nds.maxcpu) {
                 cur_cpuclock+= 50;
@@ -6881,7 +6954,7 @@ int handle_menu(int key)
                 nds.fast_forward += 1;
             }
             break;
-#ifdef A30
+#if defined(A30) || defined(FLIP)
         case MENU_JOY_MODE:
             if (nds.joy.mode < MYJOY_MODE_LAST) {
                 nds.joy.mode += 1;
@@ -6926,6 +6999,51 @@ int handle_menu(int key)
             }
             break;
 #endif
+#if defined(FLIP)
+        case MENU_RJOY_MODE:
+            if (nds.rjoy.mode < MYJOY_MODE_LAST) {
+                nds.rjoy.mode += 1;
+            }
+            if (nds.rjoy.mode == MYJOY_MODE_STYLUS) {
+                if (evt.mode == MMIYOO_MOUSE_MODE) {
+                    evt.mode = MMIYOO_KEYPAD_MODE;
+                }
+            }
+            break;
+        case MENU_RJOY_CUSKEY0:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[0] < 13) {
+                    nds.rjoy.cuskey[0] += 1;
+                }
+            }
+            break;
+        case MENU_RJOY_CUSKEY1:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[1] < 13) {
+                    nds.rjoy.cuskey[1] += 1;
+                }
+            }
+            break;
+        case MENU_RJOY_CUSKEY2:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[2] < 13) {
+                    nds.rjoy.cuskey[2] += 1;
+                }
+            }
+            break;
+        case MENU_RJOY_CUSKEY3:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+                if (nds.rjoy.cuskey[3] < 13) {
+                    nds.rjoy.cuskey[3] += 1;
+                }
+            }
+            break;
+        case MENU_RJOY_DZONE:
+            if (nds.rjoy.dzone < 255) {
+                nds.rjoy.dzone += 1;
+            }
+            break;
+#endif
 #if defined(MMIYOO) || defined(A30)
         case MENU_CHK_BAT:
             nds.chk_bat = 1;
@@ -6942,7 +7060,7 @@ int handle_menu(int key)
             set_cpuclock(cur_cpuclock);
 #endif
 
-#ifdef A30
+#if defined(A30)
             set_best_match_cpu_clock(cur_cpuclock);
 #endif
             pre_cpuclock = cur_cpuclock;
@@ -7055,12 +7173,25 @@ int handle_menu(int key)
                 col1 = unsel_col;
             }
             break;
-#ifdef A30
+#if defined(A30) || defined(FLIP)
         case MENU_JOY_CUSKEY0:
         case MENU_JOY_CUSKEY1:
         case MENU_JOY_CUSKEY2:
         case MENU_JOY_CUSKEY3:
             if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+                col1 = (cur_sel == cc) ? val_col : unsel_col;
+            }
+            else {
+                col1 = dis_col;
+            }
+            break;
+#endif
+#if defined(FLIP)
+        case MENU_RJOY_CUSKEY0:
+        case MENU_RJOY_CUSKEY1:
+        case MENU_RJOY_CUSKEY2:
+        case MENU_RJOY_CUSKEY3:
+            if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
                 col1 = (cur_sel == cc) ? val_col : unsel_col;
             }
             else {
@@ -7118,11 +7249,11 @@ int handle_menu(int key)
         case MENU_LANG:
             sprintf(buf, "%s", nds.lang.trans[DEF_LANG_SLOT]);
             break;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX)
         case MENU_CPU_CORE:
             sprintf(buf, "%d", cur_cpucore);
             break;
-#ifdef A30
+#if defined(A30)
         case MENU_CPU_CLOCK:
             sprintf(buf, "%dMHz", cur_cpuclock);
             break;
@@ -7195,14 +7326,14 @@ int handle_menu(int key)
             sprintf(buf, "%s", DPAD[nds.keys_rotate % 3]);
             break;
         case MENU_PEN_XV:
-#ifdef A30
+#if defined(A30) || defined(FLIP)
             sprintf(buf, "%d (80000)", nds.pen.xv);
 #else
             sprintf(buf, "%d (30000)", nds.pen.xv);
 #endif
             break;
         case MENU_PEN_YV:
-#ifdef A30
+#if defined(A30) || defined(FLIP)
             sprintf(buf, "%d (85000)", nds.pen.yv);
 #else
             sprintf(buf, "%d (35000)", nds.pen.yv);
@@ -7214,7 +7345,7 @@ int handle_menu(int key)
         case MENU_FAST_FORWARD:
             sprintf(buf, "%d (6)", nds.fast_forward);
             break;
-#ifdef A30
+#if defined(A30) || defined(FLIP)
         case MENU_JOY_MODE:
             sprintf(buf, "%s", to_lang(JOY_MODE[nds.joy.mode]));
             break;
@@ -7232,6 +7363,26 @@ int handle_menu(int key)
             break;
         case MENU_JOY_DZONE:
             sprintf(buf, "%d (65)", nds.joy.dzone);
+            break;
+#endif
+#if defined(FLIP)
+        case MENU_RJOY_MODE:
+            sprintf(buf, "%s", to_lang(RJOY_MODE[nds.rjoy.mode]));
+            break;
+        case MENU_RJOY_CUSKEY0:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.rjoy.cuskey[0]]));
+            break;
+        case MENU_RJOY_CUSKEY1:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.rjoy.cuskey[1]]));
+            break;
+        case MENU_RJOY_CUSKEY2:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.rjoy.cuskey[2]]));
+            break;
+        case MENU_RJOY_CUSKEY3:
+            sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.rjoy.cuskey[3]]));
+            break;
+        case MENU_RJOY_DZONE:
+            sprintf(buf, "%d (65)", nds.rjoy.dzone);
             break;
 #endif
 #if defined(MMIYOO) || defined(A30)
