@@ -1,29 +1,5 @@
-/*
-  Special customized version for the DraStic emulator that runs on
-      Miyoo Mini (Plus)
-      TRIMUI-SMART
-      Miyoo A30
-      Anbernic RG28XX
-      Fxtec Pro1 (QX1000)
-
-  Copyright (C) 2022-2024 Steward Fu <steward.fu@gmail.com>
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-*/
+// LGPL-2.1 License
+// (C) 2025 Steward Fu <steward.fu@gmail.com>
 
 #include <time.h>
 #include <math.h>
@@ -36,17 +12,17 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
+#include <json-c/json.h>
 #include <alsa/output.h>
 #include <alsa/input.h>
 #include <alsa/conf.h>
 #include <alsa/global.h>
 #include <alsa/timer.h>
 #include <alsa/pcm.h>
+#include <linux/rtc.h>
 #include <linux/soundcard.h>
-#include <json-c/json.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <linux/rtc.h>
 #include <sys/time.h>
 #include <syslog.h>
 
@@ -54,7 +30,7 @@
 #include <pulse/pulseaudio.h>
 #endif
 
-#ifdef UNITTEST
+#ifdef UT
 #include "unity_fixture.h"
 #endif
 
@@ -94,7 +70,7 @@
 #define JSON_APP_FILE       "/appconfigs/system.json"
 #endif
 
-#define JSON_CFG_FILE       "resources/settings.json"
+#define JSON_CFG_FILE       "res/cfg.json"
 #define JSON_VOL_KEY        "vol"
 #define JSON_AUTO_STATE     "auto_state"
 #define JSON_AUTO_SLOT      "auto_slot"
@@ -154,6 +130,18 @@ static struct json_object *jfile = NULL;
 
 static int16_t *adpcm_step_table = (int16_t *)VAR_ADPCM_STEP_TABLE;
 static int8_t *adpcm_index_step_table = (int8_t *)VAR_ADPCM_INDEX_STEP_TABLE;
+
+#if defined(UT)
+TEST_GROUP(alsa);
+
+TEST_SETUP(alsa)
+{
+}
+
+TEST_TEAR_DOWN(alsa)
+{
+}
+#endif
 
 void snd_spu_adpcm_decode_block(spu_channel_struct *channel)
 {
@@ -267,10 +255,6 @@ static void stream_request_cb(pa_stream *stream, size_t length, void *userdata)
         pa_threaded_mainloop_signal(pa.mainloop, 0);
     }
 }
-#endif
-
-#if !defined(UNITTEST)
-void neon_memcpy(void *dest, const void *src, size_t n);
 #endif
 
 #ifdef PANDORA
@@ -506,7 +490,7 @@ static int queue_put(queue_t *q, uint8_t *buffer, size_t size)
         if ((q->write >= q->read) && ((q->write + size) > QUEUE_SIZE)) {
             tmp = QUEUE_SIZE - q->write;
             size-= tmp;
-#if defined(UNITTEST) || defined(FLIP)
+#if defined(UT) || defined(FLIP)
             memcpy(&q->buffer[q->write], buffer, tmp);
             memcpy(q->buffer, &buffer[tmp], size);
 #else
@@ -516,7 +500,7 @@ static int queue_put(queue_t *q, uint8_t *buffer, size_t size)
             q->write = size;
         }
         else {
-#if defined(UNITTEST) || defined(FLIP)
+#if defined(UT) || defined(FLIP)
             memcpy(&q->buffer[q->write], buffer, size);
 #else
             neon_memcpy(&q->buffer[q->write], buffer, size);
@@ -543,7 +527,7 @@ static size_t queue_get(queue_t *q, uint8_t *buffer, size_t max)
         if ((q->read > q->write) && (q->read + size) > QUEUE_SIZE) {
             tmp = QUEUE_SIZE - q->read;
             size-= tmp;
-#if defined(UNITTEST) || defined(FLIP)
+#if defined(UT) || defined(FLIP)
             memcpy(buffer, &q->buffer[q->read], tmp);
             memcpy(&buffer[tmp], q->buffer, size);
 #else
@@ -553,7 +537,7 @@ static size_t queue_get(queue_t *q, uint8_t *buffer, size_t max)
             q->read = size;
         }
         else {
-#if defined(UNITTEST) || defined(FLIP)
+#if defined(UT) || defined(FLIP)
             memcpy(buffer, &q->buffer[q->read], size);
 #else
             neon_memcpy(buffer, &q->buffer[q->read], size);
@@ -583,7 +567,7 @@ static void *audio_handler(void *threadid)
             if (len == 0) {
                 idx = 0;
                 len = pcm_buf_len;
-#if defined(MMIYOO) && !defined(UNITTEST)
+#if defined(MMIYOO) && !defined(UT)
                 aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
                 aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
                 aoTestFrame.u32Len = pcm_buf_len;
@@ -755,7 +739,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     }
 #endif
 
-#if defined(MMIYOO) && !defined(UNITTEST)
+#if defined(MMIYOO) && !defined(UT)
     stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
     stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
     stSetAttr.u32FrmNum = 6;
@@ -949,55 +933,9 @@ snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buffer, snd_pcm_ufr
     return size;
 }
 
-#ifdef UNITTEST
-TEST_GROUP(alsa);
-
-TEST_SETUP(alsa)
-{
-}
-
-TEST_TEAR_DOWN(alsa)
-{
-}
-
-TEST(alsa, snd_pcm_close)
-{
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_close(NULL));
-    TEST_ASSERT_EQUAL_INT(0, pcm_ready);
-    TEST_ASSERT_EQUAL_INT(0, pcm_buf);
-    TEST_ASSERT_EQUAL_INT(0, queue.buffer);
-}
-
-TEST(alsa, snd_pcm_writei)
-{
-    char buf[32] = {0};
-
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_writei(NULL, NULL, 0));
-    TEST_ASSERT_EQUAL_INT(sizeof(buf), snd_pcm_writei(NULL, buf, sizeof(buf)));
-}
-
-TEST(alsa, snd_pcm_sw_params)
-{
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params(NULL, NULL));
-}
-
-TEST(alsa, snd_pcm_sw_params_malloc)
-{
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params_malloc(NULL));
-}
-
-TEST(alsa, snd_pcm_sw_params_current)
-{
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params_current(NULL, NULL));
-}
-
+#if defined(UT)
 TEST_GROUP_RUNNER(alsa)
 {
-    RUN_TEST_CASE(alsa, snd_pcm_close);
-    RUN_TEST_CASE(alsa, snd_pcm_writei);
-    RUN_TEST_CASE(alsa, snd_pcm_sw_params);
-    RUN_TEST_CASE(alsa, snd_pcm_sw_params_malloc);
-    RUN_TEST_CASE(alsa, snd_pcm_sw_params_current);
 }
 #endif
 

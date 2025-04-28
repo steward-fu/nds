@@ -1,10 +1,12 @@
-TARGET  = libasound.so.2
-CFLAGS  = -I../detour
-LDFLAGS = -fpic -shared
-LDFLAGS+= -lpthread -lm
-LDFLAGS+= -L../detour -ldtr
-MOD     = mmiyoo
-SRC     = main.c
+TARGET   = libasound.so.2
+CFLAGS  += $(MORE_CFLAGS)
+CFLAGS  += -I../detour
+LDFLAGS += $(MORE_LDFLAGS)
+LDFLAGS += -fpic -shared
+LDFLAGS += -lpthread -lm
+LDFLAGS += -L../detour -ldtr
+MOD      = mmiyoo
+SRC      = main.c
 
 ifeq ($(MOD),flip)
     CFLAGS += -DFLIP

@@ -6,9 +6,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
 #include <string.h>
 #include <pthread.h>
 #include <sys/time.h>
@@ -35,15 +36,10 @@
 #include "SDL_video.h"
 #include "SDL_mouse.h"
 
+#include "debug.h"
+#include "hex_pen.h"
 #include "nds_video.h"
 #include "nds_event.h"
-
-#include "hex_pen.h"
-#include "nds_firmware.h"
-#include "nds_bios_arm7.h"
-#include "nds_bios_arm9.h"
-#include "drastic_bios_arm7.h"
-#include "drastic_bios_arm9.h"
 
 NDS nds = {0};
 GFX gfx = {0};
@@ -2283,7 +2279,7 @@ void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint
 
 void prehook_cb_savestate_pre(void)
 {
-#if !defined(UNITTEST)
+#if !defined(UT)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #1                 \n"
@@ -2297,7 +2293,7 @@ void prehook_cb_savestate_pre(void)
 
 void sdl_savestate_post(void)
 {
-#if !defined(UNITTEST)
+#if !defined(UT)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #0                 \n"
@@ -3258,7 +3254,7 @@ static int get_overlay_count(void)
     return get_file_count(nds.overlay.path);
 }
 
-#ifdef UNITTEST
+#if defined(UT)
 int fb_init(void)
 {
     return 0;
@@ -3950,25 +3946,7 @@ void GFX_Init(void)
     }
 
     memset(nds.bios.path, 0, sizeof(nds.bios.path));
-    if (getcwd(nds.bios.path, sizeof(nds.bios.path))) {
-        strcat(nds.bios.path, "/");
-        strcat(nds.bios.path, BIOS_PATH);
-
-        sprintf(buf, "%s/drastic_bios_arm7.bin", nds.bios.path);
-        write_file(buf, drastic_bios_arm7, sizeof(drastic_bios_arm7));
-
-        sprintf(buf, "%s/drastic_bios_arm9.bin", nds.bios.path);
-        write_file(buf, drastic_bios_arm9, sizeof(drastic_bios_arm9));
-
-        sprintf(buf, "%s/nds_bios_arm7.bin", nds.bios.path);
-        write_file(buf, nds_bios_arm7, sizeof(nds_bios_arm7));
-
-        sprintf(buf, "%s/nds_bios_arm9.bin", nds.bios.path);
-        write_file(buf, nds_bios_arm9, sizeof(nds_bios_arm9));
-
-        sprintf(buf, "%s/nds_firmware.bin", nds.bios.path);
-        write_file(buf, nds_firmware, sizeof(nds_firmware));
-    }
+    drop_bios_files(nds.bios.path);
 
 #ifdef QX1000
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
@@ -4060,7 +4038,7 @@ void GFX_Clear(void)
 
 int draw_pen(void *pixels, int width, int pitch)
 {
-#ifndef UNITTEST
+#if defined(UT)
     int c0 = 0;
     int c1 = 0;
     int w = 28;
@@ -4139,10 +4117,17 @@ int draw_pen(void *pixels, int width, int pitch)
     glUniform1f(vid.alphaLoc, 0.0);
 #endif
 
+#if !defined(UT)
     asm ("PLD [%0, #128]"::"r" (s));
+#endif
+
     for (c1=0; c1<h; c1++) {
+
+#if !defined(UT)
         asm ("PLD [%0, #128]"::"r" (d_565));
         asm ("PLD [%0, #128]"::"r" (d_888));
+#endif
+
         for (c0=0; c0<w; c0++) {
             x0 = x1 = (c0 * scale) + x;
             y0 = y1 = (c1 * scale) + (y - sub);
@@ -5745,7 +5730,7 @@ int reload_menu(void)
         SDL_FreeSurface(t);
     }
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UNITTEST) || defined(FLIP)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
     nds.menu.drastic.cursor = IMG_Load(buf);
 #endif
@@ -5757,7 +5742,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UNITTEST) || defined(FLIP)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -5776,7 +5761,7 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
     t = IMG_Load(buf);
     if (t) {
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UNITTEST) || defined(FLIP)
+#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
         SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
@@ -5797,11 +5782,11 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#if !defined(PANDORA) && !defined(QX1000) && !defined(UNITTEST)
+#if !defined(PANDORA) && !defined(QX1000) && !defined(UT)
     static int pre_sel = -1;
 #endif
 
-#if !defined(PANDORA) && !defined(QX1000) && !defined(UNITTEST)
+#if !defined(PANDORA) && !defined(QX1000) && !defined(UT)
     static int pre_mode = -1;
 #endif
 
@@ -6244,7 +6229,7 @@ int MMIYOO_VideoInit(_THIS)
     read_config();
     MMIYOO_EventInit();
 
-    detour_init(sysconf(_SC_PAGESIZE), nds.states.path);
+    init_hook(sysconf(_SC_PAGESIZE), nds.states.path);
 
     detour_hook(FUN_PRINT_STRING,       (intptr_t)prehook_cb_print_string);
     detour_hook(FUN_SAVESTATE_PRE,      (intptr_t)prehook_cb_savestate_pre);
@@ -6277,7 +6262,7 @@ void MMIYOO_VideoQuit(_THIS)
         usleep(1000000);
     }
     system("sync");
-    detour_quit();
+    quit_hook();
     write_config();
 
     if (fps_info) {
@@ -7822,7 +7807,7 @@ int handle_menu(int key)
 }
 #endif
 
-#ifdef UNITTEST
+#if defined(UT)
 #include "unity_fixture.h"
 
 TEST_GROUP(sdl2_video_mmiyoo);

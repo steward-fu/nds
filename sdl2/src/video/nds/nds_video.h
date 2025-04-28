@@ -122,11 +122,7 @@
 #define NDS_Wx4                     (NDS_W * 4)
 #define NDS_Hx4                     (NDS_H * 4)
 
-#ifndef MAX_PATH
-    #define MAX_PATH                128
-#endif
-
-#if defined(UNITTEST)
+#if defined(UT)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
@@ -261,12 +257,12 @@
 #define PREFIX                      "[SDL] "
 #define SHOT_PATH                   "/mnt/SDCARD/Screenshots"
 #define BIOS_PATH                   "system"
-#define CFG_PATH                    "resources/settings.json"
-#define THEME_PATH                  "resources/bg"
-#define PEN_PATH                    "resources/pen"
-#define LANG_PATH                   "resources/lang"
-#define OVERLAY_PATH                "resources/overlay"
-#define MENU_PATH                   "resources/menu/640"
+#define CFG_PATH                    "res/cfg.json"
+#define THEME_PATH                  "res/bg"
+#define PEN_PATH                    "res/pen"
+#define LANG_PATH                   "res/lang"
+#define OVERLAY_PATH                "res/overlay"
+#define MENU_PATH                   "res/menu/640"
 #define MENU_BG_FILE                "bg.png"
 #define MENU_CURSOR_FILE            "cursor.png"
 #define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
@@ -283,7 +279,7 @@
 #define PEN_RT                      2
 #define PEN_RB                      3
 #define PEN_CP                      4
-#define FONT_PATH                   "resources/font/font.ttf"
+#define FONT_PATH                   "res/font/font.ttf"
 
 #define NDS_DIS_MODE_VH_T0          0
 #define NDS_DIS_MODE_VH_T1          1

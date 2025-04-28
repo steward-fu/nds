@@ -13,12 +13,17 @@
 #include <alsa/asoundlib.h>
 #endif
 
+#if defined(UT)
+#include "unity_fixture.h"
+#endif
+
 #include "../../SDL_internal.h"
 #include "../../events/SDL_events_c.h"
 #include "../../core/linux/SDL_evdev.h"
 #include "../../thread/SDL_systhread.h"
-
 #include "../../joystick/nds/nds_joy.h"
+
+#include "debug.h"
 #include "nds_video.h"
 #include "nds_event.h"
 
@@ -36,7 +41,7 @@
     #define INPUT_DEV "/dev/input/event0"
 #endif
 
-#if defined(UNITTEST)
+#if defined(UT)
     #define UP      1
     #define DOWN    2
     #define LEFT    3
@@ -250,6 +255,18 @@ const SDL_Scancode code[]={
 int volume_inc(void);
 int volume_dec(void);
 
+#if defined(UT)
+TEST_GROUP(sdl2_event);
+
+TEST_SETUP(sdl2_event)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_event)
+{
+}
+#endif
+
 #if defined(RG28XX)
 static int volume = 16;
 
@@ -353,7 +370,7 @@ static void release_all_keys(void)
 
 static int hit_hotkey(uint32_t bit)
 {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UNITTEST) || defined(FLIP)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? MYKEY_SELECT : MYKEY_MENU));
 #endif
 
@@ -1588,27 +1605,15 @@ void MMIYOO_PumpEvents(_THIS)
     SDL_SemPost(event_sem);
 }
 
-#if defined(UNITTEST)
-#include "unity_fixture.h"
-
-TEST_GROUP(sdl2_event_mmiyoo);
-
-TEST_SETUP(sdl2_event_mmiyoo)
-{
-}
-
-TEST_TEAR_DOWN(sdl2_event_mmiyoo)
-{
-}
-
-TEST(sdl2_event_mmiyoo, hit_hotkey)
+#if defined(UT)
+TEST(sdl2_event, hit_hotkey)
 {
     TEST_ASSERT_EQUAL(hit_hotkey(0), 0);
 }
 
-TEST_GROUP_RUNNER(sdl2_event_mmiyoo)
+TEST_GROUP_RUNNER(sdl2_event)
 {
-    RUN_TEST_CASE(sdl2_event_mmiyoo, hit_hotkey);
+    RUN_TEST_CASE(sdl2_event, hit_hotkey);
 }
 #endif
 

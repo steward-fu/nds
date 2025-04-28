@@ -11,6 +11,8 @@
 #include "../../video/nds/nds_video.h"
 #include "../../video/nds/nds_event.h"
 
+#include "debug.h"
+
 typedef struct MMIYOO_TextureData {
     void *data;
     unsigned int size;

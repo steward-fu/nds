@@ -242,9 +242,9 @@ AC_MSG_CHECKING(for linker option --no-undefined)
 have_no_undefined=no
 
 case "$MOD" in
-    *unittest*)
+    *ut*)
         old_host="$host"
-        host=unittest
+        host=ut
     ;;
 esac
 
@@ -252,7 +252,7 @@ case "$host" in
     dnl Skip this on platforms where it is just simply busted.
     *-*-openbsd*)
         ;;
-    *unittest*)
+    *ut*)
         ;;
     *)
         save_LDFLAGS="$LDFLAGS"
@@ -266,7 +266,7 @@ case "$host" in
 esac
 
 case "$MOD" in
-    *unittest*)
+    *ut*)
         host="$old_host"
     ;;
 esac
@@ -2405,12 +2405,8 @@ CheckNDSVideo()
         AC_DEFINE(SDL_VIDEO_RENDER_NDS, 1, [ ])
 
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.S"
 
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
@@ -2425,15 +2421,21 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldtr"
 
         have_video=yes
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
+        SUMMARY_video="${SUMMARY_video} nds_video"
     fi
 
     if test x$MOD = xmini; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMINI"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
     fi
 
     if test x$MOD = xa30; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lMali"
 
         AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
@@ -2443,6 +2445,9 @@ CheckNDSVideo()
 
     if test x$MOD = xflip; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm -lgbm"
 
         AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
@@ -2452,24 +2457,39 @@ CheckNDSVideo()
 
     if test x$MOD = xrg28xx; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DRG28XX"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
     fi
 
     if test x$MOD = xtrimui; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
     fi
 
     if test x$MOD = xpandora; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
     fi
 
     if test x$MOD = xqx1000; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
     if test x$MOD = xut; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUT"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/src"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/extras/fixture/src"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/extras/memory/src"
     fi
 }
 

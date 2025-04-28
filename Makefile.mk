@@ -25,7 +25,7 @@ ifeq ($(NDS_ALSA),1)
 endif
 
 ifeq ($(MOD),ut)
-	make -C ut $(MOD)
+	make -C ut
 endif
 
 .PHONY: cfg
