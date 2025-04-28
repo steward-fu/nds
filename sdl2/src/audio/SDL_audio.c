@@ -122,9 +122,6 @@ static const AudioBootStrap *const bootstrap[] = {
 #if SDL_AUDIO_DRIVER_DUMMY
     &DUMMYAUDIO_bootstrap,
 #endif
-#if SDL_AUDIO_DRIVER_MMIYOO
-    &MMIYOOAUDIO_bootstrap,
-#endif
     NULL
 };
 
