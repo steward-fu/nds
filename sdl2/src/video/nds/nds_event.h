@@ -7,11 +7,6 @@
 #include "../../SDL_internal.h"
 #include "nds_event.h"
 
-#define LEFT_TH     -30
-#define RIGHT_TH    30
-#define UP_TH       -30
-#define DOWN_TH     30
-
 #if defined(FLIP)
 #define DEV_KEY_BUF_MAX     32
 #define DEV_KEY_IDX_MAX     19

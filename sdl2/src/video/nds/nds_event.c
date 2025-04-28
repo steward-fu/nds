@@ -229,7 +229,7 @@ typedef struct _cust_key_t {
 static cust_key_t cust_key = {0};
 #endif
 
-const SDL_Scancode code[]={
+const SDL_Scancode code[] = {
     SDLK_UP,            // UP
     SDLK_DOWN,          // DOWN
     SDLK_LEFT,          // LEFT
@@ -417,82 +417,92 @@ static void set_key(uint32_t bit, int val)
 static int trans_joy_to_keypad(jval_t *j, int rjoy)
 {
     int r = 0;
-    static int pre_x = -1;
-    static int pre_y = -1;
-    static int pre_up = 0;
-    static int pre_down = 0;
-    static int pre_left = 0;
-    static int pre_right = 0;
+    static int pre_x[2] = { -1, -1 };
+    static int pre_y[2] = { -1, -1 };
+    static int pre_up[2] = { 0 };
+    static int pre_down[2] = { 0 };
+    static int pre_left[2] = { 0 };
+    static int pre_right[2] = { 0 };
 
     uint32_t u_key = MYKEY_UP;
     uint32_t d_key = MYKEY_DOWN;
     uint32_t l_key = MYKEY_LEFT;
     uint32_t r_key = MYKEY_RIGHT;
 
+    int UP_TH = -1 * nds.joy.dzone;
+    int DOWN_TH = nds.joy.dzone;
+    int LEFT_TH = -1 * nds.joy.dzone;
+    int RIGHT_TH = nds.joy.dzone;
+
+    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+
     if (rjoy) {
         u_key = MYKEY_X;
         d_key = MYKEY_B;
         l_key = MYKEY_Y;
         r_key = MYKEY_A;
+
+        UP_TH = -1 * nds.rjoy.dzone;
+        DOWN_TH = nds.rjoy.dzone;
+        LEFT_TH = -1 * nds.rjoy.dzone;
+        RIGHT_TH = nds.rjoy.dzone;
     }
 
-    debug("call %s()\n", __func__);
-
-    if (j->x != pre_x) {
-        pre_x = j->x;
-        if (pre_x < LEFT_TH) {
-            if (pre_left == 0) {
+    if (j->x != pre_x[rjoy]) {
+        pre_x[rjoy] = j->x;
+        if (pre_x[rjoy] < LEFT_TH) {
+            if (pre_left[rjoy] == 0) {
                 r = 1;
-                pre_left = 1;
+                pre_left[rjoy] = 1;
                 set_key(l_key, 1);
             }
         }
-        else if (pre_x > RIGHT_TH){
-            if (pre_right == 0) {
+        else if (pre_x[rjoy] > RIGHT_TH){
+            if (pre_right[rjoy] == 0) {
                 r = 1;
-                pre_right = 1;
+                pre_right[rjoy] = 1;
                 set_key(r_key, 1);
             }
         }
         else {
-            if (pre_left != 0) {
+            if (pre_left[rjoy] != 0) {
                 r = 1;
-                pre_left = 0;
+                pre_left[rjoy] = 0;
                 set_key(l_key, 0);
             }
-            if (pre_right != 0) {
+            if (pre_right[rjoy] != 0) {
                 r = 1;
-                pre_right = 0;
+                pre_right[rjoy] = 0;
                 set_key(r_key, 0);
             }
         }
     }
 
-    if (j->y != pre_y) {
-        pre_y = j->y;
-        if (pre_y < UP_TH) {
-            if (pre_up == 0) {
+    if (j->y != pre_y[rjoy]) {
+        pre_y[rjoy] = j->y;
+        if (pre_y[rjoy] < UP_TH) {
+            if (pre_up[rjoy] == 0) {
                 r = 1;
-                pre_up = 1;
+                pre_up[rjoy] = 1;
                 set_key(u_key, 1);
             }
         }
-        else if (pre_y > DOWN_TH){
-            if (pre_down == 0) {
+        else if (pre_y[rjoy] > DOWN_TH){
+            if (pre_down[rjoy] == 0) {
                 r = 1;
-                pre_down = 1;
+                pre_down[rjoy] = 1;
                 set_key(d_key, 1);
             }
         }
         else {
-            if (pre_up != 0) {
+            if (pre_up[rjoy] != 0) {
                 r = 1;
-                pre_up = 0;
+                pre_up[rjoy] = 0;
                 set_key(u_key, 0);
             }
-            if (pre_down != 0) {
+            if (pre_down[rjoy] != 0) {
                 r = 1;
-                pre_down = 0;
+                pre_down[rjoy] = 0;
                 set_key(d_key, 0);
             }
         }
@@ -501,66 +511,78 @@ static int trans_joy_to_keypad(jval_t *j, int rjoy)
     return r;
 }
 
-static int trans_joy_to_touch(jval_t *j)
+static int trans_joy_to_touch(jval_t *j, int rjoy)
 {
     int r = 0;
-    static int pre_x = -1;
-    static int pre_y = -1;
+    static int pre_x[2] = { -1, -1 };
+    static int pre_y[2] = { -1, -1 };
 
-    static int pre_up = 0;
-    static int pre_down = 0;
-    static int pre_left = 0;
-    static int pre_right = 0;
+    static int pre_up[2] = { 0 };
+    static int pre_down[2] = { 0 };
+    static int pre_left[2] = { 0 };
+    static int pre_right[2] = { 0 };
 
-    debug("call %s()\n", __func__);
+    int UP_TH = -1 * nds.joy.dzone;
+    int DOWN_TH = nds.joy.dzone;
+    int LEFT_TH = -1 * nds.joy.dzone;
+    int RIGHT_TH = nds.joy.dzone;
 
-    if (j->x != pre_x) {
-        pre_x = j->x;
-        if (pre_x < LEFT_TH) {
-            if (pre_left == 0) {
-                pre_left = 1;
+    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+
+    if (rjoy) {
+        UP_TH = -1 * nds.rjoy.dzone;
+        DOWN_TH = nds.rjoy.dzone;
+        LEFT_TH = -1 * nds.rjoy.dzone;
+        RIGHT_TH = nds.rjoy.dzone;
+    }
+
+    if (j->x != pre_x[rjoy]) {
+        pre_x[rjoy] = j->x;
+        if (pre_x[rjoy] < LEFT_TH) {
+            if (pre_left[rjoy] == 0) {
+                pre_left[rjoy] = 1;
             }
         }
-        else if (pre_x > RIGHT_TH){
-            if (pre_right == 0) {
-                pre_right = 1;
+        else if (pre_x[rjoy] > RIGHT_TH){
+            if (pre_right[rjoy] == 0) {
+                pre_right[rjoy] = 1;
             }
         }
         else {
-            if (pre_left != 0) {
-                pre_left = 0;
+            if (pre_left[rjoy] != 0) {
+                pre_left[rjoy] = 0;
             }
-            if (pre_right != 0) {
-                pre_right = 0;
+            if (pre_right[rjoy] != 0) {
+                pre_right[rjoy] = 0;
             }
         }
     }
 
-    if (j->y != pre_y) {
-        pre_y = j->y;
-        if (pre_y < UP_TH) {
-            if (pre_up == 0) {
-                pre_up = 1;
+    if (j->y != pre_y[rjoy]) {
+        pre_y[rjoy] = j->y;
+        if (pre_y[rjoy] < UP_TH) {
+            if (pre_up[rjoy] == 0) {
+                pre_up[rjoy] = 1;
             }
         }
-        else if (pre_y > DOWN_TH){
-            if (pre_down == 0) {
-                pre_down = 1;
+        else if (pre_y[rjoy] > DOWN_TH){
+            if (pre_down[rjoy] == 0) {
+                pre_down[rjoy] = 1;
             }
         }
         else {
-            if (pre_up != 0) {
-                pre_up = 0;
+            if (pre_up[rjoy] != 0) {
+                pre_up[rjoy] = 0;
             }
-            if (pre_down != 0) {
-                pre_down = 0;
+            if (pre_down[rjoy] != 0) {
+                pre_down[rjoy] = 0;
             }
         }
     }
 
-    if (pre_up || pre_down || pre_left || pre_right) {
+    if (pre_up[rjoy] || pre_down[rjoy] || pre_left[rjoy] || pre_right[rjoy]) {
         if (evt.keypad.cur_keys &  (1 << MYKEY_Y)) {
-            if (pre_right) {
+            if (pre_right[rjoy]) {
                 static int cc = 0;
 
                 if (cc == 0) {
@@ -582,30 +604,30 @@ static int trans_joy_to_touch(jval_t *j)
             const int v = MYJOY_MOVE_SPEED;
 
             if (is_hh_mode() && (nds.keys_rotate == 0)) {
-                if (pre_down) {
+                if (pre_down[rjoy]) {
                     evt.mouse.x -= v;
                 }
-                if (pre_up) {
+                if (pre_up[rjoy]) {
                     evt.mouse.x += v;
                 }
-                if (pre_left) {
+                if (pre_left[rjoy]) {
                     evt.mouse.y -= v;
                 }
-                if (pre_right) {
+                if (pre_right[rjoy]) {
                     evt.mouse.y += v;
                 }
             }
             else {
-                if (pre_left) {
+                if (pre_left[rjoy]) {
                     evt.mouse.x -= v;
                 }
-                if (pre_right) {
+                if (pre_right[rjoy]) {
                     evt.mouse.x += v;
                 }
-                if (pre_up) {
+                if (pre_up[rjoy]) {
                     evt.mouse.y -= v;
                 }
-                if (pre_down) {
+                if (pre_down[rjoy]) {
                     evt.mouse.y += v;
                 }
             }
@@ -621,79 +643,91 @@ static int trans_joy_to_touch(jval_t *j)
     return r;
 }
 
-static int trans_joy_to_custkey(jval_t *j)
+static int trans_joy_to_custkey(jval_t *j, int rjoy)
 {
     int r = 0;
-    static int pre_x = -1;
-    static int pre_y = -1;
+    static int pre_x[2] = { -1, -1 };
+    static int pre_y[2] = { -1, -1 };
 
-    static int pre_up = 0;
-    static int pre_down = 0;
-    static int pre_left = 0;
-    static int pre_right = 0;
+    static int pre_up[2] = { 0 };
+    static int pre_down[2] = { 0 };
+    static int pre_left[2] = { 0 };
+    static int pre_right[2] = { 0 };
 
     uint32_t u_key = nds.joy.cuskey[0];
     uint32_t d_key = nds.joy.cuskey[1];
     uint32_t l_key = nds.joy.cuskey[2];
     uint32_t r_key = nds.joy.cuskey[3];
 
-    debug("call %s()\n", __func__);
+    int UP_TH = -1 * nds.joy.dzone;
+    int DOWN_TH = nds.joy.dzone;
+    int LEFT_TH = -1 * nds.joy.dzone;
+    int RIGHT_TH = nds.joy.dzone;
 
-    if (j->x != pre_x) {
-        pre_x = j->x;
-        if (pre_x < LEFT_TH) {
-            if (pre_left == 0) {
+    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+
+    if (rjoy) {
+        UP_TH = -1 * nds.rjoy.dzone;
+        DOWN_TH = nds.rjoy.dzone;
+        LEFT_TH = -1 * nds.rjoy.dzone;
+        RIGHT_TH = nds.rjoy.dzone;
+    }
+
+    if (j->x != pre_x[rjoy]) {
+        pre_x[rjoy] = j->x;
+        if (pre_x[rjoy] < LEFT_TH) {
+            if (pre_left[rjoy] == 0) {
                 r = 1;
-                pre_left = 1;
+                pre_left[rjoy] = 1;
                 set_key(l_key, 1);
             }
         }
-        else if (pre_x > RIGHT_TH){
-            if (pre_right == 0) {
+        else if (pre_x[rjoy] > RIGHT_TH){
+            if (pre_right[rjoy] == 0) {
                 r = 1;
-                pre_right = 1;
+                pre_right[rjoy] = 1;
                 set_key(r_key, 1);
             }
         }
         else {
-            if (pre_left != 0) {
+            if (pre_left[rjoy] != 0) {
                 r = 1;
-                pre_left = 0;
+                pre_left[rjoy] = 0;
                 set_key(l_key, 0);
             }
-            if (pre_right != 0) {
+            if (pre_right[rjoy] != 0) {
                 r = 1;
-                pre_right = 0;
+                pre_right[rjoy] = 0;
                 set_key(r_key, 0);
             }
         }
     }
 
-    if (j->y != pre_y) {
-        pre_y = j->y;
-        if (pre_y < UP_TH) {
-            if (pre_up == 0) {
+    if (j->y != pre_y[rjoy]) {
+        pre_y[rjoy] = j->y;
+        if (pre_y[rjoy] < UP_TH) {
+            if (pre_up[rjoy] == 0) {
                 r = 1;
-                pre_up = 1;
+                pre_up[rjoy] = 1;
                 set_key(u_key, 1);
             }
         }
-        else if (pre_y > DOWN_TH){
-            if (pre_down == 0) {
+        else if (pre_y[rjoy] > DOWN_TH){
+            if (pre_down[rjoy] == 0) {
                 r = 1;
-                pre_down = 1;
+                pre_down[rjoy] = 1;
                 set_key(d_key, 1);
             }
         }
         else {
-            if (pre_up != 0) {
+            if (pre_up[rjoy] != 0) {
                 r = 1;
-                pre_up = 0;
+                pre_up[rjoy] = 0;
                 set_key(u_key, 0);
             }
-            if (pre_down != 0) {
+            if (pre_down[rjoy] != 0) {
                 r = 1;
-                pre_down = 0;
+                pre_down[rjoy] = 0;
                 set_key(d_key, 0);
             }
         }
@@ -712,20 +746,20 @@ static int update_joy_state(void)
         r |= trans_joy_to_keypad(&myjoy.left.last, 0);
     }
     else if (nds.joy.mode == MYJOY_MODE_STYLUS) {
-        r |= trans_joy_to_touch(&myjoy.left.last);
+        r |= trans_joy_to_touch(&myjoy.left.last, 0);
     }
     else if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
-        r |= trans_joy_to_custkey(&myjoy.left.last);
+        r |= trans_joy_to_custkey(&myjoy.left.last, 0);
     }
 
     if (nds.rjoy.mode == MYJOY_MODE_KEYPAD) {
         r |= trans_joy_to_keypad(&myjoy.right.last, 1);
     }
     else if (nds.rjoy.mode == MYJOY_MODE_STYLUS) {
-        r |= trans_joy_to_touch(&myjoy.right.last);
+        r |= trans_joy_to_touch(&myjoy.right.last, 1);
     }
     else if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
-        r |= trans_joy_to_custkey(&myjoy.right.last);
+        r |= trans_joy_to_custkey(&myjoy.right.last, 1);
     }
 
     return r;
@@ -974,7 +1008,7 @@ static int handle_hotkey(void)
 
         if (pre_ff != nds.fast_forward) {
             pre_ff = nds.fast_forward;
-            dtr_fastforward(nds.fast_forward);
+            fast_forward(nds.fast_forward);
         }
         set_key(MYKEY_FF, 1);
 #endif
@@ -1177,19 +1211,19 @@ int input_handler(void *data)
             if ((!!tbuf[cc]) == (!!(pre_bits & (1 << cc)))) {
                 continue;
             }
-
-            if (tbuf[cc]) {
-                pre_bits |= (1 << cc);
-            }
-            else {
-                pre_bits &= ~(1 << cc);
-            }
-
             ev.code = kval[cc];
-            ev.value = !!tbuf[cc];
 
             debug("%d, %d\n", ev.code, ev.value);
             if (ev.code > 0) {
+                ev.value = !!tbuf[cc];
+
+                if (tbuf[cc]) {
+                    pre_bits |= (1 << cc);
+                }
+                else {
+                    pre_bits &= ~(1 << cc);
+                }
+
 #endif
 
 #if defined(RG28XX)
