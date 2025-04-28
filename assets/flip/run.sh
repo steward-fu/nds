@@ -2,8 +2,8 @@
 MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
-export SDL_VIDEODRIVER=mmiyoo
-export LD_LIBRARY_PATH=libs
+export SDL_VIDEODRIVER=nds
+export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH
 
 sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness

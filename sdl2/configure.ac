@@ -2398,113 +2398,77 @@ CheckQNXAudio()
     fi
 }
 
-CheckRG28XXVideo()
+CheckNDSVideo()
 {
     if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
-        have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DRG28XX -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/a30/arm-a30-linux-gnueabihf/sysroot/usr/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
-    fi
-}
+        AC_DEFINE(SDL_VIDEO_DRIVER_NDS, 1, [ ])
+        AC_DEFINE(SDL_VIDEO_RENDER_NDS, 1, [ ])
 
-CheckFlipVideo()
-{
-    if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
-        have_joystick=yes
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
-        have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2 -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -ldrm -lgbm -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
-    fi
-}
-
-CheckA30Video()
-{
-    if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
-        have_joystick=yes
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
-        have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30 -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../detour -I/opt/a30/arm-a30-linux-gnueabihf/sysroot/usr/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lMali -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
-    fi
-}
-
-CheckMMiyooVideo()
-{
-    if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
-        have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMMIYOO -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../mmiyoo/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
-    fi
-}
-
-CheckTrimuiVideo()
-{
-    if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
-        have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I../trimui/inc -I../detour -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
-    fi
-}
-
-CheckPandoraVideo()
-{
-    if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
-        have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA -fPIC -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -ffast-math -O3 -I../detour -I/usr/local/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
-    fi
-}
-
-CheckQX1000Video()
-{
-    if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/video/nds/*.c $srcdir/src/video/nds/*.S"
-        have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000 -fPIC -mcpu=cortex-a53 -mtune=cortex-a53 -mfpu=neon -O3 -I../detour -I/usr/local/include/SDL2"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lwayland-client -lwayland-egl -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
-        SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
-    fi
-}
-
-CheckUnittestVideo()
-{
-    if test x$enable_video = xyes; then
-        AC_DEFINE(SDL_VIDEO_DRIVER_MMIYOO, 1, [ ])
-        AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
+        SOURCES="$SOURCES $srcdir/src/video/nds/*.S"
+
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lEGL"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lGLESv2"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lSDL2_image"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lSDL2_ttf"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lrt"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ljson-c"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../detour"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldtr"
+
         have_video=yes
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DUNITTEST -fPIC -I/usr/include/SDL2 -I../detour -I../unittest/extras/fixture/src -I../unittest/src -I../unittest/extras/memory/src"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c -L../detour -ldtr"
         SUMMARY_video="${SUMMARY_video} NDS_VIDEO"
+    fi
+
+    if test x$MOD = xmini; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMINI"
+    fi
+
+    if test x$MOD = xa30; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lMali"
+
+        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
+        have_joystick=yes
+    fi
+
+    if test x$MOD = xflip; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm -lgbm"
+
+        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
+        have_joystick=yes
+    fi
+
+    if test x$MOD = xrg28xx; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DRG28XX"
+    fi
+
+    if test x$MOD = xtrimui; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI"
+    fi
+
+    if test x$MOD = xpandora; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA"
+    fi
+
+    if test x$MOD = xqx1000; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
+    fi
+
+    if test x$MOD = xut; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DUT"
     fi
 }
 
@@ -3792,34 +3756,29 @@ case "$host" in
         esac
 
         case "$MOD" in
-            *rg28xx*)           ARCH=rg28xx
-                CheckRG28XXVideo
+            *ut*)
+                CheckNDSVideo
                 ;;
-            *flip*)             ARCH=flip
-                CheckFlipVideo
+            *mini*)
+                CheckNDSVideo
                 ;;
-            *a30*)              ARCH=a30
-                CheckA30Video
+            *a30*)
+                CheckNDSVideo
                 ;;
-            *mmiyoo*)           ARCH=mmiyoo
-                CheckMMiyooVideo
+            *flip*)
+                CheckNDSVideo
                 ;;
-            *trimui*)           ARCH=trimui
-                CheckTrimuiVideo
+            *rg28xx*)
+                CheckNDSVideo
                 ;;
-            *pandora*)          ARCH=pandora
-                CheckPandoraVideo
+            *trimui*)
+                CheckNDSVideo
                 ;;
-            *qx1000*)           ARCH=qx1000
-                CheckQX1000Video
+            *pandora*)
+                CheckNDSVideo
                 ;;
-            *unittest*)         ARCH=unittest
-                CheckUnittestVideo
-                ;;
-        esac
-
-        case "$MOD" in
-            *unittest*)
+            *qx1000*)
+                CheckNDSVideo
                 ;;
             *)
                 CheckVisibilityHidden
