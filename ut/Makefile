@@ -3,6 +3,8 @@ CFLAGS  += -ggdb
 CFLAGS  += -Isrc
 CFLAGS  += -Iextras/memory/src
 CFLAGS  += -Iextras/fixture/src
+LDFLAGS += -Wl,-rpath .
+LDFLAGS += -Wl,-rpath-link .
 LDFLAGS += -Wl,--no-undefined
 LDFLAGS += libdtr.so
 LDFLAGS += libasound.so.2
@@ -12,15 +14,19 @@ SOURCES  = main.c cases.c src/unity.c extras/memory/src/unity_memory.c extras/fi
 .PHONY: all
 all: gen_cases
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(SOURCES)
-	LD_LIBRARY_PATH=../drastic/lib ./$(TARGET) -v
+	LD_LIBRARY_PATH=. ./$(TARGET) -v
 
 .PHONY: gen_cases
 gen_cases:
-	echo "#include \"unity_fixture.h\"" > cases.c
-	echo "TEST_GROUP_RUNNER(detour)" >> cases.c
-	echo "{" >> cases.c
-	cat ../detour/main.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
-	echo "}" >> cases.c
+	@echo "#include \"unity_fixture.h\"" > cases.c
+	@echo "TEST_GROUP_RUNNER(sdl2_video)" >> cases.c
+	@echo "{" >> cases.c
+	@cat ../sdl2/src/video/nds/nds_video.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@echo "}" >> cases.c
+	@echo "TEST_GROUP_RUNNER(detour)" >> cases.c
+	@echo "{" >> cases.c
+	@cat ../detour/main.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@echo "}" >> cases.c
 
 .PHONY: clean
 clean:

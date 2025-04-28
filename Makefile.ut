@@ -6,7 +6,10 @@ CFLAGS  = -DUT
 CFLAGS += -I../ut/src
 CFLAGS += -I../ut/extras/fixture/src
 CFLAGS += -I../ut/extras/memory/src
+#CFLAGS += -fsanitize=leak
+#CFLAGS += -fsanitize=address
 
 export MORE_CFLAGS=${CFLAGS}
+export MORE_LDFLAGS=${LDFLAGS}
 
 include Makefile.mk

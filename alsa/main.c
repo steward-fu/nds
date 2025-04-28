@@ -843,7 +843,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     pa_threaded_mainloop_unlock(pa.mainloop);
 #endif
 
-    detour_hook(FUN_SPU_ADPCM_DECODE_BLOCK, (intptr_t)snd_spu_adpcm_decode_block);
+    add_prehook_cb((void *)FUN_SPU_ADPCM_DECODE_BLOCK, snd_spu_adpcm_decode_block);
     printf(PREFIX"Enabled spu hooking\n");
 
     pcm_ready = 1;
@@ -856,7 +856,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     void *ret = NULL;
 
     if (auto_state > 0) {
-        dtr_savestate(auto_slot);
+        save_state(auto_slot);
     }
 
     pcm_ready = 0;

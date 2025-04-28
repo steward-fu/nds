@@ -22,6 +22,10 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
+#if defined(UT)
+#include "unity_fixture.h"
+#endif
+
 #include "../../SDL_internal.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_sysvideo.h"
@@ -37,6 +41,7 @@
 #include "SDL_mouse.h"
 
 #include "debug.h"
+#include "detour.h"
 #include "hex_pen.h"
 #include "nds_video.h"
 #include "nds_event.h"
@@ -292,7 +297,21 @@ static struct wl_registry_listener cb_global = {
     .global = cb_handle,
     .global_remove = cb_remove
 };
+#endif
 
+#if defined(UT)
+TEST_GROUP(sdl2_video);
+
+TEST_SETUP(sdl2_video)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_video)
+{
+}
+#endif
+
+#ifdef QX1000
 void update_wayland_res(int w, int h)
 {
     int c0 = 0;
@@ -653,24 +672,6 @@ static int get_bat_val(void)
     return r;
 }
 #endif
-
-static void write_file(const char *fname, const void *buf, int len)
-{
-    struct stat st = {0};
-    int fd = -1;
-
-    if (stat(buf, &st) == -1) {
-        fd = open(fname, O_WRONLY | O_CREAT, 0755);
-    }
-    else {
-        fd = open(fname, O_WRONLY);
-    }
-
-    if (fd >= 0) {
-        write(fd, buf, len);
-        close(fd);
-    }
-}
 
 static int get_current_menu_layer(void)
 {
@@ -1626,7 +1627,7 @@ static int process_screen(void)
         if (need_loadstate > 0) {
             need_loadstate-= 1;
             if (need_loadstate == 0) {
-                dtr_loadstate(nds.auto_slot);
+                load_state(nds.auto_slot);
             }
         }
     }
@@ -2291,7 +2292,7 @@ void prehook_cb_savestate_pre(void)
 #endif
 }
 
-void sdl_savestate_post(void)
+void prehook_cb_savestate_post(void)
 {
 #if !defined(UT)
     asm volatile (
@@ -2307,14 +2308,23 @@ void sdl_savestate_post(void)
 
 void sigterm_handler(int sig)
 {
-    static int ran = 0;
+    static int running = 0;
 
-    if (ran == 0) {
-        ran = 1;
-        debug("Oops sigterm !\n");
-        dtr_quit();
+    debug("call %s(sig=%d)\n", __func__, sig);
+
+    if (!running) {
+        running = 1;
+        quit_drastic();
     }
 }
+
+#if defined(UT)
+TEST(sdl2_video, sigterm_handler)
+{
+    sigterm_handler(0);
+    TEST_PASS();
+}
+#endif
 
 static void strip_newline(char *p)
 {
@@ -3893,7 +3903,6 @@ int fb_quit(void)
 void GFX_Init(void)
 {
     struct stat st = {0};
-    char buf[MAX_PATH << 1] = {0};
 
 #ifdef TRIMUI
     int x = 0;
@@ -6127,8 +6136,6 @@ void test(uint32_t v)
 
 int MMIYOO_VideoInit(_THIS)
 {
-    int r = 0;
-
 #ifdef MMIYOO
     FILE *fd = NULL;
     char buf[MAX_PATH] = {0};
@@ -6231,20 +6238,20 @@ int MMIYOO_VideoInit(_THIS)
 
     init_hook(sysconf(_SC_PAGESIZE), nds.states.path);
 
-    detour_hook(FUN_PRINT_STRING,       (intptr_t)prehook_cb_print_string);
-    detour_hook(FUN_SAVESTATE_PRE,      (intptr_t)prehook_cb_savestate_pre);
-    detour_hook(FUN_SAVESTATE_POST,     (intptr_t)sdl_savestate_post);
-    detour_hook(FUN_BLIT_SCREEN_MENU,   (intptr_t)prehook_cb_blit_screen_menu);
-    detour_hook(FUN_UPDATE_SCREEN,      (intptr_t)prehook_cb_update_screen);
-    detour_hook(
-        FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS,
-        (intptr_t)render_polygon_setup_perspective_steps
+    add_prehook_cb((void *)FUN_PRINT_STRING,     prehook_cb_print_string);
+    add_prehook_cb((void *)FUN_SAVESTATE_PRE,    prehook_cb_savestate_pre);
+    add_prehook_cb((void *)FUN_SAVESTATE_POST,   prehook_cb_savestate_post);
+    add_prehook_cb((void *)FUN_BLIT_SCREEN_MENU, prehook_cb_blit_screen_menu);
+    add_prehook_cb((void *)FUN_UPDATE_SCREEN,    prehook_cb_update_screen);
+    add_prehook_cb(
+        (void *)FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS,
+        render_polygon_setup_perspective_steps
     );
 
 #if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
-    detour_hook(FUN_MALLOC,     (intptr_t)prehook_cb_malloc);
-    detour_hook(FUN_REALLOC,    (intptr_t)prehook_cb_realloc);
-    detour_hook(FUN_FREE,       (intptr_t)prehook_cb_free);
+    add_prehook_cb(FUN_MALLOC,     (intptr_t)prehook_cb_malloc);
+    add_prehook_cb(FUN_REALLOC,    (intptr_t)prehook_cb_realloc);
+    add_prehook_cb(FUN_FREE,       (intptr_t)prehook_cb_free);
 #endif
     return 0;
 }
@@ -7807,27 +7814,4 @@ int handle_menu(int key)
 }
 #endif
 
-#if defined(UT)
-#include "unity_fixture.h"
-
-TEST_GROUP(sdl2_video_mmiyoo);
-
-TEST_SETUP(sdl2_video_mmiyoo)
-{
-}
-
-TEST_TEAR_DOWN(sdl2_video_mmiyoo)
-{
-}
-
-TEST(sdl2_video_mmiyoo, get_current_menu_layer)
-{
-    TEST_ASSERT_EQUAL(get_current_menu_layer(), -1);
-}
-
-TEST_GROUP_RUNNER(sdl2_video_mmiyoo)
-{
-    RUN_TEST_CASE(sdl2_video_mmiyoo, get_current_menu_layer);
-}
-#endif
 

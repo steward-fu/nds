@@ -5,8 +5,21 @@
 #define __DETOUR_H__
 
 #if !defined(MAX_PATH)
-#define MAX_PATH                    128
+#define MAX_PATH            128
 #endif
+
+#define NDS_FIRMWARE        "nds_firmware.bin"
+#define NDS_BIOS_ARM7       "nds_bios_arm7.bin"
+#define NDS_BIOS_ARM9       "nds_bios_arm9.bin"
+#define DRASTIC_BIOS_ARM7   "drastic_bios_arm7.bin"
+#define DRASTIC_BIOS_ARM9   "drastic_bios_arm9.bin"
+#if defined(UT)
+    #define BIOS_FOLDER     ""
+#else
+    #define BIOS_FOLDER     "system"
+#endif
+
+#define MAX_STATE_SLOT      32
 
 #define VAR_SYSTEM                  0x083f4000
 #define VAR_SYSTEM_GAMECARD_NAME    0x0847e8e8
@@ -127,13 +140,13 @@ typedef void (*nds_spu_adpcm_decode_block)(spu_channel_struct *channel);
 
 int init_hook(size_t, const char *);
 int quit_hook(void);
-void detour_hook(uintptr_t, uintptr_t);
-
-int dtr_quit(void);
-int dtr_savestate(int slot);
-int dtr_loadstate(int slot);
-int dtr_fastforward(uint8_t v);
-int patch_elf(uintptr_t pos, uintptr_t pfn);
+int add_prehook_cb(void *, void *);
+int quit_drastic(void);
+int load_state(int slot);
+int save_state(int slot);
+int fast_forward(uint8_t v);
+int unlock_protected_area(void *);
+int drop_bios_files(const char *);
 
 #endif
 

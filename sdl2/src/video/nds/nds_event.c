@@ -197,7 +197,7 @@
     #define EXIT    1  // 'ESC'
 #endif
 
-MMIYOO_EventInfo evt = { 0 };
+MMIYOO_EventInfo evt = {{ 0 }};
 
 extern GFX gfx;
 extern NDS nds;
@@ -1052,7 +1052,7 @@ int input_handler(void *data)
     int tbuf[DEV_KEY_BUF_MAX] = { 0 };
 #endif
 
-    struct input_event ev = {0};
+    struct input_event ev = {{ 0 }};
 
     uint32_t l1 = L1;
     uint32_t r1 = R1;
