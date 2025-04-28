@@ -2448,6 +2448,7 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm -lgbm"
 
         AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
