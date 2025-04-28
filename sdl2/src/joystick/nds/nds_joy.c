@@ -33,6 +33,7 @@
 
 #include "../../video/nds/nds_video.h"
 
+#include "debug.h"
 #include "nds_joy.h"
 
 #if defined(UT)
@@ -363,28 +364,24 @@ static void update_axis_values(void)
                 if (!filter_dead_zone(myjoy.left.cali.x.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.left.last.x = r;
                     debug("left joy x=%d\n", r);
-printf("left joy x=%d\n", r);
                 }
                 break;
             case 1:
                 if (!filter_dead_zone(myjoy.left.cali.y.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.left.last.y = r;
                     debug("left joy y=%d\n", r);
-printf("left joy y=%d\n", r);
                 }
                 break;
             case 2:
                 if (!filter_dead_zone(myjoy.right.cali.x.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.right.last.x = r;
                     debug("right joy x=%d\n", r);
-printf("right joy x=%d\n", r);
                 }
                 break;
             case 3:
                 if (!filter_dead_zone(myjoy.right.cali.y.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.right.last.y = r;
                     debug("right joy y=%d\n", r);
-printf("right joy y=%d\n", r);
                 }
                 break;
             }
@@ -695,8 +692,9 @@ int joy_handler(void *param)
             buf[r] = 0;
             parse_serial_buf(buf, r);
         }
-
-        usleep(1000000 / 60);
+        else {
+            usleep(1000000 / 60);
+        }
     }
 #endif
 
