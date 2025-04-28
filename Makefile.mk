@@ -1,5 +1,7 @@
+ifeq ($(NDS_GCC),1)
 export CROSS=arm-linux-gnueabihf-
 export PATH=/opt/mini/bin:$(shell echo $$PATH)
+endif
 
 export CC=${CROSS}gcc
 export AR=${CROSS}ar
@@ -18,7 +20,7 @@ all: cfg
 	cp detour/libdtr.so drastic/lib/
 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/lib/
 
-ifeq ($(MOD),mini)
+ifeq ($(NDS_ALSA),1)
 	cp alsa/libasound.so.2 drastic/lib/
 endif
 
@@ -28,10 +30,12 @@ endif
 
 .PHONY: cfg
 cfg:
+ifneq ($(MOD),ut)
 	cp -a assets/$(MOD)/* drastic/
+endif
 
-ifeq (,$(wildcard sdl2/Makefile))
-	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure --host=$(HOST)
+ifeq ($(wildcard sdl2/Makefile),)
+	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure --enable-video --host=$(HOST)
 endif
 
 .PHONY: rel
@@ -43,8 +47,9 @@ clean:
 	make -C ut clean
 	make -C alsa clean
 	make -C detour clean
-	make -C loader clean
 	make -C sdl2 distclean > /dev/null 2>&1 || true
+	rm -rf sdl2/Makefile
+	rm -rf sdl2/configure
 	rm -rf drastic/cpuclock
 	rm -rf drastic/run.sh
 	rm -rf drastic/launch.sh

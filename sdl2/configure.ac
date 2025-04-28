@@ -2412,6 +2412,7 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lEGL"

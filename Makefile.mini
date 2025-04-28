@@ -1,3 +1,5 @@
 export MOD=mini
+export NDS_GCC=1
+export NDS_ALSA=1
 
 include Makefile.mk

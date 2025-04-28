@@ -1,3 +1,5 @@
 export MOD=trimui
+export NDS_GCC=1
+export NDS_ALSA=0
 
 include Makefile.mk
