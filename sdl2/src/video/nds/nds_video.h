@@ -270,7 +270,6 @@
 #define DRASTIC_MENU_YES_FILE       "drastic_yes.png"
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
-#define MMIYOO_DRIVER_NAME          "mmiyoo"
 #define BASE_REG_RIU_PA             0x1f000000
 #define BASE_REG_MPLL_PA            (BASE_REG_RIU_PA + 0x103000 * 2)
 #define PLL_SIZE                    0x1000
@@ -666,7 +665,6 @@ struct _cpu_clock {
 
 int snd_nds_savestate(int slot);
 void snd_nds_reload_config(void);
-void neon_memcpy(void *dest, const void *src, size_t n);
 
 void GFX_Clear(void);
 void GFX_Flip(void);
@@ -697,7 +695,6 @@ const char *to_lang(const char *p);
 void update_wayland_res(int w, int h);
 
 void render_scanline_tiled_4bpp(void);
-void render_polygon_setup_perspective_steps(void);
 
 #endif
 

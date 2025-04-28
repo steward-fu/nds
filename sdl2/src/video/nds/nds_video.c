@@ -3929,11 +3929,6 @@ void GFX_Init(void)
     if (getcwd(nds.theme.path, sizeof(nds.theme.path))) {
         strcat(nds.theme.path, "/");
         strcat(nds.theme.path, THEME_PATH);
-#ifdef PANDORA
-        strcat(nds.theme.path, "_800");
-#else
-        strcat(nds.theme.path, nds.enable_752x560 ? "_752" : "_640");
-#endif
     }
 
     memset(nds.overlay.path, 0, sizeof(nds.overlay.path));
@@ -3955,7 +3950,9 @@ void GFX_Init(void)
     }
 
     memset(nds.bios.path, 0, sizeof(nds.bios.path));
-    drop_bios_files(nds.bios.path);
+    if (getcwd(nds.bios.path, sizeof(nds.bios.path))) {
+        drop_bios_files(nds.bios.path);
+    }
 
 #ifdef QX1000
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
@@ -4047,7 +4044,7 @@ void GFX_Clear(void)
 
 int draw_pen(void *pixels, int width, int pitch)
 {
-#if defined(UT)
+#if !defined(UT)
     int c0 = 0;
     int c1 = 0;
     int w = 28;
@@ -5646,6 +5643,7 @@ int reload_pen(void)
 
         nds.pen.type = PEN_LB;
         if (get_file_path(nds.pen.path, nds.pen.sel, buf, 1) == 0) {
+printf("\n-------------pen %s\n", buf);
             t = IMG_Load(buf);
             if (t) {
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
@@ -5689,7 +5687,7 @@ int reload_pen(void)
                 }
             }
             else {
-                printf(PREFIX"Failed to load pen (%s)\n", buf);
+                error("failed to load pen (%s)\n", buf);
             }
         }
     }
@@ -6075,11 +6073,7 @@ int reload_overlay(void)
 
 static int MMIYOO_Available(void)
 {
-    const char *envr = SDL_getenv("SDL_VIDEODRIVER");
-    if((envr) && (SDL_strcmp(envr, MMIYOO_DRIVER_NAME) == 0)) {
-        return 1;
-    }
-    return 0;
+    return 1;
 }
 
 static void MMIYOO_DeleteDevice(SDL_VideoDevice *device)
@@ -6127,7 +6121,7 @@ static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
     return device;
 }
 
-VideoBootStrap MMIYOO_bootstrap = {MMIYOO_DRIVER_NAME, "MMIYOO VIDEO DRIVER", MMIYOO_CreateDevice};
+VideoBootStrap NDS_bootstrap = { "NDS", "NDS Video Driver", MMIYOO_CreateDevice};
 
 void test(uint32_t v)
 {
@@ -6243,10 +6237,6 @@ int MMIYOO_VideoInit(_THIS)
     add_prehook_cb((void *)FUN_SAVESTATE_POST,   prehook_cb_savestate_post);
     add_prehook_cb((void *)FUN_BLIT_SCREEN_MENU, prehook_cb_blit_screen_menu);
     add_prehook_cb((void *)FUN_UPDATE_SCREEN,    prehook_cb_update_screen);
-    add_prehook_cb(
-        (void *)FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS,
-        render_polygon_setup_perspective_steps
-    );
 
 #if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
     add_prehook_cb(FUN_MALLOC,     (intptr_t)prehook_cb_malloc);
@@ -7073,7 +7063,7 @@ int handle_menu(int key)
         }
 
         if (pre_ff != nds.fast_forward) {
-            dtr_fastforward(nds.fast_forward);
+            fast_forward(nds.fast_forward);
             pre_ff = nds.fast_forward;
         }
         nds.menu.enable = 0;
@@ -7354,7 +7344,7 @@ int handle_menu(int key)
             sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.joy.cuskey[3]]));
             break;
         case MENU_JOY_DZONE:
-            sprintf(buf, "%d (65)", nds.joy.dzone);
+            sprintf(buf, "%d (15)", nds.joy.dzone);
             break;
 #endif
 #if defined(FLIP)
@@ -7374,7 +7364,7 @@ int handle_menu(int key)
             sprintf(buf, "Miyoo %s", to_lang(JOY_CUSKEY[nds.rjoy.cuskey[3]]));
             break;
         case MENU_RJOY_DZONE:
-            sprintf(buf, "%d (65)", nds.rjoy.dzone);
+            sprintf(buf, "%d (15)", nds.rjoy.dzone);
             break;
 #endif
 #if defined(MMIYOO) || defined(A30)
