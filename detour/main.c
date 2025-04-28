@@ -43,7 +43,7 @@ int unlock_protected_area(void *p)
 {
     int r = -1;
 
-    debug("call %s(p=%p)\n", _func__, p);
+    debug("call %s(p=%p)\n", __func__, p);
 
     if (!p) {
         error("invalid pointer\n");
@@ -572,6 +572,11 @@ int init_hook(size_t page, const char *path)
         add_prehook_cb((void *)FUN_SAVE_STATE_INDEX,  (void *)prehook_cb_save_state_index);
         add_prehook_cb((void *)FUN_INITIALIZE_BACKUP, (void *)prehook_cb_initialize_backup);
     }
+
+    add_prehook_cb(
+        (void *)FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS,
+        render_polygon_setup_perspective_steps
+    );
 
     return 0;
 }
