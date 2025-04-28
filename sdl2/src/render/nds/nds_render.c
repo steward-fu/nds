@@ -291,7 +291,7 @@ SDL_Renderer *MMIYOO_CreateRenderer(SDL_Window *window, Uint32 flags)
     renderer->DestroyTexture = MMIYOO_DestroyTexture;
     renderer->DestroyRenderer = MMIYOO_DestroyRenderer;
     renderer->SetVSync = MMIYOO_SetVSync;
-    renderer->info = MMIYOO_RenderDriver.info;
+    renderer->info = NDS_RenderDriver.info;
     renderer->info.flags = (SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
     renderer->driverdata = data;
     renderer->window = window;
@@ -320,10 +320,10 @@ SDL_Renderer *MMIYOO_CreateRenderer(SDL_Window *window, Uint32 flags)
     return renderer;
 }
 
-SDL_RenderDriver MMIYOO_RenderDriver = {
+SDL_RenderDriver NDS_RenderDriver = {
     .CreateRenderer = MMIYOO_CreateRenderer,
     .info = {
-        .name = "MMIYOO",
+        .name = "NDS Render",
         .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE,
         .num_texture_formats = 2,
         .texture_formats = {
