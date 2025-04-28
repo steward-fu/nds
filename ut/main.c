@@ -5,7 +5,7 @@
 
 static void runAllTests(void)
 {
-    //RUN_TEST_GROUP(alsa);
+    RUN_TEST_GROUP(alsa);
     RUN_TEST_GROUP(detour);
     //RUN_TEST_GROUP(sdl2_event);
     RUN_TEST_GROUP(sdl2_video);

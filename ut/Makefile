@@ -27,6 +27,10 @@ gen_cases:
 	@echo "{" >> cases.c
 	@cat ../detour/main.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
+	@echo "TEST_GROUP_RUNNER(alsa)" >> cases.c
+	@echo "{" >> cases.c
+	@cat ../alsa/main.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@echo "}" >> cases.c
 
 .PHONY: clean
 clean:

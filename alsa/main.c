@@ -26,36 +26,31 @@
 #include <sys/time.h>
 #include <syslog.h>
 
-#ifdef QX1000
+#if defined(QX1000)
 #include <pulse/pulseaudio.h>
 #endif
 
-#ifdef UT
+#if defined(UT)
 #include "unity_fixture.h"
 #endif
 
+#include "debug.h"
 #include "detour.h"
 
-#ifdef MMIYOO
+#if defined(MINI)
 #include "mi_ao.h"
 #include "mi_sys.h"
 #include "mi_common_datatype.h"
 #endif
 
-#define PREFIX              "[SND] "
-#define FREQ                44100
-#define PERIOD              2048
-#define CHANNELS            2
-
-#ifdef PANDORA
-#define SAMPLES             2048
-#else
-#define SAMPLES             8192
-#endif
+#define SND_FREQ            44100
+#define SND_PERIOD          2048
+#define SND_CHANNELS        2
+#define SND_SAMPLES         8192
 
 #define QUEUE_SIZE          (2 * 1024 * 1024)
 
-#ifdef MMIYOO
+#if defined(MINI)
 #define MAX_VOLUME          20
 #define MIN_RAW_VALUE       -60
 #define MAX_RAW_VALUE       30
@@ -64,7 +59,7 @@
 #define MI_AO_SETMUTE       0x4008690d
 #endif
 
-#ifdef A30
+#if defined(A30)
 #define JSON_APP_FILE       "/config/system.json"
 #else
 #define JSON_APP_FILE       "/appconfigs/system.json"
@@ -78,16 +73,16 @@
 
 typedef struct {
     int size;
-    int read;
-    int write;
-    uint8_t *buffer;
+    int rsize;
+    int wsize;
+    uint8_t *buf;
     pthread_mutex_t lock;
 } queue_t;
 
 static pthread_t thread;
-static queue_t queue = {0};
+static queue_t queue = { 0 };
 
-#ifdef QX1000
+#if defined(QX1000)
 typedef struct {
     pa_threaded_mainloop *mainloop;
     pa_context *context;
@@ -130,6 +125,11 @@ static struct json_object *jfile = NULL;
 
 static int16_t *adpcm_step_table = (int16_t *)VAR_ADPCM_STEP_TABLE;
 static int8_t *adpcm_index_step_table = (int8_t *)VAR_ADPCM_INDEX_STEP_TABLE;
+
+static int init_queue(queue_t *, size_t);
+static int quit_queue(queue_t *);
+static int put_queue(queue_t *, uint8_t *, size_t);
+static size_t get_queue(queue_t *, uint8_t *, size_t);
 
 #if defined(UT)
 TEST_GROUP(alsa);
@@ -436,138 +436,325 @@ void snd_nds_reload_config(void)
     }
 }
 
-static void queue_init(queue_t *q, size_t s)
+static int init_queue(queue_t *q, size_t s)
 {
-    q->buffer = (uint8_t *)malloc(s);
+    debug("call %s(q=%p, s=%d)\n", __func__, q, s);
+
+    if (!q) {
+        error("q is null\n");
+    }
+
+    if (s == 0) {
+        error("invalid size\n");
+        return -1;
+    }
+
+    q->buf = (uint8_t *)malloc(s);
     q->size = s;
-    q->read = q->write = 0;
+    q->rsize = q->wsize = 0;
     pthread_mutex_init(&q->lock, NULL);
+
+    return 0;
 }
 
-static void queue_destroy(queue_t *q)
+#if defined(UT)
+TEST(alsa, init_queue)
 {
-    if (q->buffer) {
-        free(q->buffer);
-        q->buffer = NULL;
+    queue_t t = { 0 };
+    const int size = 1024;
+
+    TEST_ASSERT_EQUAL_INT(-1, init_queue(NULL, 0));
+    TEST_ASSERT_EQUAL_INT(-1, init_queue(&t, 0));
+    TEST_ASSERT_EQUAL_INT(0, init_queue(&t, size));
+    TEST_ASSERT_NOT_NULL(t.buf);
+    TEST_ASSERT_EQUAL_INT(0, t.rsize);
+    TEST_ASSERT_EQUAL_INT(0, t.wsize);
+    TEST_ASSERT_EQUAL_INT(size, t.size);
+    TEST_ASSERT_EQUAL_INT(0, quit_queue(&t));
+}
+#endif
+
+static int quit_queue(queue_t *q)
+{
+    debug("call %s(q=%p)\n", __func__, q);
+
+    if (q->buf) {
+        free(q->buf);
+        q->buf = NULL;
     }
     pthread_mutex_destroy(&q->lock);
+
+    return 0;
 }
 
-static int queue_size_for_read(queue_t *q)
+#if defined(UT)
+TEST(alsa, quit_queue)
 {
-    if (q->read == q->write) {
+    queue_t t = { 0 };
+    const int size = 1024;
+
+    TEST_ASSERT_EQUAL_INT(0, init_queue(&t, size));
+    TEST_ASSERT_NOT_NULL(t.buf);
+    TEST_ASSERT_EQUAL_INT(0, quit_queue(&t));
+    TEST_ASSERT_NULL(t.buf);
+}
+#endif
+
+static int get_available_rsize(queue_t *q)
+{
+    debug("call %s(q=%p)\n", __func__, q);
+
+    if (!q) {
+        error("q is null\n");
+        return -1;
+    }
+
+    if (q->rsize == q->wsize) {
         return 0;
     }
-    else if(q->read < q->write){
-        return q->write - q->read;
+    else if(q->rsize < q->wsize) {
+        return q->wsize - q->rsize;
     }
-    return (QUEUE_SIZE - q->read) + q->write;
+    return (q->size - q->rsize) + q->wsize;
 }
 
-static int queue_size_for_write(queue_t *q)
+#if defined(UT)
+TEST(alsa, get_available_rsize)
 {
-    if (q->write == q->read) {
-        return QUEUE_SIZE;
+    queue_t t = { 0 };
+    char buf[128] = { 0 };
+    const int size = 1024;
+
+    TEST_ASSERT_EQUAL_INT(0, init_queue(&t, size));
+    TEST_ASSERT_NOT_NULL(t.buf);
+
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), put_queue(&t, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), get_available_rsize(&t));
+
+    TEST_ASSERT_EQUAL_INT(0, quit_queue(&t));
+    TEST_ASSERT_NULL(t.buf);
+}
+#endif
+
+static int get_available_wsize(queue_t *q)
+{
+    debug("call %s(q=%p)\n", __func__, q);
+
+    if (!q) {
+        error("q is null\n");
+        return -1;
     }
-    else if(q->write < q->read){
-        return q->read - q->write;
+
+    if (q->wsize == q->rsize) {
+        return q->size;
     }
-    return (QUEUE_SIZE - q->write) + q->read;
+    else if (q->wsize < q->rsize) {
+        return q->rsize - q->wsize;
+    }
+    return (q->size - q->wsize) + q->rsize;
 }
 
-static int queue_put(queue_t *q, uint8_t *buffer, size_t size)
+#if defined(UT)
+TEST(alsa, get_available_wsize)
 {
-    int r = 0, tmp = 0, avai = 0;
+    queue_t t = { 0 };
+    char buf[128] = { 0 };
+    const int size = 1024;
+
+    TEST_ASSERT_EQUAL_INT(0, init_queue(&t, size));
+    TEST_ASSERT_NOT_NULL(t.buf);
+
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), put_queue(&t, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(size - sizeof(buf), get_available_wsize(&t));
+
+    TEST_ASSERT_EQUAL_INT(0, quit_queue(&t));
+    TEST_ASSERT_NULL(t.buf);
+}
+#endif
+
+static int put_queue(queue_t *q, uint8_t *buf, size_t size)
+{
+    int r = 0;
+    int tmp = 0;
+    int avai = 0;
+
+    debug("call %s(q=%p, buf=%p, size=%d)\n", __func__, q, buf, size);
+
+    if (!q || !buf) {
+        error("invalid parameters\n");
+        return -1;
+    }
+
+    if (size == 0) {
+        return 0;
+    }
 
     pthread_mutex_lock(&q->lock);
-    avai = queue_size_for_write(q);
+    avai = get_available_wsize(q);
     if (size > avai) {
         size = avai;
     }
     r = size;
 
     if (size > 0) {
-        if ((q->write >= q->read) && ((q->write + size) > QUEUE_SIZE)) {
-            tmp = QUEUE_SIZE - q->write;
+        if ((q->wsize >= q->rsize) && ((q->wsize + size) > QUEUE_SIZE)) {
+            tmp = QUEUE_SIZE - q->wsize;
             size-= tmp;
+
 #if defined(UT) || defined(FLIP)
-            memcpy(&q->buffer[q->write], buffer, tmp);
-            memcpy(q->buffer, &buffer[tmp], size);
+            memcpy(&q->buf[q->wsize], buf, tmp);
+            memcpy(q->buf, &buf[tmp], size);
 #else
-            neon_memcpy(&q->buffer[q->write], buffer, tmp);
-            neon_memcpy(q->buffer, &buffer[tmp], size);
+            neon_memcpy(&q->buf[q->wsize], buf, tmp);
+            neon_memcpy(q->buf, &buf[tmp], size);
 #endif
-            q->write = size;
+
+            q->wsize = size;
         }
         else {
 #if defined(UT) || defined(FLIP)
-            memcpy(&q->buffer[q->write], buffer, size);
+            memcpy(&q->buf[q->wsize], buf, size);
 #else
-            neon_memcpy(&q->buffer[q->write], buffer, size);
+            neon_memcpy(&q->buf[q->wsize], buf, size);
 #endif
-            q->write += size;
+
+            q->wsize += size;
         }
     }
     pthread_mutex_unlock(&q->lock);
+
     return r;
 }
 
-static size_t queue_get(queue_t *q, uint8_t *buffer, size_t max)
+#if defined(UT)
+TEST(alsa, put_queue)
 {
-    int r = 0, tmp = 0, avai = 0, size = max;
+    queue_t t = { 0 };
+    char buf[128] = { 0 };
+    const int size = 1024;
+
+    TEST_ASSERT_EQUAL_INT(0, init_queue(&t, size));
+    TEST_ASSERT_NOT_NULL(t.buf);
+
+    TEST_ASSERT_EQUAL_INT(-1, put_queue(NULL, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(-1, put_queue(&t, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(0, put_queue(&t, buf, 0));
+
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), put_queue(&t, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), put_queue(&t, buf, sizeof(buf)));
+
+    TEST_ASSERT_EQUAL_INT(0, quit_queue(&t));
+    TEST_ASSERT_NULL(t.buf);
+}
+#endif
+
+static size_t get_queue(queue_t *q, uint8_t *buf, size_t len)
+{
+    int r = 0;
+    int tmp = 0;
+    int avai = 0;
+    int size = len;
+
+    debug("call %s(q=%p, buf=%p, max=%d)\n", __func__, q, buf, len);
+
+    if (!q || !buf) {
+        error("invalid parameters\n");
+        return -1;
+    }
+
+    if (len == 0) {
+        return 0;
+    }
 
     pthread_mutex_lock(&q->lock);
-    avai = queue_size_for_read(q);
+    avai = get_available_rsize(q);
     if (size > avai) {
         size = avai;
     }
     r = size;
 
     if (size > 0) {
-        if ((q->read > q->write) && (q->read + size) > QUEUE_SIZE) {
-            tmp = QUEUE_SIZE - q->read;
+        if ((q->rsize > q->wsize) && (q->rsize + size) > QUEUE_SIZE) {
+            tmp = QUEUE_SIZE - q->rsize;
             size-= tmp;
+
 #if defined(UT) || defined(FLIP)
-            memcpy(buffer, &q->buffer[q->read], tmp);
-            memcpy(&buffer[tmp], q->buffer, size);
+            memcpy(buf, &q->buf[q->rsize], tmp);
+            memcpy(&buf[tmp], q->buf, size);
 #else
-            neon_memcpy(buffer, &q->buffer[q->read], tmp);
-            neon_memcpy(&buffer[tmp], q->buffer, size);
+            neon_memcpy(buf, &q->buf[q->rsize], tmp);
+            neon_memcpy(&buf[tmp], q->buf, size);
 #endif
-            q->read = size;
+
+            q->rsize = size;
         }
         else {
 #if defined(UT) || defined(FLIP)
-            memcpy(buffer, &q->buffer[q->read], size);
+            memcpy(buf, &q->buf[q->rsize], size);
 #else
-            neon_memcpy(buffer, &q->buffer[q->read], size);
+            neon_memcpy(buf, &q->buf[q->rsize], size);
 #endif
-            q->read+= size;
+
+            q->rsize += size;
         }
     }
     pthread_mutex_unlock(&q->lock);
+
     return r;
 }
 
-static void *audio_handler(void *threadid)
+#if defined(UT)
+TEST(alsa, get_queue)
 {
-#ifdef MMIYOO
-    MI_AUDIO_Frame_t aoTestFrame = {0};
+    queue_t t = { 0 };
+    char buf[128] = { 0 };
+    const int size = 1024;
+
+    TEST_ASSERT_EQUAL_INT(0, init_queue(&t, size));
+    TEST_ASSERT_NOT_NULL(t.buf);
+
+    TEST_ASSERT_EQUAL_INT(-1, get_queue(NULL, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(-1, get_queue(&t, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(0, get_queue(&t, buf, 0));
+
+    TEST_ASSERT_EQUAL_INT(0, get_queue(&t, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), put_queue(&t, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(sizeof(buf), get_queue(&t, buf, sizeof(buf)));
+
+    TEST_ASSERT_EQUAL_INT(0, quit_queue(&t));
+    TEST_ASSERT_NULL(t.buf);
+}
 #endif
-#ifdef A30
+
+static void* audio_handler(void *id)
+{
+#if defined(MINI)
+    MI_AUDIO_Frame_t frame = { 0 };
+#endif
+
+#if defined(A30)
     int chk_cnt = 0;
 #endif
-    int r = 0, len = pcm_buf_len, idx = 0;
+
+    int r = 0;
+    int idx = 0;
+    int len = pcm_buf_len;
+
+    debug("call %s()++\n", __func__);
+
+#if defined(UT)
+    pcm_ready = 0;
+#endif
 
     while (pcm_ready) {
-        r = queue_get(&queue, &pcm_buf[idx], len);
+        r = get_queue(&queue, &pcm_buf[idx], len);
         if (r > 0) {
             idx+= r;
             len-= r;
             if (len == 0) {
                 idx = 0;
                 len = pcm_buf_len;
-#if defined(MMIYOO) && !defined(UT)
+#if defined(MINI)
                 aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
                 aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
                 aoTestFrame.u32Len = pcm_buf_len;
@@ -580,7 +767,7 @@ static void *audio_handler(void *threadid)
                 write(dsp_fd, pcm_buf, pcm_buf_len);
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
                 if (pa.mainloop) {
                     pa_threaded_mainloop_lock(pa.mainloop);
                     pa_stream_write(pa.stream, pcm_buf, pcm_buf_len, NULL, 0, PA_SEEK_RELATIVE);
@@ -589,7 +776,7 @@ static void *audio_handler(void *threadid)
 #endif
             }
         }
-#ifdef A30
+#if defined(A30)
         else {
             if (chk_cnt == 0) {
                 char buf[255] = {0};
@@ -610,48 +797,136 @@ static void *audio_handler(void *threadid)
 #endif
         usleep(10);
     }
+
+    debug("call %s()--\n", __func__);
+
+#if defined(UT)
+    return NULL;
+#endif
+
     pthread_exit(NULL);
 }
 
+#if defined(UT)
+TEST(alsa, audio_handler)
+{
+    TEST_ASSERT_EQUAL_INT(NULL, audio_handler(NULL));
+}
+#endif
+
 snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm)
 {
+    debug("call %s()\n", __func__);
+
     return 2048;
 }
 
+#if defined(UT)
+TEST(alsa, snd_pcm_avail)
+{
+    TEST_ASSERT_EQUAL_INT(2048, snd_pcm_avail(NULL));
+}
+#endif
+
 int snd_pcm_hw_params(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params(NULL, NULL));
+}
+#endif
 
 int snd_pcm_hw_params_any(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_any)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_any(NULL, NULL));
+}
+#endif
 
 void snd_pcm_hw_params_free(snd_pcm_hw_params_t *obj)
 {
+    debug("call %s()\n", __func__);
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_free)
+{
+    snd_pcm_hw_params_free(NULL);
+    TEST_PASS();
+}
+#endif
 
 int snd_pcm_hw_params_malloc(snd_pcm_hw_params_t **ptr)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_malloc)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_malloc(NULL));
+}
+#endif
 
 int snd_pcm_hw_params_set_access(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_access_t _access)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_set_access)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_set_access(NULL, NULL, 0));
+}
+#endif
 
 int snd_pcm_hw_params_set_buffer_size_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val)
 {
-    *val = SAMPLES * 2 * CHANNELS;
+    debug("call %s()\n", __func__);
+
+    *val = SND_SAMPLES * 2 * SND_CHANNELS;
     return 0;
 }
 
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_set_buffer_size_near)
+{
+    snd_pcm_uframes_t v = 0;
+
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_set_buffer_size_near(NULL, NULL, &v));
+    TEST_ASSERT_EQUAL_INT(SND_SAMPLES * 2 * SND_CHANNELS, v);
+}
+#endif
+
 int snd_pcm_hw_params_set_channels(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_set_channels)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_set_channels(NULL, NULL, 0));
+}
+#endif
 
 int snd_pcm_hw_params_set_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_format_t val)
 {
@@ -661,114 +936,186 @@ int snd_pcm_hw_params_set_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, sn
     return 0;
 }
 
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_set_format)
+{
+    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_hw_params_set_format(NULL, NULL, SND_PCM_FORMAT_S16_LE + 1));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_set_format(NULL, NULL, SND_PCM_FORMAT_S16_LE));
+}
+#endif
+
 int snd_pcm_hw_params_set_period_size_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val, int *dir)
 {
-    *val = PERIOD;
+    debug("call %d()\n", __func__);
+
+    *val = SND_PERIOD;
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_set_period_size_near)
+{
+    snd_pcm_uframes_t v = 0;
+
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_set_period_size_near(NULL, NULL, &v, NULL));
+    TEST_ASSERT_EQUAL_INT(SND_PERIOD, v);
+}
+#endif
 
 int snd_pcm_hw_params_set_rate_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir)
 {
-    *val = FREQ;
+    debug("call %s(pcm=%p, params=%p, val=%p, dir=%p)\n", __func__, pcm, params, val, dir);
+
+    *val = SND_FREQ;
     return 0;
 }
 
+#if defined(UT)
+TEST(alsa, snd_pcm_hw_params_set_rate_near)
+{
+    unsigned int v = 0;
+
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_hw_params_set_rate_near(NULL, NULL, &v, NULL));
+    TEST_ASSERT_EQUAL_INT(SND_FREQ, v);
+}
+#endif
+
 int snd_pcm_open(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode)
 {
-    printf(PREFIX"Use customized ALSA\n");
+    debug("call %s(pcm=%p, name=%s, stream=%d, mode=%d)\n", pcm, name, stream, mode);
+
     if (stream != SND_PCM_STREAM_PLAYBACK) {
         return -1;
     }
     return 0;
 }
 
+#if defined(UT)
+TEST(alsa, snd_pcm_open)
+{
+    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_open(NULL, NULL, SND_PCM_STREAM_PLAYBACK + 1, 0));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_open(NULL, NULL, SND_PCM_STREAM_PLAYBACK, 0));
+}
+#endif
+
 int snd_pcm_prepare(snd_pcm_t *pcm)
 {
+    debug("call %s(pcm=%p)\n", pcm);
+
     return 0;
 }
 
-snd_pcm_sframes_t snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size)
+#if defined(UT)
+TEST(alsa, snd_pcm_prepare)
 {
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_prepare(NULL));
+}
+#endif
+
+snd_pcm_sframes_t snd_pcm_readi(snd_pcm_t *pcm, void *buf, snd_pcm_uframes_t size)
+{
+    debug("call %s(pcm=%p, buf=%p, size=%d)\n", pcm, buf, size);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_readi)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_readi(NULL, NULL, 0));
+}
+#endif
 
 int snd_pcm_recover(snd_pcm_t *pcm, int err, int silent)
 {
+    debug("call %s(pcm=%p, err=%d, silent=%d)\n", __func__, pcm, err, silent);
+
     return 0;
 }
 
+#if defined(UT)
+TEST(alsa, snd_pcm_recover)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_recover(NULL, 0, 0));
+}
+#endif
+
 int snd_pcm_start(snd_pcm_t *pcm)
 {
-#ifdef MMIYOO
+#if defined(MINI)
     MI_S32 miret = 0;
-    MI_SYS_ChnPort_t stAoChn0OutputPort0;
+    MI_SYS_ChnPort_t stAoChn0OutputPort0 = 0;
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30)
     int arg = 0;
 #endif
 
-#ifdef A30
-    struct tm ct = {0};
+#if defined(A30)
+    struct tm ct = { 0 };
 #endif
 
-    queue_init(&queue, (size_t)QUEUE_SIZE);
-    if (queue.buffer == NULL) {
+    debug("call %s(pcm=%p)\n", __func__, pcm);
+
+    if (!pcm) {
+        error("invalid pcm pointer\n");
         return -1;
     }
-    memset(queue.buffer, 0, QUEUE_SIZE);
 
-    pcm_buf_len = SAMPLES * 2 * CHANNELS;
+    init_queue(&queue, (size_t)QUEUE_SIZE);
+    if (queue.buf == NULL) {
+        return -1;
+    }
+    memset(queue.buf, 0, QUEUE_SIZE);
+
+    pcm_buf_len = SND_SAMPLES * 2 * SND_CHANNELS;
     pcm_buf = malloc(pcm_buf_len);
     if (pcm_buf == NULL) {
         return -1;
     }
     memset(pcm_buf, 0, pcm_buf_len);
 
-#if !defined(PANDORA)
+#if !defined(PANDORA) && !defined(UT)
     jfile = json_object_from_file(JSON_APP_FILE);
-    if (jfile != NULL) {
-        struct json_object *volume = NULL;
+    if (jfile) {
+        struct json_object *v = NULL;
 
-        json_object_object_get_ex(jfile, JSON_VOL_KEY, &volume);
-        cur_volume = json_object_get_int(volume);
-        //json_object_object_add(jfile, JSON_VOL_KEY, json_object_new_int(2));
-        //json_object_to_file(JSON_APP_FILE, jfile);
+        json_object_object_get_ex(jfile, JSON_VOL_KEY, &v);
+        cur_volume = json_object_get_int(v);
         json_object_put(jfile);
-        printf(PREFIX"Vol %d\n", cur_volume);
     }
 #endif
 
-#if defined(MMIYOO) && !defined(UT)
+#if defined(MINI)
     stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
     stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
     stSetAttr.u32FrmNum = 6;
     stSetAttr.u32PtNumPerFrm = SAMPLES;
     stSetAttr.u32ChnCnt = CHANNELS;
     stSetAttr.eSoundmode = CHANNELS == 2 ? E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
-    stSetAttr.eSamplerate = (MI_AUDIO_SampleRate_e)FREQ;
+    stSetAttr.eSamplerate = (MI_AUDIO_SampleRate_e)SND_FREQ;
 
     miret = MI_AO_SetPubAttr(AoDevId, &stSetAttr);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"Failed to set PubAttr\n");
+        error("failed to set PubAttr\n");
         return -1;
     }
 
     miret = MI_AO_GetPubAttr(AoDevId, &stGetAttr);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"Failed to get PubAttr\n");
+        error("failed to get PubAttr\n");
         return -1;
     }
 
     miret = MI_AO_Enable(AoDevId);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"Failed to enable AO\n");
+        error("failed to enable AO\n");
         return -1;
     }
 
     miret = MI_AO_EnableChn(AoDevId, AoChn);
     if(miret != MI_SUCCESS) {
-        printf(PREFIX"Failed to enable Channel\n");
+        error("failed to enable Channel\n");
         return -1;
     }
 
@@ -780,7 +1127,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     set_volume(cur_volume);
 #endif
 
-#ifdef A30
+#if defined(A30)
     mem_fd = open("/dev/mem", O_RDWR);
     mem_ptr = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, 0x1c22000);
     open_dsp();
@@ -789,7 +1136,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #if defined(TRIMUI) || defined(PANDORA)
     dsp_fd = open("/dev/dsp", O_WRONLY);
     if (dsp_fd < 0) {
-        printf(PREFIX"Failed to open /dev/dsp device\n");
+        error("failed to open /dev/dsp device\n");
         return -1;
     }
 
@@ -799,14 +1146,14 @@ int snd_pcm_start(snd_pcm_t *pcm)
     arg = CHANNELS;
     ioctl(dsp_fd, SOUND_PCM_WRITE_CHANNELS, &arg);
 
-    arg = FREQ;
+    arg = SND_FREQ;
     ioctl(dsp_fd, SOUND_PCM_WRITE_RATE, &arg);
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
     pa.mainloop = pa_threaded_mainloop_new();
     if (pa.mainloop == NULL) {
-        printf(PREFIX"Failed to open PulseAudio device\n");
+        error("failed to open PulseAudio device\n");
         return -1;
     }
 
@@ -823,18 +1170,24 @@ int snd_pcm_start(snd_pcm_t *pcm)
 
     pa.spec.format = PA_SAMPLE_S16LE;
     pa.spec.channels = CHANNELS;
-    pa.spec.rate = FREQ;
+    pa.spec.rate = SND_FREQ;
     pa.attr.tlength = pa_bytes_per_second(&pa.spec) / 5;
     pa.attr.maxlength = pa.attr.tlength * 3;
     pa.attr.minreq = pa.attr.tlength / 3;
     pa.attr.prebuf = pa.attr.tlength;
 
-    pa.stream = pa_stream_new(pa.context, "DraStic", &pa.spec, NULL);
+    pa.stream = pa_stream_new(pa.context, "NDS", &pa.spec, NULL);
     pa_stream_set_state_callback(pa.stream, stream_state_cb, &pa);
     pa_stream_set_write_callback(pa.stream, stream_request_cb, &pa);
     pa_stream_set_latency_update_callback(pa.stream, stream_latency_update_cb, &pa);
-    pa_stream_connect_playback(pa.stream, NULL, &pa.attr, 
-        PA_STREAM_ADJUST_LATENCY | PA_STREAM_INTERPOLATE_TIMING | PA_STREAM_AUTO_TIMING_UPDATE, NULL, NULL);
+    pa_stream_connect_playback(
+        pa.stream,
+        NULL,
+        &pa.attr, 
+        PA_STREAM_ADJUST_LATENCY | PA_STREAM_INTERPOLATE_TIMING | PA_STREAM_AUTO_TIMING_UPDATE,
+        NULL,
+        NULL
+    );
     
     while (pa_context_get_state(pa.context) != PA_CONTEXT_READY) {
         pa_threaded_mainloop_wait(pa.mainloop);
@@ -844,30 +1197,45 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #endif
 
     add_prehook_cb((void *)FUN_SPU_ADPCM_DECODE_BLOCK, snd_spu_adpcm_decode_block);
-    printf(PREFIX"Enabled spu hooking\n");
 
     pcm_ready = 1;
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);
+
     return 0;
 }
 
+#if defined(UT)
+TEST(alsa, snd_pcm_start)
+{
+    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_start(NULL));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_start((void *)0xdead));
+}
+#endif
+
 int snd_pcm_close(snd_pcm_t *pcm)
 {
-    void *ret = NULL;
+    void *r = NULL;
+
+    debug("call %s(pcm=%p)\n", __func__, pcm);
+
+    if (!pcm) {
+        error("invalid pcm pointer\n");
+        return -1;
+    }
 
     if (auto_state > 0) {
         save_state(auto_slot);
     }
 
     pcm_ready = 0;
-    pthread_join(thread, &ret);
-    if (pcm_buf != NULL) {
+    pthread_join(thread, &r);
+    if (pcm_buf) {
         free(pcm_buf);
         pcm_buf = NULL;
     }
-    queue_destroy(&queue);
+    quit_queue(&queue);
 
-#if defined(MMIYOO)
+#if defined(MINI)
     MI_AO_DisableChn(AoDevId, AoChn);
     MI_AO_Disable(AoDevId);
 #endif
@@ -879,7 +1247,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     }
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
     if (pa.mainloop) {
         pa_threaded_mainloop_stop(pa.mainloop);
     }
@@ -898,44 +1266,102 @@ int snd_pcm_close(snd_pcm_t *pcm)
     }
 #endif
 
-#ifdef A30
+#if defined(A30)
     *vol_ptr = (160 << 8) | 160;
     munmap(mem_ptr, 4096);
     close(mem_fd);
 #endif
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_close)
+{
+    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_close(NULL));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_close((void *)0xdead));
+}
+#endif
 
 int snd_pcm_sw_params(snd_pcm_t *pcm, snd_pcm_sw_params_t *params)
 {
+    debug("call %s(pcm=%p, params=%p)\n", __func__, pcm, params);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_sw_params)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params(NULL, NULL));
+}
+#endif
 
 int snd_pcm_sw_params_current(snd_pcm_t *pcm, snd_pcm_sw_params_t *params)
 {
+    debug("call %s(pcm=%p, params=%p)\n", __func__, pcm, params);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_sw_params_current)
+{
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params_current(NULL, NULL));
+}
+#endif
 
 void snd_pcm_sw_params_free(snd_pcm_sw_params_t *obj)
 {
+    debug("call %s(obj=%p)\n", __func__, obj);
 }
+
+#if defined(UT)
+TEST(alsa, snd_pcm_sw_params_free)
+{
+    snd_pcm_sw_params_free(NULL);
+    TEST_PASS();
+}
+#endif
 
 int snd_pcm_sw_params_malloc(snd_pcm_sw_params_t **ptr)
 {
+    debug("call %s(ptr=%p)\n", __func__, ptr);
     return 0;
 }
 
-snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buffer, snd_pcm_uframes_t size)
+#if defined(UT)
+TEST(alsa, snd_pcm_sw_params_malloc)
 {
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_sw_params_malloc(NULL));
+}
+#endif
+
+snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframes_t size)
+{
+    debug("call %d(pcm=%p, buf=%p, size=%d)\n", __func__, pcm, buf, size);
+
+    if (!pcm || !buf) {
+        error("invalid parameters\n");
+        return -1;
+    }
+
+#if defined(UT)
+    return size;
+#endif
+
     if ((size > 1) && (size != pcm_buf_len)) {
-        queue_put(&queue, (uint8_t*)buffer, size * 2 * CHANNELS);
+        put_queue(&queue, (uint8_t*)buf, size * 2 * SND_CHANNELS);
     }
     return size;
 }
 
 #if defined(UT)
-TEST_GROUP_RUNNER(alsa)
+TEST(alsa, snd_pcm_writei)
 {
+    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_writei(NULL, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_writei((void *)0xdead, (void *)0xdead, 0));
+    TEST_ASSERT_EQUAL_INT(128, snd_pcm_writei((void *)0xdead, (void *)0xdead, 128));
 }
 #endif
 

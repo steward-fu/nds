@@ -1,6 +1,6 @@
 export MOD=a30
 export NDS_GCC=1
-export NDS_ALSA=0
+export NDS_ALSA=1
 
 include Makefile.mk
 
