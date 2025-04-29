@@ -2212,8 +2212,8 @@ void prehook_cb_update_screen(void)
     else if (nds.update_screen == 0) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
         gfx.lcd.cur_sel ^= 1;
-        *((uint32_t *)VAR_SDL_SCREEN0_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
-        *((uint32_t *)VAR_SDL_SCREEN1_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
+        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
+        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
         nds.menu.drastic.enable = 0;
 #endif

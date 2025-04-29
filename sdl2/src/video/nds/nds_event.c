@@ -980,7 +980,7 @@ static int handle_hotkey(void)
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
     if (nds.hotkey == HOTKEY_BIND_MENU) {
         if (hotkey_mask && hit_hotkey(KEY_BIT_SELECT)) {
-            set_key(KEY_BIT_MENU_ONION, 1);
+            set_key(KEY_BIT_ONION, 1);
             set_key(KEY_BIT_SELECT, 0);
         }
     }
@@ -988,7 +988,7 @@ static int handle_hotkey(void)
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
     if (hotkey_mask && hit_hotkey(KEY_BIT_SELECT)) {
-        set_key(KEY_BIT_MENU_ONION, 1);
+        set_key(KEY_BIT_ONION, 1);
         set_key(KEY_BIT_SELECT, 0);
     }
 #endif

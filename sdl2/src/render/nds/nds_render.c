@@ -63,16 +63,16 @@ static int create_texture(SDL_Renderer *r, SDL_Texture *t)
 {
     NDS_Texture *p = NULL;
 
-    debug(SDL"call %s(renderer=%p, texture=%p)\n", __func__, r, t);
+    debug("call %s(renderer=%p, texture=%p)\n", __func__, r, t);
 
     if (!t) {
-        error(SDL"invalid texture\n");
+        error("invalid texture\n");
         return -1;
     }
 
     p = (NDS_Texture *)SDL_calloc(1, sizeof(NDS_Texture));
     if (!p) {
-        error(SDL"failed to allocate nds texture\n");
+        error("failed to allocate nds texture\n");
         return SDL_OutOfMemory();
     }
 
@@ -81,13 +81,13 @@ static int create_texture(SDL_Renderer *r, SDL_Texture *t)
     p->pitch = p->w * SDL_BYTESPERPIXEL(t->format);
     p->pixels = SDL_calloc(1, p->h * p->pitch);
     if (!p->pixels) {
-        error(SDL"failed to allocate nds texture\n");
+        error("failed to allocate nds texture\n");
 
         SDL_free(p);
         return SDL_OutOfMemory();
     }
     t->driverdata = p;
-    debug(SDL"created texture(texture=%p, w=%d, h=%d, pitch=%d)\n", p, p->w, p->h, p->pitch);
+    debug("created texture(texture=%p, w=%d, h=%d, pitch=%d)\n", p, p->w, p->h, p->pitch);
 
     return 0;
 }

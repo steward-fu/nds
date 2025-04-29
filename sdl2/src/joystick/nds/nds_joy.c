@@ -250,7 +250,7 @@ TEST(sdl2_joystick, set_uart)
 
 static int init_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity)
 {
-    debug("call %s(fd=%s)\n", __func__, fd);
+    debug("call %s(fd=%d)\n", __func__, fd);
 
     if (fd < 0) {
         error("invalid handle\n");
@@ -428,7 +428,7 @@ TEST(sdl2_joystick, update_axis_values)
 }
 #endif
 
-static int frame_to_axis(cali_t *c, uint8_t v)
+static int frame_to_axis(cali_t *c, uint8_t raw)
 {
     int div = 0;
     int value = 0;
@@ -436,13 +436,13 @@ static int frame_to_axis(cali_t *c, uint8_t v)
     debug("call %s()\n", __func__);
 
     div = c->max - c->zero;
-    if ((v > c->zero) && (div > 0)) {
-        value = ((v - c->zero) * 126) / div;
+    if ((raw > c->zero) && (div > 0)) {
+        value = ((raw - c->zero) * 126) / div;
     }
 
     div = c->zero - c->min;
-    if ((v < c->zero) && (div > 0)) {
-        value = ((v - c->zero) * 126) / div;
+    if ((raw < c->zero) && (div > 0)) {
+        value = ((raw - c->zero) * 126) / div;
     }
 
     if ((value > 0) && (value < c->dead)) {
@@ -486,7 +486,7 @@ static int parse_serial_buf(const char *cmd, int len)
 
     if (!cmd || (len < FRAME_LEN)) {
         error("invalid parameters(%p, 0x%x)\n", cmd, len);
-        return - 1;
+        return -1;
     }
 
     s = len - FRAME_LEN;
@@ -514,7 +514,6 @@ static int parse_serial_buf(const char *cmd, int len)
     myjoy.cur_axis[1] = frame_to_axis(&myjoy.left.cali.y, myjoy.cur_frame.left_y);
     myjoy.cur_axis[2] = frame_to_axis(&myjoy.right.cali.x, myjoy.cur_frame.right_x);
     myjoy.cur_axis[3] = frame_to_axis(&myjoy.right.cali.y, myjoy.cur_frame.right_y);
-
     update_axis_values();
 
     return 0;
@@ -561,8 +560,6 @@ static int init_serial(void)
 {
     debug("call %s()\n", __func__);
 
-    memset(&myjoy.left, 0, sizeof(myjoy.left));
-    memset(&myjoy.right, 0, sizeof(myjoy.right));
     memset(myjoy.cur_axis, 0, sizeof(myjoy.cur_axis));
     memset(myjoy.last_axis, 0, sizeof(myjoy.last_axis));
     memset(&(myjoy.cur_frame), 0, sizeof(myjoy.cur_frame));

@@ -16,15 +16,15 @@ REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
 all: cfg
 	make -C util   MOD=$(MOD)
 	make -C detour MOD=$(MOD)
+ifeq ($(NDS_ALSA),1)
 	make -C alsa   MOD=$(MOD)
+	cp alsa/libasound.so.2 drastic/lib/
+endif
 	make -C sdl2 -j4
 	cp util/libutil.so   drastic/lib/
 	cp detour/libdtr.so  drastic/lib/
 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/lib/
 
-ifeq ($(NDS_ALSA),1)
-	cp alsa/libasound.so.2 drastic/lib/
-endif
 
 ifeq ($(MOD),ut)
 	make -C ut

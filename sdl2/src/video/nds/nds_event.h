@@ -8,7 +8,7 @@
 #include "nds_event.h"
 
 #if defined(FLIP)
-#define DEV_KEY_BUF_MA      32
+#define DEV_KEY_BUF_MAX     32
 #define DEV_KEY_IDX_MAX     19
 #endif
 

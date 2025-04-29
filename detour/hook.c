@@ -427,7 +427,7 @@ int quit_drastic(void)
     }
 
 #if !defined(UT)
-    pfn((void*)VAR_SYSTEM);
+    pfn((void*)myhook.var.system.base);
 #endif
 
     return 0;
