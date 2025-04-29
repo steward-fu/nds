@@ -5649,7 +5649,6 @@ int reload_pen(void)
 
         nds.pen.type = PEN_LB;
         if (get_file_path(nds.pen.path, nds.pen.sel, buf, 1) == 0) {
-printf("\n-------------pen %s\n", buf);
             t = IMG_Load(buf);
             if (t) {
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
