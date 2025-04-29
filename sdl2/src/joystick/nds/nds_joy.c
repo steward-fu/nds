@@ -3,9 +3,6 @@
 
 #include "../../SDL_internal.h"
 
-#if SDL_JOYSTICK_NDS
-
-#if defined(A30) || defined(FLIP) || defined(UT)
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -20,6 +17,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <linux/input.h>
+
+#if defined(UT)
+#include "unity_fixture.h"
 #endif
 
 #include "../../events/SDL_events_c.h"
@@ -36,39 +36,48 @@
 #include "debug.h"
 #include "nds_joy.h"
 
-#if defined(UT)
-#include "unity_fixture.h"
-#endif
-
 #if defined(A30) || defined(FLIP) || defined(UT)
 nds_joy myjoy = { 0 };
 #endif
 
 #if defined(UT)
-TEST_GROUP(sdl2_joy);
+TEST_GROUP(sdl2_joystick);
 
-TEST_SETUP(sdl2_joy)
+TEST_SETUP(sdl2_joystick)
 {
-    FILE *f = fopen(JOY_CFG_FILE, "w+");
+    FILE *f = NULL;
 
     debug("call %s()\n", __func__);
 
+    f = fopen(JOY_CFG_FILE, "w+");
     if (f) {
-        fprintf(f, "x.min=%d\n",  DEF_CFG_JOY_MIN);
-        fprintf(f, "x.max=%d\n",  DEF_CFG_JOY_MAX);
-        fprintf(f, "x.zero=%d\n", DEF_CFG_JOY_ZERO);
-        fprintf(f, "y.min=%d\n",  DEF_CFG_JOY_MIN);
-        fprintf(f, "y.max=%d\n",  DEF_CFG_JOY_MAX);
-        fprintf(f, "y.zero=%d\n", DEF_CFG_JOY_ZERO);
+        fprintf(f, "x_min=%d\n",  DEF_CFG_JOY_MIN);
+        fprintf(f, "x_max=%d\n",  DEF_CFG_JOY_MAX);
+        fprintf(f, "x_zero=%d\n", DEF_CFG_JOY_ZERO);
+        fprintf(f, "y_min=%d\n",  DEF_CFG_JOY_MIN);
+        fprintf(f, "y_max=%d\n",  DEF_CFG_JOY_MAX);
+        fprintf(f, "y_zero=%d\n", DEF_CFG_JOY_ZERO);
+        fclose(f);
+    }
+
+    f = fopen(JOY_RIGHT_CFG_FILE, "w+");
+    if (f) {
+        fprintf(f, "x_min=%d\n",  DEF_CFG_JOY_MIN);
+        fprintf(f, "x_max=%d\n",  DEF_CFG_JOY_MAX);
+        fprintf(f, "x_zero=%d\n", DEF_CFG_JOY_ZERO);
+        fprintf(f, "y_min=%d\n",  DEF_CFG_JOY_MIN);
+        fprintf(f, "y_max=%d\n",  DEF_CFG_JOY_MAX);
+        fprintf(f, "y_zero=%d\n", DEF_CFG_JOY_ZERO);
         fclose(f);
     }
 }
 
-TEST_TEAR_DOWN(sdl2_joy)
+TEST_TEAR_DOWN(sdl2_joystick)
 {
     debug("call %s()\n", __func__);
 
     unlink(JOY_CFG_FILE);
+    unlink(JOY_RIGHT_CFG_FILE);
 }
 #endif
 
@@ -80,19 +89,19 @@ static int open_uart(const char *port)
     debug("call %s()\n", __func__);
 
     if (!port) {
-        debug("invalid port\n");
+        error("invalid port\n");
         return -1;
     }
 
 #if !defined(UT)
     fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
-        debug("failed to open \"%s\"\n", port);
+        error("failed to open \"%s\"\n", port);
         return -1;
     }
 
     if (fcntl(fd, F_SETFL, 0) < 0) {
-        debug("failed to set fcntl\n");
+        error("failed to set fcntl\n");
         return -1;
     }
 #endif
@@ -101,7 +110,7 @@ static int open_uart(const char *port)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, open_uart)
+TEST(sdl2_joystick, open_uart)
 {
     TEST_ASSERT_EQUAL_INT(-1, open_uart(NULL));
 }
@@ -116,16 +125,16 @@ static int set_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits
 #endif
     struct termios options = { 0 };
 
-    debug("call %s()\n", __func__);
+    debug("call %s(fd=%d)\n", __func__, fd);
 
     if (fd < 0) {
-        debug("invalid handle\n");
+        error("invalid handle\n");
         return -1;
     }
 
 #if !defined(UT)
     if (tcgetattr(fd, &options) != 0) {
-        debug("failed to get uart attributes\n");
+        error("failed to get uart attributes\n");
         return -1;
     }
 
@@ -150,7 +159,7 @@ static int set_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits
         options.c_cflag |= IXON | IXOFF | IXANY;
         break;
     default:
-        debug("invalid flow bit(0x%x)\n", flow_ctrl);
+        error("invalid flow bit(0x%x)\n", flow_ctrl);
         return -1;
     }
 
@@ -169,7 +178,7 @@ static int set_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits
         options.c_cflag |= CS8;
         break;
     default:
-        debug("invalid data bit(0x%x)\n", databits);
+        error("invalid data bit(0x%x)\n", databits);
         return -1;
     }
 
@@ -196,7 +205,7 @@ static int set_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits
         options.c_cflag &= ~CSTOPB;
         break;
     default:
-        debug("invalid parity bit(0x%x)\n", parity);
+        error("invalid parity bit(0x%x)\n", parity);
         return -1;
     }
 
@@ -208,7 +217,7 @@ static int set_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits
         options.c_cflag |= CSTOPB;
         break;
     default:
-        debug("invalid stop bit(0x%x)\n", stopbits);
+        error("invalid stop bit(0x%x)\n", stopbits);
         return -1;
     }
 
@@ -222,7 +231,7 @@ static int set_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits
 #if !defined(UT)
     tcflush(fd, TCIFLUSH);
     if (tcsetattr(fd, TCSANOW, &options) != 0) {
-        debug("failed to get uart attributes\n");
+        error("failed to get uart attributes\n");
         return -1;
     }
 #endif
@@ -231,7 +240,7 @@ static int set_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits
 }
 
 #if defined(UT)
-TEST(sdl2_joy, set_uart)
+TEST(sdl2_joystick, set_uart)
 {
     TEST_ASSERT_EQUAL_INT(-1, set_uart(0, 0, 0, 0, 0, 0));
     TEST_ASSERT_EQUAL_INT(-1, set_uart(0, 9600, 0, 32, 10, 'X'));
@@ -241,15 +250,15 @@ TEST(sdl2_joy, set_uart)
 
 static int init_uart(int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity)
 {
-    debug("call %s()\n", __func__);
+    debug("call %s(fd=%s)\n", __func__, fd);
 
     if (fd < 0) {
-        debug("invalid handle\n");
+        error("invalid handle\n");
         return -1;
     }
 
     if (set_uart(fd, speed, flow_ctrl, databits, stopbits, parity) < 0) {
-        debug("failed to set joystick device\n");
+        error("failed to set joystick device\n");
         return -1;
     }
 
@@ -257,7 +266,7 @@ static int init_uart(int fd, int speed, int flow_ctrl, int databits, int stopbit
 }
 
 #if defined(UT)
-TEST(sdl2_joy, init_uart)
+TEST(sdl2_joystick, init_uart)
 {
     TEST_ASSERT_EQUAL_INT(-1, init_uart(0, 0, 0, 0, 0, 0));
     TEST_ASSERT_EQUAL_INT( 0, init_uart(0, 9600, 0, 8, 1, 'N'));
@@ -272,9 +281,10 @@ static int read_uart(int fd, char *buf, int len)
     struct timeval time = { 0 };
 #endif
 
-    debug("call %s()\n", __func__);
+    debug("call %s(fd=%d, buf=%p, len=%d)\n", __func__, fd, buf, len);
 
     if ((fd < 0) || !buf || (len <= 0)) {
+        error("invalid parameters\n");
         return -1;
     }
 
@@ -294,7 +304,7 @@ static int read_uart(int fd, char *buf, int len)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, read_uart)
+TEST(sdl2_joystick, read_uart)
 {
     char buf[32] = { 0 };
 
@@ -316,13 +326,10 @@ static int filter_dead_zone(int dead, int newAxis, int oldAxis)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, filter_dead_zone)
+TEST(sdl2_joystick, filter_dead_zone)
 {
-    myjoy.left.x.dead = 10;
-    TEST_ASSERT_EQUAL_INT(0, filter_dead_zone(0, 100, 0));
-
-    myjoy.left.y.dead = 100;
-    TEST_ASSERT_EQUAL_INT(1, filter_dead_zone(1, 10, 0));
+    TEST_ASSERT_EQUAL_INT(0, filter_dead_zone(0, 100, 110));
+    TEST_ASSERT_EQUAL_INT(1, filter_dead_zone(100, 110, 100));
 }
 #endif
 
@@ -340,7 +347,7 @@ static int limit_value(int value)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, limit_value)
+TEST(sdl2_joystick, limit_value)
 {
     TEST_ASSERT_EQUAL_INT( 127, limit_value(255));
     TEST_ASSERT_EQUAL_INT(   0, limit_value(0));
@@ -391,14 +398,14 @@ static void update_axis_values(void)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, update_axis_values)
+TEST(sdl2_joystick, update_axis_values)
 {
-    myjoy.left.x.dead = 0;
+    myjoy.left.cali.x.dead = 0;
     myjoy.left.last.x = 0;
     myjoy.cur_axis[0] = 100;
     myjoy.last_axis[0] = 0;
 
-    myjoy.left.y.dead = 0;
+    myjoy.left.cali.y.dead = 0;
     myjoy.left.last.y = 0;
     myjoy.cur_axis[1] = 100;
     myjoy.last_axis[1] = 0;
@@ -406,12 +413,12 @@ TEST(sdl2_joy, update_axis_values)
     TEST_ASSERT_EQUAL_INT(100, myjoy.left.last.x);
     TEST_ASSERT_EQUAL_INT(100, myjoy.left.last.y);
 
-    myjoy.left.x.dead = 110;
+    myjoy.left.cali.x.dead = 110;
     myjoy.left.last.x = 0;
     myjoy.cur_axis[0] = 100;
     myjoy.last_axis[0] = 0;
 
-    myjoy.left.y.dead = 110;
+    myjoy.left.cali.y.dead = 110;
     myjoy.left.last.y = 0;
     myjoy.cur_axis[1] = 100;
     myjoy.last_axis[1] = 0;
@@ -450,22 +457,22 @@ static int frame_to_axis(cali_t *c, uint8_t v)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, frame_to_axis)
+TEST(sdl2_joystick, frame_to_axis)
 {
-    myjoy.left.x.max = 0;
-    myjoy.left.x.zero = 0;
-    myjoy.left.x.dead = 0;
-    TEST_ASSERT_EQUAL_INT(0, frame_to_axis(0));
+    myjoy.left.cali.x.max = 0;
+    myjoy.left.cali.x.zero = 0;
+    myjoy.left.cali.x.dead = 0;
+    TEST_ASSERT_EQUAL_INT(0, frame_to_axis(&myjoy.left.cali.x, 0));
 
-    myjoy.left.x.max = 1;
-    myjoy.left.x.zero = 0;
-    myjoy.left.x.dead = 0;
-    TEST_ASSERT_EQUAL_INT(32130, frame_to_axis(255));
+    myjoy.left.cali.x.max = 1;
+    myjoy.left.cali.x.zero = 0;
+    myjoy.left.cali.x.dead = 0;
+    TEST_ASSERT_EQUAL_INT(32130, frame_to_axis(&myjoy.left.cali.x, 255));
 
-    myjoy.left.x.max = 1;
-    myjoy.left.x.zero = 0;
-    myjoy.left.x.dead = 32131;
-    TEST_ASSERT_EQUAL_INT(0, frame_to_axis(255));
+    myjoy.left.cali.x.max = 1;
+    myjoy.left.cali.x.zero = 0;
+    myjoy.left.cali.x.dead = 32131;
+    TEST_ASSERT_EQUAL_INT(0, frame_to_axis(&myjoy.left.cali.x, 255));
 }
 #endif
 
@@ -478,7 +485,7 @@ static int parse_serial_buf(const char *cmd, int len)
     debug("call %s()\n", __func__);
 
     if (!cmd || (len < FRAME_LEN)) {
-        debug("invalid parameters(%p, 0x%x)\n", cmd, len);
+        error("invalid parameters(%p, 0x%x)\n", cmd, len);
         return - 1;
     }
 
@@ -503,10 +510,10 @@ static int parse_serial_buf(const char *cmd, int len)
             }
         }
     }
-    myjoy.cur_axis[0] = frame_to_axis(&myjoy.left.cali.x, myjoy.cur_frame.axisLX);
-    myjoy.cur_axis[1] = frame_to_axis(&myjoy.left.cali.y, myjoy.cur_frame.axisLY);
-    myjoy.cur_axis[2] = frame_to_axis(&myjoy.right.cali.x, myjoy.cur_frame.axisRX);
-    myjoy.cur_axis[3] = frame_to_axis(&myjoy.right.cali.y, myjoy.cur_frame.axisRY);
+    myjoy.cur_axis[0] = frame_to_axis(&myjoy.left.cali.x, myjoy.cur_frame.left_x);
+    myjoy.cur_axis[1] = frame_to_axis(&myjoy.left.cali.y, myjoy.cur_frame.left_y);
+    myjoy.cur_axis[2] = frame_to_axis(&myjoy.right.cali.x, myjoy.cur_frame.right_x);
+    myjoy.cur_axis[3] = frame_to_axis(&myjoy.right.cali.y, myjoy.cur_frame.right_y);
 
     update_axis_values();
 
@@ -514,7 +521,7 @@ static int parse_serial_buf(const char *cmd, int len)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, parse_serial_buf)
+TEST(sdl2_joystick, parse_serial_buf)
 {
     char buf0[] = { FRAME_START, 1, 2, 11, 22, FRAME_STOP };
     char buf1[] = { 5, 6, FRAME_START, 1, 2, 33, 44, FRAME_STOP };
@@ -525,27 +532,27 @@ TEST(sdl2_joy, parse_serial_buf)
 
     TEST_ASSERT_EQUAL_INT(0, parse_serial_buf(buf0, sizeof(buf0)));
     TEST_ASSERT_EQUAL_INT(FRAME_START, myjoy.cur_frame.magic_start);
-    TEST_ASSERT_EQUAL_INT(buf0[1], myjoy.cur_frame.unused0);
-    TEST_ASSERT_EQUAL_INT(buf0[2], myjoy.cur_frame.unused1);
-    TEST_ASSERT_EQUAL_INT(buf0[3], myjoy.cur_frame.axis0);
-    TEST_ASSERT_EQUAL_INT(buf0[4], myjoy.cur_frame.axis1);
+    TEST_ASSERT_EQUAL_INT(buf0[1], myjoy.cur_frame.left_y);
+    TEST_ASSERT_EQUAL_INT(buf0[2], myjoy.cur_frame.left_x);
+    TEST_ASSERT_EQUAL_INT(buf0[3], myjoy.cur_frame.right_y);
+    TEST_ASSERT_EQUAL_INT(buf0[4], myjoy.cur_frame.right_x);
     TEST_ASSERT_EQUAL_INT(FRAME_STOP, myjoy.cur_frame.magic_end);
 
     TEST_ASSERT_EQUAL_INT(0, parse_serial_buf(buf1, sizeof(buf1)));
     TEST_ASSERT_EQUAL_INT(FRAME_START, myjoy.cur_frame.magic_start);
-    TEST_ASSERT_EQUAL_INT(buf1[3], myjoy.cur_frame.unused0);
-    TEST_ASSERT_EQUAL_INT(buf1[4], myjoy.cur_frame.unused1);
-    TEST_ASSERT_EQUAL_INT(buf1[5], myjoy.cur_frame.axis0);
-    TEST_ASSERT_EQUAL_INT(buf1[6], myjoy.cur_frame.axis1);
+    TEST_ASSERT_EQUAL_INT(buf1[3], myjoy.cur_frame.left_y);
+    TEST_ASSERT_EQUAL_INT(buf1[4], myjoy.cur_frame.left_x);
+    TEST_ASSERT_EQUAL_INT(buf1[5], myjoy.cur_frame.right_y);
+    TEST_ASSERT_EQUAL_INT(buf1[6], myjoy.cur_frame.right_x);
     TEST_ASSERT_EQUAL_INT(FRAME_STOP, myjoy.cur_frame.magic_end);
 
     memset(&myjoy.cur_frame, 0, sizeof(myjoy.cur_frame));
     TEST_ASSERT_EQUAL_INT(0, parse_serial_buf(buf2, sizeof(buf2)));
     TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.magic_start);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.unused0);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.unused1);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.axis0);
-    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.axis1);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.left_y);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.left_x);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.right_y);
+    TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.right_x);
     TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.magic_end);
 }
 #endif
@@ -554,14 +561,15 @@ static int init_serial(void)
 {
     debug("call %s()\n", __func__);
 
-    myjoy.left.last.x = 0;
-    myjoy.left.last.y = 0;
+    memset(&myjoy.left, 0, sizeof(myjoy.left));
+    memset(&myjoy.right, 0, sizeof(myjoy.right));
     memset(myjoy.cur_axis, 0, sizeof(myjoy.cur_axis));
     memset(myjoy.last_axis, 0, sizeof(myjoy.last_axis));
     memset(&(myjoy.cur_frame), 0, sizeof(myjoy.cur_frame));
 
     myjoy.fd = open_uart(JOY_DEV);
     if (myjoy.fd < 0) {
+        error("failedl to open \"%s\"\n", JOY_DEV);
         return -1;
     }
 
@@ -574,7 +582,7 @@ static int init_serial(void)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, init_serial)
+TEST(sdl2_joystick, init_serial)
 {
     TEST_ASSERT_EQUAL_INT(-1, init_serial());
     TEST_ASSERT_EQUAL_INT(0, myjoy.cur_frame.magic_start);
@@ -627,7 +635,7 @@ static int read_joy_cfg(const char *path, cali_t *x, cali_t *y)
         }
 #endif
 
-#if defined(FLIP)
+#if defined(FLIP) || defined(UT)
         if (strcasestr(buf, "x_min=")) {
             x->min = atoi(&buf[6]);
             debug("joy x_min=%d\n", x->min);
@@ -653,7 +661,7 @@ static int read_joy_cfg(const char *path, cali_t *x, cali_t *y)
             debug("joy y_zero=%d\n", y->zero);
         }
         else {
-            debug("invalid string=\"%s\"\n", buf);
+            error("invalid string=\"%s\"\n", buf);
         }
 #endif
     }
@@ -663,15 +671,18 @@ static int read_joy_cfg(const char *path, cali_t *x, cali_t *y)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, read_joy_cfg)
+TEST(sdl2_joystick, read_joy_cfg)
 {
-    TEST_ASSERT_EQUAL_INT(0, read_joy_cfg(DEF_CFG_PATH, r));
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  myjoy.left.x.min);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  myjoy.left.x.max);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, myjoy.left.x.zero);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  myjoy.left.y.min);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  myjoy.left.y.max);
-    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, myjoy.left.y.zero);
+    cali_t x = { 0 };
+    cali_t y = { 0 };
+
+    TEST_ASSERT_EQUAL_INT(0, read_joy_cfg(JOY_CFG_FILE, &x, &y));
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  x.min);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  x.max);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, x.zero);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MIN,  y.min);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_MAX,  y.max);
+    TEST_ASSERT_EQUAL_INT(DEF_CFG_JOY_ZERO, y.zero);
 }
 #endif
 
@@ -685,6 +696,8 @@ int joy_handler(void *param)
     debug("%s()++\n", __func__);
 
 #if !defined(UT)
+    myjoy.running = 1;
+
     while (myjoy.running) {
         r = read_uart(myjoy.fd, buf, sizeof(buf));
 
@@ -705,7 +718,7 @@ int joy_handler(void *param)
 #endif
 
 #if defined(UT)
-TEST(sdl2_joy, joy_handler)
+TEST(sdl2_joystick, joy_handler)
 {
     TEST_ASSERT_EQUAL_INT(0, joy_handler(NULL));
 }
@@ -718,16 +731,15 @@ int JoystickInit(void)
 #if defined(A30) || defined(FLIP) || defined(UT)
     read_joy_cfg(JOY_CFG_FILE, &myjoy.left.cali.x, &myjoy.left.cali.y);
 
-#if defined(FLIP)
+#if defined(FLIP) || defined(UT)
     read_joy_cfg(JOY_RIGHT_CFG_FILE, &myjoy.right.cali.x, &myjoy.right.cali.y);
 #endif
 
     init_serial();
 
-    myjoy.running = 1;
     myjoy.thread = SDL_CreateThreadInternal(joy_handler, "NDS Joy Handler", 4096, NULL);
     if (myjoy.thread == NULL) {
-        debug("failed to create thread for joystick\n");
+        error("failed to create thread for joystick\n");
         return -1;
     }
 #endif
@@ -736,7 +748,7 @@ int JoystickInit(void)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickInit)
+TEST(sdl2_joystick, JoystickInit)
 {
     TEST_ASSERT_EQUAL_INT(0, JoystickInit());
 }
@@ -762,7 +774,7 @@ void JoystickQuit(void)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickQuit)
+TEST(sdl2_joystick, JoystickQuit)
 {
     JoystickQuit();
     TEST_PASS();
@@ -777,7 +789,7 @@ static int JoystickGetCount(void)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickGetCount)
+TEST(sdl2_joystick, JoystickGetCount)
 {
     TEST_ASSERT_EQUAL_INT(1, JoystickGetCount());
 }
@@ -789,7 +801,7 @@ static void JoystickDetect(void)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickDetect)
+TEST(sdl2_joystick, JoystickDetect)
 {
     JoystickDetect();
     TEST_PASS();
@@ -804,7 +816,7 @@ static const char* JoystickGetDeviceName(int idx)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickGetDeviceName)
+TEST(sdl2_joystick, JoystickGetDeviceName)
 {
     TEST_ASSERT_EQUAL_STRING(JOY_NAME, JoystickGetDeviceName(0));
 }
@@ -818,7 +830,7 @@ static int JoystickGetDevicePlayerIndex(int idx)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickGetDevicePlayerIndex)
+TEST(sdl2_joystick, JoystickGetDevicePlayerIndex)
 {
     TEST_ASSERT_EQUAL_INT(-1, JoystickGetDevicePlayerIndex(0));
 }
@@ -830,7 +842,7 @@ static void JoystickSetDevicePlayerIndex(int idx, int player)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickSetDevicePlayerIndex)
+TEST(sdl2_joystick, JoystickSetDevicePlayerIndex)
 {
     JoystickSetDevicePlayerIndex(0, 0);
     TEST_PASS();
@@ -851,7 +863,7 @@ static SDL_JoystickGUID JoystickGetDeviceGUID(int idx)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickGetDeviceGUID)
+TEST(sdl2_joystick, JoystickGetDeviceGUID)
 {
     const int idx = 1;
     SDL_JoystickGUID guid;
@@ -871,7 +883,7 @@ static SDL_JoystickID JoystickGetDeviceInstanceID(int idx)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickGetDeviceInstanceID)
+TEST(sdl2_joystick, JoystickGetDeviceInstanceID)
 {
     const int idx = 1;
 
@@ -896,7 +908,7 @@ int JoystickOpen(SDL_Joystick *j, int idx)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickOpen)
+TEST(sdl2_joystick, JoystickOpen)
 {
     const int idx = 1;
     SDL_Joystick j = { 0 };
@@ -914,12 +926,12 @@ void JoystickClose(SDL_Joystick *j)
     debug("call %s()\n", __func__);
 
     if (!j) {
-        debug("joystick is null\n");
+        debug("j is null\n");
     }
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickClose)
+TEST(sdl2_joystick, JoystickClose)
 {
     SDL_Joystick j = { 0 };
 
@@ -931,11 +943,13 @@ TEST(sdl2_joy, JoystickClose)
 
 static int JoystickRumble(SDL_Joystick *j, uint16_t low_freq, uint16_t high_freq)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickRumble)
+TEST(sdl2_joystick, JoystickRumble)
 {
     TEST_ASSERT_EQUAL_INT(0, JoystickRumble(NULL, 0, 0));
 }
@@ -943,11 +957,13 @@ TEST(sdl2_joy, JoystickRumble)
 
 static int JoystickRumbleTriggers(SDL_Joystick *j, uint16_t left, uint16_t right)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickRumbleTriggers)
+TEST(sdl2_joystick, JoystickRumbleTriggers)
 {
     TEST_ASSERT_EQUAL_INT(0, JoystickRumbleTriggers(NULL, 0, 0));
 }
@@ -955,11 +971,13 @@ TEST(sdl2_joy, JoystickRumbleTriggers)
 
 static uint32_t JoystickGetCapabilities(SDL_Joystick *j)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickGetCapabilities)
+TEST(sdl2_joystick, JoystickGetCapabilities)
 {
     TEST_ASSERT_EQUAL_INT(0, JoystickGetCapabilities(NULL));
 }
@@ -967,11 +985,13 @@ TEST(sdl2_joy, JoystickGetCapabilities)
 
 static int JoystickSetLED(SDL_Joystick *j, uint8_t r, uint8_t g, uint8_t b)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickSetLED)
+TEST(sdl2_joystick, JoystickSetLED)
 {
     TEST_ASSERT_EQUAL_INT(0, JoystickSetLED(NULL, 0, 0, 0));
 }
@@ -979,11 +999,13 @@ TEST(sdl2_joy, JoystickSetLED)
 
 static int JoystickSendEffect(SDL_Joystick *j, const void *data, int size)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickSendEffect)
+TEST(sdl2_joystick, JoystickSendEffect)
 {
     TEST_ASSERT_EQUAL_INT(0, JoystickSendEffect(NULL, NULL, 0));
 }
@@ -991,11 +1013,13 @@ TEST(sdl2_joy, JoystickSendEffect)
 
 static int JoystickSetSensorsEnabled(SDL_Joystick *j, SDL_bool enabled)
 {
+    debug("call %s()\n", __func__);
+
     return 0;
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickSetSensorsEnabled)
+TEST(sdl2_joystick, JoystickSetSensorsEnabled)
 {
     TEST_ASSERT_EQUAL_INT(0, JoystickSetSensorsEnabled(NULL, 0));
 }
@@ -1003,20 +1027,22 @@ TEST(sdl2_joy, JoystickSetSensorsEnabled)
 
 void JoystickUpdate(SDL_Joystick *j)
 {
-#if defined(A30) || defined(FLIP) || defined(FLIP)
+#if defined(A30) || defined(FLIP)
     static int pre_lx = -1;
     static int pre_ly = -1;
     static int pre_rx = -1;
     static int pre_ry = -1;
 #endif
 
+    debug("call %s()\n", __func__);
+
     do {
         if (!j) {
-            debug("joystick is null\n");
+            error("joystick is null\n");
             break;
         }
 
-#if defined(A30) || defined(FLIP) || defined(FLIP)
+#if defined(A30) || defined(FLIP)
         if (myjoy.left.last.x != pre_lx) {
             pre_lx = myjoy.left.last.x;
             SDL_PrivateJoystickAxis(j, 0, pre_lx);
@@ -1041,7 +1067,7 @@ void JoystickUpdate(SDL_Joystick *j)
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickUpdate)
+TEST(sdl2_joystick, JoystickUpdate)
 {
     JoystickUpdate(NULL);
     TEST_PASS();
@@ -1050,11 +1076,13 @@ TEST(sdl2_joy, JoystickUpdate)
 
 static SDL_bool JoystickGetGamepadMapping(int idx, SDL_GamepadMapping *out)
 {
+    debug("call %s()\n", __func__);
+
     return SDL_FALSE;
 }
 
 #if defined(UT)
-TEST(sdl2_joy, JoystickGetGamepadMapping)
+TEST(sdl2_joystick, JoystickGetGamepadMapping)
 {
     TEST_ASSERT_EQUAL(SDL_FALSE, JoystickGetGamepadMapping(0, NULL));
 }
@@ -1081,44 +1109,4 @@ SDL_JoystickDriver NDS_JoystickDriver = {
     JoystickQuit,
     JoystickGetGamepadMapping
 };
-
-#if defined(UT)
-TEST_GROUP_RUNNER(sdl2_joy)
-{
-    RUN_TEST_CASE(sdl2_joy, open_uart)
-    RUN_TEST_CASE(sdl2_joy, set_uart)
-    RUN_TEST_CASE(sdl2_joy, init_uart)
-    RUN_TEST_CASE(sdl2_joy, read_uart)
-    RUN_TEST_CASE(sdl2_joy, filter_dead_zone)
-    RUN_TEST_CASE(sdl2_joy, limit_value)
-    RUN_TEST_CASE(sdl2_joy, update_axis_values)
-    RUN_TEST_CASE(sdl2_joy, frame_to_axis_x)
-    RUN_TEST_CASE(sdl2_joy, frame_to_axis_y)
-    RUN_TEST_CASE(sdl2_joy, parse_serial_buf)
-    RUN_TEST_CASE(sdl2_joy, init_serial)
-    RUN_TEST_CASE(sdl2_joy, read_joy_cfg)
-    RUN_TEST_CASE(sdl2_joy, joy_handler)
-    RUN_TEST_CASE(sdl2_joy, JoystickInit)
-    RUN_TEST_CASE(sdl2_joy, JoystickQuit)
-    RUN_TEST_CASE(sdl2_joy, JoystickGetCount)
-    RUN_TEST_CASE(sdl2_joy, JoystickDetect)
-    RUN_TEST_CASE(sdl2_joy, JoystickGetDeviceName)
-    RUN_TEST_CASE(sdl2_joy, JoystickGetDevicePlayerIndex)
-    RUN_TEST_CASE(sdl2_joy, JoystickSetDevicePlayerIndex)
-    RUN_TEST_CASE(sdl2_joy, JoystickGetDeviceGUID)
-    RUN_TEST_CASE(sdl2_joy, JoystickGetDeviceInstanceID)
-    RUN_TEST_CASE(sdl2_joy, JoystickOpen)
-    RUN_TEST_CASE(sdl2_joy, JoystickClose)
-    RUN_TEST_CASE(sdl2_joy, JoystickRumble)
-    RUN_TEST_CASE(sdl2_joy, JoystickRumbleTriggers)
-    RUN_TEST_CASE(sdl2_joy, JoystickGetCapabilities)
-    RUN_TEST_CASE(sdl2_joy, JoystickSetLED)
-    RUN_TEST_CASE(sdl2_joy, JoystickSendEffect)
-    RUN_TEST_CASE(sdl2_joy, JoystickSetSensorsEnabled)
-    RUN_TEST_CASE(sdl2_joy, JoystickUpdate)
-    RUN_TEST_CASE(sdl2_joy, JoystickGetGamepadMapping)
-}
-#endif
-
-#endif
 

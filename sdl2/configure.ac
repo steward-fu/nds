@@ -2495,6 +2495,10 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/src"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/extras/fixture/src"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/extras/memory/src"
+
+        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
+        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
+        have_joystick=yes
     fi
 }
 

@@ -4,14 +4,16 @@
 #ifndef __NDS_JOY_H__
 #define __NDS_JOY_H__
 
-#define JOY_NAME "NDS Joystick"
+#define JOY_NAME            "NDS Joystick"
 
 #define DEF_CFG_JOY_MIN     -128
 #define DEF_CFG_JOY_ZERO    0
 #define DEF_CFG_JOY_MAX     128
 
 #if defined(UT)
-#define JOY_CFG_FILE        "joy.cfg"
+#define JOY_DEV             "/dev/ttyS1"
+#define JOY_CFG_FILE        "/tmp/joypad.config"
+#define JOY_RIGHT_CFG_FILE  "/tmp/joypad_right.config"
 #endif
 
 #if defined(FLIP)
@@ -33,10 +35,10 @@
 
 typedef struct {
     uint8_t magic_start;
-    uint8_t axisLY;
-    uint8_t axisLX;
-    uint8_t axisRY;
-    uint8_t axisRX;
+    uint8_t left_y;
+    uint8_t left_x;
+    uint8_t right_y;
+    uint8_t right_x;
     uint8_t magic_end;
 } joy_frame_t;
 
