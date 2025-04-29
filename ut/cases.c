@@ -67,6 +67,10 @@ RUN_TEST_CASE(alsa, snd_pcm_sw_params_free)
 RUN_TEST_CASE(alsa, snd_pcm_sw_params_malloc)
 RUN_TEST_CASE(alsa, snd_pcm_writei)
 }
+TEST_GROUP_RUNNER(sdl2_event)
+{
+RUN_TEST_CASE(sdl2_event, pump_event)
+}
 TEST_GROUP_RUNNER(sdl2_video)
 {
 RUN_TEST_CASE(sdl2_video, sigterm_handler)

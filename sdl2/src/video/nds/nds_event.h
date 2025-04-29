@@ -8,40 +8,40 @@
 #include "nds_event.h"
 
 #if defined(FLIP)
-#define DEV_KEY_BUF_MAX     32
+#define DEV_KEY_BUF_MA      32
 #define DEV_KEY_IDX_MAX     19
 #endif
 
-#define MYKEY_UP            0
-#define MYKEY_DOWN          1
-#define MYKEY_LEFT          2
-#define MYKEY_RIGHT         3
-#define MYKEY_A             4
-#define MYKEY_B             5
-#define MYKEY_X             6
-#define MYKEY_Y             7
-#define MYKEY_L1            8
-#define MYKEY_R1            9
-#define MYKEY_L2            10
-#define MYKEY_R2            11
-#define MYKEY_SELECT        12
-#define MYKEY_START         13
-#define MYKEY_MENU          14
-#define MYKEY_QSAVE         15
-#define MYKEY_QLOAD         16
-#define MYKEY_FF            17
-#define MYKEY_EXIT          18
-#define MYKEY_MENU_ONION    19
-#define MYKEY_POWER         20
-#define MYKEY_VOLUP         21
-#define MYKEY_VOLDOWN       22
+#define KEY_BIT_UP          0
+#define KEY_BIT_DOWN        1
+#define KEY_BIT_LEFT        2
+#define KEY_BIT_RIGHT       3
+#define KEY_BIT_A           4
+#define KEY_BIT_B           5
+#define KEY_BIT_X           6
+#define KEY_BIT_Y           7
+#define KEY_BIT_L1          8
+#define KEY_BIT_R1          9
+#define KEY_BIT_L2          10
+#define KEY_BIT_R2          11
+#define KEY_BIT_SELECT      12
+#define KEY_BIT_START       13
+#define KEY_BIT_MENU        14
+#define KEY_BIT_SAVE        15
+#define KEY_BIT_LOAD        16
+#define KEY_BIT_FAST        17
+#define KEY_BIT_EXIT        18
+#define KEY_BIT_ONION       19
+#define KEY_BIT_LAST        19
 
-#define MYKEY_LAST_BITS     19 // ignore POWER, VOL-, VOL+ keys
+#define KEY_BIT_POWER       20
+#define KEY_BIT_VOLUP       21
+#define KEY_BIT_VOLDOWN     22
 
-#define MMIYOO_KEYPAD_MODE 0
-#define MMIYOO_MOUSE_MODE  1
+#define NDS_KEY_MODE        0
+#define NDS_TOUCH_MODE      1
 
-typedef struct _MMIYOO_EventInfo {
+typedef struct {
     struct _keypad{
         uint32_t cur_keys;
         uint32_t pre_keys;
@@ -55,11 +55,11 @@ typedef struct _MMIYOO_EventInfo {
     } mouse;
 
     int mode;
-} MMIYOO_EventInfo;
+} NDS_Event;
 
-extern void MMIYOO_EventInit(void);
-extern void MMIYOO_EventDeinit(void);
-extern void MMIYOO_PumpEvents(_THIS);
+void init_event(void);
+void quit_event(void);
+void pump_event(_THIS);
 
 #endif
 

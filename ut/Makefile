@@ -32,6 +32,10 @@ gen_cases:
 	@echo "{" >> cases.c
 	@cat ../alsa/snd.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
+	@echo "TEST_GROUP_RUNNER(sdl2_event)" >> cases.c
+	@echo "{" >> cases.c
+	@cat ../sdl2/src/video/nds/nds_event.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@echo "}" >> cases.c
 	@echo "TEST_GROUP_RUNNER(sdl2_video)" >> cases.c
 	@echo "{" >> cases.c
 	@cat ../sdl2/src/video/nds/nds_video.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
