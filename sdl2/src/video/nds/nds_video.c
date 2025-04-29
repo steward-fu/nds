@@ -6572,8 +6572,7 @@ static const char *MENU_ITEM[] = {
     "Hotkey",
     "Swap L1-L2",
     "Swap R1-R2",
-    "Pen X Speed",
-    "Pen Y Speed",
+    "Pen Speed",
     "Cursor",
     "Fast Forward",
 #if defined(A30) || defined(FLIP)
