@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#if defined(UT)
+#include "unity_fixture.h"
+#endif
+
 #include "../../SDL_internal.h"
 #include "../SDL_sysrender.h"
 #include "SDL_hints.h"
@@ -13,160 +17,256 @@
 
 #include "debug.h"
 
-typedef struct MMIYOO_TextureData {
-    void *data;
-    unsigned int size;
-    unsigned int width;
-    unsigned int height;
-    unsigned int bits;
-    unsigned int format;
-    unsigned int pitch;
-} MMIYOO_TextureData;
-
 typedef struct {
-    SDL_Texture *boundTarget;
-    SDL_bool initialized;
-    unsigned int bpp;
-    SDL_bool vsync;
-} MMIYOO_RenderData;
+    void *pixels;
+    uint32_t w;
+    uint32_t h;
+    uint32_t pitch;
+} NDS_Texture;
 
 extern NDS nds;
 extern int show_fps;
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
 extern int need_restore;
 extern int pre_dismode;
 #endif
 
-static void MMIYOO_WindowEvent(SDL_Renderer *renderer, const SDL_WindowEvent *event)
+static void destroy_texture(SDL_Renderer *r, SDL_Texture *t);
+
+#if defined(UT)
+TEST_GROUP(sdl2_render);
+
+TEST_SETUP(sdl2_render)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_render)
+{
+}
+#endif
+
+static void window_event(SDL_Renderer *r, const SDL_WindowEvent *e)
 {
     debug("call %s()\n", __func__);
 }
 
-static int MMIYOO_CreateTexture(SDL_Renderer *renderer, SDL_Texture *texture)
+#if defined(UT)
+TEST(sdl2_render, window_event)
 {
-    MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData *)SDL_calloc(1, sizeof(*mmiyoo_texture));
+    window_event(NULL, NULL);
+    TEST_PASS();
+}
+#endif
 
-    debug("call %s()\n", __func__);
-    if(!mmiyoo_texture) {
-        printf(PREFIX"Failed to create texture\n");
-        return SDL_OutOfMemory();
-    }
+static int create_texture(SDL_Renderer *r, SDL_Texture *t)
+{
+    NDS_Texture *p = NULL;
 
-    mmiyoo_texture->width = texture->w;
-    mmiyoo_texture->height = texture->h;
-    mmiyoo_texture->format = texture->format;
+    debug(SDL"call %s(renderer=%p, texture=%p)\n", __func__, r, t);
 
-    switch(mmiyoo_texture->format) {
-    case SDL_PIXELFORMAT_RGB565:
-        mmiyoo_texture->bits = 16;
-        break;
-    case SDL_PIXELFORMAT_ARGB8888:
-        mmiyoo_texture->bits = 32;
-        break;
-    default:
+    if (!t) {
+        error(SDL"invalid texture\n");
         return -1;
     }
 
-    mmiyoo_texture->pitch = mmiyoo_texture->width * SDL_BYTESPERPIXEL(texture->format);
-    mmiyoo_texture->size = mmiyoo_texture->height * mmiyoo_texture->pitch;
-    mmiyoo_texture->data = SDL_calloc(1, mmiyoo_texture->size);
-
-    if(!mmiyoo_texture->data) {
-        printf(PREFIX"Failed to create texture data\n");
-        SDL_free(mmiyoo_texture);
+    p = (NDS_Texture *)SDL_calloc(1, sizeof(NDS_Texture));
+    if (!p) {
+        error(SDL"failed to allocate nds texture\n");
         return SDL_OutOfMemory();
     }
 
-    mmiyoo_texture->data = SDL_calloc(1, mmiyoo_texture->size);
-    texture->driverdata = mmiyoo_texture;
-    GFX_Clear();
+    p->w = t->w;
+    p->h = t->h;
+    p->pitch = p->w * SDL_BYTESPERPIXEL(t->format);
+    p->pixels = SDL_calloc(1, p->h * p->pitch);
+    if (!p->pixels) {
+        error(SDL"failed to allocate nds texture\n");
+
+        SDL_free(p);
+        return SDL_OutOfMemory();
+    }
+    t->driverdata = p;
+    debug(SDL"created texture(texture=%p, w=%d, h=%d, pitch=%d)\n", p, p->w, p->h, p->pitch);
+
     return 0;
 }
 
-static int MMIYOO_LockTexture(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *rect, void **pixels, int *pitch)
+#if defined(UT)
+TEST(sdl2_render, create_texture)
 {
-    MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
+    SDL_Texture t = { 0 };
 
-    debug("call %s()\n", __func__);
-    *pixels = mmiyoo_texture->data;
-    *pitch = mmiyoo_texture->pitch;
+    TEST_ASSERT_EQUAL_INT(-1, create_texture(NULL, NULL));
+    TEST_ASSERT_EQUAL_INT(0, create_texture(NULL, &t));
+    destroy_texture(NULL, &t);
+}
+#endif
+
+static int lock_texture(SDL_Renderer *r, SDL_Texture *t, const SDL_Rect *rt, void **pixels, int *pitch)
+{
+    NDS_Texture *td = NULL;
+
+    debug("call %s(pixels=%p, pitch=%p)\n", __func__, pixels, pitch);
+
+    if (!t || !pixels || !pitch) {
+        error("invalid parameters\n");
+        return -1;
+    }
+
+    td = (NDS_Texture *)t->driverdata;
+    if (!td) {
+        error("invalid td\n");
+        return -1;
+    }
+
+    *pixels = td->pixels;
+    *pitch = td->pitch;
+
     return 0;
 }
 
-static int MMIYOO_UpdateTexture(SDL_Renderer *renderer, SDL_Texture *texture, const SDL_Rect *rect, const void *pixels, int pitch)
+#if defined(UT)
+TEST(sdl2_render, lock_texture)
+{
+    int pitch = 0;
+    uint32_t pixels[1] = { 0 };
+    SDL_Rect rt = { 0 };
+    SDL_Texture t = { 0 };
+    SDL_Renderer r = { 0 };
+    NDS_Texture td = { 0 };
+
+    TEST_ASSERT_EQUAL_INT(-1, lock_texture(NULL, NULL, NULL, NULL, NULL));
+    TEST_ASSERT_EQUAL_INT(-1, lock_texture(NULL, &t, NULL, (void *)pixels, NULL));
+
+    pixels[0] = 0x1234;
+    t.driverdata = NULL;
+    TEST_ASSERT_EQUAL_INT(-1, lock_texture(&r, &t, &rt, (void *)&pixels, &pitch));
+    TEST_ASSERT_EQUAL_INT(0, pitch);
+    TEST_ASSERT_EQUAL_INT(0x1234, pixels[0]);
+
+    t.driverdata = &td;
+    td.pitch = 0x1234;
+    td.pixels = (void *)0x5678;
+    TEST_ASSERT_EQUAL_INT(0, lock_texture(&r, &t, &rt, (void *)&pixels, &pitch));
+    TEST_ASSERT_EQUAL_INT(0x1234, pitch);
+    TEST_ASSERT_EQUAL_INT(0x5678, pixels[0]);
+}
+#endif
+
+static int update_texture(SDL_Renderer *r, SDL_Texture *t, const SDL_Rect *rt, const void *pixels, int pitch)
 {
     debug("call %s()\n", __func__);
+
     return 0;
 }
 
-static void MMIYOO_UnlockTexture(SDL_Renderer *renderer, SDL_Texture *texture)
+#if defined(UT)
+TEST(sdl2_render, update_texture)
 {
-    SDL_Rect rect = {0};
-    MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
+}
+#endif
+
+static void unlock_texture(SDL_Renderer *r, SDL_Texture *t)
+{
+    SDL_Rect rt = { 0 };
+    NDS_Texture *td = (NDS_Texture*)t->driverdata;
 
     debug("call %s()\n", __func__);
-    rect.x = 0;
-    rect.y = 0;
-    rect.w = texture->w;
-    rect.h = texture->h;
-    MMIYOO_UpdateTexture(renderer, texture, &rect, mmiyoo_texture->data, mmiyoo_texture->pitch);
+
+    rt.x = 0;
+    rt.y = 0;
+    rt.w = t->w;
+    rt.h = t->h;
+    update_texture(r, t, &rt, td->pixels, td->pitch);
 }
 
-static void MMIYOO_SetTextureScaleMode(SDL_Renderer *renderer, SDL_Texture *texture, SDL_ScaleMode scaleMode)
+#if defined(UT)
+TEST(sdl2_render, unlock_texture)
+{
+    SDL_Rect rt = { 0 };
+    SDL_Texture t = { 0 };
+    SDL_Renderer r = { 0 };
+
+    TEST_ASSERT_EQUAL_INT(0, update_texture(NULL, NULL, NULL, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(0, update_texture(&r, &t, &rt, (void *)0xdeadbeef, 0));
+}
+#endif
+
+static void set_texture_scale_mode(SDL_Renderer *r, SDL_Texture *t, SDL_ScaleMode m)
 {
     debug("call %s()\n", __func__);
 }
 
-static int MMIYOO_SetRenderTarget(SDL_Renderer *renderer, SDL_Texture *texture)
+#if defined(UT)
+TEST(sdl2_render, set_texture_scale_mode)
+{
+    set_texture_scale_mode(NULL, NULL, 0);
+    TEST_PASS();
+}
+#endif
+
+static int set_render_target(SDL_Renderer *r, SDL_Texture *t)
 {
     debug("call %s()\n", __func__);
+
     return 0;
 }
 
-static int MMIYOO_QueueSetViewport(SDL_Renderer *renderer, SDL_RenderCommand *cmd)
+#if defined(UT)
+TEST(sdl2_render, set_render_target)
+{
+    TEST_ASSERT_EQUAL_INT(0, set_render_target(NULL, NULL));
+}
+#endif
+
+static int queue_set_viewport(SDL_Renderer *r, SDL_RenderCommand *cmd)
 {
     debug("call %s()\n", __func__);
+
     return 0;
 }
 
-static int MMIYOO_QueueDrawPoints(SDL_Renderer *renderer, SDL_RenderCommand *cmd, const SDL_FPoint *points, int count)
+#if defined(UT)
+TEST(sdl2_render, queue_set_viewport)
+{
+    TEST_ASSERT_EQUAL_INT(0, queue_set_viewport(NULL, NULL));
+}
+#endif
+
+static int queue_draw_points(SDL_Renderer *r, SDL_RenderCommand *cmd, const SDL_FPoint *pt, int cnt)
 {
     debug("call %s()\n", __func__);
+
     return 0;
 }
 
-static int MMIYOO_QueueGeometry(SDL_Renderer *renderer,
-    SDL_RenderCommand *cmd,
-    SDL_Texture *texture,
-    const float *xy,
-    int xy_stride,
-    const SDL_Color *color,
-    int color_stride,
-    const float *uv,
-    int uv_stride,
-    int num_vertices,
-    const void *indices,
-    int num_indices,
-    int size_indices,
-    float scale_x,
-    float scale_y)
+#if defined(UT)
+TEST(sdl2_render, queue_draw_points)
+{
+    TEST_ASSERT_EQUAL_INT(0, queue_draw_points(NULL, NULL, NULL, 0));
+}
+#endif
+
+static int queue_fill_rects(SDL_Renderer *r, SDL_RenderCommand *cmd, const SDL_FRect *rt, int cnt)
 {
     debug("call %s()\n", __func__);
+
     return 0;
 }
 
-static int MMIYOO_QueueFillRects(SDL_Renderer *renderer, SDL_RenderCommand *cmd, const SDL_FRect *rects, int count)
+#if defined(UT)
+TEST(sdl2_render, queue_fill_rects)
 {
-    debug("call %s()\n", __func__);
-    return 0;
+    TEST_ASSERT_EQUAL_INT(0, queue_fill_rects(NULL, NULL, NULL, 0));
 }
+#endif
 
-static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture, const SDL_Rect *srcrect, const SDL_FRect *dstrect)
+static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, const SDL_Rect *srt, const SDL_FRect *drt)
 {
     debug("call %s()\n", __func__);
 
-#ifdef QX1000
+#if defined(QX1000)
     if (nds.menu.drastic.enable == 0) {
         update_wayland_res(640, 480);
     }
@@ -175,7 +275,7 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     nds.menu.drastic.enable = 1;
     usleep(100000);
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
     if (nds.dis_mode != NDS_DIS_MODE_S0) {
         need_restore = 1;
         pre_dismode = nds.dis_mode;
@@ -184,146 +284,172 @@ static int MMIYOO_QueueCopy(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_
     disp_resize();
 #endif
 
+#if !defined(UT)
     process_drastic_menu();
+#endif
     return 0;
 }
 
-static int MMIYOO_QueueCopyEx(SDL_Renderer *renderer, SDL_RenderCommand *cmd, SDL_Texture *texture,
-    const SDL_Rect *srcrect, const SDL_FRect *dstrect, const double angle, const SDL_FPoint *center, const SDL_RendererFlip flip)
+#if defined(UT)
+TEST(sdl2_render, queue_copy)
+{
+    nds.menu.drastic.enable = 0;
+    TEST_ASSERT_EQUAL_INT(0, queue_copy(NULL, NULL, NULL, NULL, NULL));
+    TEST_ASSERT_EQUAL_INT(1, nds.menu.drastic.enable);
+}
+#endif
+
+static int run_command_queue(SDL_Renderer *r, SDL_RenderCommand *cmd, void *vertices, size_t vertsize)
 {
     debug("call %s()\n", __func__);
+
     return 0;
 }
 
-static int MMIYOO_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, void *vertices, size_t vertsize)
+#if defined(UT)
+TEST(sdl2_render, run_command_queue)
+{
+    TEST_ASSERT_EQUAL_INT(0, run_command_queue(NULL, NULL, NULL, 0));
+}
+#endif
+
+static int render_read_pixels(SDL_Renderer *r, const SDL_Rect *rt, Uint32 fmt, void *pixels, int pitch)
 {
     debug("call %s()\n", __func__);
+
     return 0;
 }
 
-static int MMIYOO_RenderReadPixels(SDL_Renderer *renderer, const SDL_Rect *rect, Uint32 pixel_format, void *pixels, int pitch)
+#if defined(UT)
+TEST(sdl2_render, render_read_pixels)
+{
+    TEST_ASSERT_EQUAL_INT(0, render_read_pixels(NULL, NULL, 0, NULL, 0));
+}
+#endif
+
+static void render_present(SDL_Renderer *r)
 {
     debug("call %s()\n", __func__);
-    return SDL_Unsupported();
 }
 
-static void MMIYOO_RenderPresent(SDL_Renderer *renderer)
+#if defined(UT)
+TEST(sdl2_render, render_present)
 {
-    debug("call %s()\n", __func__);
+    render_present(NULL);
+    TEST_PASS();
 }
+#endif
 
-static void MMIYOO_DestroyTexture(SDL_Renderer *renderer, SDL_Texture *texture)
+static void destroy_texture(SDL_Renderer *r, SDL_Texture *t)
 {
-    MMIYOO_TextureData *mmiyoo_texture = (MMIYOO_TextureData*)texture->driverdata;
+    debug("call %s(r=%p, t=%p)\n", __func__, r, t);
 
-    debug("call %s()\n", __func__);
-    if (mmiyoo_texture) {
-        if (mmiyoo_texture->data) {
-            SDL_free(mmiyoo_texture->data);
+    if (t) {
+        NDS_Texture *td = (NDS_Texture *)t->driverdata;
+
+        if (td) {
+            if (td->pixels) {
+                SDL_free(td->pixels);
+            }
+            SDL_free(td);
+
+            t->driverdata = NULL;
         }
-        SDL_free(mmiyoo_texture);
-        texture->driverdata = NULL;
     }
 }
 
-static void MMIYOO_DestroyRenderer(SDL_Renderer *renderer)
+#if defined(UT)
+TEST(sdl2_render, destroy_texture)
 {
-    MMIYOO_RenderData *data = (MMIYOO_RenderData *)renderer->driverdata;
+    destroy_texture(NULL, NULL);
+    TEST_PASS();
+}
+#endif
 
+static void destroy_renderer(SDL_Renderer *r)
+{
     debug("call %s()\n", __func__);
-    if(data) {
-        if(!data->initialized) {
-            return;
-        }
 
-        data->initialized = SDL_FALSE;
-        SDL_free(data);
-    }
-    SDL_free(renderer);
+    SDL_free(r);
 }
 
-static int MMIYOO_SetVSync(SDL_Renderer *renderer, const int vsync)
+#if defined(UT)
+TEST(sdl2_render, destroy_renderer)
 {
-    debug("call %s()\n", __func__);
+    destroy_renderer(NULL);
+    TEST_PASS();
+}
+#endif
+
+static int set_vsync(SDL_Renderer *renderer, const int vsync)
+{
+    debug("call %s(vsync=%d)\n", __func__, vsync);
+
     return 0;
 }
 
-SDL_Renderer *MMIYOO_CreateRenderer(SDL_Window *window, Uint32 flags)
+#if defined(UT)
+TEST(sdl2_render, set_vsync)
 {
-    int pixelformat = 0;
-    SDL_Renderer *renderer = NULL;
-    MMIYOO_RenderData *data = NULL;
+    TEST_ASSERT_EQUAL_INT(0, set_vsync(NULL, 0));
+}
+#endif
+
+static SDL_Renderer *create_renderer(SDL_Window *w, Uint32 flags)
+{
+    SDL_Renderer *r = NULL;
 
     debug("call %s()\n", __func__);
-    renderer = (SDL_Renderer *) SDL_calloc(1, sizeof(*renderer));
-    if(!renderer) {
-        printf(PREFIX"Failed to create render\n");
-        SDL_OutOfMemory();
+
+    r = (SDL_Renderer *) SDL_calloc(1, sizeof(*r));
+    if (!r) {
+        error("failed to allocate buffer for renderer\n");
         return NULL;
     }
 
-    data = (MMIYOO_RenderData *) SDL_calloc(1, sizeof(*data));
-    if(!data) {
-        printf(PREFIX"Failed to create render data\n");
-        MMIYOO_DestroyRenderer(renderer);
-        SDL_OutOfMemory();
-        return NULL;
-    }
+    r->WindowEvent = window_event;
+    r->CreateTexture = create_texture;
+    r->UpdateTexture = update_texture;
+    r->LockTexture = lock_texture;
+    r->UnlockTexture = unlock_texture;
+    r->SetTextureScaleMode = set_texture_scale_mode;
+    r->SetRenderTarget = set_render_target;
+    r->QueueSetViewport = queue_set_viewport;
+    r->QueueSetDrawColor = queue_set_viewport;
+    r->QueueDrawPoints = queue_draw_points;
+    r->QueueDrawLines = queue_draw_points;
+    r->QueueFillRects = queue_fill_rects;
+    r->QueueCopy = queue_copy;
+    r->RunCommandQueue = run_command_queue;
+    r->RenderReadPixels = render_read_pixels;
+    r->RenderPresent = render_present;
+    r->DestroyTexture = destroy_texture;
+    r->DestroyRenderer = destroy_renderer;
+    r->SetVSync = set_vsync;
+    r->info = NDS_RenderDriver.info;
+    r->info.flags = (SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+    r->driverdata = NULL;
+    r->window = w;
 
-    renderer->WindowEvent = MMIYOO_WindowEvent;
-    renderer->CreateTexture = MMIYOO_CreateTexture;
-    renderer->UpdateTexture = MMIYOO_UpdateTexture;
-    renderer->LockTexture = MMIYOO_LockTexture;
-    renderer->UnlockTexture = MMIYOO_UnlockTexture;
-    renderer->SetTextureScaleMode = MMIYOO_SetTextureScaleMode;
-    renderer->SetRenderTarget = MMIYOO_SetRenderTarget;
-    renderer->QueueSetViewport = MMIYOO_QueueSetViewport;
-    renderer->QueueSetDrawColor = MMIYOO_QueueSetViewport;
-    renderer->QueueDrawPoints = MMIYOO_QueueDrawPoints;
-    renderer->QueueDrawLines = MMIYOO_QueueDrawPoints;
-    renderer->QueueGeometry = MMIYOO_QueueGeometry;
-    renderer->QueueFillRects = MMIYOO_QueueFillRects;
-    renderer->QueueCopy = MMIYOO_QueueCopy;
-    renderer->QueueCopyEx = MMIYOO_QueueCopyEx;
-    renderer->RunCommandQueue = MMIYOO_RunCommandQueue;
-    renderer->RenderReadPixels = MMIYOO_RenderReadPixels;
-    renderer->RenderPresent = MMIYOO_RenderPresent;
-    renderer->DestroyTexture = MMIYOO_DestroyTexture;
-    renderer->DestroyRenderer = MMIYOO_DestroyRenderer;
-    renderer->SetVSync = MMIYOO_SetVSync;
-    renderer->info = NDS_RenderDriver.info;
-    renderer->info.flags = (SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
-    renderer->driverdata = data;
-    renderer->window = window;
-
-    if(data->initialized != SDL_FALSE) {
-        return 0;
-    }
-    data->initialized = SDL_TRUE;
-
-    if(flags & SDL_RENDERER_PRESENTVSYNC) {
-        data->vsync = SDL_TRUE;
-    }
-    else {
-        data->vsync = SDL_FALSE;
-    }
-
-    pixelformat = SDL_GetWindowPixelFormat(window);
-    switch(pixelformat) {
-    case SDL_PIXELFORMAT_RGB565:
-        data->bpp = 2;
-        break;
-    case SDL_PIXELFORMAT_ARGB8888:
-        data->bpp = 4;
-        break;
-    }
-    return renderer;
+    debug("created renderer=%p\n", r);
+    return r;
 }
+
+#if defined(UT)
+TEST(sdl2_render, create_renderer)
+{
+    SDL_Renderer * r = NULL;
+
+    r = create_renderer(NULL, 0);
+    TEST_ASSERT_NOT_NULL(r);
+    destroy_renderer(r);
+}
+#endif
 
 SDL_RenderDriver NDS_RenderDriver = {
-    .CreateRenderer = MMIYOO_CreateRenderer,
+    .CreateRenderer = create_renderer,
     .info = {
-        .name = "NDS Render",
+        .name = "NDS Video Render",
         .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE,
         .num_texture_formats = 2,
         .texture_formats = {
@@ -333,28 +459,4 @@ SDL_RenderDriver NDS_RenderDriver = {
         .max_texture_height = 600,
     }
 };
-
-#ifdef UNITTEST
-#include "unity_fixture.h"
-
-TEST_GROUP(sdl2_render_mmiyoo);
-
-TEST_SETUP(sdl2_render_mmiyoo)
-{
-}
-
-TEST_TEAR_DOWN(sdl2_render_mmiyoo)
-{
-}
-
-TEST(sdl2_render_mmiyoo, MMIYOO_SetVSync)
-{
-    TEST_ASSERT_EQUAL(MMIYOO_SetVSync(NULL, 0), 0);
-}
-
-TEST_GROUP_RUNNER(sdl2_render_mmiyoo)
-{
-    RUN_TEST_CASE(sdl2_render_mmiyoo, MMIYOO_SetVSync);
-}
-#endif
 

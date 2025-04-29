@@ -40,6 +40,10 @@ gen_cases:
 	@echo "{" >> cases.c
 	@cat ../sdl2/src/joystick/nds/nds_joy.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
+	@echo "TEST_GROUP_RUNNER(sdl2_render)" >> cases.c
+	@echo "{" >> cases.c
+	@cat ../sdl2/src/render/nds/nds_render.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@echo "}" >> cases.c
 
 .PHONY: clean
 clean:

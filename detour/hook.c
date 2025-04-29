@@ -595,27 +595,27 @@ static int init_table(void)
     myhook.var.pcm_handler = (uint32_t *) 0x083e532c;
     myhook.var.fast_forward = (uint32_t *) 0x08006ad0;
 
-    myhook.fun.menu = 0x080a0a18;
-    myhook.fun.free = 0x08003e58;
-    myhook.fun.realloc = 0x0800435c;
-    myhook.fun.malloc = 0x080046e0;
-    myhook.fun.screen_copy16 = 0x080a59d8;
-    myhook.fun.print_string = 0x080a5398;
-    myhook.fun.load_state_index = 0x08095ce4;
-    myhook.fun.save_state_index = 0x08095c10;
-    myhook.fun.quit = 0x08006444;
-    myhook.fun.savestate_pre = 0x08095a80;
-    myhook.fun.savestate_post = 0x08095154;
-    myhook.fun.update_screen = 0x080a83c0;
-    myhook.fun.load_state = 0x080951c0;
-    myhook.fun.save_state = 0x0809580c;
-    myhook.fun.blit_screen_menu = 0x080a62d8;
-    myhook.fun.initialize_backup = 0x08092f40;
-    myhook.fun.set_screen_menu_off = 0x080a8240;
-    myhook.fun.get_screen_ptr = 0x080a890c;
-    myhook.fun.spu_adpcm_decode_block = 0x0808d268;
-    myhook.fun.render_scanline_tiled_4bpp = 0x080bcf74;
-    myhook.fun.render_polygon_setup_perspective_steps = 0x080c1cd4;
+    myhook.fun.menu = (void *)0x080a0a18;
+    myhook.fun.free = (void *)0x08003e58;
+    myhook.fun.realloc = (void *)0x0800435c;
+    myhook.fun.malloc = (void *)0x080046e0;
+    myhook.fun.screen_copy16 = (void *)0x080a59d8;
+    myhook.fun.print_string = (void *)0x080a5398;
+    myhook.fun.load_state_index = (void *)0x08095ce4;
+    myhook.fun.save_state_index = (void *)0x08095c10;
+    myhook.fun.quit = (void *)0x08006444;
+    myhook.fun.savestate_pre = (void *)0x08095a80;
+    myhook.fun.savestate_post = (void *)0x08095154;
+    myhook.fun.update_screen = (void *)0x080a83c0;
+    myhook.fun.load_state = (void *)0x080951c0;
+    myhook.fun.save_state = (void *)0x0809580c;
+    myhook.fun.blit_screen_menu = (void *)0x080a62d8;
+    myhook.fun.initialize_backup = (void *)0x08092f40;
+    myhook.fun.set_screen_menu_off = (void *)0x080a8240;
+    myhook.fun.get_screen_ptr = (void *)0x080a890c;
+    myhook.fun.spu_adpcm_decode_block = (void *)0x0808d268;
+    myhook.fun.render_scanline_tiled_4bpp = (void *)0x080bcf74;
+    myhook.fun.render_polygon_setup_perspective_steps = (void *)0x080c1cd4;
 
     return 0;
 }

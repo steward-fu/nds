@@ -58,5 +58,6 @@ clean:
 	rm -rf drastic/launch.sh
 	rm -rf drastic/config.json
 	rm -rf drastic/lib/libdtr.so
+	rm -rf drastic/lib/libutil.so
 	rm -rf drastic/lib/libasound.so.2
 	rm -rf drastic/lib/libSDL2-2.0.so.0

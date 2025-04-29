@@ -698,7 +698,6 @@ void disp_resize(void);
 int get_pitch(void *chk);
 int handle_menu(int key);
 int process_drastic_menu(void);
-int update_texture(void *chk, void *new, const void *pixels, int pitch);
 const void* get_pixels(void *chk);
 const char *to_lang(const char *p);
 void update_wayland_res(int w, int h);
