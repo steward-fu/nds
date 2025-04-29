@@ -61,3 +61,4 @@ clean:
 	rm -rf drastic/lib/libutil.so
 	rm -rf drastic/lib/libasound.so.2
 	rm -rf drastic/lib/libSDL2-2.0.so.0
+	rm -rf drastic/config/drastic.cf2
