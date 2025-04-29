@@ -1,12 +1,8 @@
 // LGPL-2.1 License
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
-#ifndef __DETOUR_H__
-#define __DETOUR_H__
-
-#if !defined(MAX_PATH)
-#define MAX_PATH            128
-#endif
+#ifndef __HOOK_H__
+#define __HOOK_H__
 
 #define NDS_FIRMWARE        "nds_firmware.bin"
 #define NDS_BIOS_ARM7       "nds_bios_arm7.bin"

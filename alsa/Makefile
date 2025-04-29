@@ -1,5 +1,6 @@
 TARGET   = libasound.so.2
 CFLAGS  += $(MORE_CFLAGS)
+CFLAGS  += -I../util
 CFLAGS  += -I../detour
 LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -fpic -shared
@@ -7,11 +8,7 @@ LDFLAGS += -lpthread
 LDFLAGS += -lm
 LDFLAGS += -L../detour
 LDFLAGS += -ldtr
-SOURCES  = main.c
-
-ifneq ($(MOD), ut)
-    SOURCES += neon_memcpy.S
-endif
+SOURCES  = snd.c
 
 .PHONY: all
 all:

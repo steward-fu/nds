@@ -1,7 +1,6 @@
 #include "unity_fixture.h"
-TEST_GROUP_RUNNER(sdl2_video)
+TEST_GROUP_RUNNER(util)
 {
-RUN_TEST_CASE(sdl2_video, sigterm_handler)
 }
 TEST_GROUP_RUNNER(detour)
 {
@@ -22,6 +21,21 @@ RUN_TEST_CASE(detour, render_polygon_setup_perspective_steps)
 }
 TEST_GROUP_RUNNER(alsa)
 {
+RUN_TEST_CASE(alsa, adpcm_decode_block)
+RUN_TEST_CASE(alsa, context_state_cb)
+RUN_TEST_CASE(alsa, stream_state_cb)
+RUN_TEST_CASE(alsa, stream_latency_update_cb)
+RUN_TEST_CASE(alsa, stream_request_cb)
+RUN_TEST_CASE(alsa, snd_lib_error_set_handler)
+RUN_TEST_CASE(alsa, set_mini_vol_raw)
+RUN_TEST_CASE(alsa, set_mini_vol)
+RUN_TEST_CASE(alsa, inc_mini_vol)
+RUN_TEST_CASE(alsa, dec_mini_vol)
+RUN_TEST_CASE(alsa, inc_a30_vol)
+RUN_TEST_CASE(alsa, dec_a30_vol)
+RUN_TEST_CASE(alsa, open_dsp)
+RUN_TEST_CASE(alsa, set_half_vol)
+RUN_TEST_CASE(alsa, set_auto_state)
 RUN_TEST_CASE(alsa, init_queue)
 RUN_TEST_CASE(alsa, quit_queue)
 RUN_TEST_CASE(alsa, get_available_rsize)
@@ -51,4 +65,8 @@ RUN_TEST_CASE(alsa, snd_pcm_sw_params_current)
 RUN_TEST_CASE(alsa, snd_pcm_sw_params_free)
 RUN_TEST_CASE(alsa, snd_pcm_sw_params_malloc)
 RUN_TEST_CASE(alsa, snd_pcm_writei)
+}
+TEST_GROUP_RUNNER(sdl2_video)
+{
+RUN_TEST_CASE(sdl2_video, sigterm_handler)
 }

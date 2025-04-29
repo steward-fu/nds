@@ -2407,6 +2407,8 @@ CheckNDSVideo()
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
 
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../util"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
@@ -2417,6 +2419,8 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lSDL2_ttf"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lrt"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ljson-c"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../util"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lutil"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../detour"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldtr"
 

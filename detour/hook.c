@@ -15,13 +15,14 @@
 #include "unity_fixture.h"
 #endif
 
+#include "util.h"
+#include "hook.h"
 #include "debug.h"
-#include "detour.h"
-#include "drastic_bios_arm7.h"
-#include "drastic_bios_arm9.h"
 #include "nds_firmware.h"
 #include "nds_bios_arm7.h"
 #include "nds_bios_arm9.h"
+#include "drastic_bios_arm7.h"
+#include "drastic_bios_arm9.h"
 
 static int is_state_hooked = 0;
 static size_t page_size = 4096;

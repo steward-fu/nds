@@ -14,10 +14,12 @@ REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
 
 .PHONY: all
 all: cfg
+	make -C util   MOD=$(MOD)
 	make -C detour MOD=$(MOD)
-	make -C alsa MOD=$(MOD)
+	make -C alsa   MOD=$(MOD)
 	make -C sdl2 -j4
-	cp detour/libdtr.so drastic/lib/
+	cp util/libutil.so   drastic/lib/
+	cp detour/libdtr.so  drastic/lib/
 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/lib/
 
 ifeq ($(NDS_ALSA),1)
@@ -45,6 +47,7 @@ rel:
 .PHONY: clean
 clean:
 	make -C ut clean
+	make -C util clean
 	make -C alsa clean
 	make -C detour clean
 	make -C sdl2 distclean > /dev/null 2>&1 || true

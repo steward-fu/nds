@@ -43,7 +43,9 @@
 #include "nds_video.h"
 #include "nds_event.h"
 
-#include "detour.h"
+#include "hook.h"
+#include "util.h"
+#include "debug.h"
 
 #if defined(MMIYOO)
 #include "mi_sys.h"
@@ -354,6 +356,10 @@
 #define JSON_NDS_RJOY_CUSKEY2       "rjoy_cuskey2"
 #define JSON_NDS_RJOY_CUSKEY3       "rjoy_cuskey3"
 #define JSON_NDS_CHK_BAT            "chk_bat"
+#define JSON_NDS_VOL_KEY            "vol"
+#define JSON_NDS_AUTO_STATE         "auto_state"
+#define JSON_NDS_AUTO_SLOT          "auto_slot"
+#define JSON_NDS_HALF_VOL           "half_vol"
 
 #define DEF_LANG_SLOT               0
 #define DEF_LANG_LANG               "english"
@@ -533,6 +539,7 @@ typedef struct _NDS {
     int enable_752x560;
     int defer_update_bg;
     uint8_t fast_forward;
+    int half_vol;
 
     TTF_Font *font;
     uint32_t state;

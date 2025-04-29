@@ -1,13 +1,13 @@
-TARGET   = libdtr.so
+TARGET   = libutil.so
 CFLAGS  += $(MORE_CFLAGS)
-CFLAGS  += -I../util
+CFLAGS  += -I.
 LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -fpic
 LDFLAGS += -shared
-SOURCES  = hook.c
+SOURCES  = util.c
 
 ifneq ($(MOD),ut)
-    SOURCES += hook.S
+    SOURCES += neon_memcpy.S
 endif
 
 .PHONY: all

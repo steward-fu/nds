@@ -40,8 +40,9 @@
 #include "SDL_video.h"
 #include "SDL_mouse.h"
 
+#include "hook.h"
+#include "util.h"
 #include "debug.h"
-#include "detour.h"
 #include "hex_pen.h"
 #include "nds_video.h"
 #include "nds_event.h"
@@ -2865,6 +2866,15 @@ static int read_config(void)
         nds.fast_forward = json_object_get_int(jval);
     }
 
+    json_object_object_get_ex(jfile, JSON_NDS_AUTO_STATE, &jval);
+    nds.auto_state = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_AUTO_SLOT, &jval);
+    nds.auto_slot = json_object_get_int(jval);
+
+    json_object_object_get_ex(jfile, JSON_NDS_HALF_VOL, &jval);
+    nds.half_vol = json_object_get_int(jval) ? 1 : 0;
+
 #if defined(MMIYOO) || defined(A30) || defined(QX1000) || defined(RG28XX) || defined(FLIP)
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
@@ -2909,8 +2919,9 @@ static int read_config(void)
         close(fd);
 #endif
 
-#if !defined(RG28XX) && !defined(FLIP)
-    snd_nds_reload_config();
+#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(PANDORA)
+    set_auto_state(nds.auto_state, nds.auto_slot);
+    set_half_vol(nds.half_vol);
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA)

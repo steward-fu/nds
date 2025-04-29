@@ -7,6 +7,7 @@ LDFLAGS += -Wl,-rpath .
 LDFLAGS += -Wl,-rpath-link .
 LDFLAGS += -Wl,--no-undefined
 LDFLAGS += libdtr.so
+LDFLAGS += libutil.so
 LDFLAGS += libasound.so.2
 LDFLAGS += libSDL2-2.0.so.0
 SOURCES  = main.c cases.c src/unity.c extras/memory/src/unity_memory.c extras/fixture/src/unity_fixture.c
@@ -19,17 +20,21 @@ all: gen_cases
 .PHONY: gen_cases
 gen_cases:
 	@echo "#include \"unity_fixture.h\"" > cases.c
-	@echo "TEST_GROUP_RUNNER(sdl2_video)" >> cases.c
+	@echo "TEST_GROUP_RUNNER(util)" >> cases.c
 	@echo "{" >> cases.c
-	@cat ../sdl2/src/video/nds/nds_video.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@cat ../util/util.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
 	@echo "TEST_GROUP_RUNNER(detour)" >> cases.c
 	@echo "{" >> cases.c
-	@cat ../detour/main.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@cat ../detour/hook.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
 	@echo "TEST_GROUP_RUNNER(alsa)" >> cases.c
 	@echo "{" >> cases.c
-	@cat ../alsa/main.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@cat ../alsa/snd.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@echo "}" >> cases.c
+	@echo "TEST_GROUP_RUNNER(sdl2_video)" >> cases.c
+	@echo "{" >> cases.c
+	@cat ../sdl2/src/video/nds/nds_video.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
 
 .PHONY: clean

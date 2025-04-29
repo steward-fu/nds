@@ -9,6 +9,8 @@ CFLAGS += -I../ut/extras/memory/src
 #CFLAGS += -fsanitize=leak
 #CFLAGS += -fsanitize=address
 
+LDFLAGS += -lpulse
+
 export MORE_CFLAGS=${CFLAGS}
 export MORE_LDFLAGS=${LDFLAGS}
 
