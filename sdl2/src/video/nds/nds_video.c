@@ -2707,11 +2707,6 @@ static int read_config(void)
         nds.pen.xv = json_object_get_int(jval);
     }
     
-    json_object_object_get_ex(jfile, JSON_NDS_PEN_YV, &jval);
-    if (jval) {
-        nds.pen.yv = json_object_get_int(jval);
-    }
-
     json_object_object_get_ex(jfile, JSON_NDS_ALPHA_VALUE, &jval);
     if (jval) {
         nds.alpha.val = json_object_get_int(jval);
@@ -2979,7 +2974,6 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_SWAP_L1L2, json_object_new_int(nds.swap_l1l2));
     json_object_object_add(jfile, JSON_NDS_SWAP_R1R2, json_object_new_int(nds.swap_r1r2));
     json_object_object_add(jfile, JSON_NDS_PEN_XV, json_object_new_int(nds.pen.xv));
-    json_object_object_add(jfile, JSON_NDS_PEN_YV, json_object_new_int(nds.pen.yv));
     json_object_object_add(jfile, JSON_NDS_MENU_BG, json_object_new_int(nds.menu.sel));
     json_object_object_add(jfile, JSON_NDS_MENU_CURSOR, json_object_new_int(nds.menu.show_cursor));
     json_object_object_add(jfile, JSON_NDS_FAST_FORWARD, json_object_new_int(nds.fast_forward));
@@ -6522,7 +6516,6 @@ enum {
     MENU_SWAP_L1L2,
     MENU_SWAP_R1R2,
     MENU_PEN_XV,
-    MENU_PEN_YV,
     MENU_CURSOR,
     MENU_FAST_FORWARD,
 #if defined(A30) || defined(FLIP)
@@ -6732,13 +6725,8 @@ int handle_menu(int key)
             }
             break;
         case MENU_PEN_XV:
-            if (nds.pen.xv > PEN_XV_MIN) {
-                nds.pen.xv-= PEN_XV_DEC;
-            }
-            break;
-        case MENU_PEN_YV:
-            if (nds.pen.yv > PEN_YV_MIN) {
-                nds.pen.yv-= PEN_YV_DEC;
+            if (nds.pen.xv > 1) {
+                nds.pen.xv-= 1;
             }
             break;
         case MENU_CURSOR:
@@ -6919,13 +6907,8 @@ int handle_menu(int key)
             }
             break;
         case MENU_PEN_XV:
-            if (nds.pen.xv < PEN_XV_MAX) {
-                nds.pen.xv+= PEN_XV_INC;
-            }
-            break;
-        case MENU_PEN_YV:
-            if (nds.pen.yv < PEN_YV_MAX) {
-                nds.pen.yv+= PEN_YV_INC;
+            if (nds.pen.xv < 30) {
+                nds.pen.xv+= 1;
             }
             break;
         case MENU_CURSOR:
@@ -7308,18 +7291,7 @@ int handle_menu(int key)
             sprintf(buf, "%s", DPAD[nds.keys_rotate % 3]);
             break;
         case MENU_PEN_XV:
-#if defined(A30) || defined(FLIP)
-            sprintf(buf, "%d (80000)", nds.pen.xv);
-#else
-            sprintf(buf, "%d (30000)", nds.pen.xv);
-#endif
-            break;
-        case MENU_PEN_YV:
-#if defined(A30) || defined(FLIP)
-            sprintf(buf, "%d (85000)", nds.pen.yv);
-#else
-            sprintf(buf, "%d (35000)", nds.pen.yv);
-#endif
+            sprintf(buf, "%.1fx", ((float)nds.pen.xv) / 10);
             break;
         case MENU_CURSOR:
             sprintf(buf, "%s", to_lang(nds.menu.show_cursor ? "Show" : "Hide"));

@@ -335,21 +335,13 @@ static int is_hh_mode(void)
 static int get_move_interval(int type)
 {
     float move = 0.0;
-    long yv = nds.pen.yv;
-    long xv = nds.pen.xv;
+    float v = 100000.0 / ((float)nds.pen.xv / 10.0);
 
     if (lower_speed) {
-        yv*= 2;
-        xv*= 2;
+        v*= 2;
     }
 
-    if (is_hh_mode()) {
-        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? yv : xv);
-    }
-    else {
-        move = ((float)clock() - nds.pen.pre_ticks) / ((type == 0) ? xv : yv);
-    }
-
+    move = ((float)clock() - nds.pen.pre_ticks) / v;
     if (move <= 0.0) {
         move = 1.0;
     }
@@ -601,34 +593,33 @@ static int trans_joy_to_touch(jval_t *j, int rjoy)
         else {
             int x = 0;
             int y = 0;
-            const int v = MYJOY_MOVE_SPEED;
 
             if (is_hh_mode() && (nds.keys_rotate == 0)) {
-                if (pre_down[rjoy]) {
-                    evt.mouse.x -= v;
-                }
                 if (pre_up[rjoy]) {
-                    evt.mouse.x += v;
+                    evt.mouse.x+= get_move_interval(1);
+                }
+                if (pre_down[rjoy]) {
+                    evt.mouse.x-= get_move_interval(1);
                 }
                 if (pre_left[rjoy]) {
-                    evt.mouse.y -= v;
+                    evt.mouse.y-= get_move_interval(0);
                 }
                 if (pre_right[rjoy]) {
-                    evt.mouse.y += v;
+                    evt.mouse.y+= get_move_interval(0);
                 }
             }
             else {
-                if (pre_left[rjoy]) {
-                    evt.mouse.x -= v;
-                }
-                if (pre_right[rjoy]) {
-                    evt.mouse.x += v;
-                }
                 if (pre_up[rjoy]) {
-                    evt.mouse.y -= v;
+                    evt.mouse.y-= get_move_interval(1);
                 }
                 if (pre_down[rjoy]) {
-                    evt.mouse.y += v;
+                    evt.mouse.y+= get_move_interval(1);
+                }
+                if (pre_left[rjoy]) {
+                    evt.mouse.x-= get_move_interval(0);
+                }
+                if (pre_right[rjoy]) {
+                    evt.mouse.x+= get_move_interval(0);
                 }
             }
             check_mouse_pos();
