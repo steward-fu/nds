@@ -206,7 +206,7 @@
     #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/voltage_now"
 #endif
 
-#ifdef MMIYOO
+#if defined(MINI)
     #define USE_MASK                0
     #define DEF_FB_W                640
     #define DEF_FB_H                480
@@ -222,7 +222,7 @@
     #define BAT_MIN_VAL             420
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
     #define DEF_FB_W                320
     #define DEF_FB_H                240
     #define ION_W                   NDS_Wx2
@@ -234,7 +234,7 @@
     #define DEF_FONT_SIZE           12
 #endif
 
-#ifdef PANDORA
+#if defined(PANDORA)
     #define DEF_FB_W                800
     #define DEF_FB_H                480
     #define FB_BPP                  4
@@ -441,13 +441,13 @@ typedef struct MMIYOO_VideoInfo {
     } drm;
 #endif
 
-#ifdef MMIYOO
+#if defined(MINI)
     int sar_fd;
 #endif
 } MMIYOO_VideoInfo;
 
 typedef struct _GFX {
-#ifdef PANDORA
+#if defined(PANDORA)
     int fb_dev[2];
     struct omapfb_mem_info mi;
     struct omapfb_plane_info pi;
@@ -455,7 +455,7 @@ typedef struct _GFX {
     int fb_dev;
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
     int ion_dev;
     int mem_dev;
     int disp_dev;
@@ -469,35 +469,37 @@ typedef struct _GFX {
         void *virAddr;
 #endif
 
-#ifdef MMIYOO
+#if defined(MINI)
         void *virAddr;
         MI_PHY phyAddr;
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
         int flip;
 #endif
     } fb, tmp, overlay;
 
-#ifdef MMIYOO
+#if defined(MINI)
     struct {
         void *virAddr[2];
         MI_PHY phyAddr[2];
     } mask;
 #endif
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT)
     struct {
         int cur_sel;
         void *virAddr[2][2];
-#ifdef MMIYOO
+
+#if defined(MINI)
         MI_PHY phyAddr[2][2];
 #endif
+
     } lcd;
 #endif
 
     struct _HW {
-#ifdef MMIYOO
+#if defined(MINI)
         struct _BUF {
             MI_GFX_Surface_t surf;
             MI_GFX_Rect_t rt;
@@ -505,14 +507,14 @@ typedef struct _GFX {
         MI_GFX_Opt_t opt;
 #endif
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
         uint32_t *mem;
         disp_layer_config disp;
         disp_layer_config buf;
         ion_alloc_info_t ion;
 #endif
 
-#ifdef PANDORA
+#if defined(PANDORA)
         uint32_t *mem[2];
 #endif
     } hw;

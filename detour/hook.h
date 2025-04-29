@@ -10,76 +10,188 @@
 #define DRASTIC_BIOS_ARM7   "drastic_bios_arm7.bin"
 #define DRASTIC_BIOS_ARM9   "drastic_bios_arm9.bin"
 #if defined(UT)
-    #define BIOS_FOLDER     ""
+#define BIOS_FOLDER         ""
 #else
-    #define BIOS_FOLDER     "system"
+#define BIOS_FOLDER         "system"
 #endif
 
 #define MAX_STATE_SLOT      32
-
-#define VAR_SYSTEM                  0x083f4000
-#define VAR_SYSTEM_GAMECARD_NAME    0x0847e8e8
-#define VAR_SYSTEM_SAVESTATE_NUM    0x08479780
-#define VAR_SDL_SCREEN_RENDERER     0x0aee9568
-#define VAR_SDL_SCREEN_BPP          0x0aee957c
-#define VAR_SDL_SCREEN_NEED_INIT    0x0aee95a0
-#define VAR_SDL_SCREEN_WINDOW       0x0aee9564
-#define VAR_SDL_SCREEN_RENDERER     0x0aee9568
-
-#define VAR_SDL_SCREEN0_SHOW        0x0aee9544
-#define VAR_SDL_SCREEN0_HRES_MODE   0x0aee9545
-#define VAR_SDL_SCREEN0_TEXTURE     0x0aee952c
-#define VAR_SDL_SCREEN0_PIXELS      0x0aee9530
-#define VAR_SDL_SCREEN0_X           0x0aee9534
-#define VAR_SDL_SCREEN0_Y           0x0aee9538
-
-#define VAR_SDL_SCREEN1_SHOW        0x0aee9560
-#define VAR_SDL_SCREEN1_HRES_MODE   0x0aee9561
-#define VAR_SDL_SCREEN1_TEXTURE     0x0aee9548
-#define VAR_SDL_SCREEN1_PIXELS      0x0aee954c
-#define VAR_SDL_SCREEN1_X           0x0aee9550
-#define VAR_SDL_SCREEN1_Y           0x0aee9554
-
-#define VAR_ADPCM_STEP_TABLE        0x0815a600
-#define VAR_ADPCM_INDEX_STEP_TABLE  0x0815a6b8
-#define VAR_DESMUME_FOOTER_STR      0x0815a740
-
-#define VAR_PCM_HANDLER             0x083e532c
-
-#define FUN_FREE                                    0x08003e58
-#define FUN_REALLOC                                 0x0800435c
-#define FUN_MALLOC                                  0x080046e0
-#define FUN_SCREEN_COPY16                           0x080a59d8
-#define FUN_PRINT_STRING                            0x080a5398
-#define FUN_LOAD_STATE_INDEX                        0x08095ce4
-#define FUN_SAVE_STATE_INDEX                        0x08095c10
-#define FUN_QUIT                                    0x08006444
-#define FUN_SAVESTATE_PRE                           0x08095a80
-#define FUN_SAVESTATE_POST                          0x08095154
-#define FUN_UPDATE_SCREEN                           0x080a83c0
-#define FUN_SET_SCREEN_MENU_OFF                     0x080a8240
-#define FUN_LOAD_STATE                              0x080951c0
-#define FUN_SAVE_STATE                              0x0809580c
-#define FUN_BLIT_SCREEN_MENU                        0x080a62d8
-#define FUN_INITIALIZE_BACKUP                       0x08092f40
-#define FUN_SET_SCREEN_MENU_OFF                     0x080a8240
-#define FUN_GET_SCREEN_PTR                          0x080a890c
-#define FUN_SPU_ADPCM_DECODE_BLOCK                  0x0808d268
-#define FUN_RENDER_SCANLINE_TILED_4BPP              0x080bcf74
-#define FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS  0x080c1cd4
-
 #define CODE_FAST_FORWARD   0x08006ad0
-
 #define ALIGN_ADDR(addr)    ((void*)((size_t)(addr) & ~(page_size - 1)))
 
-typedef enum _backup_type_enum {
-    BACKUP_TYPE_NONE   = 0,
-    BACKUP_TYPE_FLASH  = 1,
-    BACKUP_TYPE_EEPROM = 2,
-    BACKUP_TYPE_NAND   = 3
+enum _CONTROL_INDEX {
+    CONTROL_INDEX_UP = 0,
+    CONTROL_INDEX_DOWN,
+    CONTROL_INDEX_LEFT,
+    CONTROL_INDEX_RIGHT,
+    CONTROL_INDEX_A,
+    CONTROL_INDEX_B,
+    CONTROL_INDEX_X,
+    CONTROL_INDEX_Y,
+    CONTROL_INDEX_L,
+    CONTROL_INDEX_R,
+    CONTROL_INDEX_START,
+    CONTROL_INDEX_SELECT,
+    CONTROL_INDEX_HINGE,
+    CONTROL_INDEX_TOUCH_CURSOR_UP,
+    CONTROL_INDEX_TOUCH_CURSOR_DOWN,
+    CONTROL_INDEX_TOUCH_CURSOR_LEFT,
+    CONTROL_INDEX_TOUCH_CURSOR_RIGHT,
+    CONTROL_INDEX_TOUCH_CURSOR_PRESS,
+    CONTROL_INDEX_MENU,
+    CONTROL_INDEX_SAVE_STATE,
+    CONTROL_INDEX_LOAD_STATE,
+    CONTROL_INDEX_FAST_FORWARD,
+    CONTROL_INDEX_SWAP_SCREENS,
+    CONTROL_INDEX_SWAP_ORIENTATION_A,
+    CONTROL_INDEX_SWAP_ORIENTATION_B,
+    CONTROL_INDEX_LOAD_GAME,
+    CONTROL_INDEX_QUIT,
+    CONTROL_INDEX_FAKE_MICROPHONE,
+    CONTROL_INDEX_UI_UP,
+    CONTROL_INDEX_UI_DOWN,
+    CONTROL_INDEX_UI_LEFT,
+    CONTROL_INDEX_UI_RIGHT,
+    CONTROL_INDEX_UI_SELECT,
+    CONTROL_INDEX_UI_BACK,
+    CONTROL_INDEX_UI_EXIT,
+    CONTROL_INDEX_UI_PAGE_UP,
+    CONTROL_INDEX_UI_PAGE_DOWN,
+    CONTROL_INDEX_UI_SWITCH,
+    CONTROL_INDEX_MAX
+};
+
+typedef struct {
+    uintptr_t *base;
+    uint32_t *gamecard_name;
+    uint32_t *savestate_num;
+    struct {
+        uint32_t *frameskip_type;
+        uint32_t *frameskip_value;
+        uint32_t *safe_frameskip;
+        uint32_t *show_frame_counter;
+        uint32_t *screen_orientation;
+        uint32_t *screen_scaling;
+        uint32_t *screen_swap;
+        uint32_t *savestate_number;
+        uint32_t *fast_forward;
+        uint32_t *enable_sound;
+        uint32_t *clock_speed;
+        uint32_t *threaded_3d;
+        uint32_t *mirror_touch;
+        uint32_t *compress_savestates;
+        uint32_t *savestate_snapshot;
+        uint32_t *unzip_roms;
+        uint32_t *backup_in_savestates;
+        uint32_t *ignore_gamecard_limit;
+        uint32_t *frame_interval;
+        uint32_t *trim_roms;
+        uint32_t *fix_main_2d_screen;
+        uint32_t *disable_edge_marking;
+        uint32_t *hires_3d;
+        uint32_t *use_rtc_custom_time;
+        uint64_t *rtc_custom_time;
+        uint32_t *rtc_system_time;
+        uint32_t *slot2_device_type;
+        uint32_t *rumble_frames;
+        uint32_t *enable_cheats;
+        uint32_t *batch_threads_3d_count;
+        uint32_t *bypass_3d;
+        struct {
+            wchar_t *username;
+            uint32_t *language;
+            uint32_t *favorite_color;
+            uint32_t *birthday_month;
+            uint32_t *birthday_day;
+        } firmware;
+
+        uint16_t *controls_a[CONTROL_INDEX_MAX];
+        uint16_t *controls_b[CONTROL_INDEX_MAX];
+    } config;
+} system_t;
+
+typedef struct {
+    uintptr_t *texture;
+    uintptr_t *pixels;
+    uint32_t *x;
+    uint32_t *y;
+    uint32_t *w;
+    uint32_t *h;
+    uint8_t *show;
+    uint8_t *hires_mode;
+} screen_t;
+
+typedef struct {
+    uintptr_t *window;
+    uintptr_t *renderer;
+    uint32_t *pixel_format;
+    uint32_t *color_depth;
+    uint32_t *bytes_per_pixel;
+    uint32_t *scale_factor;
+    uint32_t *update_orientation;
+    uint32_t *logical_width;
+    uint32_t *logical_height;
+    uint32_t *swap_screens;
+    uint32_t *needs_reinitializing;
+    screen_t screen[2];
+} sdl_t;
+
+typedef struct {
+    uint32_t *step_table;
+    uint32_t *index_step_table;
+} adpcm_t;
+
+typedef struct {
+    system_t system;
+    sdl_t sdl;
+    adpcm_t adpcm;
+    uint32_t *pcm_handler;
+    uint32_t *fast_forward;
+    uint32_t *desmume_footer_str;
+} var_t;
+
+typedef struct {
+    void *menu;
+    void *free;
+    void *quit;
+    void *malloc;
+    void *realloc;
+    void *screen_copy16;
+    void *print_string;
+    void *load_state_index;
+    void *save_state_index;
+    void *savestate_pre;
+    void *savestate_post;
+    void *update_screen;
+    void *load_state;
+    void *save_state;
+    void *blit_screen_menu;
+    void *initialize_backup;
+    void *set_screen_swap;
+    void *set_screen_menu_on;
+    void *set_screen_menu_off;
+    void *set_screen_hires_mode;
+    void *set_screen_orientation;
+    void *set_screen_scale_factor;
+    void *get_screen_ptr;
+    void *spu_adpcm_decode_block;
+    void *render_scanline_tiled_4bpp;
+    void *render_polygon_setup_perspective_steps;
+} fun_t;
+
+typedef struct {
+    fun_t fun;
+    var_t var;
+} nds_hook;
+
+typedef enum {
+    BACKUP_TYPE_NONE = 0,
+    BACKUP_TYPE_FLASH,
+    BACKUP_TYPE_EEPROM,
+    BACKUP_TYPE_NAND
 } backup_type_enum;
 
-typedef struct _backup_struct {
+typedef struct {
     uint32_t dirty_page_bitmap[2048];
     char file_path[1024];
     backup_type_enum type;
@@ -98,7 +210,7 @@ typedef struct _backup_struct {
     uint8_t footer_written;
 } backup_struct;
 
-typedef struct _spu_channel_struct {
+typedef struct {
     int16_t adpcm_sample_cache[64];
     uint64_t sample_offset;
     uint64_t frequency_step;
@@ -121,18 +233,23 @@ typedef struct _spu_channel_struct {
     uint8_t capture_timer;
 } spu_channel_struct;
 
-typedef void (*nds_free)(void *ptr);
+typedef void (*nds_free)(void *);
+typedef void (*nds_set_screen_swap)(uint32_t);
+typedef void (*nds_set_screen_menu_on)(void);
 typedef void (*nds_set_screen_menu_off)(void);
-typedef void (*nds_quit)(void *system);
-typedef void (*nds_screen_copy16)(uint16_t *dest, uint32_t screen_number);
-typedef int32_t (*nds_load_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
-typedef int32_t (*nds_save_state_index)(void *system, uint32_t index, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
-typedef int32_t (*nds_load_state)(void *system, const char *path, uint16_t *snapshot_top, uint16_t *snapshot_bottom, uint32_t snapshot_only);
-typedef int32_t (*nds_save_state)(void *system, const char *dir, char *filename, uint16_t *snapshot_top, uint16_t *snapshot_bottom);
-typedef void* (*nds_get_screen_ptr)(uint32_t screen_number);
-typedef void* (*nds_realloc)(void *ptr, size_t size);
-typedef void* (*nds_malloc)(size_t size);
-typedef void (*nds_spu_adpcm_decode_block)(spu_channel_struct *channel);
+typedef void (*nds_set_screen_hires_mode)(uint32_t, uint32_t);
+typedef void (*nds_set_screen_orientation)(uint32_t);
+typedef void (*nds_set_screen_scale_factor)(uint32_t);
+typedef void (*nds_quit)(void *);
+typedef void (*nds_screen_copy16)(uint16_t *, uint32_t);
+typedef void (*nds_spu_adpcm_decode_block)(spu_channel_struct *);
+typedef void* (*nds_get_screen_ptr)(uint32_t);
+typedef void* (*nds_realloc)(void *, size_t);
+typedef void* (*nds_malloc)(size_t);
+typedef int32_t (*nds_load_state_index)(void *, uint32_t, uint16_t *, uint16_t *, uint32_t);
+typedef int32_t (*nds_save_state_index)(void *, uint32_t, uint16_t *, uint16_t *);
+typedef int32_t (*nds_load_state)(void *, const char *, uint16_t *, uint16_t *, uint32_t);
+typedef int32_t (*nds_save_state)(void *, const char *, char *, uint16_t *, uint16_t *);
 
 int init_hook(size_t, const char *);
 int quit_hook(void);

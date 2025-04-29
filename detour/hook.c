@@ -24,15 +24,20 @@
 #include "drastic_bios_arm7.h"
 #include "drastic_bios_arm9.h"
 
+nds_hook myhook = { 0 };
+
 static int is_state_hooked = 0;
 static size_t page_size = 4096;
 static char state_path[MAX_PATH] = { 0 };
+
+static int init_table(void);
 
 #if defined(UT)
 TEST_GROUP(detour);
 
 TEST_SETUP(detour)
 {
+    init_table();
 }
 
 TEST_TEAR_DOWN(detour)
@@ -94,7 +99,7 @@ TEST(detour, fast_forward)
 static int32_t prehook_cb_load_state_index(void *system, uint32_t index, uint16_t *d0, uint16_t *d1, uint32_t shot_only)
 {
     char buf[MAX_PATH] = { 0 };
-    nds_load_state pfn = (nds_load_state)FUN_LOAD_STATE;
+    nds_load_state pfn = (nds_load_state)myhook.fun.load_state;
 
     debug("call %s(pfn=%p)\n", __func__, pfn);
 
@@ -112,8 +117,8 @@ static int32_t prehook_cb_load_state_index(void *system, uint32_t index, uint16_
     return 0;
 #endif
 
-    sprintf(buf, "%s/%s_%d.dss", state_path, VAR_SYSTEM_GAMECARD_NAME, index);
-    pfn((void*)VAR_SYSTEM, buf, d0, d1, shot_only);
+    sprintf(buf, "%s/%s_%d.dss", state_path, myhook.var.system.gamecard_name, index);
+    pfn((void*)myhook.var.system.base, buf, d0, d1, shot_only);
 }
 
 #if defined(UT)
@@ -127,7 +132,7 @@ TEST(detour, prehook_cb_load_state_index)
 static int32_t prehook_cb_save_state_index(void *system, uint32_t index, uint16_t *d0, uint16_t *d1)
 {
     char buf[MAX_PATH] = { 0 };
-    nds_save_state pfn = (nds_save_state)FUN_SAVE_STATE;
+    nds_save_state pfn = (nds_save_state)myhook.fun.save_state;
 
     debug("call %s(pfn=%p)\n", __func__, pfn);
 
@@ -145,8 +150,8 @@ static int32_t prehook_cb_save_state_index(void *system, uint32_t index, uint16_
     return 0;
 #endif
 
-    sprintf(buf, "%s_%d.dss", VAR_SYSTEM_GAMECARD_NAME, index);
-    pfn((void*)VAR_SYSTEM, state_path, buf, d0, d1);
+    sprintf(buf, "%s_%d.dss", myhook.var.system.gamecard_name, index);
+    pfn((void*)myhook.var.system.base, state_path, buf, d0, d1);
 }
 
 #if defined(UT)
@@ -179,7 +184,7 @@ static void prehook_cb_initialize_backup(backup_struct *backup, backup_type_enum
     if (path && path[0]) {
         data_file_name = malloc(MAX_PATH);
         memset(data_file_name, 0, MAX_PATH);
-        sprintf(data_file_name, "%s/%s.dsv", state_path, VAR_SYSTEM_GAMECARD_NAME);
+        sprintf(data_file_name, "%s/%s.dsv", state_path, myhook.var.system.gamecard_name);
         debug("new state path=\"%s\"\n", data_file_name);
     }
 
@@ -252,7 +257,7 @@ static void prehook_cb_initialize_backup(backup_struct *backup, backup_type_enum
 
                 if (uVar2 < size) {
                     uVar3 = uVar2 - 0x400 & ~((int)(uVar2 - 0x400) >> 0x1f);
-                    pvVar4 = memmem(data + uVar3, uVar2 - uVar3, (const void *)VAR_DESMUME_FOOTER_STR, 0x52);
+                    pvVar4 = memmem(data + uVar3, uVar2 - uVar3, (const void *)myhook.var.desmume_footer_str, 0x52);
 
                     if (pvVar4 != (void *)0x0) {
                         uVar2 = (intptr_t)pvVar4 - (intptr_t)data;
@@ -294,7 +299,7 @@ int save_state(int slot)
     void *d0 = NULL;
     void *d1 = NULL;
     char buf[MAX_PATH] = { 0 };
-    nds_screen_copy16 pfn_copy16 = (nds_screen_copy16)FUN_SCREEN_COPY16;
+    nds_screen_copy16 pfn_copy16 = (nds_screen_copy16)myhook.fun.screen_copy16;
 
     debug("call %s(slot=%d)\n", __func__, slot);
 
@@ -320,7 +325,7 @@ int save_state(int slot)
         pfn_copy16(d1, 1);
 
         if (is_state_hooked == 0) {
-            nds_save_state_index pfn = (nds_save_state_index)FUN_SAVE_STATE_INDEX;
+            nds_save_state_index pfn = (nds_save_state_index)myhook.fun.save_state_index;
 
             if (!pfn) {
                 error("invalid pfn\n");
@@ -328,10 +333,10 @@ int save_state(int slot)
             }
 
             r = 0;
-            pfn((void*)VAR_SYSTEM, slot, d0, d1);
+            pfn((void*)myhook.var.system.base, slot, d0, d1);
         }
         else {
-            nds_save_state pfn = (nds_save_state)FUN_SAVE_STATE;
+            nds_save_state pfn = (nds_save_state)myhook.fun.save_state;
 
             if (!pfn) {
                 error("invalid pfn\n");
@@ -339,8 +344,8 @@ int save_state(int slot)
             }
 
             r = 0;
-            sprintf(buf, "%s_%d.dss", VAR_SYSTEM_GAMECARD_NAME, slot);
-            pfn((void*)VAR_SYSTEM, state_path, buf, d0, d1);
+            sprintf(buf, "%s_%d.dss", myhook.var.system.gamecard_name, slot);
+            pfn((void*)myhook.var.system.base, state_path, buf, d0, d1);
         }
     } while(0);
 
@@ -378,25 +383,25 @@ int load_state(int slot)
 #endif
 
     if (is_state_hooked == 0) {
-        nds_load_state_index pfn = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
+        nds_load_state_index pfn = (nds_load_state_index)myhook.fun.load_state_index;
 
         if (!pfn) {
             error("invalid pfn\n");
             return -1;
         }
 
-        pfn((void*)VAR_SYSTEM, slot, 0, 0, 0);
+        pfn((void*)myhook.var.system.base, slot, 0, 0, 0);
     }
     else {
-        nds_load_state pfn = (nds_load_state)FUN_LOAD_STATE;
+        nds_load_state pfn = (nds_load_state)myhook.fun.load_state;
 
         if (!pfn) {
             error("invalid pfn\n");
             return -1;
         }
 
-        sprintf(buf, "%s/%s_%d.dss", state_path, VAR_SYSTEM_GAMECARD_NAME, slot);
-        pfn((void*)VAR_SYSTEM, buf, 0, 0, 0);
+        sprintf(buf, "%s/%s_%d.dss", state_path, myhook.var.system.gamecard_name, slot);
+        pfn((void*)myhook.var.system.base, buf, 0, 0, 0);
     }
 
     return 0;
@@ -412,7 +417,7 @@ TEST(detour, load_state)
 
 int quit_drastic(void)
 {
-    nds_quit pfn = (nds_quit)FUN_QUIT;
+    nds_quit pfn = (nds_quit)myhook.fun.quit;
 
     debug("call %s(pfn=%p)\n", __func__, pfn);
 
@@ -557,11 +562,80 @@ TEST(detour, drop_bios_files)
 }
 #endif
 
+static int init_table(void)
+{
+    debug("call %s()\n", __func__);
+
+    myhook.var.system.base = (uintptr_t *) 0x083f4000;
+    myhook.var.system.gamecard_name = (uint32_t *) 0x0847e8e8;
+    myhook.var.system.savestate_num = (uint32_t *) 0x08479780;
+    myhook.var.sdl.bytes_per_pixel = (uint32_t *) 0x0aee957c;
+    myhook.var.sdl.needs_reinitializing = (uint32_t *) 0x0aee95a0;
+    myhook.var.sdl.window = (uintptr_t *) 0x0aee9564;
+    myhook.var.sdl.renderer = (uintptr_t *) 0x0aee9568;
+    myhook.var.sdl.screen[0].texture = (uintptr_t *) 0x0aee952c;
+    myhook.var.sdl.screen[0].pixels = (uintptr_t *) 0x0aee9530;
+    myhook.var.sdl.screen[0].x = (uint32_t *) 0x0aee9534;
+    myhook.var.sdl.screen[0].y = (uint32_t *) 0x0aee9538;
+    myhook.var.sdl.screen[0].w = (uint32_t *) 0x0aee953c;
+    myhook.var.sdl.screen[0].h = (uint32_t *) 0x0aee9540;
+    myhook.var.sdl.screen[0].show = (uint8_t *) 0x0aee9544;
+    myhook.var.sdl.screen[0].hires_mode = (uint8_t *) 0x0aee9545;
+    myhook.var.sdl.screen[1].texture = (uintptr_t *) 0x0aee9548;
+    myhook.var.sdl.screen[1].pixels = (uintptr_t *) 0x0aee954c;
+    myhook.var.sdl.screen[1].x = (uint32_t *) 0x0aee9550;
+    myhook.var.sdl.screen[1].y = (uint32_t *) 0x0aee9554;
+    myhook.var.sdl.screen[1].w = (uint32_t *) 0x0aee9558;
+    myhook.var.sdl.screen[1].h = (uint32_t *) 0x0aee955c;
+    myhook.var.sdl.screen[1].show = (uint8_t *) 0x0aee9560;
+    myhook.var.sdl.screen[1].hires_mode = (uint8_t *) 0x0aee9561;
+    myhook.var.adpcm.step_table = (uint32_t *) 0x0815a600;
+    myhook.var.adpcm.index_step_table = (uint32_t *) 0x0815a6b8;
+    myhook.var.desmume_footer_str = (uint32_t *) 0x0815a740;
+    myhook.var.pcm_handler = (uint32_t *) 0x083e532c;
+    myhook.var.fast_forward = (uint32_t *) 0x08006ad0;
+
+    myhook.fun.menu = 0x080a0a18;
+    myhook.fun.free = 0x08003e58;
+    myhook.fun.realloc = 0x0800435c;
+    myhook.fun.malloc = 0x080046e0;
+    myhook.fun.screen_copy16 = 0x080a59d8;
+    myhook.fun.print_string = 0x080a5398;
+    myhook.fun.load_state_index = 0x08095ce4;
+    myhook.fun.save_state_index = 0x08095c10;
+    myhook.fun.quit = 0x08006444;
+    myhook.fun.savestate_pre = 0x08095a80;
+    myhook.fun.savestate_post = 0x08095154;
+    myhook.fun.update_screen = 0x080a83c0;
+    myhook.fun.load_state = 0x080951c0;
+    myhook.fun.save_state = 0x0809580c;
+    myhook.fun.blit_screen_menu = 0x080a62d8;
+    myhook.fun.initialize_backup = 0x08092f40;
+    myhook.fun.set_screen_menu_off = 0x080a8240;
+    myhook.fun.get_screen_ptr = 0x080a890c;
+    myhook.fun.spu_adpcm_decode_block = 0x0808d268;
+    myhook.fun.render_scanline_tiled_4bpp = 0x080bcf74;
+    myhook.fun.render_polygon_setup_perspective_steps = 0x080c1cd4;
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(detour, init_table)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_table());
+    TEST_ASSERT_EQUAL_INT(0x08006ad0, myhook.var.fast_forward);
+    TEST_ASSERT_EQUAL_INT(0x080a0a18, myhook.fun.menu);
+}
+#endif
+
 int init_hook(size_t page, const char *path)
 {
     page_size = page;
 
     debug("call %s(page=%d, path=\"%s\")\n", __func__, page, path);
+
+    init_table();
 
     is_state_hooked = 0;
     if (path && path[0]) {
@@ -569,13 +643,13 @@ int init_hook(size_t page, const char *path)
         strcpy(state_path, path);
         debug("new state path=\"%s\"\n", path);
 
-        add_prehook_cb((void *)FUN_LOAD_STATE_INDEX,  (void *)prehook_cb_load_state_index);
-        add_prehook_cb((void *)FUN_SAVE_STATE_INDEX,  (void *)prehook_cb_save_state_index);
-        add_prehook_cb((void *)FUN_INITIALIZE_BACKUP, (void *)prehook_cb_initialize_backup);
+        add_prehook_cb((void *)myhook.fun.load_state_index,  (void *)prehook_cb_load_state_index);
+        add_prehook_cb((void *)myhook.fun.save_state_index,  (void *)prehook_cb_save_state_index);
+        add_prehook_cb((void *)myhook.fun.initialize_backup, (void *)prehook_cb_initialize_backup);
     }
 
     add_prehook_cb(
-        (void *)FUN_RENDER_POLYGON_SETUP_PERSPECTIVE_STEPS,
+        (void *)myhook.fun.render_polygon_setup_perspective_steps,
         render_polygon_setup_perspective_steps
     );
 

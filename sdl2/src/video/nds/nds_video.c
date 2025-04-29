@@ -51,6 +51,7 @@ NDS nds = {0};
 GFX gfx = {0};
 MMIYOO_VideoInfo vid = {0};
 
+extern nds_hook myhook;
 extern MMIYOO_EventInfo evt;
 
 int FB_W = 0;
@@ -543,13 +544,13 @@ static void* draw_thread(void *pParam)
 }
 #endif
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT)
 static void* prehook_cb_malloc(size_t size)
 {
     static int idx = 0;
 
     void *r = NULL;
-    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+    uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
 
     if ((size == (NDS_W * NDS_H * bpp)) || (size == (NDS_Wx2 * NDS_Hx2 * bpp))) {
         r = gfx.lcd.virAddr[0][idx];
@@ -585,7 +586,7 @@ static void prehook_cb_free(void *ptr)
 static void* prehook_cb_realloc(void *ptr, size_t size)
 {
     void *r = NULL;
-    uint32_t bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
+    uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -881,8 +882,8 @@ static int draw_drastic_menu_main(void)
             const int SM_W = (float)NDS_W / 1.35;
             const int SM_H = (float)NDS_H / 1.35;
 #endif
-            uint32_t slot = *((uint32_t *)VAR_SYSTEM_SAVESTATE_NUM);
-            nds_load_state_index _func = (nds_load_state_index)FUN_LOAD_STATE_INDEX;
+            uint32_t slot = *((uint32_t *)myhook.var.system.savestate_num);
+            nds_load_state_index _func = (nds_load_state_index)myhook.fun.load_state_index;
 
 #if defined(TRIMUI)
             sm = SDL_CreateRGBSurface(0, SM_W, SM_H, 16, 0, 0, 0, 0);
@@ -890,7 +891,7 @@ static int draw_drastic_menu_main(void)
 
             memset(top, 0, len);
             memset(bottom, 0, len);
-            _func((void*)VAR_SYSTEM, slot, top, bottom, 1);
+            _func((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
 #if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
@@ -1754,8 +1755,8 @@ static int process_screen(void)
 #endif
     }
 
-    nds.screen.bpp = *((uint32_t *)VAR_SDL_SCREEN_BPP);
-    nds.screen.init = *((uint32_t *)VAR_SDL_SCREEN_NEED_INIT);
+    nds.screen.bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
+    nds.screen.init = *((uint32_t *)myhook.var.sdl.needs_reinitializing);
 
     if (need_reload_bg) {
         reload_bg();
@@ -1772,15 +1773,15 @@ static int process_screen(void)
         SDL_Rect drt = {0, 0, 160, 120};
 
         nds.screen.hres_mode[idx] = idx ?
-            *((uint8_t *)VAR_SDL_SCREEN1_HRES_MODE):
-            *((uint8_t *)VAR_SDL_SCREEN0_HRES_MODE);
+            *((uint8_t *)myhook.var.sdl.screen[1].hires_mode):
+            *((uint8_t *)myhook.var.sdl.screen[0].hires_mode);
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
         nds.screen.pixels[idx] = gfx.lcd.virAddr[cur_sel][idx];
 #else
         nds.screen.pixels[idx] = (idx == 0) ?
-            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN0_PIXELS)):
-            (uint32_t *)(*((uint32_t *)VAR_SDL_SCREEN1_PIXELS));
+            (uint32_t *)(*((uint32_t *)myhook.var.sdl.screen[0].pixels)):
+            (uint32_t *)(*((uint32_t *)myhook.var.sdl.screen[1].pixels));
 #endif
 
         if (nds.screen.hres_mode[idx]) {
@@ -1792,7 +1793,7 @@ static int process_screen(void)
                 nds.hres_mode = 1;
                 pre_dis_mode = nds.dis_mode;
                 nds.dis_mode = pre_hres_mode;
-#ifdef QX1000
+#if defined(QX1000)
                 update_wayland_res(NDS_Wx2, NDS_Hx2);
 #endif
             }
@@ -1810,7 +1811,7 @@ static int process_screen(void)
                 nds.hres_mode = 0;
                 pre_hres_mode = nds.dis_mode;
                 nds.dis_mode = pre_dis_mode;
-#ifdef QX1000
+#if defined(QX1000)
                 update_wayland_res(NDS_W * 2, NDS_H);
 #endif
             }
@@ -1819,7 +1820,7 @@ static int process_screen(void)
 #if defined(QX1000)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
-#elif defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
             if (screen1) {
@@ -2085,7 +2086,7 @@ static int process_screen(void)
 #endif
 
         if (need_update) {
-#ifdef MMIYOO
+#if defined(MINI)
             MI_SYS_FlushInvCache(nds.screen.pixels[idx], nds.screen.pitch[idx] * srt.h);
 #endif
 
@@ -2095,7 +2096,7 @@ static int process_screen(void)
             GFX_Copy(-1, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
 #endif
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
                 drt.x = 0;
@@ -2178,7 +2179,7 @@ static int process_screen(void)
         GFX_Copy(-1, fps_info->pixels, fps_info->clip_rect, rt, fps_info->pitch, 0, E_MI_GFX_ROTATE_180);
     }
 
-#ifdef TRIMUI
+#if defined(TRIMUI)
     if (need_restore) {
         need_restore = 0;
         nds.dis_mode = pre_dismode;
@@ -2187,7 +2188,7 @@ static int process_screen(void)
 #endif
 
     if (nds.screen.init) {
-        nds_set_screen_menu_off _func = (nds_set_screen_menu_off)FUN_SET_SCREEN_MENU_OFF;
+        nds_set_screen_menu_off _func = (nds_set_screen_menu_off)myhook.fun.set_screen_menu_off;
         _func();
     }
     GFX_Flip();
@@ -2209,7 +2210,7 @@ void prehook_cb_update_screen(void)
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
         gfx.lcd.cur_sel ^= 1;
         *((uint32_t *)VAR_SDL_SCREEN0_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
         *((uint32_t *)VAR_SDL_SCREEN1_PIXELS) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
@@ -6237,16 +6238,16 @@ int MMIYOO_VideoInit(_THIS)
 
     init_hook(sysconf(_SC_PAGESIZE), nds.states.path);
 
-    add_prehook_cb((void *)FUN_PRINT_STRING,     prehook_cb_print_string);
-    add_prehook_cb((void *)FUN_SAVESTATE_PRE,    prehook_cb_savestate_pre);
-    add_prehook_cb((void *)FUN_SAVESTATE_POST,   prehook_cb_savestate_post);
-    add_prehook_cb((void *)FUN_BLIT_SCREEN_MENU, prehook_cb_blit_screen_menu);
-    add_prehook_cb((void *)FUN_UPDATE_SCREEN,    prehook_cb_update_screen);
+    add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
+    add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
+    add_prehook_cb(myhook.fun.savestate_post,   prehook_cb_savestate_post);
+    add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
+    add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
-    add_prehook_cb(FUN_MALLOC,     (intptr_t)prehook_cb_malloc);
-    add_prehook_cb(FUN_REALLOC,    (intptr_t)prehook_cb_realloc);
-    add_prehook_cb(FUN_FREE,       (intptr_t)prehook_cb_free);
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT)
+    add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
+    add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
+    add_prehook_cb(myhook.fun.free,    prehook_cb_free);
 #endif
     return 0;
 }

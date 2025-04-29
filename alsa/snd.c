@@ -45,6 +45,8 @@
 #include "mi_common_datatype.h"
 #endif
 
+extern nds_hook myhook;
+
 static queue_t queue = { 0 };
 static pthread_t thread = { 0 };
 
@@ -88,9 +90,6 @@ static int pcm_ready = 0;
 static int pcm_buf_len = 0;
 static uint8_t *pcm_buf = NULL;
 
-static int8_t *adpcm_index_step_table = (int8_t *)VAR_ADPCM_INDEX_STEP_TABLE;
-static int16_t *adpcm_step_table = (int16_t *)VAR_ADPCM_STEP_TABLE;
-
 static int init_queue(queue_t *, size_t);
 static int quit_queue(queue_t *);
 static int put_queue(queue_t *, uint8_t *, size_t);
@@ -128,8 +127,8 @@ void adpcm_decode_block(spu_channel_struct *channel)
 
     debug("call %s()\n", __func__);
 
-    adpcm_step_table = (int16_t *)VAR_ADPCM_STEP_TABLE;
-    adpcm_index_step_table = (int8_t *)VAR_ADPCM_INDEX_STEP_TABLE;
+    adpcm_step_table = (int16_t *)myhook.var.adpcm.step_table;
+    adpcm_index_step_table = (int8_t *)myhook.var.adpcm.index_step_table;
     do {
         if (!channel) {
             error("invalid channel\n");
@@ -1337,7 +1336,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     pa_threaded_mainloop_unlock(pa.mainloop);
 #endif
 
-    add_prehook_cb((void *)FUN_SPU_ADPCM_DECODE_BLOCK, adpcm_decode_block);
+    add_prehook_cb((void *)myhook.fun.spu_adpcm_decode_block, adpcm_decode_block);
 
     pcm_ready = 1;
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);

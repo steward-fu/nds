@@ -5,7 +5,7 @@
 #define __UTIL_H__
 
 #if !defined(MAX_PATH)
-#define MAX_PATH            128
+#define MAX_PATH        128
 #endif
 
 #endif
