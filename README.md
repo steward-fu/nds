@@ -1,5 +1,5 @@
 # NDS Emulator (DraStic) for Miyoo Mini (Plus), TRIMUI SMART and F(x)tec Pro1 (QX1000)
-![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg) ![image](images/mmiyoo_752/mm.jpg) ![image](images/trimui_320/trimui.jpg) ![image](images/qx1000_1080/pro1.jpg)  
+![image](image/mmiyoo_640/mm.jpg) ![image](image/mmiyoo_640/mmp.jpg) ![image](image/mmiyoo_752/mm.jpg) ![image](image/trimui_320/trimui.jpg) ![image](image/qx1000_1080/pro1.jpg)  
 
 &nbsp;
 
@@ -96,142 +96,142 @@ Miyoo Mini 掌機 QQ 群 (742661857)
 
 ## Supported Devices
 ### Miyoo Mini (Plus)
-![image](images/mmiyoo_640/mm.jpg) ![image](images/mmiyoo_640/mmp.jpg)  
+![image](image/mmiyoo_640/mm.jpg) ![image](image/mmiyoo_640/mmp.jpg)  
 
 #### Layout 0, Screen0: 640x480, Screen1: 170x128  
-| ![image](images/mmiyoo_640/dis_0.png) |
+| ![image](image/mmiyoo_640/dis_0.png) |
 |-|
 
 &nbsp;
 
 #### Layout 1, Screen0: 640x480, Screen1: 256x192  
-| ![image](images/mmiyoo_640/dis_1.png) |
+| ![image](image/mmiyoo_640/dis_1.png) |
 |-|
 
 &nbsp;
 
 #### Layout 2, Screen0: 512x384, Image: bg_s0.png  
-| ![image](images/mmiyoo_640/dis_2.png) |
+| ![image](image/mmiyoo_640/dis_2.png) |
 |-|
 
 &nbsp;
 
 #### Layout 3, Screen0: 640x480  
-| ![image](images/mmiyoo_640/dis_3.png) |
+| ![image](image/mmiyoo_640/dis_3.png) |
 |-|
 
 &nbsp;
 
 #### Layout 4, Screen0: 256x192, Screen1: 256x192, Image: bg_v0.png  
-| ![image](images/mmiyoo_640/dis_4.png) |
+| ![image](image/mmiyoo_640/dis_4.png) |
 |-|
 
 &nbsp;
 
 #### Layout 5, Screen0: 320x240, Screen1: 320x240, Image: bg_v1.png  
-| ![image](images/mmiyoo_640/dis_5.png) |
+| ![image](image/mmiyoo_640/dis_5.png) |
 |-|
 
 &nbsp;
 
 #### Layout 6, Screen0: 256x192, Screen1: 256x192, Image: bg_h0.png  
-| ![image](images/mmiyoo_640/dis_6.png) |
+| ![image](image/mmiyoo_640/dis_6.png) |
 |-|
 
 &nbsp;
 
 #### Layout 7, Screen0: 320x240, Screen1: 320x240, Image: bg_h1.png  
-| ![image](images/mmiyoo_640/dis_7.png) |
+| ![image](image/mmiyoo_640/dis_7.png) |
 |-|
 
 &nbsp;
 
 #### Layout 8, Screen0: 480x360, Screen1: 160x120, Image: bg_vh_s0.png  
-| ![image](images/mmiyoo_640/dis_8.png) |
+| ![image](image/mmiyoo_640/dis_8.png) |
 |-|
 
 &nbsp;
 
 #### Layout 9, Screen0: 384x288, Screen1: 256x192, Image: bg_vh_s1.png  
-| ![image](images/mmiyoo_640/dis_9.png) |
+| ![image](image/mmiyoo_640/dis_9.png) |
 |-|
 
 &nbsp;
 
 #### Layout 10, Screen0: 384x288, Screen1: 256x192, Image: bg_vh_c0.png  
-| ![image](images/mmiyoo_640/dis_10.png) |
+| ![image](image/mmiyoo_640/dis_10.png) |
 |-|
 
 &nbsp;
 
 #### Layout 11, Screen0: 384x288, Screen1: 256x192, Image: bg_vh_c1.png  
-| ![image](images/mmiyoo_640/dis_11.png) |
+| ![image](image/mmiyoo_640/dis_11.png) |
 |-|
 
 &nbsp;
 
 #### Layout 12, Screen0: 427x320, Screen1: 427x320, Image: bg_hh0.png  
-| ![image](images/mmiyoo_640/dis_12.png) |
+| ![image](image/mmiyoo_640/dis_12.png) |
 |-|
 
 &nbsp;
 
 #### Layout 13, Screen0: 427x320, Screen1: 427x320, Image: bg_hh0.png  
-| ![image](images/mmiyoo_640/dis_13.png) |
+| ![image](image/mmiyoo_640/dis_13.png) |
 |-|
 
 &nbsp;
 
 #### Layout 14, Screen0: 512x384, Image: bg_hres0.png  
-| ![image](images/mmiyoo_640/hres_0.png) |
+| ![image](image/mmiyoo_640/hres_0.png) |
 |-|
 
 &nbsp;
 
 #### Layout 15, Screen0: 640x480
-| ![image](images/mmiyoo_640/hres_1.png) |
+| ![image](image/mmiyoo_640/hres_1.png) |
 |-|
 
 &nbsp;
 
 #### Video Filter: Pixel  
-| ![image](images/mmiyoo_640/filter_pixel.png) |
+| ![image](image/mmiyoo_640/filter_pixel.png) |
 |-|
 
 &nbsp;
 
 #### Video Filter: Blur  
-| ![image](images/mmiyoo_640/filter_blur.png) |
+| ![image](image/mmiyoo_640/filter_blur.png) |
 |-|
 
 &nbsp;
 
 #### DraStic Menu: Original  
-| ![image](images/mmiyoo_640/menu_2.png) |
+| ![image](image/mmiyoo_640/menu_2.png) |
 |-|
 
 &nbsp;
 
 #### DraStic Menu: Refined  
-| ![image](images/mmiyoo_640/menu_0.png) |
+| ![image](image/mmiyoo_640/menu_0.png) |
 |-|
 
 &nbsp;
 
 #### Cheat Menu: Original  
-| ![image](images/mmiyoo_640/menu_3.png) |
+| ![image](image/mmiyoo_640/menu_3.png) |
 |-|
 
 &nbsp;
 
 #### Cheat Menu: Refined  
-| ![image](images/mmiyoo_640/menu_1.png) |
+| ![image](image/mmiyoo_640/menu_1.png) |
 |-|
 
 &nbsp;
 
 #### Customized Menu  
-| ![image](images/mmiyoo_640/menu_4.png) |
+| ![image](image/mmiyoo_640/menu_4.png) |
 |-|
 ```
 Language:      Display language
@@ -340,7 +340,7 @@ Step 3: change the language in the customized menu
 
 **Q2: How to customize the DraStic menu ?**
 ```
-The background and cursor images are put in "resources/menu" folder.
+The background and cursor image are put in "resources/menu" folder.
 The color can be set in "resources/settings.json" file as the following:
     "menu_c0":"0xffffff"    Text color when select
     "menu_c1":"0x000000"    Text color when un-select
@@ -383,7 +383,7 @@ All wallpapers are put in "resources/bg_640" and "resources/bg_752" folders by t
 
 **Q7: How to add a new image for pen ?**
 ```
-All of pen images are placed in "resources/pen" folder.
+All of pen image are placed in "resources/pen" folder.
 The touch point is set by the suffix file name.
 For example, if the file name is 1_lt.png, it means the touch point is at left-top (_lt).
 Here are the supported positions:
@@ -411,147 +411,147 @@ Go to DraStic menu and then select "Restart Game".
 &nbsp;
 
 ### Miyoo Mini v4
-![image](images/mmiyoo_752/mm.jpg)  
+![image](image/mmiyoo_752/mm.jpg)  
 
 #### Layout 0, Screen0: 752x560, Screen1: 170x128  
-| ![image](images/mmiyoo_752/dis_0.png) |
+| ![image](image/mmiyoo_752/dis_0.png) |
 |-|
 
 &nbsp;
 
 #### Layout 1, Screen0: 752x560, Screen1: 256x192  
-| ![image](images/mmiyoo_752/dis_1.png) |
+| ![image](image/mmiyoo_752/dis_1.png) |
 |-|
 
 &nbsp;
 
 #### Layout 2, Screen0: 512x384, Image: bg_s0.png  
-| ![image](images/mmiyoo_752/dis_2.png) |
+| ![image](image/mmiyoo_752/dis_2.png) |
 |-|
 
 &nbsp;
 
 #### Layout 3, Screen0: 752x560  
-| ![image](images/mmiyoo_752/dis_3.png) |
+| ![image](image/mmiyoo_752/dis_3.png) |
 |-|
 
 &nbsp;
 
 #### Layout 4, Screen0: 256x192, Screen1: 256x192, Image: bg_v0.png  
-| ![image](images/mmiyoo_752/dis_4.png) |
+| ![image](image/mmiyoo_752/dis_4.png) |
 |-|
 
 &nbsp;
 
 #### Layout 5, Screen0: 373x280, Screen1: 373x280, Image: bg_v1.png  
-| ![image](images/mmiyoo_752/dis_5.png) |
+| ![image](image/mmiyoo_752/dis_5.png) |
 |-|
 
 &nbsp;
 
 #### Layout 6, Screen0: 256x192, Screen1: 256x192, Image: bg_h0.png  
-| ![image](images/mmiyoo_752/dis_6.png) |
+| ![image](image/mmiyoo_752/dis_6.png) |
 |-|
 
 &nbsp;
 
 #### Layout 7, Screen0: 373x280, Screen1: 373x280, Image: bg_h1.png  
-| ![image](images/mmiyoo_752/dis_7.png) |
+| ![image](image/mmiyoo_752/dis_7.png) |
 |-|
 
 &nbsp;
 
 #### Layout 8, Screen0: 592x440, Screen1: 160x120, Image: bg_vh_s0.png  
-| ![image](images/mmiyoo_752/dis_8.png) |
+| ![image](image/mmiyoo_752/dis_8.png) |
 |-|
 
 &nbsp;
 
 #### Layout 9, Screen0: 496x368, Screen1: 256x192, Image: bg_vh_s1.png  
-| ![image](images/mmiyoo_752/dis_9.png) |
+| ![image](image/mmiyoo_752/dis_9.png) |
 |-|
 
 &nbsp;
 
 #### Layout 10, Screen0: 496x368, Screen1: 256x192, Image: bg_vh_c0.png  
-| ![image](images/mmiyoo_752/dis_10.png) |
+| ![image](image/mmiyoo_752/dis_10.png) |
 |-|
 
 &nbsp;
 
 #### Layout 11, Screen0: 496x368, Screen1: 256x192, Image: bg_vh_c1.png  
-| ![image](images/mmiyoo_752/dis_11.png) |
+| ![image](image/mmiyoo_752/dis_11.png) |
 |-|
 
 &nbsp;
 
 #### Layout 12, Screen0: 501x376, Screen1: 501x376, Image: bg_hh0.png  
-| ![image](images/mmiyoo_752/dis_12.png) |
+| ![image](image/mmiyoo_752/dis_12.png) |
 |-|
 
 &nbsp;
 
 #### Layout 13, Screen0: 501x376, Screen1: 501x376, Image: bg_hh0.png  
-| ![image](images/mmiyoo_752/dis_13.png) |
+| ![image](image/mmiyoo_752/dis_13.png) |
 |-|
 
 &nbsp;
 
 ### Layout 14, Screen0: 512x384, Image: bg_hres0.png  
-| ![image](images/mmiyoo_752/hres_0.png) |
+| ![image](image/mmiyoo_752/hres_0.png) |
 |-|
 
 &nbsp;
 
 #### Layout 15, Screen0: 752x560  
-| ![image](images/mmiyoo_752/hres_1.png) |
+| ![image](image/mmiyoo_752/hres_1.png) |
 |-|
 
 &nbsp;
 
 ### TRIMUI SMART
-![image](images/trimui_320/trimui.jpg)  
+![image](image/trimui_320/trimui.jpg)  
 
 &nbsp;
 
 ##### Layout 0, Screen0: 256x192, Image: bg_s0.png  
-| ![image](images/trimui_320/dis_0.png) |
+| ![image](image/trimui_320/dis_0.png) |
 |-|
 
 &nbsp;
 
 ##### Layout 1, Screen0: 288x208, Image: bg_s0.png  
-| ![image](images/trimui_320/dis_1.png) |
+| ![image](image/trimui_320/dis_1.png) |
 |-|
 
 &nbsp;
 
 ##### Layout 2, Screen0: 320x240  
-| ![image](images/trimui_320/dis_2.png) |
+| ![image](image/trimui_320/dis_2.png) |
 |-|
 
 &nbsp;
 
 #### DraStic Menu: Original  
-| ![image](images/mmiyoo_640/menu_2.png) |
+| ![image](image/mmiyoo_640/menu_2.png) |
 |-|
 
 &nbsp;
 
 #### DraStic Menu: Refined  
-| ![image](images/trimui_320/menu_0.png) |
+| ![image](image/trimui_320/menu_0.png) |
 |-|
 
 &nbsp;
 
 #### Cheat Menu: Original  
-| ![image](images/mmiyoo_640/menu_3.png) |
+| ![image](image/mmiyoo_640/menu_3.png) |
 |-|
 
 &nbsp;
 
 #### Cheat Menu: Refined  
-| ![image](images/trimui_320/menu_1.png) |
+| ![image](image/trimui_320/menu_1.png) |
 |-|
 
 &nbsp;
@@ -586,7 +586,7 @@ Go to DraStic menu and then select "Restart Game".
 &nbsp;
 
 ### F(x)tec Pro1 (QX1000)
-![image](images/qx1000_1080/pro1.jpg)  
+![image](image/qx1000_1080/pro1.jpg)  
 
 #### Supported OS
 ```
@@ -595,31 +595,31 @@ Sailfish OS
 &nbsp;
 
 #### Layout 0, Screen0: 1024x768  
-| ![image](images/qx1000_1080/dis_0.png) |
+| ![image](image/qx1000_1080/dis_0.png) |
 |-|
 
 &nbsp;
 
 #### DraStic Menu: Original  
-| ![image](images/mmiyoo_640/menu_2.png) |
+| ![image](image/mmiyoo_640/menu_2.png) |
 |-|
 
 &nbsp;
 
 #### DraStic Menu: Refined  
-| ![image](images/qx1000_1080/menu_0.png) |
+| ![image](image/qx1000_1080/menu_0.png) |
 |-|
 
 &nbsp;
 
 #### Cheat Menu: Original  
-| ![image](images/mmiyoo_640/menu_3.png) |
+| ![image](image/mmiyoo_640/menu_3.png) |
 |-|
 
 &nbsp;
 
 #### Cheat Menu: Refined  
-| ![image](images/qx1000_1080/menu_1.png) |
+| ![image](image/qx1000_1080/menu_1.png) |
 |-|
 
 &nbsp;

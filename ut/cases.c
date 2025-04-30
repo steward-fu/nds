@@ -69,6 +69,7 @@ RUN_TEST_CASE(alsa, snd_pcm_writei)
 }
 TEST_GROUP_RUNNER(sdl2_event)
 {
+RUN_TEST_CASE(sdl2_event, send_touch_event)
 RUN_TEST_CASE(sdl2_event, pump_event)
 }
 TEST_GROUP_RUNNER(sdl2_video)

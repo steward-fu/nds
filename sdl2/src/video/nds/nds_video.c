@@ -52,7 +52,7 @@ GFX gfx = {0};
 MMIYOO_VideoInfo vid = {0};
 
 extern nds_hook myhook;
-extern NDS_Event evt;
+extern nds_event myevent;
 
 int FB_W = 0;
 int FB_H = 0;
@@ -2033,12 +2033,12 @@ static int process_screen(void)
         }
 
 #if defined(A30) || defined(FLIP)
-        if (show_pen && ((evt.mode == NDS_TOUCH_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_STYLUS)))) {
+        if (show_pen && ((myevent.mode == NDS_TOUCH_MODE) || (nds.joy.show_cnt && (nds.joy.mode == MYJOY_MODE_STYLUS)))) {
 #else
-        if (show_pen && (evt.mode == NDS_TOUCH_MODE)) {
+        if (show_pen && (myevent.mode == NDS_TOUCH_MODE)) {
 #endif
 #else
-        if (show_pen && (evt.mode == NDS_TOUCH_MODE)) {
+        if (show_pen && (myevent.mode == NDS_TOUCH_MODE)) {
 #endif
             draw_pen(nds.screen.pixels[idx], srt.w, nds.screen.pitch[idx]);
 
@@ -3524,7 +3524,7 @@ void disp_resize(void)
 }
 #endif
 
-#if defined(RG28XX) || defined(FLIP)
+#if defined(RG28XX)
 static int get_core(int index)
 {
     FILE *fd = NULL;
@@ -4076,8 +4076,8 @@ int draw_pen(void *pixels, int width, int pitch)
         scale = 2;
     }
 
-    x = (evt.mouse.x * sw) / evt.mouse.maxx;
-    y = (evt.mouse.y * sh) / evt.mouse.maxy;
+    x = (myevent.mouse.x * sw) / myevent.mouse.maxx;
+    y = (myevent.mouse.y * sh) / myevent.mouse.maxy;
 
     if (nds.pen.img) {
         w = nds.pen.img->w;
@@ -6935,8 +6935,8 @@ int handle_menu(int key)
                 nds.joy.mode += 1;
             }
             if (nds.joy.mode == MYJOY_MODE_STYLUS) {
-                if (evt.mode == NDS_TOUCH_MODE) {
-                    evt.mode = NDS_KEY_MODE;
+                if (myevent.mode == NDS_TOUCH_MODE) {
+                    myevent.mode = NDS_KEY_MODE;
                 }
             }
             break;
@@ -6980,8 +6980,8 @@ int handle_menu(int key)
                 nds.rjoy.mode += 1;
             }
             if (nds.rjoy.mode == MYJOY_MODE_STYLUS) {
-                if (evt.mode == NDS_TOUCH_MODE) {
-                    evt.mode = NDS_KEY_MODE;
+                if (myevent.mode == NDS_TOUCH_MODE) {
+                    myevent.mode = NDS_KEY_MODE;
                 }
             }
             break;
@@ -7785,5 +7785,3 @@ int handle_menu(int key)
     return 0;
 }
 #endif
-
-
