@@ -7785,5 +7785,3 @@ int handle_menu(int key)
     return 0;
 }
 #endif
-
-
