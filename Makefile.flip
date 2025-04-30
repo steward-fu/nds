@@ -1,0 +1,19 @@
+export MOD=flip
+export NDS_GCC=1
+export NDS_ALSA=0
+
+CFLAGS += -mcpu=cortex-a7
+CFLAGS += -mfpu=neon-vfpv4
+CFLAGS += -O3
+CFLAGS += -Wl,--no-undefined
+
+LDFLAGS+= -ljson-c
+ 
+export MORE_CFLAGS=${CFLAGS}
+export MORE_LDFLAGS=${LDFLAGS}
+
+include Makefile.mk
+
+.PHONY: push
+push:
+	adb push drastic/lib/* /mnt/sdcard/Emu/drastic/lib/

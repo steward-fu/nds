@@ -693,6 +693,10 @@ LINUX_JoystickInit(void)
 
     SDL_classic_joysticks = SDL_GetHintBoolean(SDL_HINT_LINUX_JOYSTICK_CLASSIC, SDL_FALSE);
 
+#if defined(A30) || defined(FLIP)
+    return -1;
+#endif
+
 #if SDL_USE_LIBUDEV
     if(enumeration_method == ENUMERATION_UNSET) {
         if(SDL_GetHintBoolean("SDL_JOYSTICK_DISABLE_UDEV", SDL_FALSE)) {

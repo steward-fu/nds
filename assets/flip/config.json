@@ -1,0 +1,10 @@
+{
+"label": "DraStic",
+"icon": "icon.png",
+"launch": "launch.sh",
+"rompath": "../../Roms/NDS",
+"imgpath": "../../Imgs/NDS",
+"useswap": 1,
+"shortname": 0,
+"extlist": "nds|zip|7z|rar"
+}

@@ -1,0 +1,1526 @@
+// LGPL-2.1 License
+// (C) 2025 Steward Fu <steward.fu@gmail.com>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <dirent.h>
+#include <linux/input.h>
+
+#if defined(RG28XX)
+#include <alsa/asoundlib.h>
+#endif
+
+#if defined(UT)
+#include "unity_fixture.h"
+#endif
+
+#include "../../SDL_internal.h"
+#include "../../events/SDL_events_c.h"
+#include "../../core/linux/SDL_evdev.h"
+#include "../../thread/SDL_systhread.h"
+#include "../../joystick/nds/nds_joy.h"
+
+#include "debug.h"
+#include "nds_video.h"
+#include "nds_event.h"
+
+nds_event myevent = {{ 0 }};
+
+extern GFX gfx;
+extern NDS nds;
+extern MMIYOO_VideoInfo vid;
+extern int pixel_filter;
+
+extern nds_joy myjoy;
+
+static int running = 0;
+static int event_fd = -1;
+static int lower_speed = 0;
+#if defined(MINI)
+static int is_stock_os = 0;
+#endif
+static SDL_sem *event_sem = NULL;
+static SDL_Thread *thread = NULL;
+
+extern int FB_W;
+extern int FB_H;
+
+#if defined(TRIMUI)
+typedef struct _cust_key_t {
+    int fd;
+    uint8_t *mem;
+    uint32_t *gpio;
+    uint32_t pre_cfg;
+} cust_key_t;
+
+static cust_key_t cust_key = {0};
+#endif
+
+const SDL_Scancode code[] = {
+    SDLK_UP,            // UP
+    SDLK_DOWN,          // DOWN
+    SDLK_LEFT,          // LEFT
+    SDLK_RIGHT,         // RIGHT
+    SDLK_SPACE,         // A
+    SDLK_LCTRL,         // B
+    SDLK_LSHIFT,        // X
+    SDLK_LALT,          // Y
+    SDLK_e,             // L1
+    SDLK_t,             // R1
+    SDLK_TAB,           // L2
+    SDLK_BACKSPACE,     // R2
+    SDLK_RCTRL,         // SELECT
+    SDLK_RETURN,        // START
+    SDLK_HOME,          // MENU
+    SDLK_0,             // QUICK SAVE
+    SDLK_1,             // QUICK LOAD
+    SDLK_2,             // FAST FORWARD
+    SDLK_3,             // EXIT
+    SDLK_HOME,          // MENU (Onion system)
+};
+
+int volume_inc(void);
+int volume_dec(void);
+
+#if defined(UT)
+TEST_GROUP(sdl2_event);
+
+TEST_SETUP(sdl2_event)
+{
+}
+
+TEST_TEAR_DOWN(sdl2_event)
+{
+}
+#endif
+
+#if defined(RG28XX)
+static int volume = 16;
+
+static int set_volume(void)
+{
+    char buf[255] = {0};
+
+    sprintf(buf, "amixer set \'lineout volume\' %d", volume);
+    system(buf);
+    return 0;
+}
+
+int volume_inc(void)
+{
+    if (volume < 31) {
+        volume += 2;
+        if (volume > 31) {
+            volume = 31;
+        }
+        set_volume();
+    }
+    return volume;
+}
+
+int volume_dec(void)
+{
+    if (volume > 0) {
+        volume -= 2;
+        if (volume < 0) {
+            volume = 0;
+        }
+        set_volume();
+    }
+    return volume;
+}
+#endif
+
+static void limit_mouse_axis(void)
+{
+    if (myevent.mouse.x < 0) {
+        myevent.mouse.x = 0;
+    }
+    if (myevent.mouse.x >= myevent.mouse.max_x) {
+        myevent.mouse.x = myevent.mouse.max_x;
+    }
+    if (myevent.mouse.y < 0) {
+        myevent.mouse.y = 0;
+    }
+    if (myevent.mouse.y > myevent.mouse.max_y) {
+        myevent.mouse.y = myevent.mouse.max_y;
+    }
+}
+
+static int is_hh_mode(void)
+{
+    if ((nds.dis_mode == NDS_DIS_MODE_HH0) ||
+        (nds.dis_mode == NDS_DIS_MODE_HH1) ||
+        (nds.dis_mode == NDS_DIS_MODE_HH2) ||
+        (nds.dis_mode == NDS_DIS_MODE_HH3))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+static int get_move_interval(int type)
+{
+    float move = 0.0;
+    float v = 100000.0 / ((float)nds.pen.xv / 10.0);
+
+    if (lower_speed) {
+        v*= 2;
+    }
+
+    move = ((float)clock() - nds.pen.pre_ticks) / v;
+    if (move <= 0.0) {
+        move = 1.0;
+    }
+    return (int)(1.0 * move);
+}
+
+static void release_all_keys(void)
+{
+    int cc = 0;
+
+    for (cc=0; cc<=KEY_BIT_LAST; cc++) {
+        if (myevent.keypad.cur_keys & 1) {
+            SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+        }
+        myevent.keypad.cur_keys>>= 1;
+    }
+}
+
+static int hit_hotkey(uint32_t bit)
+{
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+    uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+    uint32_t mask = (1 << bit) | (1 << KEY_BIT_MENU);
+#endif
+
+#if defined(QX1000)
+    uint32_t mask = (1 << bit) | (1 << KEY_BIT_MENU);
+#endif
+
+    return (myevent.keypad.cur_keys ^ mask) ? 0 : 1;
+}
+
+static void set_key(uint32_t bit, int val)
+{
+    if (val) {
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+        if (bit == KEY_BIT_MENU) {
+            myevent.keypad.cur_keys = (1 << KEY_BIT_MENU);
+        }
+#endif
+
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if (nds.hotkey == HOTKEY_BIND_SELECT) {
+            if (bit == KEY_BIT_SELECT) {
+                myevent.keypad.cur_keys = (1 << KEY_BIT_SELECT);
+            }
+        }
+        else {
+            if (bit == KEY_BIT_MENU) {
+                myevent.keypad.cur_keys = (1 << KEY_BIT_MENU);
+            }
+        }
+#endif
+        myevent.keypad.cur_keys|= (1 << bit);
+    }
+    else {
+        myevent.keypad.cur_keys &= ~(1 << bit);
+    }
+}
+
+#if defined(A30) || defined(FLIP)
+static int trans_joy_to_keypad(jval_t *j, int rjoy)
+{
+    int r = 0;
+    static int pre_x[2] = { -1, -1 };
+    static int pre_y[2] = { -1, -1 };
+    static int pre_up[2] = { 0 };
+    static int pre_down[2] = { 0 };
+    static int pre_left[2] = { 0 };
+    static int pre_right[2] = { 0 };
+
+    uint32_t u_key = KEY_BIT_UP;
+    uint32_t d_key = KEY_BIT_DOWN;
+    uint32_t l_key = KEY_BIT_LEFT;
+    uint32_t r_key = KEY_BIT_RIGHT;
+
+    int UP_TH = -1 * nds.joy.dzone;
+    int DOWN_TH = nds.joy.dzone;
+    int LEFT_TH = -1 * nds.joy.dzone;
+    int RIGHT_TH = nds.joy.dzone;
+
+    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+
+    if (rjoy) {
+        u_key = KEY_BIT_X;
+        d_key = KEY_BIT_B;
+        l_key = KEY_BIT_Y;
+        r_key = KEY_BIT_A;
+
+        UP_TH = -1 * nds.rjoy.dzone;
+        DOWN_TH = nds.rjoy.dzone;
+        LEFT_TH = -1 * nds.rjoy.dzone;
+        RIGHT_TH = nds.rjoy.dzone;
+    }
+
+    if (j->x != pre_x[rjoy]) {
+        pre_x[rjoy] = j->x;
+        if (pre_x[rjoy] < LEFT_TH) {
+            if (pre_left[rjoy] == 0) {
+                r = 1;
+                pre_left[rjoy] = 1;
+                set_key(l_key, 1);
+            }
+        }
+        else if (pre_x[rjoy] > RIGHT_TH){
+            if (pre_right[rjoy] == 0) {
+                r = 1;
+                pre_right[rjoy] = 1;
+                set_key(r_key, 1);
+            }
+        }
+        else {
+            if (pre_left[rjoy] != 0) {
+                r = 1;
+                pre_left[rjoy] = 0;
+                set_key(l_key, 0);
+            }
+            if (pre_right[rjoy] != 0) {
+                r = 1;
+                pre_right[rjoy] = 0;
+                set_key(r_key, 0);
+            }
+        }
+    }
+
+    if (j->y != pre_y[rjoy]) {
+        pre_y[rjoy] = j->y;
+        if (pre_y[rjoy] < UP_TH) {
+            if (pre_up[rjoy] == 0) {
+                r = 1;
+                pre_up[rjoy] = 1;
+                set_key(u_key, 1);
+            }
+        }
+        else if (pre_y[rjoy] > DOWN_TH){
+            if (pre_down[rjoy] == 0) {
+                r = 1;
+                pre_down[rjoy] = 1;
+                set_key(d_key, 1);
+            }
+        }
+        else {
+            if (pre_up[rjoy] != 0) {
+                r = 1;
+                pre_up[rjoy] = 0;
+                set_key(u_key, 0);
+            }
+            if (pre_down[rjoy] != 0) {
+                r = 1;
+                pre_down[rjoy] = 0;
+                set_key(d_key, 0);
+            }
+        }
+    }
+
+    return r;
+}
+
+static int trans_joy_to_touch(jval_t *j, int rjoy)
+{
+    int r = 0;
+    static int pre_x[2] = { -1, -1 };
+    static int pre_y[2] = { -1, -1 };
+
+    static int pre_up[2] = { 0 };
+    static int pre_down[2] = { 0 };
+    static int pre_left[2] = { 0 };
+    static int pre_right[2] = { 0 };
+
+    int UP_TH = -1 * nds.joy.dzone;
+    int DOWN_TH = nds.joy.dzone;
+    int LEFT_TH = -1 * nds.joy.dzone;
+    int RIGHT_TH = nds.joy.dzone;
+
+    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+
+    if (rjoy) {
+        UP_TH = -1 * nds.rjoy.dzone;
+        DOWN_TH = nds.rjoy.dzone;
+        LEFT_TH = -1 * nds.rjoy.dzone;
+        RIGHT_TH = nds.rjoy.dzone;
+    }
+
+    if (j->x != pre_x[rjoy]) {
+        pre_x[rjoy] = j->x;
+        if (pre_x[rjoy] < LEFT_TH) {
+            if (pre_left[rjoy] == 0) {
+                pre_left[rjoy] = 1;
+            }
+        }
+        else if (pre_x[rjoy] > RIGHT_TH){
+            if (pre_right[rjoy] == 0) {
+                pre_right[rjoy] = 1;
+            }
+        }
+        else {
+            if (pre_left[rjoy] != 0) {
+                pre_left[rjoy] = 0;
+            }
+            if (pre_right[rjoy] != 0) {
+                pre_right[rjoy] = 0;
+            }
+        }
+    }
+
+    if (j->y != pre_y[rjoy]) {
+        pre_y[rjoy] = j->y;
+        if (pre_y[rjoy] < UP_TH) {
+            if (pre_up[rjoy] == 0) {
+                pre_up[rjoy] = 1;
+            }
+        }
+        else if (pre_y[rjoy] > DOWN_TH){
+            if (pre_down[rjoy] == 0) {
+                pre_down[rjoy] = 1;
+            }
+        }
+        else {
+            if (pre_up[rjoy] != 0) {
+                pre_up[rjoy] = 0;
+            }
+            if (pre_down[rjoy] != 0) {
+                pre_down[rjoy] = 0;
+            }
+        }
+    }
+
+    if (pre_up[rjoy] || pre_down[rjoy] || pre_left[rjoy] || pre_right[rjoy]) {
+        if (myevent.keypad.cur_keys &  (1 << KEY_BIT_Y)) {
+            if (pre_right[rjoy]) {
+                static int cc = 0;
+
+                if (cc == 0) {
+                    nds.pen.sel+= 1;
+                    if (nds.pen.sel >= nds.pen.max) {
+                        nds.pen.sel = 0;
+                    }
+                    reload_pen();
+                    cc = 30;
+                }
+                else {
+                    cc -= 1;
+                }
+            }
+        }
+        else {
+            int x = 0;
+            int y = 0;
+
+            if (is_hh_mode() && (nds.keys_rotate == 0)) {
+                if (pre_up[rjoy]) {
+                    myevent.mouse.x+= get_move_interval(1);
+                }
+                if (pre_down[rjoy]) {
+                    myevent.mouse.x-= get_move_interval(1);
+                }
+                if (pre_left[rjoy]) {
+                    myevent.mouse.y-= get_move_interval(0);
+                }
+                if (pre_right[rjoy]) {
+                    myevent.mouse.y+= get_move_interval(0);
+                }
+            }
+            else {
+                if (pre_up[rjoy]) {
+                    myevent.mouse.y-= get_move_interval(1);
+                }
+                if (pre_down[rjoy]) {
+                    myevent.mouse.y+= get_move_interval(1);
+                }
+                if (pre_left[rjoy]) {
+                    myevent.mouse.x-= get_move_interval(0);
+                }
+                if (pre_right[rjoy]) {
+                    myevent.mouse.x+= get_move_interval(0);
+                }
+            }
+            limit_mouse_axis();
+
+            x = (myevent.mouse.x * 160) / myevent.mouse.max_x;
+            y = (myevent.mouse.y * 120) / myevent.mouse.max_y;
+            SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+        }
+        nds.joy.show_cnt = MYJOY_SHOW_CNT;
+    }
+
+    return r;
+}
+
+static int trans_joy_to_custkey(jval_t *j, int rjoy)
+{
+    int r = 0;
+    static int pre_x[2] = { -1, -1 };
+    static int pre_y[2] = { -1, -1 };
+
+    static int pre_up[2] = { 0 };
+    static int pre_down[2] = { 0 };
+    static int pre_left[2] = { 0 };
+    static int pre_right[2] = { 0 };
+
+    uint32_t u_key = nds.joy.cuskey[0];
+    uint32_t d_key = nds.joy.cuskey[1];
+    uint32_t l_key = nds.joy.cuskey[2];
+    uint32_t r_key = nds.joy.cuskey[3];
+
+    int UP_TH = -1 * nds.joy.dzone;
+    int DOWN_TH = nds.joy.dzone;
+    int LEFT_TH = -1 * nds.joy.dzone;
+    int RIGHT_TH = nds.joy.dzone;
+
+    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+
+    if (rjoy) {
+        UP_TH = -1 * nds.rjoy.dzone;
+        DOWN_TH = nds.rjoy.dzone;
+        LEFT_TH = -1 * nds.rjoy.dzone;
+        RIGHT_TH = nds.rjoy.dzone;
+    }
+
+    if (j->x != pre_x[rjoy]) {
+        pre_x[rjoy] = j->x;
+        if (pre_x[rjoy] < LEFT_TH) {
+            if (pre_left[rjoy] == 0) {
+                r = 1;
+                pre_left[rjoy] = 1;
+                set_key(l_key, 1);
+            }
+        }
+        else if (pre_x[rjoy] > RIGHT_TH){
+            if (pre_right[rjoy] == 0) {
+                r = 1;
+                pre_right[rjoy] = 1;
+                set_key(r_key, 1);
+            }
+        }
+        else {
+            if (pre_left[rjoy] != 0) {
+                r = 1;
+                pre_left[rjoy] = 0;
+                set_key(l_key, 0);
+            }
+            if (pre_right[rjoy] != 0) {
+                r = 1;
+                pre_right[rjoy] = 0;
+                set_key(r_key, 0);
+            }
+        }
+    }
+
+    if (j->y != pre_y[rjoy]) {
+        pre_y[rjoy] = j->y;
+        if (pre_y[rjoy] < UP_TH) {
+            if (pre_up[rjoy] == 0) {
+                r = 1;
+                pre_up[rjoy] = 1;
+                set_key(u_key, 1);
+            }
+        }
+        else if (pre_y[rjoy] > DOWN_TH){
+            if (pre_down[rjoy] == 0) {
+                r = 1;
+                pre_down[rjoy] = 1;
+                set_key(d_key, 1);
+            }
+        }
+        else {
+            if (pre_up[rjoy] != 0) {
+                r = 1;
+                pre_up[rjoy] = 0;
+                set_key(u_key, 0);
+            }
+            if (pre_down[rjoy] != 0) {
+                r = 1;
+                pre_down[rjoy] = 0;
+                set_key(d_key, 0);
+            }
+        }
+    }
+
+    return r;
+}
+
+static int update_joy_state(void)
+{
+    int r = 0;
+
+    debug("call %s()\n", __func__);
+
+    if (nds.joy.mode == MYJOY_MODE_KEYPAD) {
+        r |= trans_joy_to_keypad(&myjoy.left.last, 0);
+    }
+    else if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+        r |= trans_joy_to_touch(&myjoy.left.last, 0);
+    }
+    else if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+        r |= trans_joy_to_custkey(&myjoy.left.last, 0);
+    }
+
+    if (nds.rjoy.mode == MYJOY_MODE_KEYPAD) {
+        r |= trans_joy_to_keypad(&myjoy.right.last, 1);
+    }
+    else if (nds.rjoy.mode == MYJOY_MODE_STYLUS) {
+        r |= trans_joy_to_touch(&myjoy.right.last, 1);
+    }
+    else if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+        r |= trans_joy_to_custkey(&myjoy.right.last, 1);
+    }
+
+    return r;
+}
+#endif
+
+static int handle_hotkey(void)
+{
+    int hotkey_mask = 0;
+#if defined(TRIMUI)
+    char buf[MAX_PATH << 1] = {0};
+#endif
+
+    hotkey_mask = 1;
+    if (nds.menu.enable || nds.menu.drastic.enable) {
+        hotkey_mask = 0;
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_UP)) {
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if (myevent.mode == NDS_TOUCH_MODE) {
+            switch (nds.dis_mode) {
+            case NDS_DIS_MODE_VH_T0:
+            case NDS_DIS_MODE_VH_T1:
+            case NDS_DIS_MODE_S0:
+            case NDS_DIS_MODE_S1:
+                break;
+            default:
+                nds.pen.pos = 1;
+                break;
+            }
+        }
+#if defined(A30)
+        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+            nds.pen.pos = 1;
+        }
+#endif
+#endif
+        set_key(KEY_BIT_UP, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_DOWN)) {
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if (myevent.mode == NDS_TOUCH_MODE) {
+            switch (nds.dis_mode) {
+            case NDS_DIS_MODE_VH_T0:
+            case NDS_DIS_MODE_VH_T1:
+            case NDS_DIS_MODE_S0:
+            case NDS_DIS_MODE_S1:
+                break;
+            default:
+                nds.pen.pos = 0;
+                break;
+            }
+        }
+#if defined(A30)
+        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+            nds.pen.pos = 0;
+        }
+#endif
+#endif
+        set_key(KEY_BIT_DOWN, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_LEFT)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if (nds.hres_mode == 0) {
+            if (nds.dis_mode > 0) {
+                nds.dis_mode -= 1;
+            }
+        }
+        else {
+            nds.dis_mode = NDS_DIS_MODE_HRES0;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+            myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
+
+            if (myevent.mode == NDS_TOUCH_MODE) {
+                release_all_keys();
+            }
+            lower_speed = 0;
+        }
+#endif
+        set_key(KEY_BIT_LEFT, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_RIGHT)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if (nds.hres_mode == 0) {
+            if (nds.dis_mode < NDS_DIS_MODE_LAST) {
+                nds.dis_mode += 1;
+            }
+        }
+        else {
+            nds.dis_mode = NDS_DIS_MODE_HRES1;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        set_key(KEY_BIT_R2, 1);
+#endif
+        set_key(KEY_BIT_RIGHT, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_A)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if ((myevent.mode == NDS_KEY_MODE) && (nds.hres_mode == 0)) {
+            uint32_t tmp = nds.alt_mode;
+            nds.alt_mode = nds.dis_mode;
+            nds.dis_mode = tmp;
+        }
+#endif
+
+#if defined(TRIMUI)
+        nds.dis_mode = (nds.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
+        disp_resize();
+#endif
+        set_key(KEY_BIT_A, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_B)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        pixel_filter = pixel_filter ? 0 : 1;
+#endif
+        set_key(KEY_BIT_B, 0);
+    }
+
+    if (hit_hotkey(KEY_BIT_X)) {
+#if defined(TRIMUI)
+        int w = FB_W;
+        int h = FB_H;
+        int pitch = FB_W * FB_BPP;
+        uint32_t *dst = NULL;
+        SDL_Surface *p = NULL;
+        time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+
+        // for MMIYOO
+        // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
+        dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
+
+        if (nds.dis_mode == NDS_DIS_MODE_S0) {
+            w = NDS_H;
+            h = NDS_W;
+        }
+        else {
+            w = FB_H;
+            h = FB_W;
+        }
+        pitch = FB_H * FB_BPP;
+
+        if (dst) {
+            p = SDL_CreateRGBSurfaceFrom(dst, w, h, 32, pitch, 0, 0, 0, 0);
+            if (p) {
+                sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                IMG_SavePNG(p, buf);
+                SDL_FreeSurface(p);
+                printf(PREFIX"Saved \'%s\'\n", buf);
+            }
+        }
+        nds.shot.take = 1;
+#endif
+        set_key(KEY_BIT_X, 0);
+    }
+
+    if (hit_hotkey(KEY_BIT_Y)) {
+        if (hotkey_mask) {
+            if (myevent.mode == NDS_KEY_MODE) {
+                if ((nds.overlay.sel >= nds.overlay.max) &&
+                    (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
+                    (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
+                    (nds.dis_mode != NDS_DIS_MODE_S1) &&
+                    (nds.dis_mode != NDS_DIS_MODE_HRES1))
+                {
+                    nds.theme.sel+= 1;
+                    if (nds.theme.sel > nds.theme.max) {
+                        nds.theme.sel = 0;
+                    }
+                }
+            }
+            else {
+                nds.pen.sel+= 1;
+                if (nds.pen.sel >= nds.pen.max) {
+                    nds.pen.sel = 0;
+                }
+                reload_pen();
+            }
+        }
+        else {
+            nds.menu.sel+= 1;
+            if (nds.menu.sel >= nds.menu.max) {
+                nds.menu.sel = 0;
+            }
+            reload_menu();
+
+            if (nds.menu.drastic.enable) {
+                SDL_SendKeyboardKey(SDL_PRESSED, SDLK_e);
+                usleep(100000);
+                SDL_SendKeyboardKey(SDL_RELEASED, SDLK_e);
+            }
+        }
+        set_key(KEY_BIT_Y, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_START)) {
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if (nds.menu.enable == 0) {
+#if defined(QX1000)
+            update_wayland_res(640, 480);
+#endif
+            nds.menu.enable = 1;
+            usleep(100000);
+            handle_menu(-1);
+            myevent.keypad.pre_keys = myevent.keypad.cur_keys = 0;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+        set_key(KEY_BIT_EXIT, 1);
+#endif
+        set_key(KEY_BIT_START, 0);
+    }
+
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+    if (nds.hotkey == HOTKEY_BIND_MENU) {
+        if (hotkey_mask && hit_hotkey(KEY_BIT_SELECT)) {
+            set_key(KEY_BIT_ONION, 1);
+            set_key(KEY_BIT_SELECT, 0);
+        }
+    }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+    if (hotkey_mask && hit_hotkey(KEY_BIT_SELECT)) {
+        set_key(KEY_BIT_ONION, 1);
+        set_key(KEY_BIT_SELECT, 0);
+    }
+#endif
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_R1)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        static int pre_ff = 0;
+
+        if (pre_ff != nds.fast_forward) {
+            pre_ff = nds.fast_forward;
+            fast_forward(nds.fast_forward);
+        }
+        set_key(KEY_BIT_FAST, 1);
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        set_key(KEY_BIT_SAVE, 1);
+#endif
+        set_key(KEY_BIT_R1, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_L1)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        set_key(KEY_BIT_EXIT, 1);
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA)
+        set_key(KEY_BIT_LOAD, 1);
+#endif
+        set_key(KEY_BIT_L1, 0);
+    }
+
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+    if (hotkey_mask && hit_hotkey(KEY_BIT_R2)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        set_key(KEY_BIT_LOAD, 1);
+#else
+        set_key(KEY_BIT_SAVE, 1);
+#endif
+        set_key(KEY_BIT_R2, 0);
+    }
+
+    if (hotkey_mask && hit_hotkey(KEY_BIT_L2)) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        set_key(KEY_BIT_SAVE, 1);
+#else
+        set_key(KEY_BIT_LOAD, 1);
+#endif
+        set_key(KEY_BIT_L2, 0);
+    }
+    else if (myevent.keypad.cur_keys & (1 << KEY_BIT_L2)) {
+#if defined(A30)
+        if (nds.joy.mode != MYJOY_MODE_STYLUS) {
+#endif
+            if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+                myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
+                set_key(KEY_BIT_L2, 0);
+
+                if (myevent.mode == NDS_TOUCH_MODE) {
+                    release_all_keys();
+                }
+                lower_speed = 0;
+            }
+#if defined(A30)
+        }
+#endif
+    }
+#endif
+
+    if (!(myevent.keypad.cur_keys & 0x0f)) {
+        nds.pen.pre_ticks = clock();
+    }
+
+    return 0;
+}
+
+int input_handler(void *data)
+{
+#if defined(RG28XX)
+    char tbuf[16] = {0};
+#endif
+
+#if defined(FLIP)
+    int cc = 0;
+    int pre_bits = 0;
+    int tbuf[DEV_KEY_BUF_MAX] = { 0 };
+#endif
+
+    struct input_event ev = {{ 0 }};
+
+    uint32_t l1 = L1;
+    uint32_t r1 = R1;
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+    uint32_t l2 = L2;
+    uint32_t r2 = R2;
+#endif
+
+    int r = 0;
+    uint32_t a = A;
+    uint32_t b = B;
+    uint32_t x = X;
+    uint32_t y = Y;
+
+    uint32_t up = UP;
+    uint32_t down = DOWN;
+    uint32_t left = LEFT;
+    uint32_t right = RIGHT;
+
+    while (running) {
+        SDL_SemWait(event_sem);
+
+        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.keys_rotate) {
+            if (nds.keys_rotate == 1) {
+                up = LEFT;
+                down = RIGHT;
+                left = DOWN;
+                right = UP;
+
+                a = X;
+                b = A;
+                x = Y;
+                y = B;
+            }
+            else {
+                up = RIGHT;
+                down = LEFT;
+                left = UP;
+                right = DOWN;
+
+                a = B;
+                b = Y;
+                x = A;
+                y = X;
+            }
+        }
+        else {
+            up = UP;
+            down = DOWN;
+            left = LEFT;
+            right = RIGHT;
+
+            a = A;
+            b = B;
+            x = X;
+            y = Y;
+        }
+
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if (nds.swap_l1l2) {
+            l1 = L2;
+            l2 = L1;
+        }
+        else {
+            l1 = L1;
+            l2 = L2;
+        }
+
+        if (nds.swap_r1r2) {
+            r1 = R2;
+            r2 = R1;
+        }
+        else {
+            r1 = R1;
+            r2 = R2;
+        }
+#endif
+
+#if defined(TRIMUI)
+        if (cust_key.gpio != NULL) {
+            static uint32_t pre_value = 0;
+            uint32_t v = *cust_key.gpio & 0x800;
+
+            if (v != pre_value) {
+                pre_value = v;
+                set_key(KEY_BIT_R2, !v);
+            }
+        }
+#endif
+
+        r = 0;
+        ev.code = 0;
+#if defined(FLIP)
+        if (read(event_fd, tbuf, sizeof(tbuf)) == 0) {
+            continue;
+        }
+
+        for (cc = 0; cc < DEV_KEY_IDX_MAX; cc++) {
+            uint32_t kval[DEV_KEY_BUF_MAX] = {
+                /* 0  */ B,
+                /* 1  */ Y,
+                /* 2  */ SELECT,
+                /* 3  */ START,
+                /* 4  */ UP,
+                /* 5  */ DOWN,
+                /* 6  */ LEFT,
+                /* 7  */ RIGHT,
+                /* 8  */ A,
+                /* 9  */ X,
+                /* 10 */ L1,
+                /* 11 */ R1,
+                /* 12 */ L2,
+                /* 13 */ R2,
+                /* 14 */ -1, 
+                /* 15 */ -1, 
+                /* 16 */ MENU,
+                /* 17 */ -1,
+                /* 18 */ -1,
+                /* 19 */ -1
+            }; 
+
+            if ((!!tbuf[cc]) == (!!(pre_bits & (1 << cc)))) {
+                continue;
+            }
+            ev.code = kval[cc];
+
+            debug("%d, %d\n", ev.code, ev.value);
+            if (ev.code > 0) {
+                ev.value = !!tbuf[cc];
+
+                if (tbuf[cc]) {
+                    pre_bits |= (1 << cc);
+                }
+                else {
+                    pre_bits &= ~(1 << cc);
+                }
+
+#endif
+
+#if defined(RG28XX)
+        if (read(event_fd, tbuf, sizeof(tbuf))) {
+            ev.value = !!tbuf[12];
+
+            switch (tbuf[10]) {
+            case 0x11: 
+                if (ev.value) {
+                    ev.code = (tbuf[12] == 0xff) ? up : down;
+                }
+                else {
+                    ev.code = up;
+                    set_key(KEY_BIT_UP, 0);
+                    set_key(KEY_BIT_DOWN, 0);
+                }
+                break;
+            case 0x10:
+                if (ev.value) {
+                    ev.code = (tbuf[12] == 0xff) ? left : right;
+                }
+                else {
+                    ev.code = left;
+                    set_key(KEY_BIT_LEFT, 0);
+                    set_key(KEY_BIT_RIGHT, 0);
+                }
+                break;
+            case 0x30: ev.code = a; break;
+            case 0x31: ev.code = b; break;
+            case 0x33: ev.code = x; break;
+            case 0x32: ev.code = y; break;
+            case 0x34: ev.code = l1; break;
+            case 0x3a: ev.code = l2; break;
+            case 0x35: ev.code = r1; break;
+            case 0x3b: ev.code = r2; break;
+            case 0x38: ev.code = MENU; break;
+            case 0x36: ev.code = SELECT; break;
+            case 0x37: ev.code = START; break;
+            case 0x73: ev.code = VOLUP; break;
+            case 0x72: ev.code = VOLDOWN; break;
+            }
+
+            if (ev.code > 0) {
+#else
+#if !defined(FLIP)
+        if (read(event_fd, &ev, sizeof(struct input_event))) {
+            if ((ev.type == EV_KEY) && (ev.value != 2)) {
+#endif
+#endif
+                r = 1;
+                debug("code=%d, value=%d\n", ev.code, ev.value);
+                if (ev.code == l1)      { set_key(KEY_BIT_L1,    ev.value); }
+                if (ev.code == r1)      { set_key(KEY_BIT_R1,    ev.value); }
+                if (ev.code == up)      { set_key(KEY_BIT_UP,    ev.value); }
+                if (ev.code == down)    { set_key(KEY_BIT_DOWN,  ev.value); }
+                if (ev.code == left)    { set_key(KEY_BIT_LEFT,  ev.value); }
+                if (ev.code == right)   { set_key(KEY_BIT_RIGHT, ev.value); }
+                if (ev.code == a)       { set_key(KEY_BIT_A,     ev.value); }
+                if (ev.code == b)       { set_key(KEY_BIT_B,     ev.value); }
+                if (ev.code == x)       { set_key(KEY_BIT_X,     ev.value); }
+                if (ev.code == y)       { set_key(KEY_BIT_Y,     ev.value); }
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30)
+                if (ev.code == r2) {
+                    if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+                        nds.joy.show_cnt = MYJOY_SHOW_CNT;
+                        SDL_SendMouseButton(vid.window, 0, ev.value ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+                    }
+                    set_key(KEY_BIT_L2, ev.value);
+                }
+                if (ev.code == l2)      { set_key(KEY_BIT_R2,    ev.value); }
+#else
+                if (ev.code == r2)      { set_key(KEY_BIT_L2,    ev.value); }
+                if (ev.code == l2)      { set_key(KEY_BIT_R2,    ev.value); }
+#endif
+#endif
+
+#if defined(QX1000)
+                if (ev.code == L10)     { set_key(KEY_BIT_L1,    ev.value); }
+                if (ev.code == R10)     { set_key(KEY_BIT_R1,    ev.value); }
+#endif
+                switch (ev.code) {
+                case START:  set_key(KEY_BIT_START, ev.value);  break;
+                case SELECT: set_key(KEY_BIT_SELECT, ev.value); break;
+                case MENU:   set_key(KEY_BIT_MENU, ev.value);   break;
+#if defined(QX1000)
+                case QSAVE:  set_key(KEY_BIT_SAVE, ev.value);  break;
+                case QLOAD:  set_key(KEY_BIT_LOAD, ev.value);  break;
+                case EXIT:   set_key(KEY_BIT_EXIT, ev.value);   break;
+#endif
+#if defined(MINI)
+                case POWER:  set_key(KEY_BIT_POWER, ev.value);  break;
+                case VOLUP:
+                    set_key(KEY_BIT_VOLUP, ev.value);
+                    if (is_stock_os) {
+                        if (ev.value == 0) {
+                            nds.volume = volume_inc();
+                        }
+                    }
+                    else {
+                        nds.defer_update_bg = 60;
+                    }
+                    break;
+                case VOLDOWN:
+                    set_key(KEY_BIT_VOLDOWN, ev.value);
+                    if (is_stock_os) {
+                        if (ev.value == 0) {
+                            nds.volume = volume_dec();
+                        }
+                    }
+                    else {
+                        nds.defer_update_bg = 60;
+                    }
+                    break;
+#endif
+
+#if defined(A30) || defined(RG28XX)
+                case VOLUP:
+                    set_key(KEY_BIT_VOLUP, ev.value);
+                    if (ev.value == 0) {
+                        nds.volume = volume_inc();
+                    }
+                    break;
+                case VOLDOWN:
+                    set_key(KEY_BIT_VOLDOWN, ev.value);
+                    if (ev.value == 0) {
+                        nds.volume = volume_dec();
+                    }
+                    break;
+#endif
+                }
+            }
+        }
+
+#if defined(A30) || defined(FLIP)
+        r |= update_joy_state();
+#endif
+        if (r > 0) {
+            handle_hotkey();
+        }
+
+        SDL_SemPost(event_sem);
+        usleep(1000000 / 30);
+    }
+    
+    return 0;
+}
+
+void init_event(void)
+{
+#if defined(MINI)
+    DIR *dir = NULL;
+#endif
+
+    memset(&myevent, 0, sizeof(myevent));
+
+    myevent.mouse.max_x = NDS_W;
+    myevent.mouse.max_y = NDS_H;
+    myevent.mouse.x = myevent.mouse.max_x >> 1;
+    myevent.mouse.y = myevent.mouse.max_y >> 1;
+
+#if defined(TRIMUI)
+    cust_key.gpio = NULL;
+    cust_key.fd = open("/dev/mem", O_RDWR);
+    if (cust_key.fd > 0) {
+        cust_key.mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, cust_key.fd, 0x01c20000);
+        if (cust_key.mem != MAP_FAILED) {
+            uint32_t *p = NULL;
+
+            p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
+            cust_key.pre_cfg = *p;
+            *p &= 0xfff000ff;
+
+            p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x1c);
+            *p |= 0x01500000;
+
+            cust_key.gpio = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
+        }
+    }
+#endif
+    myevent.mode = NDS_KEY_MODE;
+
+    event_fd = open(INPUT_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    if(event_fd < 0){
+        exit(-1);
+    }
+
+    event_sem = SDL_CreateSemaphore(1);
+    if(event_sem == NULL) {
+        exit(-1);
+    }
+
+#if defined(RG28XX)
+    set_volume();
+#endif
+
+    running = 1;
+    thread = SDL_CreateThreadInternal(input_handler, "NDS Input Handler", 4096, NULL);
+    if(thread == NULL) {
+        exit(-1);
+    }
+
+#if defined(MINI)
+    dir = opendir("/mnt/SDCARD/.tmp_update");
+    if (dir) {
+        closedir(dir);
+    }
+    else {
+        is_stock_os = 1;
+        printf(PREFIX"Run on Stock OS\n");
+    }
+#endif
+}
+
+void quit_event(void)
+{
+    running = 0;
+    SDL_WaitThread(thread, NULL);
+    SDL_DestroySemaphore(event_sem);
+    if(event_fd > 0) {
+        close(event_fd);
+        event_fd = -1;
+    }
+
+#if defined(TRIMUI)
+    if (cust_key.fd > 0) {
+        uint32_t *p = NULL;
+
+        p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
+        *p = cust_key.pre_cfg;
+        munmap(cust_key.mem, 4096);
+        close(cust_key.fd);
+
+        cust_key.gpio = NULL;
+        cust_key.fd = -1;
+    }
+#endif
+}
+
+static int send_key_to_menu(void)
+{
+    int cc = 0;
+    uint32_t bit = 0;
+    uint32_t changed = myevent.keypad.pre_keys ^ myevent.keypad.cur_keys;
+
+    debug("call %s()\n", __func__);
+
+    for (cc=0; cc<=KEY_BIT_LAST; cc++) {
+        bit = 1 << cc;
+        if (changed & bit) {
+            if ((myevent.keypad.cur_keys & bit) == 0) {
+                handle_menu(cc);
+            }
+        }
+    }
+    myevent.keypad.pre_keys = myevent.keypad.cur_keys;
+
+    return 0;
+}
+
+static int send_key_event(void)
+{
+    int cc = 0;
+    uint32_t bit = 0;
+    uint32_t changed = myevent.keypad.pre_keys ^ myevent.keypad.cur_keys;
+
+    debug("call %s()\n", __func__);
+
+    for (cc=0; cc<=KEY_BIT_LAST; cc++) {
+        bit = 1 << cc;
+
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+        if ((nds.hotkey == HOTKEY_BIND_MENU) && (cc == KEY_BIT_MENU)) {
+            continue;
+        }
+#endif
+
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+        if (cc == KEY_BIT_MENU) {
+            continue;
+        }
+#endif
+
+        if (changed & bit) {
+            SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+        }
+    }
+
+#if defined(TRIMUI) || defined(PANDORA)
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_R2)) {
+        set_key(KEY_BIT_R2, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_L2)) {
+        set_key(KEY_BIT_L2, 0);
+    }
+#endif
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_SAVE)) {
+        nds.state|= NDS_STATE_QSAVE;
+        set_key(KEY_BIT_SAVE, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_LOAD)) {
+        nds.state|= NDS_STATE_QLOAD;
+        set_key(KEY_BIT_LOAD, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_FAST)) {
+        nds.state|= NDS_STATE_FF;
+        set_key(KEY_BIT_FAST, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_ONION)) {
+        set_key(KEY_BIT_ONION, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_EXIT)) {
+        release_all_keys();
+    }
+    myevent.keypad.pre_keys = myevent.keypad.cur_keys;
+
+    return 0;
+}
+
+static int update_touch_axis(void)
+{
+    int r = 0;
+
+    if (is_hh_mode() && (nds.keys_rotate == 0)) {
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_UP)) {
+            r = 1;
+            myevent.mouse.x+= get_move_interval(1);
+        }
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_DOWN)) {
+            r = 1;
+            myevent.mouse.x-= get_move_interval(1);
+        }
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_LEFT)) {
+            r = 1;
+            myevent.mouse.y-= get_move_interval(0);
+        }
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_RIGHT)) {
+            r = 1;
+            myevent.mouse.y+= get_move_interval(0);
+        }
+    }
+    else {
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_UP)) {
+            r = 1;
+            myevent.mouse.y-= get_move_interval(1);
+        }
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_DOWN)) {
+            r = 1;
+            myevent.mouse.y+= get_move_interval(1);
+        }
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_LEFT)) {
+            r = 1;
+            myevent.mouse.x-= get_move_interval(0);
+        }
+        if (myevent.keypad.cur_keys & (1 << KEY_BIT_RIGHT)) {
+            r = 1;
+            myevent.mouse.x+= get_move_interval(0);
+        }
+    }
+
+    return r;
+}
+
+static int send_touch_event(void)
+{
+    int r = 0;
+
+    debug("call %s()\n", __func__);
+
+    if (myevent.keypad.pre_keys != myevent.keypad.cur_keys) {
+        uint32_t cc = 0;
+        uint32_t bit = 0;
+        uint32_t changed = myevent.keypad.pre_keys ^ myevent.keypad.cur_keys;
+
+        if (changed & (1 << KEY_BIT_A)) {
+#if !defined(UT)
+            SDL_SendMouseButton(vid.window, 0, (myevent.keypad.cur_keys & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+#endif
+        }
+
+        for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
+            bit = 1 << cc;
+
+            if ((cc == KEY_BIT_FAST) || (cc == KEY_BIT_SAVE) || (cc == KEY_BIT_LOAD) || (cc == KEY_BIT_EXIT) || (cc == KEY_BIT_R2)) {
+                if (changed & bit) {
+#if !defined(UT)
+                    SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+#endif
+                }
+            }
+            if (cc == KEY_BIT_R1) {
+                if (changed & bit) {
+                    lower_speed = (myevent.keypad.cur_keys & bit);
+                }
+            }
+        }
+    }
+
+    r |= update_touch_axis();
+    limit_mouse_axis();
+
+    if (r) {
+#if !defined(UT)
+        int x = 0;
+        int y = 0;
+
+        x = (myevent.mouse.x * 160) / myevent.mouse.max_x;
+        y = (myevent.mouse.y * 120) / myevent.mouse.max_y;
+        SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+#endif
+    }
+
+#if defined(TRIMUI) || defined(PANDORA)
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_R2)) {
+        set_key(KEY_BIT_R2, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_L2)) {
+        set_key(KEY_BIT_L2, 0);
+    }
+#endif
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_SAVE)) {
+        set_key(KEY_BIT_SAVE, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_LOAD)) {
+        set_key(KEY_BIT_LOAD, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_FAST)) {
+        set_key(KEY_BIT_FAST, 0);
+    }
+    if (myevent.keypad.pre_keys & (1 << KEY_BIT_EXIT)) {
+        release_all_keys();
+    }
+    myevent.keypad.pre_keys = myevent.keypad.cur_keys;
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, send_touch_event)
+{
+    TEST_ASSERT_EQUAL_INT(0, send_touch_event());
+}
+#endif
+
+void pump_event(_THIS)
+{
+    debug("call %s()\n", __func__);
+
+#if !defined(UT)
+    SDL_SemWait(event_sem);
+#endif
+
+    if (nds.menu.enable) {
+        send_key_to_menu();
+    }
+    else {
+        if (myevent.mode == NDS_KEY_MODE) {
+            if (myevent.keypad.pre_keys != myevent.keypad.cur_keys) {
+                send_key_event();
+            }
+        }
+        else if (myevent.mode == NDS_TOUCH_MODE) {
+            send_touch_event();
+        }
+    }
+
+#if !defined(UT)
+    SDL_SemPost(event_sem);
+#endif
+}
+
+#if defined(UT)
+TEST(sdl2_event, pump_event)
+{
+    pump_event(NULL);
+    TEST_PASS();
+}
+#endif
+
