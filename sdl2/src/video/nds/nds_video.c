@@ -2201,7 +2201,7 @@ void prehook_cb_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t
 
 void prehook_cb_update_screen(void)
 {
-    static int prepare_time = 100;
+    static int prepare_time = 30;
 
     debug("call %s(%d)\n", __func__, prepare_time);
 

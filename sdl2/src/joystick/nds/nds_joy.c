@@ -703,7 +703,7 @@ int joy_handler(void *param)
             parse_serial_buf(buf, r);
         }
         else {
-            usleep(1000000 / 60);
+            usleep(1000);
         }
     }
 #endif
