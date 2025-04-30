@@ -590,6 +590,11 @@ static int trans_joy_to_custkey(jval_t *j, int rjoy)
         DOWN_TH = nds.rjoy.dzone;
         LEFT_TH = -1 * nds.rjoy.dzone;
         RIGHT_TH = nds.rjoy.dzone;
+
+        u_key = nds.rjoy.cuskey[0];
+        d_key = nds.rjoy.cuskey[1];
+        l_key = nds.rjoy.cuskey[2];
+        r_key = nds.rjoy.cuskey[3];
     }
 
     if (j->x != pre_x[rjoy]) {
@@ -909,6 +914,7 @@ static int handle_hotkey(void)
 #if defined(QX1000)
             update_wayland_res(640, 480);
 #endif
+
             nds.menu.enable = 1;
             usleep(100000);
             handle_menu(-1);
@@ -1546,6 +1552,8 @@ void init_event(void)
     myevent.keypad.r1 = DEV_KEY_CODE_R1;
     myevent.keypad.l2 = DEV_KEY_CODE_L2;
     myevent.keypad.r2 = DEV_KEY_CODE_R2;
+    myevent.keypad.select = DEV_KEY_CODE_SELECT;
+    myevent.keypad.start = DEV_KEY_CODE_START;
     myevent.keypad.menu = DEV_KEY_CODE_MENU;
     myevent.keypad.power = DEV_KEY_CODE_POWER;
     myevent.keypad.vol_up = DEV_KEY_CODE_VOL_UP;
@@ -1699,7 +1707,7 @@ static int send_key_event(void)
 
         if (changed & bit) {
 #if !defined(UT)
-            SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+            SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif
         }
     }
@@ -1823,7 +1831,7 @@ static int send_touch_key(void)
         if ((cc == KEY_BIT_FAST) || (cc == KEY_BIT_SAVE) || (cc == KEY_BIT_LOAD) || (cc == KEY_BIT_EXIT) || (cc == KEY_BIT_R2)) {
             if (changed & bit) {
 #if !defined(UT)
-                SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(code[cc]));
+                SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif
             }
         }

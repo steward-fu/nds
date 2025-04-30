@@ -2201,7 +2201,7 @@ void prehook_cb_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t
 
 void prehook_cb_update_screen(void)
 {
-    static int prepare_time = 30;
+    static int prepare_time = 100;
 
     debug("call %s(%d)\n", __func__, prepare_time);
 
@@ -4076,8 +4076,8 @@ int draw_pen(void *pixels, int width, int pitch)
         scale = 2;
     }
 
-    x = (myevent.mouse.x * sw) / myevent.mouse.maxx;
-    y = (myevent.mouse.y * sh) / myevent.mouse.maxy;
+    x = (myevent.touch.x * sw) / myevent.touch.max_x;
+    y = (myevent.touch.y * sh) / myevent.touch.max_y;
 
     if (nds.pen.img) {
         w = nds.pen.img->w;
