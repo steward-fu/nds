@@ -3524,7 +3524,7 @@ void disp_resize(void)
 }
 #endif
 
-#if defined(RG28XX)
+#if defined(RG28XX) || defined(FLIP)
 static int get_core(int index)
 {
     FILE *fd = NULL;
