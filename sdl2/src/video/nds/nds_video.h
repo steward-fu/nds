@@ -133,6 +133,10 @@
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define RELOAD_BG_COUNT         120
     #define DEF_FONT_SIZE           24
+    #define MYJOY_SHOW_CNT          300
+    #define MYJOY_MODE_STYLUS       2
+    #define MYJOY_MODE_CUSKEY       3
+    #define MYJOY_MODE_KEYPAD       1
 #endif
 
 #if defined(RG28XX)
@@ -631,7 +635,7 @@ typedef struct _NDS {
         char path[MAX_PATH];
     } pen;
 
-#if defined(A30) || defined(FLIP)
+#if defined(A30) || defined(FLIP) || defined(UT)
     struct _JOY {
         int max_x;
         int zero_x;
