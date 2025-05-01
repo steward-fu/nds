@@ -179,9 +179,7 @@
     #define DAC_BASE                0x1c22000
     #define CCU_BASE                0x01c20000
     #define BAT_CHK_CNT             300
-    #define BAT_MAX_CMD             "cat /sys/class/power_supply/battery/voltage_max_design"
-    #define BAT_MIN_CMD             "cat /sys/class/power_supply/battery/voltage_min_design"
-    #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/voltage_now"
+    #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/capacity"
 #endif
 
 #ifdef A30
