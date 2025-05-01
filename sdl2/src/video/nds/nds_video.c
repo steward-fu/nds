@@ -681,6 +681,27 @@ static int get_bat_val(void)
 }
 #endif
 
+#if defined(FLIP)
+static int get_bat_val(void)
+{
+
+    FILE *fd = NULL;
+    char buf[32] = {0};
+    int r = 0;
+    int curp = 0;
+
+    fd = popen(BAT_CUR_CMD, "r");
+    if (fd) {
+        fgets(buf, sizeof(buf), fd);
+        pclose(fd);
+        curp = atoi(buf);
+    }
+
+    r = curp;
+    return r;
+}
+#endif
+
 static int get_current_menu_layer(void)
 {
     int cc = 0;
@@ -837,11 +858,7 @@ static int draw_drastic_menu_main(void)
     sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
 #endif
 
-#if defined(FLIP)
-    sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
-#endif
-
-#if defined(A30)
+#if defined(A30) || defined(FLIP)
     if (nds.chk_bat) {
         sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
     }
@@ -1743,7 +1760,7 @@ static int process_screen(void)
     }
 
     if (nds.chk_bat) {
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(FLIP)
         bat_chk_cnt -= 1;
         if (bat_chk_cnt <= 0) {
             int v = get_bat_val();
@@ -6937,7 +6954,7 @@ int handle_menu(int key)
             }
             break;
 #endif
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(FLIP)
         case MENU_CHK_BAT:
             nds.chk_bat = 0;
             break;
@@ -7129,7 +7146,7 @@ int handle_menu(int key)
             }
             break;
 #endif
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(FLIP)
         case MENU_CHK_BAT:
             nds.chk_bat = 1;
             break;
@@ -7459,7 +7476,7 @@ int handle_menu(int key)
             sprintf(buf, "%d (15)", nds.rjoy.dzone);
             break;
 #endif
-#if defined(MMIYOO) || defined(A30)
+#if defined(MMIYOO) || defined(A30) || defined(FLIP)
         case MENU_CHK_BAT:
             sprintf(buf, "%s", to_lang(nds.chk_bat ? "Yes" : "No"));
             break;
