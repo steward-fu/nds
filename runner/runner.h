@@ -1,0 +1,110 @@
+// LGPL-2.1 License
+// (C) 2025 Steward Fu <steward.fu@gmail.com>
+
+#ifndef __RUNNER_H__
+#define __RUNNER_H__
+
+#if defined(GKD2)
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#endif
+
+#if !defined(MAX_PATH)
+#define MAX_PATH        255
+#endif
+
+#define NDS_W           256
+#define NDS_H           192
+#define NDS_Wx2         (NDS_W << 1)
+#define NDS_Hx2         (NDS_H << 1)
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define SHM_NAME        "NDS_SHM"
+
+#define NDS_DIS_MODE_VH_T0          0
+#define NDS_DIS_MODE_VH_T1          1
+#define NDS_DIS_MODE_S0             2
+#define NDS_DIS_MODE_S1             3
+#define NDS_DIS_MODE_V0             4
+#define NDS_DIS_MODE_V1             5
+#define NDS_DIS_MODE_H0             6
+#define NDS_DIS_MODE_H1             7
+#define NDS_DIS_MODE_VH_S0          8
+#define NDS_DIS_MODE_VH_S1          9
+#define NDS_DIS_MODE_VH_S2          10
+#define NDS_DIS_MODE_VH_S3          11
+#define NDS_DIS_MODE_VH_S4          12
+#define NDS_DIS_MODE_VH_S5          13
+#define NDS_DIS_MODE_VH_C0          14
+#define NDS_DIS_MODE_VH_C1          15
+#define NDS_DIS_MODE_HH0            16
+#define NDS_DIS_MODE_HH1            17
+#define NDS_DIS_MODE_HH2            18
+#define NDS_DIS_MODE_HH3            19
+#define NDS_DIS_MODE_LAST           19
+
+#define NDS_DIS_MODE_HRES0          20
+#define NDS_DIS_MODE_HRES1          21
+
+typedef enum {
+    TEXTURE_LCD0 = 0,
+    TEXTURE_LCD1,
+    TEXTURE_BG,
+    TEXTURE_PEN,
+    TEXTURE_TMP,
+    TEXTURE_MAX
+} TEXTURE_TYPE;
+
+typedef enum {
+    SHM_CMD_FLUSH = 0,
+    SHM_CMD_FLIP,
+    SHM_CMD_QUIT
+} SHM_CMD;
+
+typedef struct {
+    uint8_t valid;
+    uint32_t cmd;
+
+    uint32_t tex_id;
+    uint32_t dis_mode;
+    uint32_t pixel_filter;
+
+    uint32_t len;
+    SDL_Rect srt;
+    SDL_Rect drt;
+    uint8_t pitch;
+    uint8_t alpha;
+    uint8_t rotate;
+    uint8_t buf[SCREEN_W * SCREEN_H * 4];
+
+    char bg_path[MAX_PATH];
+} shm_buf_t;
+ 
+typedef struct {
+    struct {
+        SDL_Window *win;
+    } sdl2;
+
+    struct {
+        SDL_GLContext ctx;
+        GLuint vert_shader;
+        GLuint frag_shader;
+        GLuint program;
+
+        GLint vert_pos;
+        GLint vert_coord;
+        GLint frag_sampler;
+        GLint frag_rotate;
+        GLint frag_aspect;
+        GLuint tex_id[TEXTURE_MAX];
+        void *bg_pixels;
+    } gles;
+
+    struct {
+        int fd;
+        shm_buf_t *buf;
+    } shm;
+} runner_t;
+
+#endif
+

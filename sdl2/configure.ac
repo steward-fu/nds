@@ -2419,8 +2419,7 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lSDL2_ttf"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lrt"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ljson-c"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../util"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lutil"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS ../util/libutil.so"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../detour"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldtr"
 
@@ -2440,6 +2439,7 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lMali"
 
         AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
@@ -2453,6 +2453,7 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
+
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm -lgbm"
 
         AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
@@ -2486,8 +2487,19 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
+    fi
+
+    if test x$MOD = xgkd2; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKD2"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
     fi
 
     if test x$MOD = xut; then
@@ -3808,6 +3820,9 @@ case "$host" in
                 CheckNDSVideo
                 ;;
             *qx1000*)
+                CheckNDSVideo
+                ;;
+            *gkd2*)
                 CheckNDSVideo
                 ;;
             *)

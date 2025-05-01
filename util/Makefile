@@ -2,7 +2,7 @@ TARGET   = libutil.so
 CFLAGS  += $(MORE_CFLAGS)
 CFLAGS  += -I.
 LDFLAGS += $(MORE_LDFLAGS)
-LDFLAGS += -fpic
+LDFLAGS += -fPIC
 LDFLAGS += -shared
 SOURCES  = util.c
 

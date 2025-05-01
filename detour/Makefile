@@ -4,6 +4,7 @@ CFLAGS  += -I../util
 LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -fpic
 LDFLAGS += -shared
+LDFLAGS += libutil.so
 SOURCES  = hook.c
 
 ifneq ($(MOD),ut)

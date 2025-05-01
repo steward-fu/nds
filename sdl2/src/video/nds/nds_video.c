@@ -22,6 +22,12 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
+#if defined(GKD2)
+#include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#endif
+
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
@@ -544,7 +550,7 @@ static void* draw_thread(void *pParam)
 }
 #endif
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2)
 static void* prehook_cb_malloc(size_t size)
 {
     static int idx = 0;
@@ -1580,13 +1586,13 @@ int process_drastic_menu(void)
         memset(&drastic_menu, 0, sizeof(drastic_menu));
         return 0;
     }
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     nds.update_menu = 1;
 #else
-    GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
-    GFX_Flip();
-    GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
-    GFX_Flip();
+    flush_lcd(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
+    flip_lcd();
+    flush_lcd(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
+    flip_lcd();
 #endif
     memset(&drastic_menu, 0, sizeof(drastic_menu));
     return 0;
@@ -1615,11 +1621,13 @@ static int process_screen(void)
     int screen_cnt = 0;
     char buf[MAX_PATH] = {0};
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     int cur_sel = gfx.lcd.cur_sel ^ 1;
 #endif
 
-#if defined(MMIYOO) || defined(PANDORA) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP)
+    debug("call %s()\n", __func__);
+
+#if defined(MINI) || defined(PANDORA) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     screen_cnt = 2;
 #else
     screen_cnt = 1;
@@ -1776,7 +1784,7 @@ static int process_screen(void)
             *((uint8_t *)myhook.var.sdl.screen[1].hires_mode):
             *((uint8_t *)myhook.var.sdl.screen[0].hires_mode);
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         nds.screen.pixels[idx] = gfx.lcd.virAddr[cur_sel][idx];
 #else
         nds.screen.pixels[idx] = (idx == 0) ?
@@ -1820,7 +1828,7 @@ static int process_screen(void)
 #if defined(QX1000)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
-#elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         switch (nds.dis_mode) {
         case NDS_DIS_MODE_VH_T0:
             if (screen1) {
@@ -2023,7 +2031,7 @@ static int process_screen(void)
         return 0;
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         if (rotate == E_MI_GFX_ROTATE_180) {
             drt.y = (DEF_FB_H - drt.y) - drt.h;
             drt.x = (DEF_FB_W - drt.x) - drt.w;
@@ -2072,6 +2080,7 @@ static int process_screen(void)
                 p1 += srt.w;
             }
         }
+
         glBindTexture(GL_TEXTURE_2D, vid.texID[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (pixel_filter) {
@@ -2090,20 +2099,20 @@ static int process_screen(void)
             MI_SYS_FlushInvCache(nds.screen.pixels[idx], nds.screen.pitch[idx] * srt.h);
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-            GFX_Copy(idx, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
+            flush_lcd(idx, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
 #else
-            GFX_Copy(-1, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
+            flush_lcd(-1, nds.screen.pixels[idx], srt, drt, nds.screen.pitch[idx], 0, rotate);
 #endif
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = 160;
                 drt.h = 120;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
                 switch (nds.alpha.pos) {
                 case 0:
                     drt.x = DEF_FB_W - drt.w;
@@ -2122,9 +2131,9 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                GFX_Copy(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else
-                GFX_Copy(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #endif
                 break;
             case NDS_DIS_MODE_VH_T1:
@@ -2132,7 +2141,7 @@ static int process_screen(void)
                 drt.y = 0;
                 drt.w = NDS_W;
                 drt.h = NDS_H;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
                 switch (nds.alpha.pos) {
                 case 0:
                     drt.x = DEF_FB_W - drt.w;
@@ -2151,9 +2160,9 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                GFX_Copy(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else 
-                GFX_Copy(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #endif
                 break;
             }
@@ -2176,7 +2185,7 @@ static int process_screen(void)
         rt.y = 0;
         rt.w = fps_info->w;
         rt.h = fps_info->h;
-        GFX_Copy(-1, fps_info->pixels, fps_info->clip_rect, rt, fps_info->pitch, 0, E_MI_GFX_ROTATE_180);
+        flush_lcd(-1, fps_info->pixels, fps_info->clip_rect, rt, fps_info->pitch, 0, E_MI_GFX_ROTATE_180);
     }
 
 #if defined(TRIMUI)
@@ -2191,7 +2200,7 @@ static int process_screen(void)
         nds_set_screen_menu_off _func = (nds_set_screen_menu_off)myhook.fun.set_screen_menu_off;
         _func();
     }
-    GFX_Flip();
+    flip_lcd();
     return 0;
 }
 
@@ -2206,15 +2215,15 @@ void prehook_cb_update_screen(void)
     debug("call %s(%d)\n", __func__, prepare_time);
 
     if (prepare_time) {
-        process_screen();
+        //process_screen();
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         gfx.lcd.cur_sel ^= 1;
         *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
         *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         nds.menu.drastic.enable = 0;
 #endif
 #endif
@@ -2512,20 +2521,31 @@ static void *video_handler(void *threadid)
     debug("buffer3=%p\n", gfx.lcd.virAddr[1][1]);
 #endif
 
+#if defined(GKD2)
+    gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
+    gfx.lcd.virAddr[0][1] = malloc(SCREEN_DMA_SIZE);
+    gfx.lcd.virAddr[1][0] = malloc(SCREEN_DMA_SIZE);
+    gfx.lcd.virAddr[1][1] = malloc(SCREEN_DMA_SIZE);
+    debug("buffer0=%p\n", gfx.lcd.virAddr[0][0]);
+    debug("buffer1=%p\n", gfx.lcd.virAddr[0][1]);
+    debug("buffer2=%p\n", gfx.lcd.virAddr[1][0]);
+    debug("buffer3=%p\n", gfx.lcd.virAddr[1][1]);
+#endif
+
     while (is_video_thread_running) {
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         if (nds.menu.enable) {
             if (nds.update_menu) {
                 nds.update_menu = 0;
-                GFX_Copy(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
-                GFX_Flip();
+                flush_lcd(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
+                flip_lcd();
             }
         }
         else if (nds.menu.drastic.enable) {
             if (nds.update_menu) {
                 nds.update_menu = 0;
-                GFX_Copy(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, 0);
-                GFX_Flip();
+                flush_lcd(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, 0);
+                flip_lcd();
             }
         }
         else if (nds.update_screen) {
@@ -3278,6 +3298,35 @@ int fb_init(void)
 
 int fb_quit(void)
 {
+    return 0;
+}
+#endif
+
+#if defined(GKD2)
+int fb_init(void)
+{
+    vid.shm.fd = shm_open(SHM_NAME, O_RDWR, 0777);
+    debug("shm fd=%d\n", vid.shm.fd);
+
+    vid.shm.buf = (shm_buf_t *) mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, vid.shm.fd, 0);
+    debug("shm buf=%p\n", vid.shm.buf);
+
+    return 0;
+}
+
+int fb_quit(void)
+{
+    vid.shm.buf->valid = 1;
+    vid.shm.buf->cmd = SHM_CMD_QUIT;
+    printf("send SHM_CMD_QUIT\n");
+
+    while (vid.shm.buf->valid) {
+        usleep(10);
+    }
+
+    munmap(vid.shm.buf, sizeof(shm_buf_t));
+    shm_unlink(SHM_NAME);
+
     return 0;
 }
 #endif
@@ -4178,13 +4227,43 @@ int draw_pen(void *pixels, int width, int pitch)
     return 0;
 }
 
-int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
+int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     int tex = (id >= 0) ? id : TEX_TMP;
 #endif
 
-    debug("call %s()\n", __func__);
+    debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d, rotate=%d)\n", __func__, id, pixels, pitch, alpha, rotate);
+
+#if defined(GKD2)
+    vid.shm.buf->srt.x = srcrect.x;
+    vid.shm.buf->srt.y = srcrect.y;
+    vid.shm.buf->srt.w = srcrect.w;
+    vid.shm.buf->srt.h = srcrect.h;
+
+    vid.shm.buf->drt.x = dstrect.x;
+    vid.shm.buf->drt.y = dstrect.y;
+    vid.shm.buf->drt.w = dstrect.w;
+    vid.shm.buf->drt.h = dstrect.h;
+
+    memcpy(vid.shm.buf->buf, pixels, srcrect.h * pitch);
+
+    vid.shm.buf->cmd = SHM_CMD_FLUSH;
+    vid.shm.buf->tex_id = tex;
+    vid.shm.buf->pitch = pitch;
+    vid.shm.buf->alpha = alpha;
+    vid.shm.buf->rotate = rotate;
+    vid.shm.buf->dis_mode = nds.dis_mode;
+    vid.shm.buf->len = srcrect.h * pitch;
+    vid.shm.buf->pixel_filter = pixel_filter;
+    debug("send SHM_CMD_FLUSH, pitch=%d, alpha=%d, rotate=%d\n", pitch, alpha, rotate);
+
+    vid.shm.buf->valid = 1;
+    __clear_cache((uint8_t *)vid.shm.buf, (uint8_t *)vid.shm.buf + sizeof(shm_buf_t));
+    while (vid.shm.buf->valid) {
+        usleep(10);
+    }
+#endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH1) || (nds.dis_mode == NDS_DIS_MODE_HH3))) {
@@ -5467,8 +5546,19 @@ drmEventContext drm_evctx = {
 };
 #endif
 
-void GFX_Flip(void)
+void flip_lcd(void)
 {
+#if defined(GKD2)
+    vid.shm.buf->cmd = SHM_CMD_FLIP;
+    debug("send SHM_CMD_FLIP\n");
+
+    vid.shm.buf->valid = 1;
+    __clear_cache((uint8_t *)vid.shm.buf, (uint8_t *)vid.shm.buf + sizeof(shm_buf_t));
+    while (vid.shm.buf->valid) {
+        usleep(10);
+    }
+#endif
+
 #if defined(FLIP)
     int wait_cnt = 0;
 #endif
@@ -5616,7 +5706,7 @@ int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor
                     rt.y = y;
                     rt.w = t2->w;
                     rt.h = t2->h;
-                    GFX_Copy(-1, t2->pixels, t2->clip_rect, rt, t2->pitch, 0, E_MI_GFX_ROTATE_180);
+                    flush_lcd(-1, t2->pixels, t2->clip_rect, rt, t2->pitch, 0, E_MI_GFX_ROTATE_180);
                     SDL_FreeSurface(t2);
                 }
                 SDL_FreeSurface(t1);
@@ -5754,11 +5844,15 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
     t = IMG_Load(buf);
     if (t) {
+        SDL_Rect nrt = { 0 };
+
 #if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
-        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
+        nrt.w = LINE_H - 2;
+        nrt.h = LINE_H - 2;
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
-        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+        nrt.w = t->w >> 1;
+        nrt.h = t->h >> 1;
 #endif
         if (nds.menu.drastic.yes) {
             SDL_FreeSurface(nds.menu.drastic.yes);
@@ -5773,11 +5867,15 @@ int reload_menu(void)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
     t = IMG_Load(buf);
     if (t) {
+        SDL_Rect nrt = { 0 };
+
 #if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
-        SDL_Rect nrt = {0, 0, LINE_H - 2, LINE_H - 2};
+        nrt.w = LINE_H - 2;
+        nrt.h = LINE_H - 2;
 #endif
 #if defined(TRIMUI) || defined(PANDORA)
-        SDL_Rect nrt = {0, 0, t->w >> 1, t->h >> 1};
+        nrt.w = t->w >> 1;
+        nrt.h = t->h >> 1;
 #endif
         if (nds.menu.drastic.no) {
             SDL_FreeSurface(nds.menu.drastic.no);
@@ -5802,7 +5900,7 @@ int reload_bg(void)
     static int pre_mode = -1;
 #endif
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
     SDL_Rect srt = {0, 0, IMG_W, IMG_H};
@@ -5886,10 +5984,18 @@ int reload_bg(void)
                     
                     t = IMG_Load(buf);
                     if (t) {
+#if defined(GKD2)
+                        strcpy(vid.shm.buf->bg_path, buf);
+#endif
+
                         SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
                         SDL_FreeSurface(t);
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
-                        GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#if defined(GKD2)
+                        flush_lcd(TEX_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
+#else
+                        flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#endif
 #endif
                     }
                     else {
@@ -5901,7 +6007,11 @@ int reload_bg(void)
         else {
             if (nds.theme.img) {
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
-                GFX_Copy(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#if defined(GKD2)
+                flush_lcd(TEX_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
+#else
+                flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#endif
 #else
                 glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -5916,7 +6026,7 @@ int reload_bg(void)
         t = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
         if (t) {
             SDL_FillRect(t, &t->clip_rect, SDL_MapRGB(t->format, 0x00, 0x00, 0x00));
-            GFX_Copy(-1, t->pixels, t->clip_rect, drt, t->pitch, 0, E_MI_GFX_ROTATE_180);
+            flush_lcd(-1, t->pixels, t->clip_rect, drt, t->pitch, 0, E_MI_GFX_ROTATE_180);
             SDL_FreeSurface(t);
         }
     }
@@ -6243,7 +6353,7 @@ int MMIYOO_VideoInit(_THIS)
     add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
     add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT)
+#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2)
     add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
     add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
     add_prehook_cb(myhook.fun.free,    prehook_cb_free);
@@ -6345,7 +6455,7 @@ void MMIYOO_VideoQuit(_THIS)
     lang_unload();
 }
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT)
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2)
 static const char *DIS_MODE0_640[] = {
     "640*480",
     "640*480",
@@ -7778,8 +7888,8 @@ int handle_menu(int key)
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     nds.update_menu = 1;
 #else
-    GFX_Copy(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
-    GFX_Flip();
+    flush_lcd(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);
+    flip_lcd();
 #endif
     need_reload_bg = RELOAD_BG_COUNT;
     return 0;

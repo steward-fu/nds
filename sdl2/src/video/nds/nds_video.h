@@ -63,6 +63,10 @@
 #include "trimui.h"
 #endif
 
+#if defined(GKD2)
+#include "runner.h"
+#endif
+
 #if !defined(MMIYOO)
     #define E_MI_GFX_ROTATE_90      0
     #define E_MI_GFX_ROTATE_180     1
@@ -115,14 +119,12 @@
 #endif
 
 #define NDS_VER                     "v1.9"
+#if !defined(NDS_W)
 #define NDS_W                       256
 #define NDS_H                       192
 #define NDS_Wx2                     (NDS_W * 2)
 #define NDS_Hx2                     (NDS_H * 2)
-#define NDS_Wx3                     (NDS_W * 3)
-#define NDS_Hx3                     (NDS_H * 3)
-#define NDS_Wx4                     (NDS_W * 4)
-#define NDS_Hx4                     (NDS_H * 4)
+#endif
 
 #if defined(UT)
     #define DEF_FB_W                640
@@ -154,7 +156,7 @@
     #define BAT_MIN_VAL             3400000
 #endif
 
-#ifdef FLIP
+#if defined(FLIP)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
@@ -257,6 +259,19 @@
     #define IMG_W                   640
     #define IMG_H                   480
     #define RELOAD_BG_COUNT         1
+    #define DEF_FONT_SIZE           24
+#endif
+
+#if defined(GKD2)
+    #define DEF_FB_W                640
+    #define DEF_FB_H                480
+    #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+    #define RELOAD_BG_COUNT         120
+    #define INIT_CPU_CORE           2
+    #define DEINIT_CPU_CORE         2
     #define DEF_FONT_SIZE           24
 #endif
 
@@ -392,7 +407,7 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
 enum _TEX_TYPE {
     TEX_SCR0 = 0,
     TEX_SCR1,
@@ -448,6 +463,13 @@ typedef struct MMIYOO_VideoInfo {
 #if defined(MINI)
     int sar_fd;
 #endif
+
+#if defined(GKD2)
+    struct {
+        int fd;
+        shm_buf_t *buf;
+    } shm;
+#endif
 } MMIYOO_VideoInfo;
 
 typedef struct _GFX {
@@ -469,7 +491,7 @@ typedef struct _GFX {
     struct fb_fix_screeninfo finfo;
 
     struct {
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         void *virAddr;
 #endif
 
@@ -490,7 +512,7 @@ typedef struct _GFX {
     } mask;
 #endif
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2)
     struct {
         int cur_sel;
         void *virAddr[2][2];
@@ -680,8 +702,8 @@ int snd_nds_savestate(int slot);
 void snd_nds_reload_config(void);
 
 void GFX_Clear(void);
-void GFX_Flip(void);
-int GFX_Copy(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate);
+void flip_lcd(void);
+int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate);
 
 int draw_pen(void *pixels, int width, int pitch);
 int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor);

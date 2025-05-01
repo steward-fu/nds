@@ -1,0 +1,16 @@
+export MOD=gkd2
+export NDS_GCC=1
+export NDS_ALSA=0
+export NDS_RUNNER=1
+
+CFLAGS += -mcpu=cortex-a7
+CFLAGS += -mfpu=neon-vfpv4
+CFLAGS += -O3
+CFLAGS += -Wl,--no-undefined
+
+LDFLAGS+= -ljson-c
+ 
+export MORE_CFLAGS=${CFLAGS}
+export MORE_LDFLAGS=${LDFLAGS}
+
+include Makefile.mk
