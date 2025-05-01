@@ -6,28 +6,15 @@
 
 #include "util.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
-//#if defined(UT) || defined(GKD2)
-
-#define error(...)
+#if DEBUG
+#define error(...) printf(__VA_ARGS__)
 #define debug(...)
-
-/*#elif defined(RUNNER)
-
-#define error(...)  printf(__VA_ARGS__)
-#define debug(...)  printf(__VA_ARGS__)
-
 #else
-
-#define error(...)  write_log_to_file("[ERROR] ", __VA_ARGS__)
-#define debug(...)  \
-    do { \
-        if (DEBUG) { \
-            write_log_to_file("[DEBUG] ", __VA_ARGS__); \
-        } \
-    } while(0)
+#define error(...) printf(__VA_ARGS__)
+#define debug(...) printf(__VA_ARGS__)
 #endif
-*/
+
 #endif
 

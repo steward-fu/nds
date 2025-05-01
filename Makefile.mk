@@ -53,6 +53,7 @@ clean:
 	make -C util clean
 	make -C alsa clean
 	make -C detour clean
+	make -C runner clean
 	make -C sdl2 distclean > /dev/null 2>&1 || true
 	rm -rf sdl2/Makefile
 	rm -rf sdl2/configure
