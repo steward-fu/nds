@@ -252,7 +252,7 @@ TEST(sdl2_event, release_keys)
 
 static int hit_hotkey(uint32_t bit)
 {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
 #endif
 
@@ -734,7 +734,7 @@ static int handle_hotkey(void)
                 break;
             }
         }
-#if defined(A30)
+#if defined(A30) || defined(FLIP)
         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.pen.pos = 1;
         }
@@ -756,7 +756,7 @@ static int handle_hotkey(void)
                 break;
             }
         }
-#if defined(A30)
+#if defined(A30) || defined(FLIP)
         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.pen.pos = 0;
         }
@@ -991,7 +991,7 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_L2, 0);
     }
     else if (myevent.keypad.cur_keys & (1 << KEY_BIT_L2)) {
-#if defined(A30)
+#if defined(A30) || defined(FLIP)
         if (nds.joy.mode != MYJOY_MODE_STYLUS) {
 #endif
             if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
@@ -1003,7 +1003,7 @@ static int handle_hotkey(void)
                 }
                 myevent.touch.slow_down = 0;
             }
-#if defined(A30)
+#if defined(A30) || defined(FLIP)
         }
 #endif
     }
@@ -1477,9 +1477,17 @@ int input_handler(void *data)
 
 #if !defined(UT)
     myevent.thread.running = 1;
+
+    myevent.sem = SDL_CreateSemaphore(1);
+    if(myevent.sem == NULL) {
+        error("failed to create semaphore\n");
+        exit(-1);
+    }
 #endif
 
     while (myevent.thread.running) {
+        SDL_SemWait(myevent.sem);
+
         update_latest_keypad_value();
 
 #if defined(FLIP) || defined(UT)
@@ -1507,7 +1515,8 @@ int input_handler(void *data)
         handle_trimui_special_key();
 #endif
 
-        usleep(1000000 / 60);
+        SDL_SemPost(myevent.sem);
+        usleep(1000000 / 30);
     }
     
     return 0;
@@ -1624,6 +1633,7 @@ void quit_event(void)
 
 #if !defined(UT)
     SDL_WaitThread(myevent.thread.id, NULL);
+    SDL_DestroySemaphore(myevent.sem);
 #endif
 
     if(myevent.fd > 0) {
@@ -1938,6 +1948,7 @@ void pump_event(_THIS)
 {
     debug("call %s()\n", __func__);
 
+    SDL_SemWait(myevent.sem);
     if (nds.menu.enable) {
         send_key_to_menu();
     }
@@ -1951,6 +1962,7 @@ void pump_event(_THIS)
             send_touch_event();
         }
     }
+    SDL_SemPost(myevent.sem);
 }
 
 #if defined(UT)
