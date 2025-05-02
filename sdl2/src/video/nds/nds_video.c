@@ -770,7 +770,7 @@ static int draw_drastic_menu_main(void)
         p = &drastic_menu.item[cc];
         if (p->y == 201) {
             draw = 1;
-#if defined(MMIYOO) || defined(TRIMUI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(RG28XX) || defined(FLIP)
             sprintf(buf, "NDS %s", &p->msg[8]);
 #else
             sprintf(buf, "%s", &p->msg[8]);
@@ -917,7 +917,7 @@ static int draw_drastic_menu_main(void)
             _func((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? h - 20 : 50;
                 rt.w = NDS_W;
@@ -929,7 +929,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? (h + NDS_H) - 20 : 50 + NDS_H;
                 rt.w = NDS_W;
@@ -1628,7 +1628,7 @@ static int process_screen(void)
     static int pre_dis_mode = NDS_DIS_MODE_VH_S0;
     static int pre_hres_mode = NDS_DIS_MODE_HRES0;
     static char show_info_buf[MAX_PATH << 1] = {0};
-#if defined(MMIYOO) || defined(A30)
+#if defined(MINI) || defined(A30) || defined(FLIP)
     static int bat_chk_cnt = BAT_CHK_CNT;
 #endif
     static int col_fg = 0xe0e000;
@@ -1760,7 +1760,7 @@ static int process_screen(void)
     }
 
     if (nds.chk_bat) {
-#if defined(MMIYOO) || defined(A30) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(FLIP)
         bat_chk_cnt -= 1;
         if (bat_chk_cnt <= 0) {
             int v = get_bat_val();
@@ -2913,7 +2913,7 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_HALF_VOL, &jval);
     nds.half_vol = json_object_get_int(jval) ? 1 : 0;
 
-#if defined(MMIYOO) || defined(A30) || defined(QX1000) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(QX1000) || defined(RG28XX) || defined(FLIP)
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
         struct stat st = {0};
@@ -2946,7 +2946,7 @@ static int read_config(void)
     reload_menu();
 
     reload_pen();
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
     reload_overlay();
 #endif
     json_object_put(jfile);
@@ -5849,7 +5849,7 @@ int reload_menu(void)
         SDL_FreeSurface(t);
     }
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
     nds.menu.drastic.cursor = IMG_Load(buf);
 #endif
@@ -5863,7 +5863,7 @@ int reload_menu(void)
     if (t) {
         SDL_Rect nrt = { 0 };
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
         nrt.w = LINE_H - 2;
         nrt.h = LINE_H - 2;
 #endif
@@ -5886,7 +5886,7 @@ int reload_menu(void)
     if (t) {
         SDL_Rect nrt = { 0 };
 
-#if defined(MMIYOO) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
         nrt.w = LINE_H - 2;
         nrt.h = LINE_H - 2;
 #endif
@@ -6162,7 +6162,7 @@ int reload_bg(void)
     return 0;
 }
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
 int reload_overlay(void)
 {
     static int pre_sel = -1;
@@ -6370,7 +6370,7 @@ int MMIYOO_VideoInit(_THIS)
     add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
     add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
 
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2)
     add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
     add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
     add_prehook_cb(myhook.fun.free,    prehook_cb_free);
@@ -6673,7 +6673,7 @@ enum {
     MENU_RJOY_DZONE,
 #endif
 
-#if defined(MMIYOO) || defined(A30)
+#if defined(MINI) || defined(A30) || defined(FLIP)
     MENU_CHK_BAT,
 #endif
     MENU_LAST,
@@ -6954,7 +6954,7 @@ int handle_menu(int key)
             }
             break;
 #endif
-#if defined(MMIYOO) || defined(A30) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(FLIP)
         case MENU_CHK_BAT:
             nds.chk_bat = 0;
             break;
@@ -7146,7 +7146,7 @@ int handle_menu(int key)
             }
             break;
 #endif
-#if defined(MMIYOO) || defined(A30) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(FLIP)
         case MENU_CHK_BAT:
             nds.chk_bat = 1;
             break;
@@ -7377,7 +7377,7 @@ int handle_menu(int key)
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
                 get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
-#if defined(MMIYOO) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
                 reload_overlay();
 #endif
             }
@@ -7476,7 +7476,7 @@ int handle_menu(int key)
             sprintf(buf, "%d (15)", nds.rjoy.dzone);
             break;
 #endif
-#if defined(MMIYOO) || defined(A30) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(FLIP)
         case MENU_CHK_BAT:
             sprintf(buf, "%s", to_lang(nds.chk_bat ? "Yes" : "No"));
             break;
