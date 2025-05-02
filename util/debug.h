@@ -6,7 +6,7 @@
 
 #include "util.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #if DEBUG
 #define debug(...) printf(__VA_ARGS__)
