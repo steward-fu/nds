@@ -595,6 +595,29 @@ static int init_table(void)
     myhook.var.pcm_handler = (uint32_t *) 0x083e532c;
     myhook.var.fast_forward = (uint32_t *) 0x08006ad0;
 
+#if defined(NDS_ARM64)
+    myhook.fun.menu = (void *)0x0007fbd0;
+    myhook.fun.free = (void *)0x0000d660;
+    myhook.fun.realloc = (void *)0x0000d740;
+    myhook.fun.malloc = (void *)0x0000dfb0;
+    myhook.fun.screen_copy16 = (void *)0x00088290;
+    myhook.fun.print_string = (void *)0x00087f00;
+    myhook.fun.load_state_index = (void *)0x00075230;
+    myhook.fun.save_state_index = (void *)0x00075150;
+    myhook.fun.quit = (void *)0x0000e8d0;
+    myhook.fun.savestate_pre = (void *)0;
+    myhook.fun.savestate_post = (void *)0;
+    myhook.fun.update_screen = (void *)0x0008a120;
+    myhook.fun.load_state = (void *)0x000746f0;
+    myhook.fun.save_state = (void *)0x00074da0;
+    myhook.fun.blit_screen_menu = (void *)0x00088570;
+    myhook.fun.initialize_backup = (void *)0x00072530;
+    myhook.fun.set_screen_menu_off = (void *)0x0008a4a0;
+    myhook.fun.get_screen_ptr = (void *)0x0008a9c0;
+    myhook.fun.spu_adpcm_decode_block = (void *)0;
+    myhook.fun.render_scanline_tiled_4bpp = (void *)0;
+    myhook.fun.render_polygon_setup_perspective_steps = (void *)0;
+#else
     myhook.fun.menu = (void *)0x080a0a18;
     myhook.fun.free = (void *)0x08003e58;
     myhook.fun.realloc = (void *)0x0800435c;
@@ -616,6 +639,7 @@ static int init_table(void)
     myhook.fun.spu_adpcm_decode_block = (void *)0x0808d268;
     myhook.fun.render_scanline_tiled_4bpp = (void *)0x080bcf74;
     myhook.fun.render_polygon_setup_perspective_steps = (void *)0x080c1cd4;
+#endif
 
     return 0;
 }
@@ -693,6 +717,69 @@ TEST(detour, render_polygon_setup_perspective_steps)
 {
     render_polygon_setup_perspective_steps();
     TEST_PASS();
+}
+#endif
+
+int patch_elf(uint64_t pos, uint64_t pfn)
+{
+    #define LEN 16
+
+    int r = -1;
+    int len = 0;
+    FILE* fp = NULL;
+    uint8_t src[LEN] = { 0 };
+    uint8_t dst[LEN] = { 0x42, 0x00, 0x00, 0x58, 0x40, 0x00, 0x1f, 0xd6 };
+
+    debug("call %s()\n", __func__);
+
+    fp = fopen("drastic64", "rb+");
+    if (fp == NULL) {
+        error("failed to open drastic file\n");
+        return r;
+    }
+
+    fseek(fp, pos, SEEK_SET);
+    len = fread(src, 1, LEN, fp);
+    debug("read %d bytes\n", len);
+
+    dst[8] = (uint8_t)(pfn >> 0);
+    dst[9] = (uint8_t)(pfn >> 8);
+    dst[10] = (uint8_t)(pfn >> 16);
+    dst[11] = (uint8_t)(pfn >> 24);
+    dst[12] = (uint8_t)(pfn >> 32);
+    dst[13] = (uint8_t)(pfn >> 40);
+    dst[14] = (uint8_t)(pfn >> 48);
+    dst[15] = (uint8_t)(pfn >> 56);
+
+    debug("org %04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+        pos,
+        src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7],
+        src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
+    );
+    debug("new %04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+        pos,
+        dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7],
+        dst[9], dst[9], dst[10], dst[11], dst[12], dst[13], dst[14], dst[15]
+    );
+
+    if (memcmp(src, dst, LEN)) {
+        fseek(fp, pos, SEEK_SET);
+        len = fwrite(dst, 1, LEN, fp);
+        debug("patched drastic at 0x%llx successfully\n", pos);
+    }
+    else {
+        r = 0;
+    }
+
+    fclose(fp);
+
+    return r;
+}
+
+#if defined(UT)
+TEST(detour_hook, patch_elf)
+{
+    TEST_ASSERT_EQUAL_INT(-1, patch_elf(0, 0));
 }
 #endif
 

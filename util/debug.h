@@ -9,12 +9,12 @@
 #define DEBUG 1
 
 #if DEBUG
-#define error(...) printf(__VA_ARGS__)
-#define debug(...)
-#else
-#define error(...) printf(__VA_ARGS__)
 #define debug(...) printf(__VA_ARGS__)
+#else
+#define debug(...)
 #endif
+
+#define error(...) printf(__VA_ARGS__)
 
 #endif
 
