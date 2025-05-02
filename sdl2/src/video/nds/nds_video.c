@@ -770,7 +770,7 @@ static int draw_drastic_menu_main(void)
         p = &drastic_menu.item[cc];
         if (p->y == 201) {
             draw = 1;
-#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
             sprintf(buf, "NDS %s", &p->msg[8]);
 #else
             sprintf(buf, "%s", &p->msg[8]);
@@ -854,7 +854,7 @@ static int draw_drastic_menu_main(void)
     }
 
     y = 10;
-#if defined(RG28XX)
+#if defined(RG28XX) || defined(GKD2)
     sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
 #endif
 
@@ -917,7 +917,7 @@ static int draw_drastic_menu_main(void)
             _func((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? h - 20 : 50;
                 rt.w = NDS_W;
@@ -929,7 +929,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
                 rt.x = FB_W - (NDS_W + (nds.enable_752x560 ? 30 : 10));
                 rt.y = nds.enable_752x560 ? (h + NDS_H) - 20 : 50 + NDS_H;
                 rt.w = NDS_W;
@@ -2609,6 +2609,14 @@ static void *video_handler(void *threadid)
     free(gfx.lcd.virAddr[1][0]);
     free(gfx.lcd.virAddr[1][1]);
 #endif
+
+#if defined(GKD2)
+    free(gfx.lcd.virAddr[0][0]);
+    free(gfx.lcd.virAddr[0][1]);
+    free(gfx.lcd.virAddr[1][0]);
+    free(gfx.lcd.virAddr[1][1]);
+#endif
+
     pthread_exit(NULL);
 }
 
@@ -2913,7 +2921,7 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_HALF_VOL, &jval);
     nds.half_vol = json_object_get_int(jval) ? 1 : 0;
 
-#if defined(MINI) || defined(A30) || defined(QX1000) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(QX1000) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
         struct stat st = {0};
@@ -2946,7 +2954,7 @@ static int read_config(void)
     reload_menu();
 
     reload_pen();
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     reload_overlay();
 #endif
     json_object_put(jfile);
@@ -5849,7 +5857,7 @@ int reload_menu(void)
         SDL_FreeSurface(t);
     }
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2)
     sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
     nds.menu.drastic.cursor = IMG_Load(buf);
 #endif
@@ -5863,7 +5871,7 @@ int reload_menu(void)
     if (t) {
         SDL_Rect nrt = { 0 };
 
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2)
         nrt.w = LINE_H - 2;
         nrt.h = LINE_H - 2;
 #endif
@@ -5886,7 +5894,7 @@ int reload_menu(void)
     if (t) {
         SDL_Rect nrt = { 0 };
 
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP)
+#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2)
         nrt.w = LINE_H - 2;
         nrt.h = LINE_H - 2;
 #endif
@@ -6162,7 +6170,7 @@ int reload_bg(void)
     return 0;
 }
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
 int reload_overlay(void)
 {
     static int pre_sel = -1;
@@ -7377,7 +7385,7 @@ int handle_menu(int key)
         case MENU_OVERLAY:
             if (nds.overlay.sel < nds.overlay.max) {
                 get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
                 reload_overlay();
 #endif
             }
@@ -7902,7 +7910,7 @@ int handle_menu(int key)
         }
     }
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     nds.update_menu = 1;
 #else
     flush_lcd(-1, cvt->pixels, cvt->clip_rect, cvt->clip_rect, cvt->pitch, 0, E_MI_GFX_ROTATE_180);

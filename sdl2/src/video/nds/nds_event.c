@@ -274,7 +274,7 @@ TEST(sdl2_event, hit_hotkey)
 
 static int set_key_bit(uint32_t bit, int val)
 {
-    debug("call %s()\n", __func__);
+    debug("call %s(bit=%d, val=%d, cur_bits=0x%04x)\n", __func__, bit, val, myevent.keypad.cur_keys);
 
     if (val) {
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
@@ -301,6 +301,7 @@ static int set_key_bit(uint32_t bit, int val)
         myevent.keypad.cur_keys &= ~(1 << bit);
     }
 
+    debug("cur_bits=0x%04x\n", myevent.keypad.cur_keys);
     return 0;
 }
 
@@ -928,21 +929,21 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_START, 0);
     }
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
     if (nds.hotkey == HOTKEY_BIND_MENU) {
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
         if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
             set_key_bit(KEY_BIT_ONION, 1);
             set_key_bit(KEY_BIT_SELECT, 0);
         }
-    }
 #endif
+    }
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
     if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
         set_key_bit(KEY_BIT_ONION, 1);
         set_key_bit(KEY_BIT_SELECT, 0);
-    }
 #endif
+    }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_R1)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
@@ -1233,6 +1234,8 @@ TEST(sdl2_event, get_input_key_code)
 
 static int update_latest_keypad_value(void)
 {
+    debug("call %s()\n", __func__);
+
     if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.keys_rotate) {
         if (nds.keys_rotate == 1) {
             myevent.keypad.up = DEV_KEY_CODE_LEFT;
@@ -1327,6 +1330,8 @@ TEST(sdl2_event, handle_trimui_special_key)
 
 static int update_key_bit(uint32_t c, uint32_t v)
 {
+    debug("call %s(c=%d, v=%d)\n", __func__, c, v);
+
     if (c == myevent.keypad.up) {
         set_key_bit(KEY_BIT_UP, v);
     }
@@ -1357,26 +1362,18 @@ static int update_key_bit(uint32_t c, uint32_t v)
     if (c == myevent.keypad.r1) {
         set_key_bit(KEY_BIT_R1, v);
     }
-#if defined(A30) || defined(FLIP)
     if (c == myevent.keypad.r2) {
+#if defined(A30) || defined(FLIP)
         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.joy.show_cnt = MYJOY_SHOW_CNT;
             SDL_SendMouseButton(vid.window, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
         }
-        set_key_bit(KEY_BIT_L2, v);
-    }
-    if (c == myevent.keypad.l2) {
-        set_key_bit(KEY_BIT_R2, v);
-    }
-#else
-    if (c == myevent.keypad.r2) {
-        set_key_bit(KEY_BIT_L2, v);
-    }
-    if (c == myevent.keypad.l2) {
-        set_key_bit(KEY_BIT_R2, v);
-    }
 #endif
-
+        set_key_bit(KEY_BIT_L2, v);
+    }
+    if (c == myevent.keypad.l2) {
+        set_key_bit(KEY_BIT_R2, v);
+    }
     if (c == myevent.keypad.select) {
         set_key_bit(KEY_BIT_SELECT, v);
     }
@@ -1486,9 +1483,9 @@ int input_handler(void *data)
 #endif
 
     while (myevent.thread.running) {
-        SDL_SemWait(myevent.sem);
-
         update_latest_keypad_value();
+
+        SDL_SemWait(myevent.sem);
 
 #if defined(FLIP) || defined(UT)
         rk = get_flip_key_code(&ev);
@@ -1717,6 +1714,7 @@ static int send_key_event(void)
 
         if (changed & bit) {
 #if !defined(UT)
+            debug("send code=0x%04x, pressed=%d\n", nds_key_code[cc], !!(myevent.keypad.cur_keys & bit));
             SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif
         }
