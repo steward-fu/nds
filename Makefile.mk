@@ -61,6 +61,7 @@ clean:
 	rm -rf drastic/14nds
 	rm -rf drastic/run.sh
 	rm -rf drastic/runner
+	rm -rf drastic/icon.png
 	rm -rf drastic/launch.sh
 	rm -rf drastic/config.json
 	rm -rf drastic/lib/libdtr.so
