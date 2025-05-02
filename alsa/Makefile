@@ -6,8 +6,8 @@ LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -fpic -shared
 LDFLAGS += -lpthread
 LDFLAGS += -lm
-LDFLAGS += -L../detour
-LDFLAGS += -ldtr
+LDFLAGS += libdtr.so
+LDFLAGS += libutil.so
 SOURCES  = snd.c
 
 .PHONY: all

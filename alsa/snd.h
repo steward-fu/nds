@@ -22,7 +22,7 @@
 #define MI_AO_SETMUTE       0x4008690d
 #endif
 
-#if defined(A30) || defined(UT)
+#if defined(A30) || defined(UT) || defined(BRICK)
 #define MAX_VOL             20
 #define JSON_APP_FILE       "/config/system.json"
 #endif

@@ -4,7 +4,7 @@
 #ifndef __RUNNER_H__
 #define __RUNNER_H__
 
-#if defined(GKD2)
+#if defined(GKD2) || defined(BRICK)
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #endif
@@ -17,8 +17,17 @@
 #define NDS_H           192
 #define NDS_Wx2         (NDS_W << 1)
 #define NDS_Hx2         (NDS_H << 1)
-#define SCREEN_W        640
-#define SCREEN_H        480
+
+#if defined(GKD2)
+#define R_LCD_W         640
+#define R_LCD_H         480
+#endif
+
+#if defined(BRICK)
+#define R_LCD_W         1024
+#define R_LCD_H         768
+#endif
+
 #define SHM_NAME        "NDS_SHM"
 
 #define NDS_DIS_MODE_VH_T0          0
@@ -75,7 +84,7 @@ typedef struct {
     uint8_t pitch;
     uint8_t alpha;
     uint8_t rotate;
-    uint8_t buf[SCREEN_W * SCREEN_H * 4];
+    uint8_t buf[R_LCD_W * R_LCD_H * 4];
 
     char bg_path[MAX_PATH];
 } shm_buf_t;

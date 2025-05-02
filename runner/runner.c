@@ -108,7 +108,7 @@ static int init_gles(void)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-    myrunner.sdl2.win = SDL_CreateWindow("DraStic", 0, 0, SCREEN_W, SCREEN_H, SDL_WINDOW_OPENGL);
+    myrunner.sdl2.win = SDL_CreateWindow("DraStic", 0, 0, R_LCD_W, R_LCD_H, SDL_WINDOW_OPENGL);
     myrunner.gles.ctx = SDL_GL_CreateContext(myrunner.sdl2.win);
   
     myrunner.gles.vert_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -132,7 +132,7 @@ static int init_gles(void)
     myrunner.gles.frag_aspect = glGetUniformLocation(myrunner.gles.program, "frag_aspect");
 
     glUniform1f(myrunner.gles.frag_rotate, 0);
-    glUniform1f(myrunner.gles.frag_aspect, (float)SCREEN_W / SCREEN_H);
+    glUniform1f(myrunner.gles.frag_aspect, (float)R_LCD_W / R_LCD_H);
       
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glGenTextures(TEXTURE_MAX, myrunner.gles.tex_id);
@@ -144,7 +144,7 @@ static int init_gles(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   
-    glViewport(0, 0, SCREEN_W, SCREEN_H);
+    glViewport(0, 0, R_LCD_W, R_LCD_H);
     glClear(GL_COLOR_BUFFER_BIT);
     glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
     glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
@@ -156,7 +156,7 @@ static int init_gles(void)
     glUniform1i(myrunner.gles.frag_sampler, 0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    myrunner.gles.bg_pixels = malloc(SCREEN_W * SCREEN_H * 4);
+    myrunner.gles.bg_pixels = malloc(R_LCD_W * R_LCD_H * 4);
     if (!myrunner.gles.bg_pixels) {
         error("failed to allocate buffer for bg image\n");
     }
@@ -167,6 +167,7 @@ static void* runner_handler(void *param)
 {
     int r = 0;
     int running = 0;
+    SDL_Rect rt = { 0 };
     char cur_bg_path[MAX_PATH] = { 0 };
 
     debug("call %s()\n", __func__);
@@ -190,68 +191,64 @@ static void* runner_handler(void *param)
 
         switch (myrunner.shm.buf->cmd) {
         case SHM_CMD_FLUSH:
-//            debug("recv SHM_CMD_FLUSH, tex_id=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d), pitch=%d, alpha=%d\n",
-//                myrunner.shm.buf->tex_id,
-//                myrunner.shm.buf->srt.x, myrunner.shm.buf->srt.y, myrunner.shm.buf->srt.w, myrunner.shm.buf->srt.h,
-//                myrunner.shm.buf->drt.x, myrunner.shm.buf->drt.y, myrunner.shm.buf->drt.w, myrunner.shm.buf->drt.h,
-//                myrunner.shm.buf->pitch, myrunner.shm.buf->alpha
-//            );
+            debug("recv SHM_CMD_FLUSH, tex_id=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d), pitch=%d, alpha=%d\n",
+                myrunner.shm.buf->tex_id,
+                myrunner.shm.buf->srt.x, myrunner.shm.buf->srt.y, myrunner.shm.buf->srt.w, myrunner.shm.buf->srt.h,
+                myrunner.shm.buf->drt.x, myrunner.shm.buf->drt.y, myrunner.shm.buf->drt.w, myrunner.shm.buf->drt.h,
+                myrunner.shm.buf->pitch, myrunner.shm.buf->alpha
+            );
 
             if (myrunner.shm.buf->tex_id == TEXTURE_BG) {
-                memcpy(myrunner.gles.bg_pixels, myrunner.shm.buf->buf, SCREEN_W * SCREEN_H * 4);
-//                if (!strcmp(cur_bg_path, myrunner.shm.buf->bg_path)) {
-//                    break;
-//                }
-//
-//                SDL_Surface *s = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
-//                if (s) {
-//                    SDL_Surface *t = IMG_Load(myrunner.shm.buf->bg_path);
-//                    if (t) {
-//                        SDL_BlitSurface(t, NULL, s, NULL);
-//                        memcpy(myrunner.gles.bg_pixels, s->pixels, SCREEN_W * SCREEN_H * 4);
-//                        SDL_FreeSurface(t);
-//
-//                        strcpy(cur_bg_path, myrunner.shm.buf->bg_path);
-//                    }
-//                    SDL_FreeSurface(s);
-//                }
+                memcpy(myrunner.gles.bg_pixels, myrunner.shm.buf->buf, 640 * 480 * 4);
                 break;
             }
 
+            rt.x = myrunner.shm.buf->drt.x;
+            rt.y = myrunner.shm.buf->drt.y;
+            rt.w = myrunner.shm.buf->drt.w;
+            rt.h = myrunner.shm.buf->drt.h;
+
+#if defined(BRICK)
+            rt.x = ((float)rt.x) * 1.6;
+            rt.y = ((float)rt.y) * 1.6;
+            rt.w = ((float)rt.w) * 1.6;
+            rt.h = ((float)rt.h) * 1.6;
+#endif
+
             if ((myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH1) || (myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH3)) {
-                fg_vertices[5] = ((((float)myrunner.shm.buf->drt.x) / (float)SCREEN_W) - 0.5) * 2.0;
-                fg_vertices[6] = ((((float)myrunner.shm.buf->drt.y) / (float)SCREEN_H) - 0.5) * -2.0;
+                fg_vertices[5] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
+                fg_vertices[6] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
                 fg_vertices[10] = fg_vertices[5];
-                fg_vertices[11] = ((((float)(myrunner.shm.buf->drt.y + myrunner.shm.buf->drt.w)) / (float)SCREEN_H) - 0.5) * -2.0;
+                fg_vertices[11] = ((((float)(rt.y + rt.w)) / (float)R_LCD_H) - 0.5) * -2.0;
 
-                fg_vertices[15] = ((((float)(myrunner.shm.buf->drt.x + myrunner.shm.buf->drt.h)) / (float)SCREEN_W) - 0.5) * 2.0;
+                fg_vertices[15] = ((((float)(rt.x + rt.h)) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[16] = fg_vertices[11];
 
                 fg_vertices[0] = fg_vertices[15];
                 fg_vertices[1] = fg_vertices[6];
             }
             else if ((myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH0) || (myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH2)) {
-                fg_vertices[15] = ((((float)myrunner.shm.buf->drt.x) / (float)SCREEN_W) - 0.5) * 2.0;
-                fg_vertices[16] = ((((float)myrunner.shm.buf->drt.y) / (float)SCREEN_H) - 0.5) * -2.0;
+                fg_vertices[15] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
+                fg_vertices[16] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
                 fg_vertices[0] = fg_vertices[15];
-                fg_vertices[1] = ((((float)(myrunner.shm.buf->drt.y + myrunner.shm.buf->drt.w)) / (float)SCREEN_H) - 0.5) * -2.0;
+                fg_vertices[1] = ((((float)(rt.y + rt.w)) / (float)R_LCD_H) - 0.5) * -2.0;
 
-                fg_vertices[5] = ((((float)(myrunner.shm.buf->drt.x + myrunner.shm.buf->drt.h)) / (float)SCREEN_W) - 0.5) * 2.0;
+                fg_vertices[5] = ((((float)(rt.x + rt.h)) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[6] = fg_vertices[1];
 
                 fg_vertices[10] = fg_vertices[5];
                 fg_vertices[11] = fg_vertices[16];
             }
             else {
-                fg_vertices[0] = ((((float)myrunner.shm.buf->drt.x) / (float)SCREEN_W) - 0.5) * 2.0;
-                fg_vertices[1] = ((((float)myrunner.shm.buf->drt.y) / (float)SCREEN_H) - 0.5) * -2.0;
+                fg_vertices[0] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
+                fg_vertices[1] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
                 fg_vertices[5] = fg_vertices[0];
-                fg_vertices[6] = ((((float)(myrunner.shm.buf->drt.y + myrunner.shm.buf->drt.h)) / (float)SCREEN_H) - 0.5) * -2.0;
+                fg_vertices[6] = ((((float)(rt.y + rt.h)) / (float)R_LCD_H) - 0.5) * -2.0;
 
-                fg_vertices[10] = ((((float)(myrunner.shm.buf->drt.x + myrunner.shm.buf->drt.w)) / (float)SCREEN_W) - 0.5) * 2.0;
+                fg_vertices[10] = ((((float)(rt.x + rt.w)) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[11] = fg_vertices[6];
 
                 fg_vertices[15] = fg_vertices[10];
@@ -284,7 +281,7 @@ static void* runner_handler(void *param)
             glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[TEXTURE_BG]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_W, SCREEN_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)myrunner.gles.bg_pixels);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 640, 480, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)myrunner.gles.bg_pixels);
             glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
             glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);

@@ -1,0 +1,22 @@
+export MOD=brick
+export NDS_GCC=1
+export NDS_ALSA=1
+export NDS_RUNNER=1
+
+CFLAGS += -DBRICK
+CFLAGS += -O3
+CFLAGS += -Wl,--no-undefined
+CFLAGS += -mcpu=cortex-a7
+CFLAGS += -mfpu=neon-vfpv4
+
+LDFLAGS+= -ljson-c
+ 
+export MORE_CFLAGS=${CFLAGS}
+export MORE_LDFLAGS=${LDFLAGS}
+
+include Makefile.mk
+
+.PHONY: push
+push:
+	adb push drastic/runner /mnt/SDCARD/Emus/drastic/
+	adb push drastic/lib/libSDL2-2.0.so.0 /mnt/SDCARD/Emus/drastic/lib/

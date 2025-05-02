@@ -70,7 +70,7 @@ static pa_t pa = { 0 };
     static MI_AUDIO_Attr_t stGetAttr = {0};
 #endif
 
-#if defined(A30)
+#if defined(A30) || defined(BRICK)
     static int vol_base = 100;
     static int vol_mul = 1;
     static int mem_fd = -1;
@@ -78,7 +78,7 @@ static pa_t pa = { 0 };
     static uint32_t *vol_ptr = NULL;
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(UT)
+#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(UT) || defined(BRICK)
     static int dsp_fd = -1;
 #endif
 
@@ -433,7 +433,7 @@ TEST(alsa, dec_mini_vol)
 }
 #endif
 
-#if defined(A30) || defined(UT)
+#if defined(A30) || defined(UT) || defined(BRICK)
 int inc_a30_vol(void)
 {
     debug("call %s()\n", __func__);
@@ -499,7 +499,7 @@ static int open_dsp(void)
         close(dsp_fd);
     }
 
-#if !defined(UT)
+#if !defined(UT) && !defined(BRICK)
     system("amixer set \'DACL Mixer AIF1DA0L\' on");
     system("amixer set \'DACL Mixer AIF1DA0R\' on");
 
@@ -899,7 +899,7 @@ static void* audio_handler(void *id)
                 MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
+#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
                 write(dsp_fd, pcm_buf, pcm_buf_len);
 #endif
 
@@ -1082,7 +1082,7 @@ TEST(alsa, snd_pcm_hw_params_set_format)
 
 int snd_pcm_hw_params_set_period_size_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val, int *dir)
 {
-    debug("call %d()\n", __func__);
+    debug("call %s()\n", __func__);
 
     *val = SND_PERIOD;
     return 0;
@@ -1118,7 +1118,7 @@ TEST(alsa, snd_pcm_hw_params_set_rate_near)
 
 int snd_pcm_open(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode)
 {
-    debug("call %s(pcm=%p, name=%s, stream=%d, mode=%d)\n", pcm, name, stream, mode);
+    debug("call %s(pcm=%p, name=%s, stream=%d, mode=%d)\n", __func__, pcm, name, stream, mode);
 
     if (stream != SND_PCM_STREAM_PLAYBACK) {
         return -1;
@@ -1136,7 +1136,7 @@ TEST(alsa, snd_pcm_open)
 
 int snd_pcm_prepare(snd_pcm_t *pcm)
 {
-    debug("call %s(pcm=%p)\n", pcm);
+    debug("call %s(pcm=%p)\n", __func__, pcm);
 
     return 0;
 }
@@ -1150,7 +1150,7 @@ TEST(alsa, snd_pcm_prepare)
 
 snd_pcm_sframes_t snd_pcm_readi(snd_pcm_t *pcm, void *buf, snd_pcm_uframes_t size)
 {
-    debug("call %s(pcm=%p, buf=%p, size=%d)\n", pcm, buf, size);
+    debug("call %s(pcm=%p, buf=%p, size=%d)\n", __func__, pcm, buf, size);
 
     return 0;
 }
@@ -1183,24 +1183,19 @@ int snd_pcm_start(snd_pcm_t *pcm)
     MI_SYS_ChnPort_t stAoChn0OutputPort0 = 0;
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
+#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
     int arg = 0;
 #endif
 
-#if defined(A30)
+#if defined(A30) || defined(BRICK)
     struct tm ct = { 0 };
 #endif
 
-#if defined(MINI) || defined(A30)
+#if defined(MINI) || defined(A30) || defined(BRICK)
     struct json_object *jfile = NULL;
 #endif
 
     debug("call %s(pcm=%p)\n", __func__, pcm);
-
-    if (!pcm) {
-        error("invalid pcm pointer\n");
-        return -1;
-    }
 
     init_queue(&queue, (size_t)DEF_QUEUE_SIZE);
     if (queue.buf == NULL) {
@@ -1215,7 +1210,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     }
     memset(pcm_buf, 0, pcm_buf_len);
 
-#if !defined(PANDORA) && !defined(UT)
+#if !defined(PANDORA) && !defined(UT) && !defined(BRICK)
     jfile = json_object_from_file(JSON_APP_FILE);
     if (jfile) {
         struct json_object *v = NULL;
@@ -1270,6 +1265,9 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #if defined(A30)
     mem_fd = open("/dev/mem", O_RDWR);
     mem_ptr = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, 0x1c22000);
+#endif
+
+#if defined(A30) || defined(BRICK)
     open_dsp();
 #endif
 
@@ -1358,11 +1356,6 @@ int snd_pcm_close(snd_pcm_t *pcm)
 
     debug("call %s(pcm=%p)\n", __func__, pcm);
 
-    if (!pcm) {
-        error("invalid pcm pointer\n");
-        return -1;
-    }
-
     if (auto_state > 0) {
         save_state(auto_slot);
     }
@@ -1380,7 +1373,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     MI_AO_Disable(AoDevId);
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30)
+#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;
@@ -1479,12 +1472,7 @@ TEST(alsa, snd_pcm_sw_params_malloc)
 
 snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframes_t size)
 {
-    debug("call %d(pcm=%p, buf=%p, size=%d)\n", __func__, pcm, buf, size);
-
-    if (!pcm || !buf) {
-        error("invalid parameters\n");
-        return -1;
-    }
+    debug("call %s(pcm=%p, buf=%p, size=%d)\n", __func__, pcm, buf, size);
 
 #if defined(UT)
     return size;

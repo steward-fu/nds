@@ -15,19 +15,23 @@ REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
 .PHONY: all
 all: cfg
 	make -C util MOD=$(MOD)
-ifeq ($(NDS_RUNNER),1)
-	make -C runner MOD=$(MOD)
-	cp runner/runner drastic/
-endif
+	cp util/libutil.so   drastic/lib/
+
 	make -C detour MOD=$(MOD)
+	cp detour/libdtr.so  drastic/lib/
+
 ifeq ($(NDS_ALSA),1)
 	make -C alsa MOD=$(MOD)
 	cp alsa/libasound.so.2 drastic/lib/
 endif
+
 	make -C sdl2 -j4
-	cp util/libutil.so   drastic/lib/
-	cp detour/libdtr.so  drastic/lib/
 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/lib/
+
+ifeq ($(NDS_RUNNER),1)
+	make -C runner MOD=$(MOD)
+	cp runner/runner drastic/
+endif
 
 ifeq ($(MOD),ut)
 	make -C ut
@@ -57,15 +61,12 @@ clean:
 	make -C sdl2 distclean > /dev/null 2>&1 || true
 	rm -rf sdl2/Makefile
 	rm -rf sdl2/configure
-	rm -rf drastic/cpuclock
+	rm -rf drastic/lib
 	rm -rf drastic/14nds
 	rm -rf drastic/run.sh
 	rm -rf drastic/runner
 	rm -rf drastic/icon.png
+	rm -rf drastic/cpuclock
 	rm -rf drastic/launch.sh
 	rm -rf drastic/config.json
-	rm -rf drastic/lib/libdtr.so
-	rm -rf drastic/lib/libutil.so
-	rm -rf drastic/lib/libasound.so.2
-	rm -rf drastic/lib/libSDL2-2.0.so.0
 	rm -rf drastic/config/drastic.cf2

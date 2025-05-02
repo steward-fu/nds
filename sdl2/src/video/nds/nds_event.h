@@ -21,6 +21,8 @@
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(GKD2)
 #define INPUT_DEV   "/dev/input/event2"
+#elif defined(BRICK)
+#define INPUT_DEV   "/dev/input/event3"
 #else
 #define INPUT_DEV   "/dev/input/event0"
 #endif
@@ -181,6 +183,27 @@
 #define DEV_KEY_CODE_LOAD       49
 #define DEV_KEY_CODE_FAST       -1
 #define DEV_KEY_CODE_EXIT       1
+#endif
+
+#if defined(BRICK)
+#define DEV_KEY_CODE_UP         100
+#define DEV_KEY_CODE_DOWN       101
+#define DEV_KEY_CODE_LEFT       102
+#define DEV_KEY_CODE_RIGHT      103
+#define DEV_KEY_CODE_A          305
+#define DEV_KEY_CODE_B          304
+#define DEV_KEY_CODE_X          308
+#define DEV_KEY_CODE_Y          307
+#define DEV_KEY_CODE_L1         310
+#define DEV_KEY_CODE_R1         311
+#define DEV_KEY_CODE_L2         104
+#define DEV_KEY_CODE_R2         105
+#define DEV_KEY_CODE_START      318
+#define DEV_KEY_CODE_SELECT     317
+#define DEV_KEY_CODE_MENU       314
+#define DEV_KEY_CODE_POWER      -1
+#define DEV_KEY_CODE_VOL_UP     115
+#define DEV_KEY_CODE_VOL_DOWN   114
 #endif
 
 #if defined(GKD2)

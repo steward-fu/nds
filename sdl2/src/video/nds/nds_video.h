@@ -63,7 +63,7 @@
 #include "trimui.h"
 #endif
 
-#if defined(GKD2)
+#if defined(GKD2) || defined(BRICK)
 #include "runner.h"
 #endif
 
@@ -260,6 +260,17 @@
     #define DEF_FONT_SIZE           24
 #endif
 
+#if defined(BRICK)
+    #define DEF_FB_W                640
+    #define DEF_FB_H                480
+    #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+    #define RELOAD_BG_COUNT         120
+    #define DEF_FONT_SIZE           24
+#endif
+
 #if defined(GKD2)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
@@ -405,7 +416,7 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
 enum _TEX_TYPE {
     TEX_SCR0 = 0,
     TEX_SCR1,
@@ -462,7 +473,7 @@ typedef struct MMIYOO_VideoInfo {
     int sar_fd;
 #endif
 
-#if defined(GKD2)
+#if defined(GKD2) || defined(BRICK)
     struct {
         int fd;
         shm_buf_t *buf;
@@ -489,7 +500,7 @@ typedef struct _GFX {
     struct fb_fix_screeninfo finfo;
 
     struct {
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         void *virAddr;
 #endif
 
@@ -510,7 +521,7 @@ typedef struct _GFX {
     } mask;
 #endif
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2)
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
     struct {
         int cur_sel;
         void *virAddr[2][2];

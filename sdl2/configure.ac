@@ -2503,6 +2503,16 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
     fi
 
+    if test x$MOD = xbrick; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DBRICK"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
+    fi
+
     if test x$MOD = xut; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUT"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/src"
@@ -3824,6 +3834,9 @@ case "$host" in
                 CheckNDSVideo
                 ;;
             *gkd2*)
+                CheckNDSVideo
+                ;;
+            *brick*)
                 CheckNDSVideo
                 ;;
             *)
