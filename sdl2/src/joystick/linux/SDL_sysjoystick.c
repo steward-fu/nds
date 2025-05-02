@@ -693,7 +693,7 @@ LINUX_JoystickInit(void)
 
     SDL_classic_joysticks = SDL_GetHintBoolean(SDL_HINT_LINUX_JOYSTICK_CLASSIC, SDL_FALSE);
 
-#if defined(A30) || defined(FLIP)
+#if defined(NDS_VIDEO)
     return -1;
 #endif
 

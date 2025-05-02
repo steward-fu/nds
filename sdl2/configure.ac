@@ -2406,6 +2406,7 @@ CheckNDSVideo()
 
         SOURCES="$SOURCES $srcdir/src/video/nds/*.c"
 
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_VIDEO"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../util"
