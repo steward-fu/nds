@@ -230,12 +230,12 @@ static int release_keys(void)
     int cc = 0;
 
     for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
-        if (myevent.keypad.cur_keys & 1) {
+        if (myevent.keypad.cur_bits & 1) {
 #if !defined(UT)
             SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif
         }
-        myevent.keypad.cur_keys >>= 1;
+        myevent.keypad.cur_bits >>= 1;
     }
 
     return 0;
@@ -244,9 +244,9 @@ static int release_keys(void)
 #if defined(UT)
 TEST(sdl2_event, release_keys)
 {
-    myevent.keypad.cur_keys = (1 << KEY_BIT_A);
+    myevent.keypad.cur_bits = (1 << KEY_BIT_A);
     TEST_ASSERT_EQUAL_INT(0, release_keys());
-    TEST_ASSERT_EQUAL_INT(0, myevent.keypad.cur_keys);
+    TEST_ASSERT_EQUAL_INT(0, myevent.keypad.cur_bits);
 }
 #endif
 
@@ -260,64 +260,64 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << KEY_BIT_MENU);
 #endif
 
-    return (myevent.keypad.cur_keys ^ mask) ? 0 : 1;
+    return (myevent.keypad.cur_bits ^ mask) ? 0 : 1;
 }
 
 #if defined(UT)
 TEST(sdl2_event, hit_hotkey)
 {
     nds.hotkey = HOTKEY_BIND_SELECT;
-    myevent.keypad.cur_keys = (1 << KEY_BIT_SELECT) | (1 << KEY_BIT_A);
+    myevent.keypad.cur_bits = (1 << KEY_BIT_SELECT) | (1 << KEY_BIT_A);
     TEST_ASSERT_EQUAL_INT(1, hit_hotkey(KEY_BIT_A));
 }
 #endif
 
 static int set_key_bit(uint32_t bit, int val)
 {
-    debug("call %s(bit=%d, val=%d, cur_bits=0x%04x)\n", __func__, bit, val, myevent.keypad.cur_keys);
+    debug("call %s(bit=%d, val=%d, cur_bits=0x%04x)\n", __func__, bit, val, myevent.keypad.cur_bits);
 
     if (val) {
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
         if (bit == KEY_BIT_MENU) {
-            myevent.keypad.cur_keys = (1 << KEY_BIT_MENU);
+            myevent.keypad.cur_bits = (1 << KEY_BIT_MENU);
         }
 #endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (nds.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == KEY_BIT_SELECT) {
-                myevent.keypad.cur_keys = (1 << KEY_BIT_SELECT);
+                myevent.keypad.cur_bits = (1 << KEY_BIT_SELECT);
             }
         }
         else {
             if (bit == KEY_BIT_MENU) {
-                myevent.keypad.cur_keys = (1 << KEY_BIT_MENU);
+                myevent.keypad.cur_bits = (1 << KEY_BIT_MENU);
             }
         }
 #endif
-        myevent.keypad.cur_keys|= (1 << bit);
+        myevent.keypad.cur_bits|= (1 << bit);
     }
     else {
-        myevent.keypad.cur_keys &= ~(1 << bit);
+        myevent.keypad.cur_bits &= ~(1 << bit);
     }
 
-    debug("cur_bits=0x%04x\n", myevent.keypad.cur_keys);
+    debug("cur_bits=0x%04x\n", myevent.keypad.cur_bits);
     return 0;
 }
 
 #if defined(UT)
 TEST(sdl2_event, set_key_bit)
 {
-    myevent.keypad.cur_keys = 0;
+    myevent.keypad.cur_bits = 0;
     TEST_ASSERT_EQUAL_INT(0, set_key_bit(KEY_BIT_UP, 1));
-    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_UP), myevent.keypad.cur_keys);
+    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_UP), myevent.keypad.cur_bits);
     TEST_ASSERT_EQUAL_INT(0, set_key_bit(KEY_BIT_UP, 0));
-    TEST_ASSERT_EQUAL_INT((0 << KEY_BIT_UP), myevent.keypad.cur_keys);
+    TEST_ASSERT_EQUAL_INT((0 << KEY_BIT_UP), myevent.keypad.cur_bits);
 }
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(UT)
-static int trans_joy_to_keypad(jval_t *j, int rjoy)
+static int trans_joy_to_keypad(jval_t *j, int idx)
 {
     int r = 0;
     static int pre_x[2] = { -1, -1 };
@@ -337,9 +337,9 @@ static int trans_joy_to_keypad(jval_t *j, int rjoy)
     int LEFT_TH = -1 * nds.joy.dzone;
     int RIGHT_TH = nds.joy.dzone;
 
-    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+    debug("call %s(idx=%d)\n", __func__, idx);
 
-    if (rjoy) {
+    if (idx) {
         u_key = KEY_BIT_X;
         d_key = KEY_BIT_B;
         l_key = KEY_BIT_Y;
@@ -351,61 +351,86 @@ static int trans_joy_to_keypad(jval_t *j, int rjoy)
         RIGHT_TH = nds.rjoy.dzone;
     }
 
-    if (j->x != pre_x[rjoy]) {
-        pre_x[rjoy] = j->x;
-        if (pre_x[rjoy] < LEFT_TH) {
-            if (pre_left[rjoy] == 0) {
+    if (j->x != pre_x[idx]) {
+        pre_x[idx] = j->x;
+        if (pre_x[idx] < LEFT_TH) {
+            if (pre_left[idx] == 0) {
                 r = 1;
-                pre_left[rjoy] = 1;
+                pre_left[idx] = 1;
                 set_key_bit(l_key, 1);
             }
-        }
-        else if (pre_x[rjoy] > RIGHT_TH){
-            if (pre_right[rjoy] == 0) {
+
+            if (pre_right[idx]) {
                 r = 1;
-                pre_right[rjoy] = 1;
+                pre_right[idx] = 0;
+                set_key_bit(r_key, 0);
+            }
+        }
+        else if (pre_x[idx] > RIGHT_TH){
+            if (pre_right[idx] == 0) {
+                r = 1;
+                pre_right[idx] = 1;
                 set_key_bit(r_key, 1);
+            }
+
+            if (pre_left[idx]) {
+                r = 1;
+                pre_left[idx] = 0;
+                set_key_bit(l_key, 0);
             }
         }
         else {
-            if (pre_left[rjoy] != 0) {
+            if (pre_left[idx]) {
                 r = 1;
-                pre_left[rjoy] = 0;
+                pre_left[idx] = 0;
                 set_key_bit(l_key, 0);
             }
-            if (pre_right[rjoy] != 0) {
+
+            if (pre_right[idx]) {
                 r = 1;
-                pre_right[rjoy] = 0;
+                pre_right[idx] = 0;
                 set_key_bit(r_key, 0);
             }
         }
     }
 
-    if (j->y != pre_y[rjoy]) {
-        pre_y[rjoy] = j->y;
-        if (pre_y[rjoy] < UP_TH) {
-            if (pre_up[rjoy] == 0) {
+    if (j->y != pre_y[idx]) {
+        pre_y[idx] = j->y;
+        if (pre_y[idx] < UP_TH) {
+            if (pre_up[idx] == 0) {
                 r = 1;
-                pre_up[rjoy] = 1;
+                pre_up[idx] = 1;
                 set_key_bit(u_key, 1);
             }
-        }
-        else if (pre_y[rjoy] > DOWN_TH){
-            if (pre_down[rjoy] == 0) {
+
+            if (pre_down[idx]) {
                 r = 1;
-                pre_down[rjoy] = 1;
+                pre_down[idx] = 0;
+                set_key_bit(d_key, 0);
+            }
+        }
+        else if (pre_y[idx] > DOWN_TH){
+            if (pre_down[idx] == 0) {
+                r = 1;
+                pre_down[idx] = 1;
                 set_key_bit(d_key, 1);
+            }
+
+            if (pre_up[idx]) {
+                r = 1;
+                pre_up[idx] = 0;
+                set_key_bit(u_key, 0);
             }
         }
         else {
-            if (pre_up[rjoy] != 0) {
+            if (pre_up[idx]) {
                 r = 1;
-                pre_up[rjoy] = 0;
+                pre_up[idx] = 0;
                 set_key_bit(u_key, 0);
             }
-            if (pre_down[rjoy] != 0) {
+            if (pre_down[idx]) {
                 r = 1;
-                pre_down[rjoy] = 0;
+                pre_down[idx] = 0;
                 set_key_bit(d_key, 0);
             }
         }
@@ -423,7 +448,7 @@ TEST(sdl2_event, trans_joy_to_keypad)
 }
 #endif
 
-static int trans_joy_to_touch(jval_t *j, int rjoy)
+static int trans_joy_to_touch(jval_t *j, int idx)
 {
     int r = 0;
     static int pre_x[2] = { -1, -1 };
@@ -439,62 +464,79 @@ static int trans_joy_to_touch(jval_t *j, int rjoy)
     int LEFT_TH = -1 * nds.joy.dzone;
     int RIGHT_TH = nds.joy.dzone;
 
-    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+    debug("call %s(idx=%d)\n", __func__, idx);
 
-    if (rjoy) {
+    if (idx) {
         UP_TH = -1 * nds.rjoy.dzone;
         DOWN_TH = nds.rjoy.dzone;
         LEFT_TH = -1 * nds.rjoy.dzone;
         RIGHT_TH = nds.rjoy.dzone;
     }
 
-    if (j->x != pre_x[rjoy]) {
-        pre_x[rjoy] = j->x;
-        if (pre_x[rjoy] < LEFT_TH) {
-            if (pre_left[rjoy] == 0) {
-                pre_left[rjoy] = 1;
+    if (j->x != pre_x[idx]) {
+        pre_x[idx] = j->x;
+        if (pre_x[idx] < LEFT_TH) {
+            if (pre_left[idx] == 0) {
+                pre_left[idx] = 1;
+            }
+
+            if (pre_right[idx]) {
+                pre_right[idx] = 0;
             }
         }
-        else if (pre_x[rjoy] > RIGHT_TH){
-            if (pre_right[rjoy] == 0) {
-                pre_right[rjoy] = 1;
+        else if (pre_x[idx] > RIGHT_TH){
+            if (pre_right[idx] == 0) {
+                pre_right[idx] = 1;
+            }
+
+            if (pre_left[idx]) {
+                pre_left[idx] = 0;
             }
         }
         else {
-            if (pre_left[rjoy] != 0) {
-                pre_left[rjoy] = 0;
+            if (pre_left[idx]) {
+                pre_left[idx] = 0;
             }
-            if (pre_right[rjoy] != 0) {
-                pre_right[rjoy] = 0;
+            if (pre_right[idx]) {
+                pre_right[idx] = 0;
             }
         }
     }
 
-    if (j->y != pre_y[rjoy]) {
-        pre_y[rjoy] = j->y;
-        if (pre_y[rjoy] < UP_TH) {
-            if (pre_up[rjoy] == 0) {
-                pre_up[rjoy] = 1;
+    if (j->y != pre_y[idx]) {
+        pre_y[idx] = j->y;
+        if (pre_y[idx] < UP_TH) {
+            if (pre_up[idx] == 0) {
+                pre_up[idx] = 1;
+            }
+
+            if (pre_down[idx]) {
+                pre_down[idx] = 0;
             }
         }
-        else if (pre_y[rjoy] > DOWN_TH){
-            if (pre_down[rjoy] == 0) {
-                pre_down[rjoy] = 1;
+        else if (pre_y[idx] > DOWN_TH){
+            if (pre_down[idx] == 0) {
+                pre_down[idx] = 1;
+            }
+
+            if (pre_up[idx]) {
+                pre_up[idx] = 0;
             }
         }
         else {
-            if (pre_up[rjoy] != 0) {
-                pre_up[rjoy] = 0;
+            if (pre_up[idx]) {
+                pre_up[idx] = 0;
             }
-            if (pre_down[rjoy] != 0) {
-                pre_down[rjoy] = 0;
+            if (pre_down[idx]) {
+                pre_down[idx] = 0;
             }
         }
     }
 
-    if (pre_up[rjoy] || pre_down[rjoy] || pre_left[rjoy] || pre_right[rjoy]) {
-        if (myevent.keypad.cur_keys &  (1 << KEY_BIT_Y)) {
-            if (pre_right[rjoy]) {
+    if (pre_up[idx] || pre_down[idx] || pre_left[idx] || pre_right[idx]) {
+        r = 1;
+        if (myevent.keypad.cur_bits &  (1 << KEY_BIT_Y)) {
+            if (pre_right[idx]) {
                 static int cc = 0;
 
                 if (cc == 0) {
@@ -515,30 +557,30 @@ static int trans_joy_to_touch(jval_t *j, int rjoy)
             int y = 0;
 
             if (is_hh_mode() && (nds.keys_rotate == 0)) {
-                if (pre_up[rjoy]) {
+                if (pre_up[idx]) {
                     myevent.touch.x+= inc_touch_axis(1);
                 }
-                if (pre_down[rjoy]) {
+                if (pre_down[idx]) {
                     myevent.touch.x-= inc_touch_axis(1);
                 }
-                if (pre_left[rjoy]) {
+                if (pre_left[idx]) {
                     myevent.touch.y-= inc_touch_axis(0);
                 }
-                if (pre_right[rjoy]) {
+                if (pre_right[idx]) {
                     myevent.touch.y+= inc_touch_axis(0);
                 }
             }
             else {
-                if (pre_up[rjoy]) {
+                if (pre_up[idx]) {
                     myevent.touch.y-= inc_touch_axis(1);
                 }
-                if (pre_down[rjoy]) {
+                if (pre_down[idx]) {
                     myevent.touch.y+= inc_touch_axis(1);
                 }
-                if (pre_left[rjoy]) {
+                if (pre_left[idx]) {
                     myevent.touch.x-= inc_touch_axis(0);
                 }
-                if (pre_right[rjoy]) {
+                if (pre_right[idx]) {
                     myevent.touch.x+= inc_touch_axis(0);
                 }
             }
@@ -549,6 +591,11 @@ static int trans_joy_to_touch(jval_t *j, int rjoy)
             SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
         }
         nds.joy.show_cnt = MYJOY_SHOW_CNT;
+    }
+    else {
+        if (!(myevent.keypad.cur_bits & 0x0f)) {
+            nds.pen.pre_ticks = clock();
+        }
     }
 
     return r;
@@ -563,7 +610,7 @@ TEST(sdl2_event, trans_joy_to_touch)
 }
 #endif
 
-static int trans_joy_to_custkey(jval_t *j, int rjoy)
+static int trans_joy_to_custkey(jval_t *j, int idx)
 {
     int r = 0;
     static int pre_x[2] = { -1, -1 };
@@ -584,9 +631,9 @@ static int trans_joy_to_custkey(jval_t *j, int rjoy)
     int LEFT_TH = -1 * nds.joy.dzone;
     int RIGHT_TH = nds.joy.dzone;
 
-    debug("call %s(rjoy=%d)\n", __func__, rjoy);
+    debug("call %s(idx=%d)\n", __func__, idx);
 
-    if (rjoy) {
+    if (idx) {
         UP_TH = -1 * nds.rjoy.dzone;
         DOWN_TH = nds.rjoy.dzone;
         LEFT_TH = -1 * nds.rjoy.dzone;
@@ -598,61 +645,87 @@ static int trans_joy_to_custkey(jval_t *j, int rjoy)
         r_key = nds.rjoy.cuskey[3];
     }
 
-    if (j->x != pre_x[rjoy]) {
-        pre_x[rjoy] = j->x;
-        if (pre_x[rjoy] < LEFT_TH) {
-            if (pre_left[rjoy] == 0) {
+    if (j->x != pre_x[idx]) {
+        pre_x[idx] = j->x;
+        if (pre_x[idx] < LEFT_TH) {
+            if (pre_left[idx] == 0) {
                 r = 1;
-                pre_left[rjoy] = 1;
+                pre_left[idx] = 1;
                 set_key_bit(l_key, 1);
             }
-        }
-        else if (pre_x[rjoy] > RIGHT_TH){
-            if (pre_right[rjoy] == 0) {
+
+            if (pre_right[idx]) {
                 r = 1;
-                pre_right[rjoy] = 1;
+                pre_right[idx] = 0;
+                set_key_bit(r_key, 0);
+            }
+        }
+        else if (pre_x[idx] > RIGHT_TH){
+            if (pre_right[idx] == 0) {
+                r = 1;
+                pre_right[idx] = 1;
                 set_key_bit(r_key, 1);
+            }
+
+            if (pre_left[idx]) {
+                r = 1;
+                pre_left[idx] = 0;
+                set_key_bit(l_key, 0);
             }
         }
         else {
-            if (pre_left[rjoy] != 0) {
+            if (pre_left[idx]) {
                 r = 1;
-                pre_left[rjoy] = 0;
+                pre_left[idx] = 0;
                 set_key_bit(l_key, 0);
             }
-            if (pre_right[rjoy] != 0) {
+
+            if (pre_right[idx]) {
                 r = 1;
-                pre_right[rjoy] = 0;
+                pre_right[idx] = 0;
                 set_key_bit(r_key, 0);
             }
         }
     }
 
-    if (j->y != pre_y[rjoy]) {
-        pre_y[rjoy] = j->y;
-        if (pre_y[rjoy] < UP_TH) {
-            if (pre_up[rjoy] == 0) {
+    if (j->y != pre_y[idx]) {
+        pre_y[idx] = j->y;
+        if (pre_y[idx] < UP_TH) {
+            if (pre_up[idx] == 0) {
                 r = 1;
-                pre_up[rjoy] = 1;
+                pre_up[idx] = 1;
                 set_key_bit(u_key, 1);
             }
-        }
-        else if (pre_y[rjoy] > DOWN_TH){
-            if (pre_down[rjoy] == 0) {
+
+            if (pre_down[idx]) {
                 r = 1;
-                pre_down[rjoy] = 1;
+                pre_down[idx] = 0;
+                set_key_bit(d_key, 0);
+            }
+        }
+        else if (pre_y[idx] > DOWN_TH){
+            if (pre_down[idx] == 0) {
+                r = 1;
+                pre_down[idx] = 1;
                 set_key_bit(d_key, 1);
+            }
+
+            if (pre_up[idx]) {
+                r = 1;
+                pre_up[idx] = 0;
+                set_key_bit(u_key, 0);
             }
         }
         else {
-            if (pre_up[rjoy] != 0) {
+            if (pre_up[idx]) {
                 r = 1;
-                pre_up[rjoy] = 0;
+                pre_up[idx] = 0;
                 set_key_bit(u_key, 0);
             }
-            if (pre_down[rjoy] != 0) {
+
+            if (pre_down[idx]) {
                 r = 1;
-                pre_down[rjoy] = 0;
+                pre_down[idx] = 0;
                 set_key_bit(d_key, 0);
             }
         }
@@ -919,7 +992,7 @@ static int handle_hotkey(void)
             nds.menu.enable = 1;
             usleep(100000);
             handle_menu(-1);
-            myevent.keypad.pre_keys = myevent.keypad.cur_keys = 0;
+            myevent.keypad.pre_bits = myevent.keypad.cur_bits = 0;
         }
 #endif
 
@@ -991,7 +1064,7 @@ static int handle_hotkey(void)
 #endif
         set_key_bit(KEY_BIT_L2, 0);
     }
-    else if (myevent.keypad.cur_keys & (1 << KEY_BIT_L2)) {
+    else if (myevent.keypad.cur_bits & (1 << KEY_BIT_L2)) {
 #if defined(A30) || defined(FLIP)
         if (nds.joy.mode != MYJOY_MODE_STYLUS) {
 #endif
@@ -1143,12 +1216,12 @@ static int update_key_bit(uint32_t c, uint32_t v)
 #if defined(UT)
 TEST(sdl2_event, update_key_bit)
 {
-    myevent.keypad.cur_keys = 0;
+    myevent.keypad.cur_bits = 0;
     myevent.keypad.up = DEV_KEY_CODE_UP;
     TEST_ASSERT_EQUAL_INT(0, update_key_bit(DEV_KEY_CODE_UP, 1));
-    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_UP), myevent.keypad.cur_keys);
+    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_UP), myevent.keypad.cur_bits);
     TEST_ASSERT_EQUAL_INT(0, update_key_bit(DEV_KEY_CODE_UP, 0));
-    TEST_ASSERT_EQUAL_INT((0 << KEY_BIT_UP), myevent.keypad.cur_keys);
+    TEST_ASSERT_EQUAL_INT((0 << KEY_BIT_UP), myevent.keypad.cur_bits);
 }
 #endif
 
@@ -1581,10 +1654,13 @@ int input_handler(void *data)
 
         SDL_SemPost(myevent.sem);
 
-        if (!(myevent.keypad.cur_keys & 0x0f)) {
-            nds.pen.pre_ticks = clock();
-        }
         usleep(10000);
+
+        if ((nds.joy.mode != MYJOY_MODE_STYLUS) && (nds.rjoy.mode != MYJOY_MODE_STYLUS)) {
+            if (!(myevent.keypad.cur_bits & 0x0f)) {
+                nds.pen.pre_ticks = clock();
+            }
+        }
     }
     
     return 0;
@@ -1737,7 +1813,7 @@ static int send_key_to_menu(void)
 {
     int cc = 0;
     uint32_t bit = 0;
-    uint32_t changed = myevent.keypad.pre_keys ^ myevent.keypad.cur_keys;
+    uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
     debug("call %s()\n", __func__);
 
@@ -1745,12 +1821,12 @@ static int send_key_to_menu(void)
         bit = 1 << cc;
 
         if (changed & bit) {
-            if ((myevent.keypad.cur_keys & bit) == 0) {
+            if ((myevent.keypad.cur_bits & bit) == 0) {
                 handle_menu(cc);
             }
         }
     }
-    myevent.keypad.pre_keys = myevent.keypad.cur_keys;
+    myevent.keypad.pre_bits = myevent.keypad.cur_bits;
 
     return 0;
 }
@@ -1766,7 +1842,7 @@ static int send_key_event(void)
 {
     int cc = 0;
     uint32_t bit = 0;
-    uint32_t changed = myevent.keypad.pre_keys ^ myevent.keypad.cur_keys;
+    uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
     debug("call %s()\n", __func__);
 
@@ -1787,39 +1863,39 @@ static int send_key_event(void)
 
         if (changed & bit) {
 #if !defined(UT)
-            debug("send code=0x%04x, pressed=%d\n", nds_key_code[cc], !!(myevent.keypad.cur_keys & bit));
-            SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
+            debug("send code=0x%04x, pressed=%d\n", nds_key_code[cc], !!(myevent.keypad.cur_bits & bit));
+            SDL_SendKeyboardKey((myevent.keypad.cur_bits & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif
         }
     }
 
 #if defined(TRIMUI) || defined(PANDORA)
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_R2)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_R2)) {
         set_key_bit(KEY_BIT_R2, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_L2)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_L2)) {
         set_key_bit(KEY_BIT_L2, 0);
     }
 #endif
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_SAVE)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_SAVE)) {
         nds.state|= NDS_STATE_QSAVE;
         set_key_bit(KEY_BIT_SAVE, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_LOAD)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_LOAD)) {
         nds.state|= NDS_STATE_QLOAD;
         set_key_bit(KEY_BIT_LOAD, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_FAST)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
         nds.state|= NDS_STATE_FF;
         set_key_bit(KEY_BIT_FAST, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_ONION)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_ONION)) {
         set_key_bit(KEY_BIT_ONION, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_EXIT)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_EXIT)) {
         release_keys();
     }
-    myevent.keypad.pre_keys = myevent.keypad.cur_keys;
+    myevent.keypad.pre_bits = myevent.keypad.cur_bits;
 
     return 0;
 }
@@ -1827,11 +1903,11 @@ static int send_key_event(void)
 #if defined(UT)
 TEST(sdl2_event, send_key_event)
 {
-    myevent.keypad.pre_keys = 0;
-    myevent.keypad.cur_keys = (1 << KEY_BIT_EXIT);
+    myevent.keypad.pre_bits = 0;
+    myevent.keypad.cur_bits = (1 << KEY_BIT_EXIT);
     TEST_ASSERT_EQUAL_INT(0, send_key_event());
-    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_EXIT), myevent.keypad.cur_keys);
-    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_EXIT), myevent.keypad.pre_keys);
+    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_EXIT), myevent.keypad.cur_bits);
+    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_EXIT), myevent.keypad.pre_bits);
 }
 #endif
 
@@ -1842,37 +1918,37 @@ static int update_touch_axis(void)
     debug("call %s()\n", __func__);
 
     if (is_hh_mode() && (nds.keys_rotate == 0)) {
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_UP)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_UP)) {
             r = 1;
             myevent.touch.x+= inc_touch_axis(1);
         }
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_DOWN)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_DOWN)) {
             r = 1;
             myevent.touch.x-= inc_touch_axis(1);
         }
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_LEFT)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_LEFT)) {
             r = 1;
             myevent.touch.y-= inc_touch_axis(0);
         }
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_RIGHT)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_RIGHT)) {
             r = 1;
             myevent.touch.y+= inc_touch_axis(0);
         }
     }
     else {
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_UP)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_UP)) {
             r = 1;
             myevent.touch.y-= inc_touch_axis(1);
         }
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_DOWN)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_DOWN)) {
             r = 1;
             myevent.touch.y+= inc_touch_axis(1);
         }
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_LEFT)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_LEFT)) {
             r = 1;
             myevent.touch.x-= inc_touch_axis(0);
         }
-        if (myevent.keypad.cur_keys & (1 << KEY_BIT_RIGHT)) {
+        if (myevent.keypad.cur_bits & (1 << KEY_BIT_RIGHT)) {
             r = 1;
             myevent.touch.x+= inc_touch_axis(0);
         }
@@ -1886,7 +1962,7 @@ TEST(sdl2_event, update_touch_axis)
 {
     myevent.touch.x = 0;
     myevent.touch.y = 0;
-    myevent.keypad.cur_keys = (1 << KEY_BIT_RIGHT);
+    myevent.keypad.cur_bits = (1 << KEY_BIT_RIGHT);
     TEST_ASSERT_EQUAL_INT(1, update_touch_axis());
     TEST_ASSERT_EQUAL_INT(1, !!myevent.touch.x);
 }
@@ -1896,13 +1972,13 @@ static int send_touch_key(void)
 {
     uint32_t cc = 0;
     uint32_t bit = 0;
-    uint32_t changed = myevent.keypad.pre_keys ^ myevent.keypad.cur_keys;
+    uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
     debug("call %s()\n", __func__);
 
     if (changed & (1 << KEY_BIT_A)) {
 #if !defined(UT)
-        SDL_SendMouseButton(vid.window, 0, (myevent.keypad.cur_keys & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+        SDL_SendMouseButton(vid.window, 0, (myevent.keypad.cur_bits & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
 #endif
     }
 
@@ -1912,13 +1988,13 @@ static int send_touch_key(void)
         if ((cc == KEY_BIT_FAST) || (cc == KEY_BIT_SAVE) || (cc == KEY_BIT_LOAD) || (cc == KEY_BIT_EXIT) || (cc == KEY_BIT_R2)) {
             if (changed & bit) {
 #if !defined(UT)
-                SDL_SendKeyboardKey((myevent.keypad.cur_keys & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
+                SDL_SendKeyboardKey((myevent.keypad.cur_bits & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif
             }
         }
         if (cc == KEY_BIT_R1) {
             if (changed & bit) {
-                myevent.touch.slow_down = (myevent.keypad.cur_keys & bit) ? 1 : 0;
+                myevent.touch.slow_down = (myevent.keypad.cur_bits & bit) ? 1 : 0;
             }
         }
     }
@@ -1930,8 +2006,8 @@ static int send_touch_key(void)
 TEST(sdl2_event, send_touch_key)
 {
     myevent.touch.slow_down = 0;
-    myevent.keypad.pre_keys = 0;
-    myevent.keypad.cur_keys = (1 << KEY_BIT_R1);
+    myevent.keypad.pre_bits = 0;
+    myevent.keypad.cur_bits = (1 << KEY_BIT_R1);
     TEST_ASSERT_EQUAL_INT(0, send_touch_key());
     TEST_ASSERT_EQUAL_INT(1, myevent.touch.slow_down);
 }
@@ -1970,7 +2046,7 @@ static int send_touch_event(void)
 
     debug("call %s()\n", __func__);
 
-    if (myevent.keypad.pre_keys != myevent.keypad.cur_keys) {
+    if (myevent.keypad.pre_bits != myevent.keypad.cur_bits) {
         send_touch_key();
     }
 
@@ -1981,26 +2057,26 @@ static int send_touch_event(void)
     }
 
 #if defined(TRIMUI) || defined(PANDORA)
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_R2)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_R2)) {
         set_key_bit(KEY_BIT_R2, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_L2)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_L2)) {
         set_key_bit(KEY_BIT_L2, 0);
     }
 #endif
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_SAVE)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_SAVE)) {
         set_key_bit(KEY_BIT_SAVE, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_LOAD)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_LOAD)) {
         set_key_bit(KEY_BIT_LOAD, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_FAST)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
         set_key_bit(KEY_BIT_FAST, 0);
     }
-    if (myevent.keypad.pre_keys & (1 << KEY_BIT_EXIT)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_EXIT)) {
         release_keys();
     }
-    myevent.keypad.pre_keys = myevent.keypad.cur_keys;
+    myevent.keypad.pre_bits = myevent.keypad.cur_bits;
 
     return 0;
 }
@@ -2008,10 +2084,10 @@ static int send_touch_event(void)
 #if defined(UT)
 TEST(sdl2_event, send_touch_event)
 {
-    myevent.keypad.pre_keys = (1 << KEY_BIT_EXIT);
+    myevent.keypad.pre_bits = (1 << KEY_BIT_EXIT);
     TEST_ASSERT_EQUAL_INT(0, send_touch_event());
-    TEST_ASSERT_EQUAL_INT(0, myevent.keypad.pre_keys);
-    TEST_ASSERT_EQUAL_INT(0, myevent.keypad.cur_keys);
+    TEST_ASSERT_EQUAL_INT(0, myevent.keypad.pre_bits);
+    TEST_ASSERT_EQUAL_INT(0, myevent.keypad.cur_bits);
 }
 #endif
 
@@ -2025,7 +2101,7 @@ void pump_event(_THIS)
     }
     else {
         if (myevent.mode == NDS_KEY_MODE) {
-            if (myevent.keypad.pre_keys != myevent.keypad.cur_keys) {
+            if (myevent.keypad.pre_bits != myevent.keypad.cur_bits) {
                 send_key_event();
             }
         }

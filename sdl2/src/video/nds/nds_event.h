@@ -272,8 +272,8 @@ typedef struct {
     int fd;
 
     struct _keypad{
-        uint32_t cur_keys;
-        uint32_t pre_keys;
+        uint32_t cur_bits;
+        uint32_t pre_bits;
 
         uint32_t up;
         uint32_t down;
