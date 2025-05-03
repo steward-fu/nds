@@ -3389,14 +3389,73 @@ int fb_quit(void)
 #endif
 
 #if defined(FLIP)
+static int get_core(int index)
+{
+    FILE *fd = NULL;
+    char buf[255] = {0};
+
+    sprintf(buf, "cat /sys/devices/system/cpu/cpu%d/online", index % 4); 
+    fd = popen(buf, "r");
+    if (fd == NULL) {
+        return -1;
+    }       
+    fgets(buf, sizeof(buf), fd);
+    pclose(fd);
+    return atoi(buf);
+}
+
+static void check_before_set(int num, int v)
+{
+    char buf[255] = {0};
+
+    if (get_core(num) != v) {
+        sprintf(buf, "echo %d > /sys/devices/system/cpu/cpu%d/online", v ? 1 : 0, num);
+        system(buf);
+    }       
+}   
+
+static void set_core(int n)
+{           
+    if (n <= 1) {
+        printf(PREFIX"New CPU Core: 1\n");
+        check_before_set(0, 1);
+        check_before_set(1, 0);
+        check_before_set(2, 0);
+        check_before_set(3, 0);
+    }       
+    else if (n == 2) {
+        printf(PREFIX"New CPU Core: 2\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 0);
+        check_before_set(3, 0);
+    }       
+    else if (n == 3) {
+        printf(PREFIX"New CPU Core: 3\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 1);
+        check_before_set(3, 0);
+    }
+    else {
+        printf(PREFIX"New CPU Core: 4\n");
+        check_before_set(0, 1);
+        check_before_set(1, 1);
+        check_before_set(2, 1);
+        check_before_set(3, 1);
+    }
+}
+
 int fb_init(void)
 {
-    return 0;
+   set_core(INIT_CPU_CORE); 
+   return 0;
 }
 
 int fb_quit(void)
 {
-    return 0;
+   set_core(DEINIT_CPU_CORE); 
+   return 0;
 }
 #endif
 
@@ -6679,7 +6738,7 @@ static int lang_prev(void)
 
 enum {
     MENU_LANG = 0,
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
     MENU_CPU_CORE,
 #if defined(A30)
     MENU_CPU_CLOCK,
@@ -6769,7 +6828,7 @@ int handle_menu(int key)
 {
     static int pre_ff = 0;
     static int cur_sel = 0;
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
     static uint32_t cur_cpucore = INIT_CPU_CORE;
     static uint32_t pre_cpucore = INIT_CPU_CORE;
 #if defined(A30)
@@ -6830,7 +6889,7 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_prev();
             break;
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
         case MENU_CPU_CORE:
             if (cur_cpucore > nds.mincore) {
                 cur_cpucore-= 1;
@@ -7012,7 +7071,7 @@ int handle_menu(int key)
         case MENU_LANG:
             lang_next();
             break;
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
         case MENU_CPU_CORE:
             if (cur_cpucore < nds.maxcore) {
                 cur_cpucore+= 1;
@@ -7395,7 +7454,7 @@ int handle_menu(int key)
         case MENU_LANG:
             sprintf(buf, "%s", nds.lang.trans[DEF_LANG_SLOT]);
             break;
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
         case MENU_CPU_CORE:
             sprintf(buf, "%d", cur_cpucore);
             break;
