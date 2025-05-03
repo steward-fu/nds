@@ -7272,7 +7272,7 @@ int handle_menu(int key)
         }
 #endif
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
         if (cur_cpucore != pre_cpucore) {
             set_core(cur_cpucore);
             pre_cpucore = cur_cpucore;
