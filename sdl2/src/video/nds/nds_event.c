@@ -1076,19 +1076,21 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_MENU, v);
     }
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(BRICK)
     if (c == myevent.keypad.save) {
         set_key_bit(KEY_BIT_SAVE, v);
     }
     if (c == myevent.keypad.load) {
         set_key_bit(KEY_BIT_LOAD, v);
     }
+#if defined(QX1000)
     if (c == myevent.keypad.fast) {
         set_key_bit(KEY_BIT_FAST, v);
     }
     if (c == myevent.keypad.exit) {
         set_key_bit(KEY_BIT_EXIT, v);
     }
+#endif
 #endif
 
 #if defined(MINI)
@@ -1634,11 +1636,13 @@ void init_event(void)
     myevent.keypad.vol_up = DEV_KEY_CODE_VOL_UP;
     myevent.keypad.vol_down = DEV_KEY_CODE_VOL_DOWN;
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(BRICK)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
+#if defined(QX1000)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
+#endif
 #endif
 
 #if defined(TRIMUI)

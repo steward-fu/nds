@@ -198,12 +198,15 @@
 #define DEV_KEY_CODE_R1         311
 #define DEV_KEY_CODE_L2         104
 #define DEV_KEY_CODE_R2         105
-#define DEV_KEY_CODE_START      318
-#define DEV_KEY_CODE_SELECT     317
-#define DEV_KEY_CODE_MENU       314
+#define DEV_KEY_CODE_START      315
+#define DEV_KEY_CODE_SELECT     314
+#define DEV_KEY_CODE_MENU       316
 #define DEV_KEY_CODE_POWER      -1
 #define DEV_KEY_CODE_VOL_UP     115
 #define DEV_KEY_CODE_VOL_DOWN   114
+
+#define DEV_KEY_CODE_SAVE       317
+#define DEV_KEY_CODE_LOAD       318
 #endif
 
 #if defined(GKD2)
