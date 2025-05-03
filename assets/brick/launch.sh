@@ -3,18 +3,26 @@ MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
 
-sv=`cat /proc/sys/vm/swappiness`
-echo 10 > /proc/sys/vm/swappiness
+function kill_runner() {
+    PID=`pidof runner`
+    if [ "$PID" != "" ]; then
+        kill -9 $PID
+    fi
+}
 
 cd $MYDIR
 
-kill -9 `pidof runner`
+sv=`cat /proc/sys/vm/swappiness`
+echo 10 > /proc/sys/vm/swappiness
+
+kill_runner
 LD_LIBRARY_PATH=/usr/trimui/lib ./runner&
 sleep 1
 
 export SDL_VIDEODRIVER=NDS
 ./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > std.log 2>&1
-kill -9 `pidof runner`
-
 sync
+
+kill_runner
+
 echo $sv > /proc/sys/vm/swappiness

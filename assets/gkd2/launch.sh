@@ -4,17 +4,25 @@ MYDIR=`dirname "$0"`
 export HOME=$MYDIR
 export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH
 
-sv=`cat /proc/sys/vm/swappiness`
-echo 10 > /proc/sys/vm/swappiness
+function kill_runner() {
+    PID=`pidof runner`
+    if [ "$PID" != "" ]; then
+        kill -9 $PID
+    fi
+}
 
 cd $MYDIR
 
-kill -9 `pidof runner`
+sv=`cat /proc/sys/vm/swappiness`
+echo 10 > /proc/sys/vm/swappiness
+
+kill_runner
 ./runner&
 sleep 1
 
 SDL_VIDEODRIVER=NDS ./drastic "$1" > std.log 2>&1
 sync
 
-kill -9 `pidof runner`
+kill_runner
+
 echo $sv > /proc/sys/vm/swappiness
