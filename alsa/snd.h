@@ -20,15 +20,15 @@
 #define MI_AO_SETVOLUME     0x4008690b
 #define MI_AO_GETVOLUME     0xc008690c
 #define MI_AO_SETMUTE       0x4008690d
+#define JSON_APP_FILE       "/appconfigs/system.json"
 #endif
 
-#if defined(A30) || defined(UT) || defined(BRICK)
+#if defined(A30)
 #define MAX_VOL             20
 #define JSON_APP_FILE       "/config/system.json"
 #endif
 
 #if defined(MINI)
-#define JSON_APP_FILE       "/appconfigs/system.json"
 #endif
 
 typedef struct {

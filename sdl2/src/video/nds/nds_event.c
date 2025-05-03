@@ -256,7 +256,7 @@ static int hit_hotkey(uint32_t bit)
     uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
     uint32_t mask = (1 << bit) | (1 << KEY_BIT_MENU);
 #endif
 
@@ -277,7 +277,7 @@ static int set_key_bit(uint32_t bit, int val)
     debug("call %s(bit=%d, val=%d, cur_bits=0x%04x)\n", __func__, bit, val, myevent.keypad.cur_bits);
 
     if (val) {
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
         if (bit == KEY_BIT_MENU) {
             myevent.keypad.cur_bits = (1 << KEY_BIT_MENU);
         }
@@ -817,7 +817,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_DOWN)) {
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myevent.mode == NDS_TOUCH_MODE) {
             switch (nds.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
@@ -935,7 +935,7 @@ static int handle_hotkey(void)
                 sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
                 IMG_SavePNG(p, buf);
                 SDL_FreeSurface(p);
-                printf(PREFIX"Saved \'%s\'\n", buf);
+                debug("saved \'%s\'\n", buf);
             }
         }
         nds.shot.take = 1;
@@ -983,9 +983,9 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_START)) {
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (nds.menu.enable == 0) {
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
             update_wayland_res(640, 480);
 #endif
 
@@ -996,7 +996,7 @@ static int handle_hotkey(void)
         }
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
         set_key_bit(KEY_BIT_EXIT, 1);
 #endif
         set_key_bit(KEY_BIT_START, 0);
@@ -1012,7 +1012,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
         set_key_bit(KEY_BIT_ONION, 1);
         set_key_bit(KEY_BIT_SELECT, 0);
 #endif
@@ -1046,7 +1046,7 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_L1, 0);
     }
 
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     if (check_hotkey && hit_hotkey(KEY_BIT_R2)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         set_key_bit(KEY_BIT_LOAD, 1);
@@ -1149,14 +1149,14 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_MENU, v);
     }
 
-#if defined(QX1000) || defined(BRICK)
+#if defined(QX1000) || defined(XT897) || defined(BRICK)
     if (c == myevent.keypad.save) {
         set_key_bit(KEY_BIT_SAVE, v);
     }
     if (c == myevent.keypad.load) {
         set_key_bit(KEY_BIT_LOAD, v);
     }
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     if (c == myevent.keypad.fast) {
         set_key_bit(KEY_BIT_FAST, v);
     }
@@ -1656,7 +1656,10 @@ int input_handler(void *data)
 
         usleep(10000);
 
-        if ((nds.joy.mode != MYJOY_MODE_STYLUS) && (nds.rjoy.mode != MYJOY_MODE_STYLUS)) {
+#if defined(A30) || defined(FLIP)
+        if ((nds.joy.mode != MYJOY_MODE_STYLUS) && (nds.rjoy.mode != MYJOY_MODE_STYLUS))
+#endif
+        {
             if (!(myevent.keypad.cur_bits & 0x0f)) {
                 nds.pen.pre_ticks = clock();
             }
@@ -1712,10 +1715,10 @@ void init_event(void)
     myevent.keypad.vol_up = DEV_KEY_CODE_VOL_UP;
     myevent.keypad.vol_down = DEV_KEY_CODE_VOL_DOWN;
 
-#if defined(QX1000) || defined(BRICK)
+#if defined(QX1000) || defined(XT897) || defined(BRICK)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
 #endif
@@ -1817,7 +1820,7 @@ static int send_key_to_menu(void)
 
     debug("call %s()\n", __func__);
 
-    for (cc=0; cc<=KEY_BIT_LAST; cc++) {
+    for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
         bit = 1 << cc;
 
         if (changed & bit) {
@@ -1855,7 +1858,7 @@ static int send_key_event(void)
         }
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
         if (cc == KEY_BIT_MENU) {
             continue;
         }

@@ -2,9 +2,10 @@ export MOD=flip
 export NDS_GCC=1
 export NDS_ALSA=0
 
+CFLAGS += -O3
+CFLAGS += -DFLIP
 CFLAGS += -mcpu=cortex-a7
 CFLAGS += -mfpu=neon-vfpv4
-CFLAGS += -O3
 CFLAGS += -Wl,--no-undefined
 
 LDFLAGS+= -ljson-c

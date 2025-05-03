@@ -53,9 +53,9 @@
 #include "nds_video.h"
 #include "nds_event.h"
 
-NDS nds = {0};
-GFX gfx = {0};
-MMIYOO_VideoInfo vid = {0};
+NDS nds = { 0 };
+GFX gfx = { 0 };
+MMIYOO_VideoInfo vid = { 0 };
 
 extern nds_hook myhook;
 extern nds_event myevent;
@@ -222,7 +222,7 @@ static int max_cpu_item = sizeof(cpu_clock) / sizeof(struct _cpu_clock);
 #endif
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
 static volatile int is_wl_thread_running = 0;
 
 static struct _wayland wl = {0};
@@ -319,25 +319,29 @@ TEST_TEAR_DOWN(sdl2_video)
 }
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
 void update_wayland_res(int w, int h)
 {
-    int c0 = 0;
-    int c1 = 0;
-    int scale = 0;
+    float c0 = 0;
+    float c1 = 0;
     float x0 = 0;
     float y0 = 0;
+    float scale = 0;
+
+    debug("call %s()\n", __func__);
 
     FB_W = w;
     FB_H = h;
     wl.info.w = FB_W;
     wl.info.h = FB_H;
-    wl.info.bpp = 32;
-    wl.info.size = wl.info.w * (wl.info.bpp / 8) * wl.info.h;
+    wl.info.size = wl.info.w * wl.info.h * 4;
 
-    c0 = LCD_H / wl.info.w;
-    c1 = LCD_W / wl.info.h;
+    c0 = ((float)LCD_H) / wl.info.w;
+    c1 = ((float)LCD_W) / wl.info.h;
     scale = c0 > c1 ? c1 : c0;
+    if (scale <= 0) {
+        scale = 1.0;
+    }
 
     y0 = ((float)(wl.info.w * scale) / LCD_H);
     x0 = ((float)(wl.info.h * scale) / LCD_W);
@@ -351,10 +355,8 @@ void update_wayland_res(int w, int h)
     egl_fb_vertices[15] =  x0;
     egl_fb_vertices[16] =  y0;
 
-    memset(wl.data, 0, LCD_W * LCD_H * 2);
-    wl.pixels[0] = (uint16_t*)wl.data;
-    wl.pixels[1] = (uint16_t*)(wl.data + wl.info.size);
-    debug("new wayland width=%d height=%d scale=%d\n", w, h, scale);
+    memset(wl.data, 0, LCD_W * LCD_H * 4);
+    debug("new wayland width=%d, height=%d, scale=%.2f\n", w, h, scale);
 }
 
 static void* wl_thread(void* pParam)
@@ -363,7 +365,9 @@ static void* wl_thread(void* pParam)
         if (wl.init && wl.ready) {
             wl_display_dispatch(wl.display);
         }
-        usleep(100);
+        else {
+            usleep(1000);
+        }
     }
     return NULL;
 }
@@ -424,11 +428,13 @@ void wl_free(void)
     wl_compositor_destroy(wl.compositor);
     wl_registry_destroy(wl.registry);
     wl_display_disconnect(wl.display);
-    free(wl.data);
+    SDL_free(wl.bg);
+    SDL_free(wl.data);
 }
 
 void wl_create(void)
 {
+    pixel_filter = 0;
     wl.display = wl_display_connect(NULL);
     wl.registry = wl_display_get_registry(wl.display);
 
@@ -508,8 +514,6 @@ void egl_create(void)
 
     glGenTextures(1, &wl.egl.textureId);
     glBindTexture(GL_TEXTURE_2D, wl.egl.textureId);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glViewport(0, 0, LCD_W, LCD_H);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -531,6 +535,17 @@ static void* draw_thread(void *pParam)
     wl.init = 1;
     while (is_wl_thread_running) {
         if (wl.ready) {
+            if (pixel_filter) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            }
+            else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
             glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
             glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.bg);
@@ -543,7 +558,7 @@ static void* draw_thread(void *pParam)
             eglSwapBuffers(wl.egl.display, wl.egl.surface);
         }
         else {
-            usleep(100);
+            usleep(1000);
         }
     }
     return NULL;
@@ -888,7 +903,7 @@ static int draw_drastic_menu_main(void)
     sprintf(buf, "Rel "NDS_VER", Res %s", "800*480");
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     sprintf(buf, "Rel "NDS_VER);
 #endif
 
@@ -1568,7 +1583,7 @@ int process_drastic_menu(void)
 {
     int layer = 0;
 
-    debug("call %s()\n", __func__);
+    printf("call %s()\n", __func__);
 
     layer = get_current_menu_layer();
     if (layer == NDS_DRASTIC_MENU_MAIN) {
@@ -1615,6 +1630,7 @@ int process_drastic_menu(void)
     flush_lcd(-1, nds.menu.drastic.main->pixels, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->clip_rect, nds.menu.drastic.main->pitch, 0, E_MI_GFX_ROTATE_180);
     flip_lcd();
 #endif
+
     memset(&drastic_menu, 0, sizeof(drastic_menu));
     return 0;
 }
@@ -1648,7 +1664,7 @@ static int process_screen(void)
 
     debug("call %s()\n", __func__);
 
-#if defined(MINI) || defined(PANDORA) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(PANDORA) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     screen_cnt = 2;
 #else
     screen_cnt = 1;
@@ -1671,7 +1687,7 @@ static int process_screen(void)
     if (nds.menu.drastic.enable) {
         nds.menu.drastic.enable = 0;
         need_reload_bg = RELOAD_BG_COUNT;
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
         update_wayland_res(NDS_W * 2, NDS_H);
 #endif
     }
@@ -1822,7 +1838,7 @@ static int process_screen(void)
                 nds.hres_mode = 1;
                 pre_dis_mode = nds.dis_mode;
                 nds.dis_mode = pre_hres_mode;
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
                 update_wayland_res(NDS_Wx2, NDS_Hx2);
 #endif
             }
@@ -1840,13 +1856,14 @@ static int process_screen(void)
                 nds.hres_mode = 0;
                 pre_hres_mode = nds.dis_mode;
                 nds.dis_mode = pre_dis_mode;
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
                 update_wayland_res(NDS_W * 2, NDS_H);
 #endif
             }
         }
 
 #if defined(QX1000)
+#elif defined(XT897)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
 #elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
@@ -2112,6 +2129,7 @@ static int process_screen(void)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
+
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nds.screen.pixels[idx]);
 #endif
 
@@ -2372,7 +2390,9 @@ static void strip_newline(char *p)
 
 static void *video_handler(void *threadid)
 {
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     int pre_filter = 0;
+#endif
 
 #if defined(FLIP)
     EGLint surf_cfg[] = {
@@ -2933,7 +2953,7 @@ static int read_config(void)
     json_object_object_get_ex(jfile, JSON_NDS_HALF_VOL, &jval);
     nds.half_vol = json_object_get_int(jval) ? 1 : 0;
 
-#if defined(MINI) || defined(A30) || defined(QX1000) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(QX1000) || defined(XT897) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     json_object_object_get_ex(jfile, JSON_NDS_STATES, &jval);
     if (jval) {
         struct stat st = {0};
@@ -2993,7 +3013,7 @@ static int read_config(void)
     disp_resize();
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     nds.dis_mode = NDS_DIS_MODE_H0;
 #endif
 
@@ -3355,7 +3375,7 @@ int fb_quit(void)
 {
     vid.shm.buf->valid = 1;
     vid.shm.buf->cmd = SHM_CMD_QUIT;
-    printf("send SHM_CMD_QUIT\n");
+    debug("send SHM_CMD_QUIT\n");
 
     while (vid.shm.buf->valid) {
         usleep(10);
@@ -3380,11 +3400,11 @@ int fb_quit(void)
 }
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
 int fb_init(void)
 {
     is_wl_thread_running = 1;
-    wl.bg = SDL_malloc(LCD_W * LCD_H * 2);
+    wl.bg = SDL_malloc(LCD_W * LCD_H * 4);
     memset(wl.bg, 0, LCD_W * LCD_H * 2);
     pthread_create(&thread_id[0], NULL, wl_thread, NULL);
     pthread_create(&thread_id[1], NULL, draw_thread, NULL);
@@ -3394,8 +3414,10 @@ int fb_init(void)
 
     wl.flip = 0;
     wl.ready = 0;
-    wl.data = SDL_malloc(LCD_W * LCD_H * 2);
-    memset(wl.data, 0, LCD_W * LCD_H *2);
+    wl.data = SDL_malloc(LCD_W * LCD_H * 4 * 2);
+    memset(wl.data, 0, LCD_W * LCD_H * 4 * 2);
+    wl.pixels[0] = (uint16_t *)wl.data;
+    wl.pixels[1] = (uint16_t *)(wl.data + (LCD_W * LCD_H * 4));
     update_wayland_res(NDS_W * 2, NDS_H);
     wl.ready = 1;
     return 0;
@@ -3468,7 +3490,7 @@ static int ion_alloc(int ion_fd, ion_alloc_info_t* info)
     iad.heap_id_mask = ION_HEAP_TYPE_DMA_MASK;
     iad.flags = 0;
     if (ioctl(ion_fd, ION_IOC_ALLOC, &iad) < 0) {
-        printf(PREFIX"Failed to call ION_IOC_ALLOC\n");
+        debug("failed to call ION_IOC_ALLOC\n");
         return -1;
     }
 
@@ -3476,19 +3498,19 @@ static int ion_alloc(int ion_fd, ion_alloc_info_t* info)
     icd.arg = (uintptr_t)&spd;
     spd.handle = iad.handle;
     if (ioctl(ion_fd, ION_IOC_CUSTOM, &icd) < 0) {
-        printf(PREFIX"Failed to call ION_IOC_CUSTOM\n");
+        debug("failed to call ION_IOC_CUSTOM\n");
         return -1;
     }
     ifd.handle = iad.handle;
     if (ioctl(ion_fd, ION_IOC_MAP, &ifd) < 0) {
-        printf(PREFIX"Failed to call ION_IOC_MAP\n");
+        debug("failed to call ION_IOC_MAP\n");
     }
 
     info->handle = iad.handle;
     info->fd = ifd.fd;
     info->padd = (void*)spd.phys_addr;
     info->vadd = mmap(0, info->size, PROT_READ | PROT_WRITE, MAP_SHARED, info->fd, 0);
-    printf(PREFIX"Mmap padd:0x%x, vadd:0x%x, size:%d\n", (uintptr_t)info->padd, (uintptr_t)info->vadd, info->size);
+    debug("mmap padd:0x%x, vadd:0x%x, size:%d\n", (uintptr_t)info->padd, (uintptr_t)info->vadd, info->size);
     return 0;
 }
 
@@ -3500,7 +3522,7 @@ static void ion_free(int ion_fd, ion_alloc_info_t* info)
     close(info->fd);
     ihd.handle = info->handle;
     if (ioctl(ion_fd, ION_IOC_FREE, &ihd) < 0) {
-        printf(PREFIX"Failed to call ION_ION_FREE\n");
+        debug("failed to call ION_ION_FREE\n");
     }
 }
 
@@ -3514,7 +3536,7 @@ int fb_init(void)
     gfx.mem_dev = open("/dev/mem", O_RDWR);
     gfx.disp_dev = open("/dev/disp", O_RDWR);
     if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open /dev/fb0\n");
+        debug("failed to open /dev/fb0\n");
         return -1;
     }
 
@@ -3639,28 +3661,28 @@ static void check_before_set(int num, int v)
 static void set_core(int n)
 {
     if (n <= 1) {
-        printf(PREFIX"New CPU Core: 1\n");
+        debug("new CPU Core: 1\n");
         check_before_set(0, 1);
         check_before_set(1, 0);
         check_before_set(2, 0);
         check_before_set(3, 0);
     }
     else if (n == 2) {
-        printf(PREFIX"New CPU Core: 2\n");
+        debug("new CPU Core: 2\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 0);
         check_before_set(3, 0);
     }
     else if (n == 3) {
-        printf(PREFIX"New CPU Core: 3\n");
+        debug("new CPU Core: 3\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 1);
         check_before_set(3, 0);
     }
     else {
-        printf(PREFIX"New CPU Core: 4\n");
+        debug("new CPU Core: 4\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 1);
@@ -3672,12 +3694,12 @@ int fb_init(void)
 {
     gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
     if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open /dev/fb0\n");
+        debug("failed to open /dev/fb0\n");
         return -1;
     }
 
     if (ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo) < 0) {
-        printf(PREFIX"Failed to get fb info\n");
+        debg("failed to get fb info\n");
         return -1;
     }
 
@@ -3685,10 +3707,10 @@ int fb_init(void)
     if (gfx.fb.virAddr == (void *)-1) {
         close(gfx.fb_dev);
         gfx.fb_dev = -1;
-        printf(PREFIX"Failed to mmap fb\n");
+        debug("failed to mmap fb\n");
         return -1;
     }
-    printf(PREFIX"FB virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
+    debug("fb virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
     memset(gfx.fb.virAddr, 0 , FB_SIZE);
 
     gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
@@ -4046,7 +4068,7 @@ void GFX_Init(void)
         drop_bios_files(nds.bios.path);
     }
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
 #else
     cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
@@ -4063,7 +4085,7 @@ void GFX_Init(void)
     nds.menu.sel = 0;
     nds.menu.max = get_menu_count();
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
 #else
     nds.menu.drastic.main = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
@@ -4374,7 +4396,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     }
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
+{
     int x = 0;
     int y = 0;
     const uint32_t *src = pixels;
@@ -4415,6 +4438,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
             dst+= (FB_W - srcrect.w);
         }
     }
+}
 #endif
 
 #if defined(PANDORA)
@@ -5602,7 +5626,7 @@ void flip_lcd(void)
 
     debug("call %s()\n", __func__);
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     wl.flip ^= 1;
 #endif
 
@@ -5883,7 +5907,7 @@ int reload_menu(void)
     if (t) {
         SDL_Rect nrt = { 0 };
 
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         nrt.w = LINE_H - 2;
         nrt.h = LINE_H - 2;
 #endif
@@ -5906,7 +5930,7 @@ int reload_menu(void)
     if (t) {
         SDL_Rect nrt = { 0 };
 
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         nrt.w = LINE_H - 2;
         nrt.h = LINE_H - 2;
 #endif
@@ -5929,11 +5953,11 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#if !defined(PANDORA) && !defined(QX1000) && !defined(UT)
+#if !defined(PANDORA) && !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_sel = -1;
 #endif
 
-#if !defined(PANDORA) && !defined(QX1000) && !defined(UT)
+#if !defined(PANDORA) && !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_mode = -1;
 #endif
 
@@ -6492,7 +6516,7 @@ void MMIYOO_VideoQuit(_THIS)
     lang_unload();
 }
 
-#if defined(MINI) || defined(QX1000) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK) || defined(XT897)
 static const char *DIS_MODE0_640[] = {
     "640*480",
     "640*480",
@@ -7207,7 +7231,7 @@ int handle_menu(int key)
             pre_ff = nds.fast_forward;
         }
         nds.menu.enable = 0;
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
         update_wayland_res(NDS_W * 2, NDS_H);
 #endif
         return 0;

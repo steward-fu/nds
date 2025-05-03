@@ -39,9 +39,7 @@ endif
 
 .PHONY: cfg
 cfg:
-ifneq ($(MOD),ut)
-	cp -a assets/$(MOD)/* drastic/
-endif
+	cp -a assets/$(MOD)/* drastic/ || true
 
 ifeq ($(wildcard sdl2/Makefile),)
 	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure --enable-video --host=$(HOST)
@@ -62,11 +60,17 @@ clean:
 	rm -rf sdl2/Makefile
 	rm -rf sdl2/configure
 	rm -rf drastic/lib
+	rm -rf drastic/system
 	rm -rf drastic/14nds
 	rm -rf drastic/run.sh
 	rm -rf drastic/runner
 	rm -rf drastic/icon.png
 	rm -rf drastic/cpuclock
 	rm -rf drastic/launch.sh
+	rm -rf drastic/backup/
+	rm -rf drastic/savestates/
 	rm -rf drastic/config.json
 	rm -rf drastic/config/drastic.cf2
+	rm -rf drastic/input_capture_crash.ir
+	mkdir -p drastic/lib
+	mkdir -p drastic/system

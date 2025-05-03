@@ -12,6 +12,13 @@
 #include <linux/omapfb.h>
 #endif
 
+#if defined(QX1000) || defined(XT897)
+#include <wayland-client.h>
+#include <wayland-egl.h>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#endif
+
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
@@ -52,13 +59,6 @@
 #include "mi_gfx.h"
 #endif
 
-#if defined(QX1000)
-#include <wayland-client.h>
-#include <wayland-egl.h>
-#include <EGL/egl.h>
-#include <GLES2/gl2.h>
-#endif
-
 #if defined(TRIMUI)
 #include "trimui.h"
 #endif
@@ -75,7 +75,7 @@
     #define E_MI_GFX_FMT_ARGB8888   1
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     struct _wayland {
         struct wl_shell *shell;
         struct wl_region *region;
@@ -248,9 +248,21 @@
     #define DEF_FONT_SIZE           24
 #endif
 
-#ifdef QX1000
+#if defined(QX1000)
     #define LCD_W                   1080
     #define LCD_H                   2160
+    #define DEF_FB_W                (NDS_W * 2)
+    #define DEF_FB_H                NDS_H
+    #define FB_BPP                  4
+    #define IMG_W                   640
+    #define IMG_H                   480
+    #define RELOAD_BG_COUNT         1
+    #define DEF_FONT_SIZE           24
+#endif
+
+#if defined(XT897)
+    #define LCD_W                   540
+    #define LCD_H                   960
     #define DEF_FB_W                (NDS_W * 2)
     #define DEF_FB_H                NDS_H
     #define FB_BPP                  4

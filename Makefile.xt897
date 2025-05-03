@@ -1,0 +1,17 @@
+export MOD=xt897
+export NDS_GCC=0
+export NDS_ALSA=1
+
+CFLAGS  += -O3
+CFLAGS  += -DXT897
+CFLAGS  += -mcpu=cortex-a7
+CFLAGS  += -mfpu=neon-vfpv4
+CFLAGS  += -Wl,--no-undefined
+
+LDFLAGS += -lpulse
+LDFLAGS += -ljson-c
+ 
+export MORE_CFLAGS=${CFLAGS}
+export MORE_LDFLAGS=${LDFLAGS}
+
+include Makefile.mk

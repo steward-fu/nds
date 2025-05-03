@@ -266,7 +266,7 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
 {
     debug("call %s()\n", __func__);
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(XT897)
     if (nds.menu.drastic.enable == 0) {
         update_wayland_res(640, 480);
     }
@@ -287,6 +287,7 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
 #if !defined(UT)
     process_drastic_menu();
 #endif
+
     return 0;
 }
 

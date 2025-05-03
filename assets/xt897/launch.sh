@@ -8,5 +8,5 @@ export SDL_AUDIODRIVER=NDS
 export LD_LIBRARY_PATH=lib:/usr/local/lib:$LD_LIBRARY_PATH
 
 cd $MYDIR
-./drastic
+./drastic "$1"
 sync

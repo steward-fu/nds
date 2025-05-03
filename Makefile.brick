@@ -3,11 +3,11 @@ export NDS_GCC=1
 export NDS_ALSA=1
 export NDS_RUNNER=1
 
-CFLAGS += -DBRICK
 CFLAGS += -O3
-CFLAGS += -Wl,--no-undefined
+CFLAGS += -DBRICK
 CFLAGS += -mcpu=cortex-a7
 CFLAGS += -mfpu=neon-vfpv4
+CFLAGS += -Wl,--no-undefined
 
 LDFLAGS+= -ljson-c
  

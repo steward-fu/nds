@@ -2493,6 +2493,16 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
+    if test x$MOD = xxt897; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DXT897"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
+    fi
+
     if test x$MOD = xgkd2; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKD2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
@@ -3837,6 +3847,9 @@ case "$host" in
                 CheckNDSVideo
                 ;;
             *brick*)
+                CheckNDSVideo
+                ;;
+            *xt897*)
                 CheckNDSVideo
                 ;;
             *)
