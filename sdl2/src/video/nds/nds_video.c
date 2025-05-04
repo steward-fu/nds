@@ -2,12 +2,12 @@
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
 #include <time.h>
-#include <dirent.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <dirent.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
@@ -18,9 +18,6 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <json-c/json.h>
-
-#include <EGL/egl.h>
-#include <GLES2/gl2.h>
 
 #if defined(GKD2) || defined(BRICK)
 #include <sys/socket.h>
@@ -73,149 +70,203 @@ SDL_Surface *fps_info = NULL;
 
 static volatile int is_video_thread_running = 0;
 
-static pthread_t thread;
+static pthread_t thread = { 0 };
 static int need_reload_bg = RELOAD_BG_COUNT;
 static SDL_Surface *cvt = NULL;
 
-static int MMIYOO_VideoInit(_THIS);
-static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
-static void MMIYOO_VideoQuit(_THIS);
+static int init_video(_THIS);
+static int set_disp_mode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
+static void quit_video(_THIS);
 
-static CUST_MENU drastic_menu = {0};
-static char *translate[MAX_LANG_LINE] = {0};
+static CUST_MENU drastic_menu = { 0 };
+static char *translate[MAX_LANG_LINE] = { 0 };
 
 #if defined(TRIMUI)
-static uint32_t LUT_256x192_S00[NDS_W * NDS_H] = {0};
-static uint32_t LUT_256x192_S01[NDS_W * NDS_H] = {0};
-static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = {0};
-static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = {0};
+static uint32_t LUT_256x192_S00[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_S01[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = { 0 };
 
 int need_restore = 0;
 int pre_dismode = 0;
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-GLfloat bgVertices[] = {
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(QX1000) || defined(XT897)
+GLfloat bg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
     1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
     1.0f,  1.0f,  0.0f,  1.0f,  0.0f
 };
 
-GLfloat vVertices[] = {
+GLfloat fg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
     1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
     1.0f,  1.0f,  0.0f,  1.0f,  0.0f
 };
-GLushort indices[] = {0, 1, 2, 0, 2, 3};
 
-const char *vShaderSrc =
-    "attribute vec4 a_position;   \n"
-    "attribute vec2 a_texCoord;   \n"
-    "attribute float a_alpha;     \n"
-    "varying vec2 v_texCoord;     \n"
-    "void main()                  \n"
-    "{                            \n"
-#if !defined(FLIP)
-    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;                                                                            \n"
-    "    mat4 rot = mat4(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); \n"
-    "    gl_Position = a_position * rot; \n"
-    "    v_texCoord = a_texCoord;        \n"
-#else
-    "    gl_Position = a_position; \n"
-    "    v_texCoord = a_texCoord;        \n"
+GLushort vert_indices[] = {
+    0, 1, 2, 0, 2, 3
+};
 #endif
-    "}                                   \n";
+
+#if defined(QX1000) || defined(XT897)
+const char *vert_shader_src =
+    "attribute vec4 vert_pos;                               \n"
+    "attribute vec2 vert_coord;                             \n"
+    "varying vec2 frag_coord;                               \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    gl_Position = vert_pos;                            \n"
+    "    frag_coord = vert_coord;                           \n"
+    "}                                                      \n";
+
+const char *frag_shader_src =
+    "#ifdef GL_ES                                           \n"
+    "precision mediump float;                               \n"
+    "#endif                                                 \n"
+    "varying vec2 frag_coord;                               \n"
+    "uniform float frag_angle;                              \n"
+    "uniform float frag_aspect;                             \n"
+    "uniform sampler2D frag_sampler;                        \n"
+    "const vec2 HALF = vec2(0.5);                           \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    float aSin = sin(frag_angle);                      \n"
+    "    float aCos = cos(frag_angle);                      \n"
+    "    vec2 tc = frag_coord;                              \n"
+    "    mat2 rotMat = mat2(                                \n"
+    "        aCos, -aSin, aSin, aCos);                      \n"
+    "    mat2 scaleMat = mat2(                              \n"
+    "        frag_aspect, 0.0, 0.0, 1.0);                   \n"
+    "    mat2 scaleMatInv = mat2(                           \n"
+    "        1.0 / frag_aspect, 0.0, 0.0, 1.0);             \n"
+    "    tc -= HALF.xy;                                     \n"
+    "    tc = scaleMatInv * rotMat * scaleMat * tc;         \n"
+    "    tc += HALF.xy;                                     \n"
+    "    vec3 tex = texture2D(frag_sampler, tc).bgr;        \n"
+    "    gl_FragColor = vec4(tex, 1.0);                     \n"
+    "}                                                      \n";
+#endif
+
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
+const char *vert_shader_src =
+    "attribute vec4 vert_pos;                               \n"
+    "attribute vec2 vert_coord;                             \n"
+    "attribute float vert_alpha;                            \n"
+    "varying vec2 frag_coord;                               \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+#if !defined(FLIP)
+    "    const float frag_angle = 0.0;                      \n"
+    "    frag_angle = 90.0 * (3.1415 * 2.0);                \n"
+    "    frag_angle = frag_angle / 360.0;                   \n"
+    "    mat4 rot = mat4(                                   \n"
+    "        cos(frag_angle), -sin(frag_angle), 0.0, 0.0,   \n"
+    "        sin(frag_angle),  cos(frag_angle), 0.0, 0.0,   \n"
+    "               0.0,         0.0, 1.0, 0.0,             \n"
+    "               0.0,         0.0, 0.0, 1.0              \n"
+    "    );                                                 \n"
+    "    gl_Position = vert_pos * rot;                      \n"
+    "    frag_coord = vert_coord;                           \n"
+#else
+    "    gl_Position = vert_pos;                            \n"
+    "    frag_coord = vert_coord;                           \n"
+#endif
+    "}                                                      \n";
     
-const char *fShaderSrc =
-    "precision mediump float;                                  \n"
-    "varying vec2 v_texCoord;                                  \n"
-    "uniform float s_alpha;                                    \n"
-    "uniform sampler2D s_texture;                              \n"
-    "void main()                                               \n"
-    "{                                                         \n"
-    "    if (s_alpha >= 2.0) {                                 \n"
-    "        gl_FragColor = texture2D(s_texture, v_texCoord);  \n"
-    "    }                                                     \n"
-    "    else if (s_alpha > 0.0) {                             \n"
-    "        vec3 tex = texture2D(s_texture, v_texCoord).bgr;  \n"
-    "        gl_FragColor = vec4(tex, s_alpha);                \n"
-    "    }                                                     \n"
-    "    else {                                                \n"
-    "        vec3 tex = texture2D(s_texture, v_texCoord).bgr;  \n"
-    "        gl_FragColor = vec4(tex, 1.0);                    \n"
-    "    }                                                     \n"
-    "}                                                         \n";
+const char *frag_shader_src =
+    "precision mediump float;                               \n"
+    "varying vec2 frag_coord;                               \n"
+    "uniform float s_alpha;                                 \n"
+    "uniform sampler2D frag_sampler;                        \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    if (s_alpha >= 2.0) {                              \n"
+    "        gl_FragColor = texture2D(                      \n"
+    "            frag_sampler, frag_coord);                 \n"
+    "    }                                                  \n"
+    "    else if (s_alpha > 0.0) {                          \n"
+    "        vec3 tex = texture2D(                          \n"
+    "            frag_sampler, frag_coord).bgr;             \n"
+    "        gl_FragColor = vec4(tex, s_alpha);             \n"
+    "    }                                                  \n"
+    "    else {                                             \n"
+    "        vec3 tex = texture2D(                          \n"
+    "            frag_sampler, frag_coord).bgr;             \n"
+    "        gl_FragColor = vec4(tex, 1.0);                 \n"
+    "    }                                                  \n"
+    "}                                                      \n";
 
 #if defined(A30)
 static struct _cpu_clock cpu_clock[] = {
-    {96, 0x80000110},
-    {144, 0x80000120},
-    {192, 0x80000130},
-    {216, 0x80000220},
-    {240, 0x80000410},
-    {288, 0x80000230},
-    {336, 0x80000610},
-    {360, 0x80000420},
-    {384, 0x80000330},
-    {432, 0x80000520},
-    {480, 0x80000430},
-    {504, 0x80000620},
-    {528, 0x80000a10},
-    {576, 0x80000530},
-    {624, 0x80000c10},
-    {648, 0x80000820},
-    {672, 0x80000630},
-    {720, 0x80000920},
-    {768, 0x80000730},
-    {792, 0x80000a20},
-    {816, 0x80001010},
-    {864, 0x80000830},
-    {864, 0x80001110},
-    {912, 0x80001210},
-    {936, 0x80000c20},
-    {960, 0x80000930},
-    {1008, 0x80000d20},
-    {1056, 0x80000a30},
-    {1080, 0x80000e20},
-    {1104, 0x80001610},
-    {1152, 0x80000b30},
-    {1200, 0x80001810},
-    {1224, 0x80001020},
-    {1248, 0x80000c30},
-    {1296, 0x80001120},
-    {1344, 0x80000d30},
-    {1368, 0x80001220},
-    {1392, 0x80001c10},
-    {1440, 0x80000e30},
-    {1488, 0x80001e10},
-    {1512, 0x80001420},
-    {1536, 0x80000f30},
-    {1584, 0x80001520},
-    {1632, 0x80001030},
-    {1656, 0x80001620},
-    {1728, 0x80001130},
-    {1800, 0x80001820},
-    {1824, 0x80001230},
-    {1872, 0x80001920},
-    {1920, 0x80001330},
-    {1944, 0x80001a20},
-    {2016, 0x80001430},
-    {2088, 0x80001c20},
-    {2112, 0x80001530},
-    {2160, 0x80001d20},
-    {2208, 0x80001630},
-    {2232, 0x80001e20},
-    {2304, 0x80001730},
-    {2400, 0x80001830},
-    {2496, 0x80001930},
-    {2592, 0x80001a30},
-    {2688, 0x80001b30},
-    {2784, 0x80001c30},
-    {2880, 0x80001d30},
-    {2976, 0x80001e30},
-    {3072, 0x80001f30},
+    {  96, 0x80000110 },
+    { 144, 0x80000120 },
+    { 192, 0x80000130 },
+    { 216, 0x80000220 },
+    { 240, 0x80000410 },
+    { 288, 0x80000230 },
+    { 336, 0x80000610 },
+    { 360, 0x80000420 },
+    { 384, 0x80000330 },
+    { 432, 0x80000520 },
+    { 480, 0x80000430 },
+    { 504, 0x80000620 },
+    { 528, 0x80000a10 },
+    { 576, 0x80000530 },
+    { 624, 0x80000c10 },
+    { 648, 0x80000820 },
+    { 672, 0x80000630 },
+    { 720, 0x80000920 },
+    { 768, 0x80000730 },
+    { 792, 0x80000a20 },
+    { 816, 0x80001010 },
+    { 864, 0x80000830 },
+    { 864, 0x80001110 },
+    { 912, 0x80001210 },
+    { 936, 0x80000c20 },
+    { 960, 0x80000930 },
+    { 1008, 0x80000d20 },
+    { 1056, 0x80000a30 },
+    { 1080, 0x80000e20 },
+    { 1104, 0x80001610 },
+    { 1152, 0x80000b30 },
+    { 1200, 0x80001810 },
+    { 1224, 0x80001020 },
+    { 1248, 0x80000c30 },
+    { 1296, 0x80001120 },
+    { 1344, 0x80000d30 },
+    { 1368, 0x80001220 },
+    { 1392, 0x80001c10 },
+    { 1440, 0x80000e30 },
+    { 1488, 0x80001e10 },
+    { 1512, 0x80001420 },
+    { 1536, 0x80000f30 },
+    { 1584, 0x80001520 },
+    { 1632, 0x80001030 },
+    { 1656, 0x80001620 },
+    { 1728, 0x80001130 },
+    { 1800, 0x80001820 },
+    { 1824, 0x80001230 },
+    { 1872, 0x80001920 },
+    { 1920, 0x80001330 },
+    { 1944, 0x80001a20 },
+    { 2016, 0x80001430 },
+    { 2088, 0x80001c20 },
+    { 2112, 0x80001530 },
+    { 2160, 0x80001d20 },
+    { 2208, 0x80001630 },
+    { 2232, 0x80001e20 },
+    { 2304, 0x80001730 },
+    { 2400, 0x80001830 },
+    { 2496, 0x80001930 },
+    { 2592, 0x80001a30 },
+    { 2688, 0x80001b30 },
+    { 2784, 0x80001c30 },
+    { 2880, 0x80001d30 },
+    { 2976, 0x80001e30 },
+    { 3072, 0x80001f30 },
 };
 
 static int max_cpu_item = sizeof(cpu_clock) / sizeof(struct _cpu_clock);
@@ -225,10 +276,10 @@ static int max_cpu_item = sizeof(cpu_clock) / sizeof(struct _cpu_clock);
 #if defined(QX1000) || defined(XT897)
 static volatile int is_wl_thread_running = 0;
 
-static struct _wayland wl = {0};
-static pthread_t thread_id[2] = {0};
+static struct _wayland wl = { 0 };
+static pthread_t thread_id[2] = { 0 };
 
-EGLint egl_attribs[] = {
+EGLint egl_cfg[] = {
     EGL_SURFACE_TYPE,
     EGL_WINDOW_BIT,
     EGL_RENDERABLE_TYPE,
@@ -247,59 +298,11 @@ EGLint ctx_attribs[] = {
     2, 
     EGL_NONE
 };
+#endif
 
-GLfloat egl_bg_vertices[] = {
-    -1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 
-    -1.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-     1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 
-     1.0f,  1.0f, 0.0f, 1.0f, 0.0f
-};
-
-GLfloat egl_fb_vertices[] = {
-    -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 
-    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 
-     0.5f,  0.5f, 0.0f, 1.0f, 0.0f
-};
-
-GLushort egl_indices[] = {0, 1, 2, 0, 2, 3};
-
-const char *vShaderSrc =
-    "attribute vec4 a_position;   \n"
-    "attribute vec2 a_texCoord;   \n"
-    "varying vec2 v_texCoord;     \n"
-    "void main()                  \n"
-    "{                            \n"
-    "   gl_Position = a_position; \n"
-    "   v_texCoord = a_texCoord;  \n"
-    "}                            \n";
-
-const char *fShaderSrc =
-    "#ifdef GL_ES                                              \n"
-    "precision mediump float;                                  \n"
-    "#endif                                                    \n"
-    "varying vec2 v_texCoord;                                  \n"
-    "uniform float angle;                                      \n"
-    "uniform float aspect;                                     \n"
-    "uniform sampler2D s_texture;                              \n"
-    "const vec2 HALF = vec2(0.5);                              \n"
-    "void main()                                               \n"
-    "{                                                         \n"
-    "    float aSin = sin(angle);                              \n"
-    "    float aCos = cos(angle);                              \n"
-    "    vec2 tc = v_texCoord;                                 \n"
-    "    mat2 rotMat = mat2(aCos, -aSin, aSin, aCos);          \n"
-    "    mat2 scaleMat = mat2(aspect, 0.0, 0.0, 1.0);          \n"
-    "    mat2 scaleMatInv = mat2(1.0 / aspect, 0.0, 0.0, 1.0); \n"
-    "    tc -= HALF.xy;                                        \n"
-    "    tc = scaleMatInv * rotMat * scaleMat * tc;            \n"
-    "    tc += HALF.xy;                                        \n"
-    "    vec3 tex = texture2D(s_texture, tc).bgr;              \n"
-    "    gl_FragColor = vec4(tex, 1.0);                        \n"
-    "}                                                         \n";
-
-static void cb_remove(void *dat, struct wl_registry *reg, uint32_t id);
-static void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver);
+#if defined(QX1000) || defined(XT897)
+static void cb_remove(void *, struct wl_registry *, uint32_t);
+static void cb_handle(void *, struct wl_registry *, uint32_t, const char *, uint32_t);
 
 static struct wl_registry_listener cb_global = {
     .global = cb_handle,
@@ -346,14 +349,14 @@ void update_wayland_res(int w, int h)
     y0 = ((float)(wl.info.w * scale) / LCD_H);
     x0 = ((float)(wl.info.h * scale) / LCD_W);
 
-    egl_fb_vertices[0] = -x0;
-    egl_fb_vertices[1] = y0;
-    egl_fb_vertices[5] = -x0;
-    egl_fb_vertices[6] = -y0;
-    egl_fb_vertices[10] =  x0;
-    egl_fb_vertices[11] = -y0;
-    egl_fb_vertices[15] =  x0;
-    egl_fb_vertices[16] =  y0;
+    fg_vertices[0] = -x0;
+    fg_vertices[1] = y0;
+    fg_vertices[5] = -x0;
+    fg_vertices[6] = -y0;
+    fg_vertices[10] =  x0;
+    fg_vertices[11] = -y0;
+    fg_vertices[15] =  x0;
+    fg_vertices[16] =  y0;
 
     memset(wl.data, 0, LCD_W * LCD_H * 4);
     debug("new wayland width=%d, height=%d, scale=%.2f\n", w, h, scale);
@@ -369,6 +372,7 @@ static void* wl_thread(void* pParam)
             usleep(1000);
         }
     }
+
     return NULL;
 }
 
@@ -377,7 +381,7 @@ static void cb_ping(void *dat, struct wl_shell_surface *shell_surf, uint32_t ser
     wl_shell_surface_pong(shell_surf, serial);
 }
 
-static void cb_configure(void *dat, struct wl_shell_surface *shell_surf, uint32_t edges, int32_t w, int32_t h)
+static void cb_config(void *dat, struct wl_shell_surface *shell_surf, uint32_t edges, int32_t w, int32_t h)
 {
 }
 
@@ -387,7 +391,7 @@ static void cb_popup_done(void *dat, struct wl_shell_surface *shell_surf)
 
 static const struct wl_shell_surface_listener cb_shell_surf = {
     cb_ping,
-    cb_configure,
+    cb_config,
     cb_popup_done
 };
 
@@ -405,10 +409,11 @@ static void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 {
 }
 
-void egl_free(void)
+void quit_egl(void)
 {
     wl.init = 0;
     wl.ready = 0;
+
     eglDestroySurface(wl.egl.display, wl.egl.surface);
     eglDestroyContext(wl.egl.display, wl.egl.context);
     wl_egl_window_destroy(wl.egl.window);
@@ -418,23 +423,29 @@ void egl_free(void)
     glDeleteProgram(wl.egl.pObject);
 }
 
-void wl_free(void)
+void quit_wl(void)
 {
     wl.init = 0;
     wl.ready = 0;
+
     wl_shell_surface_destroy(wl.shell_surface);
     wl_shell_destroy(wl.shell);
     wl_surface_destroy(wl.surface);
     wl_compositor_destroy(wl.compositor);
     wl_registry_destroy(wl.registry);
     wl_display_disconnect(wl.display);
+
     SDL_free(wl.bg);
+    wl.bg = NULL;
+
     SDL_free(wl.data);
+    wl.data = NULL;
 }
 
-void wl_create(void)
+void init_wl(void)
 {
     pixel_filter = 0;
+
     wl.display = wl_display_connect(NULL);
     wl.registry = wl_display_get_registry(wl.display);
 
@@ -453,63 +464,40 @@ void wl_create(void)
     wl.egl.window = wl_egl_window_create(wl.surface, LCD_W, LCD_H);
 }
 
-void egl_create(void)
+void init_egl(void)
 {
-    GLint compiled = 0;
+    EGLint cnt = 0;
+    EGLint major = 0;
+    EGLint minor = 0;
     EGLConfig cfg = 0;
-    EGLint major = 0, minor = 0, cnt = 0;
 
     wl.egl.display = eglGetDisplay((EGLNativeDisplayType)wl.display);
     eglInitialize(wl.egl.display, &major, &minor);
     eglGetConfigs(wl.egl.display, NULL, 0, &cnt);
-    eglChooseConfig(wl.egl.display, egl_attribs, &cfg, 1, &cnt);
+    eglChooseConfig(wl.egl.display, egl_cfg, &cfg, 1, &cnt);
     wl.egl.surface = eglCreateWindowSurface(wl.egl.display, cfg, (EGLNativeWindowType)wl.egl.window, NULL);
     wl.egl.context = eglCreateContext(wl.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
     eglMakeCurrent(wl.egl.display, wl.egl.surface, wl.egl.surface, wl.egl.context);
 
     wl.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(wl.egl.vShader, 1, &vShaderSrc, NULL);
+    glShaderSource(wl.egl.vShader, 1, &vert_shader_src, NULL);
     glCompileShader(wl.egl.vShader);
 
-    glGetShaderiv(wl.egl.vShader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        GLint len = 0;
-        glGetShaderiv(wl.egl.vShader, GL_INFO_LOG_LENGTH, &len);
-        if (len > 1) {
-            char* info = malloc(sizeof(char) * len);
-            glGetShaderInfoLog(wl.egl.vShader, len, NULL, info);
-            debug("%s, failed to compile vShader: %s\n", __func__, info);
-            free(info);
-        }
-    }
-
     wl.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(wl.egl.fShader, 1, &fShaderSrc, NULL);
+    glShaderSource(wl.egl.fShader, 1, &frag_shader_src, NULL);
     glCompileShader(wl.egl.fShader);
     
-    glGetShaderiv(wl.egl.fShader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        GLint len = 0;
-        glGetShaderiv(wl.egl.fShader, GL_INFO_LOG_LENGTH, &len);
-        if (len > 1) {
-            char* info = malloc(sizeof(char) * len);
-            glGetShaderInfoLog(wl.egl.fShader, len, NULL, info);
-            debug("%s, failed to compile fShader: %s\n", __func__, info);
-            free(info);
-        }
-    }
-
     wl.egl.pObject = glCreateProgram();
     glAttachShader(wl.egl.pObject, wl.egl.vShader);
     glAttachShader(wl.egl.pObject, wl.egl.fShader);
     glLinkProgram(wl.egl.pObject);
     glUseProgram(wl.egl.pObject);
 
-    wl.egl.positionLoc = glGetAttribLocation(wl.egl.pObject, "a_position");
-    wl.egl.texCoordLoc = glGetAttribLocation(wl.egl.pObject, "a_texCoord");
-    wl.egl.samplerLoc = glGetUniformLocation(wl.egl.pObject, "s_texture");
-    glUniform1f(glGetUniformLocation(wl.egl.pObject, "angle"), 90 * (3.1415 * 2.0) / 360.0);
-    glUniform1f(glGetUniformLocation(wl.egl.pObject, "aspect"), 1);
+    wl.egl.positionLoc = glGetAttribLocation(wl.egl.pObject, "vert_pos");
+    wl.egl.texCoordLoc = glGetAttribLocation(wl.egl.pObject, "vert_coord");
+    wl.egl.samplerLoc = glGetUniformLocation(wl.egl.pObject, "frag_sampler");
+    glUniform1f(glGetUniformLocation(wl.egl.pObject, "frag_angle"), 90 * (3.1415 * 2.0) / 360.0);
+    glUniform1f(glGetUniformLocation(wl.egl.pObject, "frag_aspect"), 1);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glGenTextures(1, &wl.egl.textureId);
@@ -519,8 +507,8 @@ void egl_create(void)
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
-    glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
+    glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+    glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
     glEnableVertexAttribArray(wl.egl.positionLoc);
     glEnableVertexAttribArray(wl.egl.texCoordLoc);
     glActiveTexture(GL_TEXTURE0);
@@ -529,32 +517,41 @@ void egl_create(void)
 
 static void* draw_thread(void *pParam)
 {
-    wl_create();
-    egl_create();
+    int pre_filter = -1;
+
+    init_wl();
+    init_egl();
+
+    debug("call %s()\n", __func__);
 
     wl.init = 1;
     while (is_wl_thread_running) {
         if (wl.ready) {
-            if (pixel_filter) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            if (pre_filter != pixel_filter) {
+                pre_filter = pixel_filter;
+                if (pixel_filter) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                }
+                else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             }
-            else {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            }
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
-            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
+            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.bg);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_fb_vertices);
-            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_fb_vertices[3]);
+
+            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.pixels[wl.flip ^ 1]);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+
             eglSwapBuffers(wl.egl.display, wl.egl.surface);
         }
         else {
@@ -573,6 +570,8 @@ static void* prehook_cb_malloc(size_t size)
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
 
+    debug("call %s()\n");
+
     if ((size == (NDS_W * NDS_H * bpp)) || (size == (NDS_Wx2 * NDS_Hx2 * bpp))) {
         r = gfx.lcd.virAddr[0][idx];
         idx += 1;
@@ -589,6 +588,8 @@ static void prehook_cb_free(void *ptr)
     int c0 = 0;
     int c1 = 0;
     int found = 0;
+
+    debug("call %s()\n");
 
     for (c0 = 0; c0 < 2; c0++) {
         for (c1 = 0; c1 < 2; c1++) {
@@ -608,6 +609,8 @@ static void* prehook_cb_realloc(void *ptr, size_t size)
 {
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
+
+    debug("call %s()\n");
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -2447,11 +2450,11 @@ static void *video_handler(void *threadid)
     eglMakeCurrent(vid.eglDisplay, vid.eglSurface, vid.eglSurface, vid.eglContext);
 
     vid.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vid.vShader, 1, &vShaderSrc, NULL);
+    glShaderSource(vid.vShader, 1, &vert_shader_src, NULL);
     glCompileShader(vid.vShader);
 
     vid.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vid.fShader, 1, &fShaderSrc, NULL);
+    glShaderSource(vid.fShader, 1, &frag_shader_src, NULL);
     glCompileShader(vid.fShader);
     
     vid.pObject = glCreateProgram();
@@ -2460,9 +2463,9 @@ static void *video_handler(void *threadid)
     glLinkProgram(vid.pObject);
     glUseProgram(vid.pObject);
 
-    vid.posLoc = glGetAttribLocation(vid.pObject, "a_position");
-    vid.texLoc = glGetAttribLocation(vid.pObject, "a_texCoord");
-    vid.samLoc = glGetUniformLocation(vid.pObject, "s_texture");
+    vid.posLoc = glGetAttribLocation(vid.pObject, "vert_pos");
+    vid.texLoc = glGetAttribLocation(vid.pObject, "vert_coord");
+    vid.samLoc = glGetUniformLocation(vid.pObject, "frag_sampler");
     vid.alphaLoc = glGetUniformLocation(vid.pObject, "s_alpha");
 
     glUniform1i(vid.samLoc, 0);
@@ -2523,11 +2526,11 @@ static void *video_handler(void *threadid)
     eglMakeCurrent(vid.eglDisplay, vid.eglSurface, vid.eglSurface, vid.eglContext);
   
     vid.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vid.vShader, 1, &vShaderSrc, NULL);
+    glShaderSource(vid.vShader, 1, &vert_shader_src, NULL);
     glCompileShader(vid.vShader);
   
     vid.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vid.fShader, 1, &fShaderSrc, NULL);
+    glShaderSource(vid.fShader, 1, &frag_shader_src, NULL);
     glCompileShader(vid.fShader);
    
     vid.pObject = glCreateProgram();
@@ -2537,9 +2540,9 @@ static void *video_handler(void *threadid)
     glUseProgram(vid.pObject);
 
     eglSwapInterval(vid.eglDisplay, 1);
-    vid.posLoc = glGetAttribLocation(vid.pObject, "a_position");
-    vid.texLoc = glGetAttribLocation(vid.pObject, "a_texCoord");
-    vid.samLoc = glGetUniformLocation(vid.pObject, "s_texture");
+    vid.posLoc = glGetAttribLocation(vid.pObject, "vert_pos");
+    vid.texLoc = glGetAttribLocation(vid.pObject, "vert_coord");
+    vid.samLoc = glGetUniformLocation(vid.pObject, "frag_sampler");
     vid.alphaLoc = glGetUniformLocation(vid.pObject, "s_alpha");
 
     glGenTextures(TEX_MAX, vid.texID);
@@ -3348,19 +3351,19 @@ static int get_overlay_count(void)
 }
 
 #if defined(UT)
-int fb_init(void)
+int init_lcd(void)
 {
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     return 0;
 }
 #endif
 
 #if defined(GKD2) || defined(BRICK)
-int fb_init(void)
+int init_lcd(void)
 {
     vid.shm.fd = shm_open(SHM_NAME, O_RDWR, 0777);
     debug("shm fd=%d\n", vid.shm.fd);
@@ -3371,7 +3374,7 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     vid.shm.buf->valid = 1;
     vid.shm.buf->cmd = SHM_CMD_QUIT;
@@ -3389,19 +3392,19 @@ int fb_quit(void)
 #endif
 
 #if defined(FLIP)
-int fb_init(void)
+int init_lcd(void)
 {
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     return 0;
 }
 #endif
 
 #if defined(QX1000) || defined(XT897)
-int fb_init(void)
+int init_lcd(void)
 {
     is_wl_thread_running = 1;
     wl.bg = SDL_malloc(LCD_W * LCD_H * 4);
@@ -3423,14 +3426,14 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     return 0;
 }
 #endif
 
 #if defined(PANDORA)
-int fb_init(void)
+int init_lcd(void)
 {
     gfx.fb_dev[0] = open("/dev/fb0", O_RDWR);
     gfx.fb_dev[1] = open("/dev/fb1", O_RDWR);
@@ -3462,7 +3465,7 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     ioctl(gfx.fb_dev[1], OMAPFB_QUERY_PLANE, &gfx.pi);
     gfx.pi.enabled = 0;
@@ -3526,7 +3529,7 @@ static void ion_free(int ion_fd, ion_alloc_info_t* info)
     }
 }
 
-int fb_init(void)
+int init_lcd(void)
 {
     int r = 0;
     uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
@@ -3582,7 +3585,7 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
 
@@ -3690,7 +3693,7 @@ static void set_core(int n)
     }
 }
 
-int fb_init(void)
+int init_lcd(void)
 {
     gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
     if (gfx.fb_dev < 0) {
@@ -3721,7 +3724,7 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     set_core(DEINIT_CPU_CORE);
     system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
@@ -3773,28 +3776,28 @@ static void check_before_set(int num, int v)
 static void set_core(int n)
 {           
     if (n <= 1) {
-        printf(PREFIX"New CPU Core: 1\n");
+        debug("cpu core=1\n");
         check_before_set(0, 1);
         check_before_set(1, 0);
         check_before_set(2, 0);
         check_before_set(3, 0);
     }       
     else if (n == 2) {
-        printf(PREFIX"New CPU Core: 2\n");
+        debug("cpu core=2\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 0);
         check_before_set(3, 0);
     }       
     else if (n == 3) {
-        printf(PREFIX"New CPU Core: 3\n");
+        debug("cpu core=3\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 1);
         check_before_set(3, 0);
     }
     else {
-        printf(PREFIX"New CPU Core: 4\n");
+        debug("cpu core=4\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 1);
@@ -3809,7 +3812,7 @@ static int set_best_match_cpu_clock(int clk)
     system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
     for (cc = 0; cc < max_cpu_item; cc++) {
         if (cpu_clock[cc].clk >= clk) {
-            printf(PREFIX"Set Best Match CPU %dMHz (0x%08x)\n", cpu_clock[cc].clk, cpu_clock[cc].reg);
+            debug("set cpu %dMHz (0x%08x)\n", cpu_clock[cc].clk, cpu_clock[cc].reg);
             *vid.cpu_ptr = cpu_clock[cc].reg;
             return cc;
         }
@@ -3817,16 +3820,16 @@ static int set_best_match_cpu_clock(int clk)
     return -1;
 }
 
-int fb_init(void)
+int init_lcd(void)
 {
     gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
     if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open /dev/fb0\n");
+        debug("failed to open /dev/fb0\n");
         return -1;
     }
 
     if (ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo) < 0) {
-        printf(PREFIX"Failed to get fb info\n");
+        debug("failed to get fb info\n");
         return -1;
     }
 
@@ -3834,10 +3837,10 @@ int fb_init(void)
     if (gfx.fb.virAddr == (void *)-1) {
         close(gfx.fb_dev);
         gfx.fb_dev = -1;
-        printf(PREFIX"Failed to mmap fb\n");
+        debug("failed to mmap fb\n");
         return -1;
     }
-    printf(PREFIX"FB virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
+    debug("fb addr=%p, size=%d\n", gfx.fb.virAddr, FB_SIZE);
     memset(gfx.fb.virAddr, 0 , FB_SIZE);
 
     gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
@@ -3845,23 +3848,23 @@ int fb_init(void)
 
     vid.mem_fd = open("/dev/mem", O_RDWR);
     if (vid.mem_fd < 0) { 
-        printf("Failed to open /dev/mem\n");
+        debug("failed to open /dev/mem\n");
         return -1;
     }    
     vid.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, CCU_BASE);
     if (vid.ccu_mem == MAP_FAILED) {
-        printf("Failed to map memory\n");
+        debug("failed to map memory\n");
         return -1;
     }    
-    printf(PREFIX"CCU MMap %p\n", vid.ccu_mem);
+    debug("ccp mem=%p\n", vid.ccu_mem);
     vid.cpu_ptr = (uint32_t *)&vid.ccu_mem[0x00];
 
     vid.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, DAC_BASE);
     if (vid.dac_mem == MAP_FAILED) {
-        printf("Failed to map memory\n");
+        debug("failed to map memory\n");
         return -1;
     }    
-    printf(PREFIX"DAC MMap %p\n", vid.dac_mem);
+    debug("dac mem=%p\n", vid.dac_mem);
     vid.vol_ptr = (uint32_t *)(&vid.dac_mem[0xc00 + 0x258]);
 
     set_best_match_cpu_clock(INIT_CPU_CLOCK);
@@ -3869,7 +3872,7 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     set_best_match_cpu_clock(DEINIT_CPU_CLOCK);
     set_core(DEINIT_CPU_CORE);
@@ -3904,7 +3907,7 @@ int fb_quit(void)
 #endif
 
 #if defined(MINI)
-int fb_init(void)
+int init_lcd(void)
 {
 #if USE_MASK
     int c0 = 0;
@@ -3917,7 +3920,7 @@ int fb_init(void)
 
     gfx.fb_dev = open("/dev/fb0", O_RDWR);
     if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open /dev/fb0\n");
+        debug("failed to open /dev/fb0\n");
         return -1;
     }
     ioctl(gfx.fb_dev, FBIOGET_FSCREENINFO, &gfx.finfo);
@@ -3945,10 +3948,10 @@ int fb_init(void)
     MI_SYS_Mmap(gfx.lcd.phyAddr[0][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[0][1], TRUE);
     MI_SYS_Mmap(gfx.lcd.phyAddr[1][0], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][0], TRUE);
     MI_SYS_Mmap(gfx.lcd.phyAddr[1][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][1], TRUE);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][1]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
+    debug("lcd buffer0=%p\n", gfx.lcd.virAddr[0][0]);
+    debug("lcd buffer1=%p\n", gfx.lcd.virAddr[0][1]);
+    debug("lcd buffer2=%p\n", gfx.lcd.virAddr[1][0]);
+    debug("lcd buffer3=%p\n", gfx.lcd.virAddr[1][1]);
 
 #if USE_MASK
     MI_SYS_MMA_Alloc(NULL, MASK_SIZE, &gfx.mask.phyAddr[0]);
@@ -3974,7 +3977,7 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
 
@@ -4027,7 +4030,7 @@ void GFX_Init(void)
     uint32_t *dst = NULL;
 #endif
 
-    fb_init();
+    init_lcd();
     memset(nds.pen.path, 0, sizeof(nds.pen.path));
     if (getcwd(nds.pen.path, sizeof(nds.pen.path))) {
         strcat(nds.pen.path, "/");
@@ -4134,9 +4137,9 @@ void GFX_Quit(void)
     is_video_thread_running = 0;
     pthread_join(thread, &ret);
 
-    GFX_Clear();
+    clear_lcd();
     printf(PREFIX"Free FB resources\n");
-    fb_quit();
+    quit_lcd();
 
     if (cvt) {
         SDL_FreeSurface(cvt);
@@ -4144,7 +4147,7 @@ void GFX_Quit(void)
     }
 }
 
-void GFX_Clear(void)
+void clear_lcd(void)
 {
 #if defined(MINI)
     MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
@@ -4213,26 +4216,26 @@ int draw_pen(void *pixels, int width, int pitch)
     }
 
 #if 0
-    vVertices[0] = ((((float)x) / NDS_W) - 0.5) * 2.0;
-    vVertices[1] = ((((float)y) / NDS_H) - 0.5) * -2.0;
+    fg_vertices[0] = ((((float)x) / NDS_W) - 0.5) * 2.0;
+    fg_vertices[1] = ((((float)y) / NDS_H) - 0.5) * -2.0;
 
-    vVertices[5] = vVertices[0];
-    vVertices[6] = ((((float)(y + nds.pen.img->h)) / NDS_H) - 0.5) * -2.0;
+    fg_vertices[5] = fg_vertices[0];
+    fg_vertices[6] = ((((float)(y + nds.pen.img->h)) / NDS_H) - 0.5) * -2.0;
 
-    vVertices[10] = ((((float)(x + nds.pen.img->w)) / NDS_W) - 0.5) * 2.0;
-    vVertices[11] = vVertices[6];
+    fg_vertices[10] = ((((float)(x + nds.pen.img->w)) / NDS_W) - 0.5) * 2.0;
+    fg_vertices[11] = fg_vertices[6];
 
-    vVertices[15] = vVertices[10];
-    vVertices[16] = vVertices[1];
+    fg_vertices[15] = fg_vertices[10];
+    fg_vertices[16] = fg_vertices[1];
 
     glUniform1f(vid.alphaLoc, 1.0);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_PEN]);
-    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
-    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     glDisable(GL_BLEND);
     glUniform1f(vid.alphaLoc, 0.0);
 #endif
@@ -4326,43 +4329,43 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH1) || (nds.dis_mode == NDS_DIS_MODE_HH3))) {
-        vVertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        vVertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        fg_vertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
-        vVertices[10] = vVertices[5];
-        vVertices[11] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[10] = fg_vertices[5];
+        fg_vertices[11] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
 
-        vVertices[15] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
-        vVertices[16] = vVertices[11];
+        fg_vertices[15] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[16] = fg_vertices[11];
 
-        vVertices[0] = vVertices[15];
-        vVertices[1] = vVertices[6];
+        fg_vertices[0] = fg_vertices[15];
+        fg_vertices[1] = fg_vertices[6];
     }
     else if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH2))) {
-        vVertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        vVertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        fg_vertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
-        vVertices[0] = vVertices[15];
-        vVertices[1] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[0] = fg_vertices[15];
+        fg_vertices[1] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
 
-        vVertices[5] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
-        vVertices[6] = vVertices[1];
+        fg_vertices[5] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[6] = fg_vertices[1];
 
-        vVertices[10] = vVertices[5];
-        vVertices[11] = vVertices[16];
+        fg_vertices[10] = fg_vertices[5];
+        fg_vertices[11] = fg_vertices[16];
     }
     else {
-        vVertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        vVertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        fg_vertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
-        vVertices[5] = vVertices[0];
-        vVertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[5] = fg_vertices[0];
+        fg_vertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
 
-        vVertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
-        vVertices[11] = vVertices[6];
+        fg_vertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[11] = fg_vertices[6];
 
-        vVertices[15] = vVertices[10];
-        vVertices[16] = vVertices[1];
+        fg_vertices[15] = fg_vertices[10];
+        fg_vertices[16] = fg_vertices[1];
     }
 
     if (tex == TEX_TMP) {
@@ -4386,9 +4389,9 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     }
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
-    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
-    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
     if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
         glUniform1f(vid.alphaLoc, 0.0);
@@ -5660,9 +5663,9 @@ void flip_lcd(void)
     if (nds.theme.img) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
-        glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bgVertices);
-        glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bgVertices[3]);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+        glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+        glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     }
 
 #endif
@@ -6247,72 +6250,63 @@ int reload_overlay(void)
 }
 #endif
 
-static int MMIYOO_Available(void)
+static void quit_device(SDL_VideoDevice *d)
 {
-    return 1;
+    SDL_free(d);
 }
 
-static void MMIYOO_DeleteDevice(SDL_VideoDevice *device)
+int create_window(_THIS, SDL_Window *w)
 {
-    SDL_free(device);
-}
+    debug("call %s(w=%d, h=%d)\n", __func__, w->w, w->h);
 
-int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
-{
-    debug("call %s(w=%d, h=%d)\n", __func__, window->w, window->h);
-
-    vid.window = window;
-    SDL_SetMouseFocus(window);
-    SDL_SetKeyboardFocus(window);
+    vid.window = w;
+    SDL_SetMouseFocus(w);
+    SDL_SetKeyboardFocus(w);
     return 0;
 }
 
-int MMIYOO_CreateWindowFrom(_THIS, SDL_Window *window, const void *data)
+int create_window_from(_THIS, SDL_Window *w, const void *d)
 {
     return SDL_Unsupported();
 }
 
-static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
+static SDL_VideoDevice *create_device(int idx)
 {
-    SDL_VideoDevice *device = NULL;
+    SDL_VideoDevice *d = NULL;
 
-    if(!MMIYOO_Available()) {
-        return (0);
-    }
+    d = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
 
-    device = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
-    if(!device) {
+    if (!d) {
         SDL_OutOfMemory();
-        return (0);
+        return 0;
     }
-    device->is_dummy = SDL_TRUE;
 
-    device->VideoInit = MMIYOO_VideoInit;
-    device->VideoQuit = MMIYOO_VideoQuit;
-    device->SetDisplayMode = MMIYOO_SetDisplayMode;
-    device->CreateSDLWindow = MMIYOO_CreateWindow;
-    device->CreateSDLWindowFrom = MMIYOO_CreateWindowFrom;
-    device->free = MMIYOO_DeleteDevice;
-    device->PumpEvents = pump_event;
-    return device;
+    d->VideoInit = init_video;
+    d->VideoQuit = quit_video;
+    d->SetDisplayMode = set_disp_mode;
+    d->CreateSDLWindow = create_window;
+    d->CreateSDLWindowFrom = create_window_from;
+    d->free = quit_device;
+    d->PumpEvents = pump_event;
+
+    return d;
 }
 
-VideoBootStrap NDS_bootstrap = { "NDS", "NDS Video Driver", MMIYOO_CreateDevice};
+VideoBootStrap NDS_bootstrap = {
+    "NDS",
+    "NDS Video Driver",
+    create_device
+};
 
-void test(uint32_t v)
-{
-    debug("call %s()\n", __func__);
-}
-
-int MMIYOO_VideoInit(_THIS)
+int init_video(_THIS)
 {
 #if defined(MINI)
     FILE *fd = NULL;
-    char buf[MAX_PATH] = {0};
+    char buf[MAX_PATH] = { 0 };
 #endif
 
-    SDL_DisplayMode mode = {0};
-    SDL_VideoDisplay display = {0};
+    SDL_DisplayMode mode = { 0 };
+    SDL_VideoDisplay display = { 0 };
 
     debug("call %s()\n", __func__);
 
@@ -6331,6 +6325,7 @@ int MMIYOO_VideoInit(_THIS)
     mode.h = 480;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
+
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
     mode.w = 800;
@@ -6383,25 +6378,6 @@ int MMIYOO_VideoInit(_THIS)
     FB_SIZE = FB_W * FB_H * FB_BPP * 2;
     TMP_SIZE = FB_W * FB_H * FB_BPP;
 
-#if defined(MINI)
-    fd = popen("fbset | grep \"mode \"", "r");
-    if (fd) {
-        fgets(buf, sizeof(buf), fd);
-        pclose(fd);
-
-        if (strstr(buf, "752")) {
-            FONT_SIZE = 27;
-            LINE_H = FONT_SIZE + 8;
-
-            FB_W = 752;
-            FB_H = 560;
-            FB_SIZE = (FB_W * FB_H * FB_BPP * 2);
-            TMP_SIZE = (FB_W * FB_H * FB_BPP);
-            nds.enable_752x560 = 1;
-        }
-    }
-#endif
-
     GFX_Init();
     read_config();
     init_event();
@@ -6422,14 +6398,14 @@ int MMIYOO_VideoInit(_THIS)
     return 0;
 }
 
-static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
+static int set_disp_mode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
     return 0;
 }
 
-void MMIYOO_VideoQuit(_THIS)
+void quit_video(_THIS)
 {
-    printf(PREFIX"MMIYOO_VideoQuit\n");
+    printf(PREFIX"quit_video\n");
     printf(PREFIX"Wait for savestate complete\n");
     while (savestate_busy) {
         usleep(1000000);

@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <linux/fb.h>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
 
 #if defined(PANDORA)
 #include <linux/omapfb.h>
@@ -15,13 +17,6 @@
 #if defined(QX1000) || defined(XT897)
 #include <wayland-client.h>
 #include <wayland-egl.h>
-#include <EGL/egl.h>
-#include <GLES2/gl2.h>
-#endif
-
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-#include <EGL/egl.h>
-#include <GLES2/gl2.h>
 #endif
 
 #if defined(FLIP)
@@ -722,9 +717,9 @@ struct _cpu_clock {
 int snd_nds_savestate(int slot);
 void snd_nds_reload_config(void);
 
-void GFX_Clear(void);
+void clear_lcd(void);
 void flip_lcd(void);
-int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate);
+int flush_lcd(int, const void *, SDL_Rect, SDL_Rect, int, int, int);
 
 int draw_pen(void *pixels, int width, int pitch);
 int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor);
