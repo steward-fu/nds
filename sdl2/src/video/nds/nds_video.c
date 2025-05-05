@@ -2333,7 +2333,7 @@ void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint
 
 void prehook_cb_savestate_pre(void)
 {
-#if !defined(UT)
+#if !defined(UT) && !defined(PANDORA)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #1                 \n"
@@ -2347,7 +2347,7 @@ void prehook_cb_savestate_pre(void)
 
 void prehook_cb_savestate_post(void)
 {
-#if !defined(UT)
+#if !defined(UT) && !defined(PANDORA)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #0                 \n"
@@ -5956,11 +5956,11 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#if !defined(PANDORA) && !defined(QX1000) && !defined(XT897) && !defined(UT)
+#if !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_sel = -1;
 #endif
 
-#if !defined(PANDORA) && !defined(QX1000) && !defined(XT897) && !defined(UT)
+#if !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_mode = -1;
 #endif
 
@@ -6385,8 +6385,10 @@ int init_video(_THIS)
     init_hook(sysconf(_SC_PAGESIZE), nds.states.path);
 
     add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
+#if !defined(PANDORA)
     add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
     add_prehook_cb(myhook.fun.savestate_post,   prehook_cb_savestate_post);
+#endif
     add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
     add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
 

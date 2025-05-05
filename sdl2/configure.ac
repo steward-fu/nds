@@ -2478,9 +2478,16 @@ CheckNDSVideo()
 
     if test x$MOD = xpandora; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -ffast-math"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a8"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -ftree-vectorize"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfloat-abi=softfp"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lib/pandora"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lpng"
     fi
 
     if test x$MOD = xqx1000; then

@@ -1281,7 +1281,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     arg = 16;
     ioctl(dsp_fd, SOUND_PCM_WRITE_BITS, &arg);
 
-    arg = CHANNELS;
+    arg = SND_CHANNELS;
     ioctl(dsp_fd, SOUND_PCM_WRITE_CHANNELS, &arg);
 
     arg = SND_FREQ;

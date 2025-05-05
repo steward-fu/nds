@@ -4,6 +4,7 @@
 #ifndef __NDS_VIDEO_H__
 #define __NDS_VIDEO_H__
 
+#include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <linux/fb.h>

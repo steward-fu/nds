@@ -10,6 +10,12 @@ export LD=${CROSS}ld
 export CXX=${CROSS}g++
 export HOST=arm-linux
 
+SDL2_CFG += --enable-video
+SDL2_CFG += --disable-video-opengl
+SDL2_CFG += --disable-video-opengles
+SDL2_CFG += --disable-video-opengles2
+SDL2_CFG += --disable-video-vulkan
+
 REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
 
 .PHONY: all
@@ -42,7 +48,7 @@ cfg:
 	cp -a assets/$(MOD)/* drastic/ || true
 
 ifeq ($(wildcard sdl2/Makefile),)
-	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure --enable-video --host=$(HOST)
+	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure $(SDL2_CFG) --host=$(HOST)
 endif
 
 .PHONY: rel
