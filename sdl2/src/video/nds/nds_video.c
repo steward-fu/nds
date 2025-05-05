@@ -274,7 +274,6 @@ static int max_cpu_item = sizeof(cpu_clk) / sizeof(cpu_clk_t);
 #if defined(QX1000) || defined(XT897)
 static volatile int is_wl_thread_running = 0;
 
-static struct _wayland wl = { 0 };
 static pthread_t thread_id[2] = { 0 };
 
 EGLint egl_cfg[] = {
@@ -333,19 +332,19 @@ void update_wayland_res(int w, int h)
 
     FB_W = w;
     FB_H = h;
-    wl.info.w = FB_W;
-    wl.info.h = FB_H;
-    wl.info.size = wl.info.w * wl.info.h * 4;
+    myvideo.wl.info.w = FB_W;
+    myvideo.wl.info.h = FB_H;
+    myvideo.wl.info.size = myvideo.wl.info.w * myvideo.wl.info.h * 4;
 
-    c0 = ((float)LCD_H) / wl.info.w;
-    c1 = ((float)LCD_W) / wl.info.h;
+    c0 = ((float)LCD_H) / myvideo.wl.info.w;
+    c1 = ((float)LCD_W) / myvideo.wl.info.h;
     scale = c0 > c1 ? c1 : c0;
     if (scale <= 0) {
         scale = 1.0;
     }
 
-    y0 = ((float)(wl.info.w * scale) / LCD_H);
-    x0 = ((float)(wl.info.h * scale) / LCD_W);
+    y0 = ((float)(myvideo.wl.info.w * scale) / LCD_H);
+    x0 = ((float)(myvideo.wl.info.h * scale) / LCD_W);
 
     fg_vertices[0] = -x0;
     fg_vertices[1] = y0;
@@ -356,15 +355,15 @@ void update_wayland_res(int w, int h)
     fg_vertices[15] =  x0;
     fg_vertices[16] =  y0;
 
-    memset(wl.data, 0, LCD_W * LCD_H * 4);
+    memset(myvideo.wl.data, 0, LCD_W * LCD_H * 4);
     debug("new wayland width=%d, height=%d, scale=%.2f\n", w, h, scale);
 }
 
 static void* wl_thread(void* pParam)
 {
     while (is_wl_thread_running) {
-        if (wl.init && wl.ready) {
-            wl_display_dispatch(wl.display);
+        if (myvideo.wl.init && myvideo.wl.ready) {
+            wl_display_dispatch(myvideo.wl.display);
         }
         else {
             usleep(1000);
@@ -396,10 +395,10 @@ static const struct wl_shell_surface_listener cb_shell_surf = {
 static void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
 {
     if (strcmp(intf, "wl_compositor") == 0) {
-        wl.compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
+        myvideo.wl.compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
     }
     else if (strcmp(intf, "wl_shell") == 0) {
-        wl.shell = wl_registry_bind(reg, id, &wl_shell_interface, 1);
+        myvideo.wl.shell = wl_registry_bind(reg, id, &wl_shell_interface, 1);
     }
 }
 
@@ -409,57 +408,57 @@ static void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 
 void quit_egl(void)
 {
-    wl.init = 0;
-    wl.ready = 0;
+    myvideo.wl.init = 0;
+    myvideo.wl.ready = 0;
 
-    eglDestroySurface(wl.egl.display, wl.egl.surface);
-    eglDestroyContext(wl.egl.display, wl.egl.context);
-    wl_egl_window_destroy(wl.egl.window);
-    eglTerminate(wl.egl.display);
-    glDeleteShader(wl.egl.vShader);
-    glDeleteShader(wl.egl.fShader);
-    glDeleteProgram(wl.egl.pObject);
+    eglDestroySurface(myvideo.wl.egl.display, myvideo.wl.egl.surface);
+    eglDestroyContext(myvideo.wl.egl.display, myvideo.wl.egl.context);
+    wl_egl_window_destroy(myvideo.wl.egl.window);
+    eglTerminate(myvideo.wl.egl.display);
+    glDeleteShader(myvideo.wl.egl.vShader);
+    glDeleteShader(myvideo.wl.egl.fShader);
+    glDeleteProgram(myvideo.wl.egl.pObject);
 }
 
 void quit_wl(void)
 {
-    wl.init = 0;
-    wl.ready = 0;
+    myvideo.wl.init = 0;
+    myvideo.wl.ready = 0;
 
-    wl_shell_surface_destroy(wl.shell_surface);
-    wl_shell_destroy(wl.shell);
-    wl_surface_destroy(wl.surface);
-    wl_compositor_destroy(wl.compositor);
-    wl_registry_destroy(wl.registry);
-    wl_display_disconnect(wl.display);
+    wl_shell_surface_destroy(myvideo.wl.shell_surface);
+    wl_shell_destroy(myvideo.wl.shell);
+    wl_surface_destroy(myvideo.wl.surface);
+    wl_compositor_destroy(myvideo.wl.compositor);
+    wl_registry_destroy(myvideo.wl.registry);
+    wl_display_disconnect(myvideo.wl.display);
 
-    SDL_free(wl.bg);
-    wl.bg = NULL;
+    SDL_free(myvideo.wl.bg);
+    myvideo.wl.bg = NULL;
 
-    SDL_free(wl.data);
-    wl.data = NULL;
+    SDL_free(myvideo.wl.data);
+    myvideo.wl.data = NULL;
 }
 
 void init_wl(void)
 {
     pixel_filter = 0;
 
-    wl.display = wl_display_connect(NULL);
-    wl.registry = wl_display_get_registry(wl.display);
+    myvideo.wl.display = wl_display_connect(NULL);
+    myvideo.wl.registry = wl_display_get_registry(myvideo.wl.display);
 
-    wl_registry_add_listener(wl.registry, &cb_global, NULL);
-    wl_display_dispatch(wl.display);
-    wl_display_roundtrip(wl.display);
+    wl_registry_add_listener(myvideo.wl.registry, &cb_global, NULL);
+    wl_display_dispatch(myvideo.wl.display);
+    wl_display_roundtrip(myvideo.wl.display);
 
-    wl.surface = wl_compositor_create_surface(wl.compositor);
-    wl.shell_surface = wl_shell_get_shell_surface(wl.shell, wl.surface);
-    wl_shell_surface_set_toplevel(wl.shell_surface);
-    wl_shell_surface_add_listener(wl.shell_surface, &cb_shell_surf, NULL);
+    myvideo.wl.surface = wl_compositor_create_surface(myvideo.wl.compositor);
+    myvideo.wl.shell_surface = wl_shell_get_shell_surface(myvideo.wl.shell, myvideo.wl.surface);
+    wl_shell_surface_set_toplevel(myvideo.wl.shell_surface);
+    wl_shell_surface_add_listener(myvideo.wl.shell_surface, &cb_shell_surf, NULL);
     
-    wl.region = wl_compositor_create_region(wl.compositor);
-    wl_region_add(wl.region, 0, 0, LCD_W, LCD_H);
-    wl_surface_set_opaque_region(wl.surface, wl.region);
-    wl.egl.window = wl_egl_window_create(wl.surface, LCD_W, LCD_H);
+    myvideo.wl.region = wl_compositor_create_region(myvideo.wl.compositor);
+    wl_region_add(myvideo.wl.region, 0, 0, LCD_W, LCD_H);
+    wl_surface_set_opaque_region(myvideo.wl.surface, myvideo.wl.region);
+    myvideo.wl.egl.window = wl_egl_window_create(myvideo.wl.surface, LCD_W, LCD_H);
 }
 
 void init_egl(void)
@@ -469,48 +468,48 @@ void init_egl(void)
     EGLint minor = 0;
     EGLConfig cfg = 0;
 
-    wl.egl.display = eglGetDisplay((EGLNativeDisplayType)wl.display);
-    eglInitialize(wl.egl.display, &major, &minor);
-    eglGetConfigs(wl.egl.display, NULL, 0, &cnt);
-    eglChooseConfig(wl.egl.display, egl_cfg, &cfg, 1, &cnt);
-    wl.egl.surface = eglCreateWindowSurface(wl.egl.display, cfg, (EGLNativeWindowType)wl.egl.window, NULL);
-    wl.egl.context = eglCreateContext(wl.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
-    eglMakeCurrent(wl.egl.display, wl.egl.surface, wl.egl.surface, wl.egl.context);
+    myvideo.wl.egl.display = eglGetDisplay((EGLNativeDisplayType)myvideo.wl.display);
+    eglInitialize(myvideo.wl.egl.display, &major, &minor);
+    eglGetConfigs(myvideo.wl.egl.display, NULL, 0, &cnt);
+    eglChooseConfig(myvideo.wl.egl.display, egl_cfg, &cfg, 1, &cnt);
+    myvideo.wl.egl.surface = eglCreateWindowSurface(myvideo.wl.egl.display, cfg, (EGLNativeWindowType)myvideo.wl.egl.window, NULL);
+    myvideo.wl.egl.context = eglCreateContext(myvideo.wl.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
+    eglMakeCurrent(myvideo.wl.egl.display, myvideo.wl.egl.surface, myvideo.wl.egl.surface, myvideo.wl.egl.context);
 
-    wl.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(wl.egl.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(wl.egl.vShader);
+    myvideo.wl.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.wl.egl.vShader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.wl.egl.vShader);
 
-    wl.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(wl.egl.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(wl.egl.fShader);
+    myvideo.wl.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.wl.egl.fShader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.wl.egl.fShader);
     
-    wl.egl.pObject = glCreateProgram();
-    glAttachShader(wl.egl.pObject, wl.egl.vShader);
-    glAttachShader(wl.egl.pObject, wl.egl.fShader);
-    glLinkProgram(wl.egl.pObject);
-    glUseProgram(wl.egl.pObject);
+    myvideo.wl.egl.pObject = glCreateProgram();
+    glAttachShader(myvideo.wl.egl.pObject, myvideo.wl.egl.vShader);
+    glAttachShader(myvideo.wl.egl.pObject, myvideo.wl.egl.fShader);
+    glLinkProgram(myvideo.wl.egl.pObject);
+    glUseProgram(myvideo.wl.egl.pObject);
 
-    wl.egl.positionLoc = glGetAttribLocation(wl.egl.pObject, "vert_pos");
-    wl.egl.texCoordLoc = glGetAttribLocation(wl.egl.pObject, "vert_coord");
-    wl.egl.samplerLoc = glGetUniformLocation(wl.egl.pObject, "frag_sampler");
-    glUniform1f(glGetUniformLocation(wl.egl.pObject, "frag_angle"), 90 * (3.1415 * 2.0) / 360.0);
-    glUniform1f(glGetUniformLocation(wl.egl.pObject, "frag_aspect"), 1);
+    myvideo.wl.egl.positionLoc = glGetAttribLocation(myvideo.wl.egl.pObject, "vert_pos");
+    myvideo.wl.egl.texCoordLoc = glGetAttribLocation(myvideo.wl.egl.pObject, "vert_coord");
+    myvideo.wl.egl.samplerLoc = glGetUniformLocation(myvideo.wl.egl.pObject, "frag_sampler");
+    glUniform1f(glGetUniformLocation(myvideo.wl.egl.pObject, "frag_angle"), 90 * (3.1415 * 2.0) / 360.0);
+    glUniform1f(glGetUniformLocation(myvideo.wl.egl.pObject, "frag_aspect"), 1);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    glGenTextures(1, &wl.egl.textureId);
-    glBindTexture(GL_TEXTURE_2D, wl.egl.textureId);
+    glGenTextures(1, &myvideo.wl.egl.textureId);
+    glBindTexture(GL_TEXTURE_2D, myvideo.wl.egl.textureId);
 
     glViewport(0, 0, LCD_W, LCD_H);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
-    glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
-    glEnableVertexAttribArray(wl.egl.positionLoc);
-    glEnableVertexAttribArray(wl.egl.texCoordLoc);
+    glVertexAttribPointer(myvideo.wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+    glVertexAttribPointer(myvideo.wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
+    glEnableVertexAttribArray(myvideo.wl.egl.positionLoc);
+    glEnableVertexAttribArray(myvideo.wl.egl.texCoordLoc);
     glActiveTexture(GL_TEXTURE0);
-    glUniform1i(wl.egl.samplerLoc, 0);
+    glUniform1i(myvideo.wl.egl.samplerLoc, 0);
 }
 
 static void* draw_thread(void *pParam)
@@ -522,9 +521,9 @@ static void* draw_thread(void *pParam)
 
     debug("call %s()\n", __func__);
 
-    wl.init = 1;
+    myvideo.wl.init = 1;
     while (is_wl_thread_running) {
-        if (wl.ready) {
+        if (myvideo.wl.ready) {
             if (pre_filter != pixel_filter) {
                 pre_filter = pixel_filter;
                 if (pixel_filter) {
@@ -539,18 +538,18 @@ static void* draw_thread(void *pParam)
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             }
 
-            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
-            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.bg);
+            glVertexAttribPointer(myvideo.wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+            glVertexAttribPointer(myvideo.wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, myvideo.wl.info.w, myvideo.wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, myvideo.wl.bg);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
 
-            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.pixels[wl.flip ^ 1]);
+            glVertexAttribPointer(myvideo.wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+            glVertexAttribPointer(myvideo.wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, myvideo.wl.info.w, myvideo.wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, myvideo.wl.pixels[myvideo.wl.flip ^ 1]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-            eglSwapBuffers(wl.egl.display, wl.egl.surface);
+            eglSwapBuffers(myvideo.wl.egl.display, myvideo.wl.egl.surface);
         }
         else {
             usleep(1000);
@@ -3450,22 +3449,22 @@ int quit_lcd(void)
 int init_lcd(void)
 {
     is_wl_thread_running = 1;
-    wl.bg = SDL_malloc(LCD_W * LCD_H * 4);
-    memset(wl.bg, 0, LCD_W * LCD_H * 2);
+    myvideo.wl.bg = SDL_malloc(LCD_W * LCD_H * 4);
+    memset(myvideo.wl.bg, 0, LCD_W * LCD_H * 2);
     pthread_create(&thread_id[0], NULL, wl_thread, NULL);
     pthread_create(&thread_id[1], NULL, draw_thread, NULL);
-    while (wl.init == 0) {
+    while (myvideo.wl.init == 0) {
         usleep(100000);
     }
 
-    wl.flip = 0;
-    wl.ready = 0;
-    wl.data = SDL_malloc(LCD_W * LCD_H * 4 * 2);
-    memset(wl.data, 0, LCD_W * LCD_H * 4 * 2);
-    wl.pixels[0] = (uint16_t *)wl.data;
-    wl.pixels[1] = (uint16_t *)(wl.data + (LCD_W * LCD_H * 4));
+    myvideo.wl.flip = 0;
+    myvideo.wl.ready = 0;
+    myvideo.wl.data = SDL_malloc(LCD_W * LCD_H * 4 * 2);
+    memset(myvideo.wl.data, 0, LCD_W * LCD_H * 4 * 2);
+    myvideo.wl.pixels[0] = (uint16_t *)myvideo.wl.data;
+    myvideo.wl.pixels[1] = (uint16_t *)(myvideo.wl.data + (LCD_W * LCD_H * 4));
     update_wayland_res(NDS_W * 2, NDS_H);
-    wl.ready = 1;
+    myvideo.wl.ready = 1;
     return 0;
 }
 
@@ -4419,7 +4418,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     int x = 0;
     int y = 0;
     const uint32_t *src = pixels;
-    uint32_t *dst = (uint32_t *)wl.pixels[wl.flip];
+    uint32_t *dst = (uint32_t *)myvideo.wl.pixels[myvideo.wl.flip];
 
     if (srcrect.w == NDS_W) {
         dst += (dstrect.y ? 0 : NDS_W);
@@ -5542,7 +5541,7 @@ void flip_lcd(void)
     debug("call %s()\n", __func__);
 
 #if defined(QX1000) || defined(XT897)
-    wl.flip ^= 1;
+    myvideo.wl.flip ^= 1;
 #endif
 
 #if defined(PANDORA)
