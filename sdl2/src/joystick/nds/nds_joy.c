@@ -33,7 +33,7 @@
 
 #include "../../video/nds/nds_video.h"
 
-#include "debug.h"
+#include "common.h"
 #include "nds_joy.h"
 
 #if defined(A30) || defined(FLIP) || defined(UT)

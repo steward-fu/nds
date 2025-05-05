@@ -1,10 +1,11 @@
 TARGET   = libdtr.so
 CFLAGS  += $(MORE_CFLAGS)
-CFLAGS  += -I../util
+CFLAGS  += -I../common
 LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -fpic
 LDFLAGS += -shared
-LDFLAGS += libutil.so
+LDFLAGS += -L../common
+LDFLAGS += -lcommon
 SOURCES  = hook.c
 
 ifneq ($(MOD),ut)

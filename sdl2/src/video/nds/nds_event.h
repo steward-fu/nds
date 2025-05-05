@@ -26,6 +26,8 @@
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(BRICK)
 #define INPUT_DEV   "/dev/input/event3"
+#elif defined(TRIMUI)
+#define INPUT_DEV   "/dev/input/event0"
 #endif
 
 #if defined(UT)
@@ -133,6 +135,8 @@
 #define DEV_KEY_CODE_Y          56
 #define DEV_KEY_CODE_L1         15
 #define DEV_KEY_CODE_R1         14
+#define DEV_KEY_CODE_L2         -1
+#define DEV_KEY_CODE_R2         -1
 #define DEV_KEY_CODE_START      28
 #define DEV_KEY_CODE_SELECT     97
 #define DEV_KEY_CODE_MENU       1
@@ -347,7 +351,7 @@ typedef struct {
     } thread;
 
 #if defined(MINI)
-    int is_stock_os;
+    int stock;
 #endif
 
 #if defined(TRIMUI)

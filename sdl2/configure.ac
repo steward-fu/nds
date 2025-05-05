@@ -2409,8 +2409,8 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_VIDEO"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../alsa"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../util"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../detour"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../common"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/sdl2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
 
@@ -2420,9 +2420,10 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lSDL2_ttf"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lrt"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ljson-c"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS ../util/libutil.so"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../detour"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldtr"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../common"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lcommon"
 
         have_video=yes
         SUMMARY_video="${SUMMARY_video} nds_video"
@@ -2430,16 +2431,18 @@ CheckNDSVideo()
 
     if test x$MOD = xmini; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMINI"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/mini"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lib/mini"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_ao"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_gfx"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_sys"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lshmvar"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_common"
     fi
 
     if test x$MOD = xa30; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lMali"
 
@@ -2450,9 +2453,6 @@ CheckNDSVideo()
 
     if test x$MOD = xflip; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm -lgbm"
@@ -2464,27 +2464,17 @@ CheckNDSVideo()
 
     if test x$MOD = xrg28xx; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DRG28XX"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
     fi
 
     if test x$MOD = xtrimui; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/trimui"
     fi
 
     if test x$MOD = xpandora; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -ffast-math"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a8"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -ftree-vectorize"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfloat-abi=softfp"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lib/pandora"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lpng"
@@ -2492,9 +2482,6 @@ CheckNDSVideo()
 
     if test x$MOD = xqx1000; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
@@ -2502,9 +2489,6 @@ CheckNDSVideo()
 
     if test x$MOD = xxt897; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DXT897"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
@@ -2512,9 +2496,6 @@ CheckNDSVideo()
 
     if test x$MOD = xgkd2; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKD2"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
@@ -2522,9 +2503,6 @@ CheckNDSVideo()
 
     if test x$MOD = xbrick; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DBRICK"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mcpu=cortex-a7"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon-vfpv4"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
@@ -2539,6 +2517,12 @@ CheckNDSVideo()
         AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
         have_joystick=yes
+    else
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -ffast-math"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a7"
     fi
 }
 

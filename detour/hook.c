@@ -15,9 +15,8 @@
 #include "unity_fixture.h"
 #endif
 
-#include "util.h"
 #include "hook.h"
-#include "debug.h"
+#include "common.h"
 #include "nds_firmware.h"
 #include "nds_bios_arm7.h"
 #include "nds_bios_arm9.h"
@@ -477,44 +476,6 @@ TEST(detour, add_prehook_cb)
 {
     TEST_ASSERT_EQUAL_INT(-1, add_prehook_cb(0, 0));
     TEST_ASSERT_EQUAL_INT(0, add_prehook_cb((void *)0xdead, (void *)0xdead));
-}
-#endif
-
-static int write_file(const char *fpath, const void *buf, int len)
-{
-    int r = -1;
-    int fd = -1;
-
-    debug("call %s()\n", __func__);
-
-    if (!fpath || !buf) {
-        error("invalid parameters(0x%x, 0x%x)\n", fpath, buf);
-        return r;
-    }
-
-    fd = open(fpath, O_CREAT | O_WRONLY, 0644);
-    if (fd < 0) {
-        error("failed to create \"%s\"\n", fpath);
-        return r;
-    }
-
-    r = write(fd, buf, len);
-    if (r != len) {
-        error("failed to write data to \"%s\"\n", fpath);
-        return r;
-    }
-
-    close(fd);
-    return r;
-}
-
-#if defined(UT)
-TEST(detour, write_file)
-{
-    char buf[] = { "1234567890" };
-
-    TEST_ASSERT_EQUAL_INT(-1, write_file("/XXX/XXX", buf, strlen(buf)));
-    TEST_ASSERT_EQUAL_INT(10, write_file("/tmp/0", buf, strlen(buf)));
 }
 #endif
 

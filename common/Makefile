@@ -1,13 +1,13 @@
-TARGET   = libutil.so
+TARGET   = libcommon.so
 CFLAGS  += $(MORE_CFLAGS)
 CFLAGS  += -I.
 LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -fPIC
 LDFLAGS += -shared
-SOURCES  = util.c
+SOURCES  = common.c
 
 ifneq ($(MOD),ut)
-    SOURCES += neon_memcpy.S
+    SOURCES += common.S
 endif
 
 .PHONY: all

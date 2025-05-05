@@ -15,7 +15,7 @@
 #include "../../video/nds/nds_video.h"
 #include "../../video/nds/nds_event.h"
 
-#include "debug.h"
+#include "common.h"
 
 typedef struct {
     void *pixels;

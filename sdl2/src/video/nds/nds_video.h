@@ -47,8 +47,7 @@
 #include "nds_event.h"
 
 #include "hook.h"
-#include "util.h"
-#include "debug.h"
+#include "common.h"
 
 #if defined(MINI)
 #include "mi_sys.h"
@@ -164,7 +163,6 @@
 #endif
 
 #if defined(MINI)
-    #define USE_MASK                0
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
@@ -381,10 +379,10 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
 enum _TEXTURE_TYPE {
-    TEXTURE_SCR0 = 0,
-    TEXTURE_SCR1,
+    TEXTURE_LCD0 = 0,
+    TEXTURE_LCD1,
     TEXTURE_BG,
     TEXTURE_PEN,
     TEXTURE_TMP,
@@ -488,72 +486,69 @@ typedef struct {
     } shm;
 #endif
 
-struct {
-#if defined(PANDORA)
-    int fb_dev[2];
-    struct omapfb_mem_info mi;
-    struct omapfb_plane_info pi;
-#else
-    int fb_dev;
-#endif
-
-#if defined(TRIMUI)
-    int ion_dev;
-    int mem_dev;
-    int disp_dev;
-#endif
-
-    struct fb_var_screeninfo vinfo;
-    struct fb_fix_screeninfo finfo;
-
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
     struct {
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        void *virAddr;
+        int cur_sel;
+        void *virt_addr[2][2];
+#if defined(MINI)
+        MI_PHY phy_addr[2][2];
+#endif
+    } lcd;
 #endif
 
 #if defined(MINI)
-        void *virAddr;
-        MI_PHY phyAddr;
+    struct {
+        void *virt_addr;
+        MI_PHY phy_addr;
+    } tmp;
+#endif
+
+    struct {
+#if defined(PANDORA)
+        int fd[2];
+        uint32_t *mem[2];
+        struct omapfb_mem_info mi;
+        struct omapfb_plane_info pi;
+#else
+        int fd;
+#endif
+        struct fb_var_screeninfo var_info;
+        struct fb_fix_screeninfo fix_info;
+
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+        void *virt_addr;
+#endif
+
+#if defined(MINI)
+        void *virt_addr;
+        MI_PHY phy_addr;
 #endif
 
 #if defined(TRIMUI)
         int flip;
 #endif
-    } fb, tmp;
-
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
-    struct {
-        int cur_sel;
-        void *virAddr[2][2];
-
-#if defined(MINI)
-        MI_PHY phyAddr[2][2];
-#endif
-    } lcd;
-#endif
+    } fb;
 
     struct {
-#if defined(MINI)
-        struct _BUF {
-            MI_GFX_Surface_t surf;
-            MI_GFX_Rect_t rt;
-        } src, dst, overlay;
-        MI_GFX_Opt_t opt;
-#endif
-
 #if defined(TRIMUI)
+        int ion_fd;
+        int mem_fd;
+        int disp_fd;
         uint32_t *mem;
         disp_layer_config disp;
         disp_layer_config buf;
         ion_alloc_info_t ion;
 #endif
 
-#if defined(PANDORA)
-        uint32_t *mem[2];
-#endif
-    } hw;
-} GFX;
+#if defined(MINI)
+        MI_GFX_Opt_t opt;
 
+        struct {
+            MI_GFX_Rect_t rt;
+            MI_GFX_Surface_t surf;
+        } src, dst;
+#endif
+    } gfx;
 } nds_video;
 
 typedef struct _NDS {
@@ -640,14 +635,6 @@ typedef struct _NDS {
         int border;
     } alpha;
 
-    struct _OVERLAY {
-        int sel;
-        int max;
-        int alpha;
-        SDL_Surface *img;
-        char path[MAX_PATH];
-    } overlay;
-
     struct _THEME {
         int sel;
         int max;
@@ -686,7 +673,7 @@ typedef struct _NDS {
 #endif
 } NDS;
 
-typedef struct _CUST_MENU_SUB {
+typedef struct {
     int x;
     int y;
     int cheat;
@@ -694,12 +681,12 @@ typedef struct _CUST_MENU_SUB {
     uint32_t fg;
     uint32_t bg;
     char msg[MAX_PATH];
-} CUST_MENU_SUB;
+} cust_menu_sub_t ;
 
 typedef struct _CUST_MENU {
     int cnt;
-    CUST_MENU_SUB item[MAX_MENU_LINE];
-} CUST_MENU;
+    cust_menu_sub_t item[MAX_MENU_LINE];
+} cust_menu_t ;
 
 #if defined(A30)
 typedef struct {
