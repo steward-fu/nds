@@ -17,7 +17,7 @@
 #include "unity_fixture.h"
 #endif
 
-#include "debug.h"
+#include "common.h"
 
 #if defined(UT)
 TEST_GROUP(util);
@@ -28,6 +28,51 @@ TEST_SETUP(util)
 
 TEST_TEAR_DOWN(util)
 {
+}
+#endif
+
+int write_file(const char *fpath, const void *buf, int len)
+{
+    int r = 0;
+    int fd = -1;
+
+    debug("call %s()\n", __func__);
+
+    if (!fpath || !buf) {
+        error("invalid parameters(0x%x, 0x%x)\n", fpath, buf);
+        return -1;
+    }
+
+    if (access(fpath, F_OK) == 0) {
+        debug("\"%s\" existed already\n", fpath);
+        return 0;
+    }
+
+    fd = open(fpath, O_CREAT | O_WRONLY, 0644);
+    if (fd < 0) {
+        error("failed to create \"%s\"\n", fpath);
+        return -1;
+    }
+
+    r = write(fd, buf, len);
+    debug("wrote %d bytes\n", r);
+
+    close(fd);
+    return r;
+}
+
+#if defined(UT)
+TEST(util, write_file)
+{
+    int len = 0;
+    char buf[32] = { "1234567890" };
+    const char *path = "/tmp/test";
+
+    TEST_ASSERT_EQUAL_INT(-1, write_file(NULL, NULL, 0));
+
+    len = strlen(buf);
+    TEST_ASSERT_EQUAL_INT(len, write_file(path, buf, len));
+    unlink(path);
 }
 #endif
 

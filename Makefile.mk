@@ -10,12 +10,19 @@ export LD=${CROSS}ld
 export CXX=${CROSS}g++
 export HOST=arm-linux
 
+SDL2_CFG += --enable-video
+SDL2_CFG += --disable-video-x11
+SDL2_CFG += --disable-video-vulkan
+SDL2_CFG += --disable-video-opengl
+SDL2_CFG += --disable-video-opengles
+SDL2_CFG += --disable-video-opengles2
+
 REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
 
 .PHONY: all
 all: cfg
-	make -C util MOD=$(MOD)
-	cp util/libutil.so   drastic/lib/
+	make -C common MOD=$(MOD)
+	cp common/libcommon.so   drastic/lib/
 
 	make -C detour MOD=$(MOD)
 	cp detour/libdtr.so  drastic/lib/
@@ -39,10 +46,12 @@ endif
 
 .PHONY: cfg
 cfg:
+	mkdir -p drastic/lib
+	mkdir -p drastic/system
 	cp -a assets/$(MOD)/* drastic/ || true
 
 ifeq ($(wildcard sdl2/Makefile),)
-	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure --enable-video --host=$(HOST)
+	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure $(SDL2_CFG) --host=$(HOST)
 endif
 
 .PHONY: rel
@@ -52,10 +61,10 @@ rel:
 .PHONY: clean
 clean:
 	make -C ut clean
-	make -C util clean
 	make -C alsa clean
 	make -C detour clean
 	make -C runner clean
+	make -C common clean
 	make -C sdl2 distclean > /dev/null 2>&1 || true
 	rm -rf sdl2/Makefile
 	rm -rf sdl2/configure
@@ -72,5 +81,3 @@ clean:
 	rm -rf drastic/config.json
 	rm -rf drastic/config/drastic.cf2
 	rm -rf drastic/input_capture_crash.ir
-	mkdir -p drastic/lib
-	mkdir -p drastic/system

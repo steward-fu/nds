@@ -167,6 +167,7 @@ typedef struct {
     void *save_state;
     void *blit_screen_menu;
     void *initialize_backup;
+    void *platform_get_input;
     void *set_screen_swap;
     void *set_screen_menu_on;
     void *set_screen_menu_off;
@@ -233,6 +234,20 @@ typedef struct {
     uint8_t capture_timer;
 } spu_channel_struct;
 
+typedef struct {
+    void *capture_ptr;
+    void *system;
+    uint32_t button_status;
+    uint32_t touch_x;
+    uint32_t touch_y;
+    uint8_t touch_status;
+    uint8_t touch_pressure;
+    uint32_t last_button_status;
+    uint32_t last_touch_x;
+    uint32_t last_touch_y;
+    uint8_t last_touch_pressure;
+} input_struct;
+
 typedef void (*nds_free)(void *);
 typedef void (*nds_set_screen_swap)(uint32_t);
 typedef void (*nds_set_screen_menu_on)(void);
@@ -261,7 +276,6 @@ int fast_forward(uint8_t v);
 int unlock_protected_area(void *);
 int drop_bios_files(const char *);
 void render_polygon_setup_perspective_steps(void);
-void* neon_memcpy(void *, const void *, size_t);
 
 #endif
 

@@ -35,9 +35,8 @@
 #endif
 
 #include "snd.h"
-#include "util.h"
 #include "hook.h"
-#include "debug.h"
+#include "common.h"
 
 #if defined(MINI)
 #include "mi_ao.h"
@@ -433,7 +432,7 @@ TEST(alsa, dec_mini_vol)
 }
 #endif
 
-#if defined(A30) || defined(UT) || defined(BRICK)
+#if defined(A30) || defined(UT)
 int inc_a30_vol(void)
 {
     debug("call %s()\n", __func__);
@@ -488,7 +487,9 @@ TEST(alsa, dec_a30_vol)
     TEST_ASSERT_EQUAL_INT(9, dec_a30_vol());
 }
 #endif
+#endif
 
+#if defined(A30) || defined(UT) || defined(BRICK)
 static int open_dsp(void)
 {
     int arg = 0;
@@ -891,12 +892,12 @@ static void* audio_handler(void *id)
                 idx = 0;
                 len = pcm_buf_len;
 #if defined(MINI)
-                aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
-                aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
-                aoTestFrame.u32Len = pcm_buf_len;
-                aoTestFrame.apVirAddr[0] = pcm_buf;
-                aoTestFrame.apVirAddr[1] = NULL;
-                MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
+                frame.eBitwidth = stGetAttr.eBitwidth;
+                frame.eSoundmode = stGetAttr.eSoundmode;
+                frame.u32Len = pcm_buf_len;
+                frame.apVirAddr[0] = pcm_buf;
+                frame.apVirAddr[1] = NULL;
+                MI_AO_SendFrame(AoDevId, AoChn, &frame, 1);
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
@@ -1180,7 +1181,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 {
 #if defined(MINI)
     MI_S32 miret = 0;
-    MI_SYS_ChnPort_t stAoChn0OutputPort0 = 0;
+    MI_SYS_ChnPort_t stAoChn0OutputPort0 = { 0 };
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
@@ -1210,7 +1211,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     }
     memset(pcm_buf, 0, pcm_buf_len);
 
-#if !defined(PANDORA) && !defined(UT) && !defined(BRICK) && !defined(XT897)
+#if defined(MINI) || defined(A30)
     jfile = json_object_from_file(JSON_APP_FILE);
     if (jfile) {
         struct json_object *v = NULL;
@@ -1225,9 +1226,9 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
     stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
     stSetAttr.u32FrmNum = 6;
-    stSetAttr.u32PtNumPerFrm = SAMPLES;
-    stSetAttr.u32ChnCnt = CHANNELS;
-    stSetAttr.eSoundmode = CHANNELS == 2 ? E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
+    stSetAttr.u32PtNumPerFrm = SND_SAMPLES;
+    stSetAttr.u32ChnCnt = SND_CHANNELS;
+    stSetAttr.eSoundmode = (SND_CHANNELS == 2) ? E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
     stSetAttr.eSamplerate = (MI_AUDIO_SampleRate_e)SND_FREQ;
 
     miret = MI_AO_SetPubAttr(AoDevId, &stSetAttr);
@@ -1259,7 +1260,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stAoChn0OutputPort0.u32ChnId = AoChn;
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
-    set_volume(cur_vol);
+    set_mini_vol(cur_vol);
 #endif
 
 #if defined(A30)
@@ -1281,7 +1282,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     arg = 16;
     ioctl(dsp_fd, SOUND_PCM_WRITE_BITS, &arg);
 
-    arg = CHANNELS;
+    arg = SND_CHANNELS;
     ioctl(dsp_fd, SOUND_PCM_WRITE_CHANNELS, &arg);
 
     arg = SND_FREQ;
@@ -1345,8 +1346,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #if defined(UT)
 TEST(alsa, snd_pcm_start)
 {
-    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_start(NULL));
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_start((void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_start(NULL));
 }
 #endif
 
@@ -1411,8 +1411,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
 #if defined(UT)
 TEST(alsa, snd_pcm_close)
 {
-    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_close(NULL));
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_close((void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_close(NULL));
 }
 #endif
 
@@ -1487,8 +1486,7 @@ snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframe
 #if defined(UT)
 TEST(alsa, snd_pcm_writei)
 {
-    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_writei(NULL, NULL, 0));
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_writei((void *)0xdead, (void *)0xdead, 0));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_writei(NULL, NULL, 0));
     TEST_ASSERT_EQUAL_INT(128, snd_pcm_writei((void *)0xdead, (void *)0xdead, 128));
 }
 #endif

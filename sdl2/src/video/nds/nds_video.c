@@ -2,12 +2,12 @@
 // (C) 2025 Steward Fu <steward.fu@gmail.com>
 
 #include <time.h>
-#include <dirent.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <dirent.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
@@ -18,9 +18,6 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <json-c/json.h>
-
-#include <EGL/egl.h>
-#include <GLES2/gl2.h>
 
 #if defined(GKD2) || defined(BRICK)
 #include <sys/socket.h>
@@ -47,15 +44,13 @@
 #include "SDL_mouse.h"
 
 #include "hook.h"
-#include "util.h"
-#include "debug.h"
+#include "common.h"
 #include "hex_pen.h"
 #include "nds_video.h"
 #include "nds_event.h"
 
 NDS nds = { 0 };
-GFX gfx = { 0 };
-MMIYOO_VideoInfo vid = { 0 };
+nds_video myvideo = { 0 };
 
 extern nds_hook myhook;
 extern nds_event myevent;
@@ -73,162 +68,216 @@ SDL_Surface *fps_info = NULL;
 
 static volatile int is_video_thread_running = 0;
 
-static pthread_t thread;
+static pthread_t thread = { 0 };
 static int need_reload_bg = RELOAD_BG_COUNT;
 static SDL_Surface *cvt = NULL;
 
-static int MMIYOO_VideoInit(_THIS);
-static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
-static void MMIYOO_VideoQuit(_THIS);
+static int init_video(_THIS);
+static int set_disp_mode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode);
+static void quit_video(_THIS);
 
-static CUST_MENU drastic_menu = {0};
-static char *translate[MAX_LANG_LINE] = {0};
+static cust_menu_t drastic_menu = { 0 };
+static char *translate[MAX_LANG_LINE] = { 0 };
 
 #if defined(TRIMUI)
-static uint32_t LUT_256x192_S00[NDS_W * NDS_H] = {0};
-static uint32_t LUT_256x192_S01[NDS_W * NDS_H] = {0};
-static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = {0};
-static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = {0};
+static uint32_t LUT_256x192_S00[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_S01[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = { 0 };
 
 int need_restore = 0;
 int pre_dismode = 0;
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-GLfloat bgVertices[] = {
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(QX1000) || defined(XT897)
+GLfloat bg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
     1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
     1.0f,  1.0f,  0.0f,  1.0f,  0.0f
 };
 
-GLfloat vVertices[] = {
+GLfloat fg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
     1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
     1.0f,  1.0f,  0.0f,  1.0f,  0.0f
 };
-GLushort indices[] = {0, 1, 2, 0, 2, 3};
 
-const char *vShaderSrc =
-    "attribute vec4 a_position;   \n"
-    "attribute vec2 a_texCoord;   \n"
-    "attribute float a_alpha;     \n"
-    "varying vec2 v_texCoord;     \n"
-    "void main()                  \n"
-    "{                            \n"
-#if !defined(FLIP)
-    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;                                                                            \n"
-    "    mat4 rot = mat4(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); \n"
-    "    gl_Position = a_position * rot; \n"
-    "    v_texCoord = a_texCoord;        \n"
-#else
-    "    gl_Position = a_position; \n"
-    "    v_texCoord = a_texCoord;        \n"
+GLushort vert_indices[] = {
+    0, 1, 2, 0, 2, 3
+};
 #endif
-    "}                                   \n";
+
+#if defined(QX1000) || defined(XT897)
+const char *vert_shader_src =
+    "attribute vec4 vert_pos;                               \n"
+    "attribute vec2 vert_coord;                             \n"
+    "varying vec2 frag_coord;                               \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    gl_Position = vert_pos;                            \n"
+    "    frag_coord = vert_coord;                           \n"
+    "}                                                      \n";
+
+const char *frag_shader_src =
+    "#ifdef GL_ES                                           \n"
+    "precision mediump float;                               \n"
+    "#endif                                                 \n"
+    "varying vec2 frag_coord;                               \n"
+    "uniform float frag_angle;                              \n"
+    "uniform float frag_aspect;                             \n"
+    "uniform sampler2D frag_sampler;                        \n"
+    "const vec2 HALF = vec2(0.5);                           \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    float aSin = sin(frag_angle);                      \n"
+    "    float aCos = cos(frag_angle);                      \n"
+    "    vec2 tc = frag_coord;                              \n"
+    "    mat2 rotMat = mat2(                                \n"
+    "        aCos, -aSin, aSin, aCos);                      \n"
+    "    mat2 scaleMat = mat2(                              \n"
+    "        frag_aspect, 0.0, 0.0, 1.0);                   \n"
+    "    mat2 scaleMatInv = mat2(                           \n"
+    "        1.0 / frag_aspect, 0.0, 0.0, 1.0);             \n"
+    "    tc -= HALF.xy;                                     \n"
+    "    tc = scaleMatInv * rotMat * scaleMat * tc;         \n"
+    "    tc += HALF.xy;                                     \n"
+    "    vec3 tex = texture2D(frag_sampler, tc).bgr;        \n"
+    "    gl_FragColor = vec4(tex, 1.0);                     \n"
+    "}                                                      \n";
+#endif
+
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
+const char *vert_shader_src =
+    "attribute vec4 vert_pos;                               \n"
+    "attribute vec2 vert_coord;                             \n"
+    "attribute float vert_alpha;                            \n"
+    "varying vec2 frag_coord;                               \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+#if !defined(FLIP)
+    "    const float frag_angle = 0.0;                      \n"
+    "    frag_angle = 90.0 * (3.1415 * 2.0);                \n"
+    "    frag_angle = frag_angle / 360.0;                   \n"
+    "    mat4 rot = mat4(                                   \n"
+    "        cos(frag_angle), -sin(frag_angle), 0.0, 0.0,   \n"
+    "        sin(frag_angle),  cos(frag_angle), 0.0, 0.0,   \n"
+    "               0.0,         0.0, 1.0, 0.0,             \n"
+    "               0.0,         0.0, 0.0, 1.0              \n"
+    "    );                                                 \n"
+    "    gl_Position = vert_pos * rot;                      \n"
+    "    frag_coord = vert_coord;                           \n"
+#else
+    "    gl_Position = vert_pos;                            \n"
+    "    frag_coord = vert_coord;                           \n"
+#endif
+    "}                                                      \n";
     
-const char *fShaderSrc =
-    "precision mediump float;                                  \n"
-    "varying vec2 v_texCoord;                                  \n"
-    "uniform float s_alpha;                                    \n"
-    "uniform sampler2D s_texture;                              \n"
-    "void main()                                               \n"
-    "{                                                         \n"
-    "    if (s_alpha >= 2.0) {                                 \n"
-    "        gl_FragColor = texture2D(s_texture, v_texCoord);  \n"
-    "    }                                                     \n"
-    "    else if (s_alpha > 0.0) {                             \n"
-    "        vec3 tex = texture2D(s_texture, v_texCoord).bgr;  \n"
-    "        gl_FragColor = vec4(tex, s_alpha);                \n"
-    "    }                                                     \n"
-    "    else {                                                \n"
-    "        vec3 tex = texture2D(s_texture, v_texCoord).bgr;  \n"
-    "        gl_FragColor = vec4(tex, 1.0);                    \n"
-    "    }                                                     \n"
-    "}                                                         \n";
+const char *frag_shader_src =
+    "precision mediump float;                               \n"
+    "varying vec2 frag_coord;                               \n"
+    "uniform float s_alpha;                                 \n"
+    "uniform sampler2D frag_sampler;                        \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    if (s_alpha >= 2.0) {                              \n"
+    "        gl_FragColor = texture2D(                      \n"
+    "            frag_sampler, frag_coord);                 \n"
+    "    }                                                  \n"
+    "    else if (s_alpha > 0.0) {                          \n"
+    "        vec3 tex = texture2D(                          \n"
+    "            frag_sampler, frag_coord).bgr;             \n"
+    "        gl_FragColor = vec4(tex, s_alpha);             \n"
+    "    }                                                  \n"
+    "    else {                                             \n"
+    "        vec3 tex = texture2D(                          \n"
+    "            frag_sampler, frag_coord).bgr;             \n"
+    "        gl_FragColor = vec4(tex, 1.0);                 \n"
+    "    }                                                  \n"
+    "}                                                      \n";
 
 #if defined(A30)
-static struct _cpu_clock cpu_clock[] = {
-    {96, 0x80000110},
-    {144, 0x80000120},
-    {192, 0x80000130},
-    {216, 0x80000220},
-    {240, 0x80000410},
-    {288, 0x80000230},
-    {336, 0x80000610},
-    {360, 0x80000420},
-    {384, 0x80000330},
-    {432, 0x80000520},
-    {480, 0x80000430},
-    {504, 0x80000620},
-    {528, 0x80000a10},
-    {576, 0x80000530},
-    {624, 0x80000c10},
-    {648, 0x80000820},
-    {672, 0x80000630},
-    {720, 0x80000920},
-    {768, 0x80000730},
-    {792, 0x80000a20},
-    {816, 0x80001010},
-    {864, 0x80000830},
-    {864, 0x80001110},
-    {912, 0x80001210},
-    {936, 0x80000c20},
-    {960, 0x80000930},
-    {1008, 0x80000d20},
-    {1056, 0x80000a30},
-    {1080, 0x80000e20},
-    {1104, 0x80001610},
-    {1152, 0x80000b30},
-    {1200, 0x80001810},
-    {1224, 0x80001020},
-    {1248, 0x80000c30},
-    {1296, 0x80001120},
-    {1344, 0x80000d30},
-    {1368, 0x80001220},
-    {1392, 0x80001c10},
-    {1440, 0x80000e30},
-    {1488, 0x80001e10},
-    {1512, 0x80001420},
-    {1536, 0x80000f30},
-    {1584, 0x80001520},
-    {1632, 0x80001030},
-    {1656, 0x80001620},
-    {1728, 0x80001130},
-    {1800, 0x80001820},
-    {1824, 0x80001230},
-    {1872, 0x80001920},
-    {1920, 0x80001330},
-    {1944, 0x80001a20},
-    {2016, 0x80001430},
-    {2088, 0x80001c20},
-    {2112, 0x80001530},
-    {2160, 0x80001d20},
-    {2208, 0x80001630},
-    {2232, 0x80001e20},
-    {2304, 0x80001730},
-    {2400, 0x80001830},
-    {2496, 0x80001930},
-    {2592, 0x80001a30},
-    {2688, 0x80001b30},
-    {2784, 0x80001c30},
-    {2880, 0x80001d30},
-    {2976, 0x80001e30},
-    {3072, 0x80001f30},
+static cpu_clk_t cpu_clk[] = {
+    {  96, 0x80000110 },
+    { 144, 0x80000120 },
+    { 192, 0x80000130 },
+    { 216, 0x80000220 },
+    { 240, 0x80000410 },
+    { 288, 0x80000230 },
+    { 336, 0x80000610 },
+    { 360, 0x80000420 },
+    { 384, 0x80000330 },
+    { 432, 0x80000520 },
+    { 480, 0x80000430 },
+    { 504, 0x80000620 },
+    { 528, 0x80000a10 },
+    { 576, 0x80000530 },
+    { 624, 0x80000c10 },
+    { 648, 0x80000820 },
+    { 672, 0x80000630 },
+    { 720, 0x80000920 },
+    { 768, 0x80000730 },
+    { 792, 0x80000a20 },
+    { 816, 0x80001010 },
+    { 864, 0x80000830 },
+    { 864, 0x80001110 },
+    { 912, 0x80001210 },
+    { 936, 0x80000c20 },
+    { 960, 0x80000930 },
+    { 1008, 0x80000d20 },
+    { 1056, 0x80000a30 },
+    { 1080, 0x80000e20 },
+    { 1104, 0x80001610 },
+    { 1152, 0x80000b30 },
+    { 1200, 0x80001810 },
+    { 1224, 0x80001020 },
+    { 1248, 0x80000c30 },
+    { 1296, 0x80001120 },
+    { 1344, 0x80000d30 },
+    { 1368, 0x80001220 },
+    { 1392, 0x80001c10 },
+    { 1440, 0x80000e30 },
+    { 1488, 0x80001e10 },
+    { 1512, 0x80001420 },
+    { 1536, 0x80000f30 },
+    { 1584, 0x80001520 },
+    { 1632, 0x80001030 },
+    { 1656, 0x80001620 },
+    { 1728, 0x80001130 },
+    { 1800, 0x80001820 },
+    { 1824, 0x80001230 },
+    { 1872, 0x80001920 },
+    { 1920, 0x80001330 },
+    { 1944, 0x80001a20 },
+    { 2016, 0x80001430 },
+    { 2088, 0x80001c20 },
+    { 2112, 0x80001530 },
+    { 2160, 0x80001d20 },
+    { 2208, 0x80001630 },
+    { 2232, 0x80001e20 },
+    { 2304, 0x80001730 },
+    { 2400, 0x80001830 },
+    { 2496, 0x80001930 },
+    { 2592, 0x80001a30 },
+    { 2688, 0x80001b30 },
+    { 2784, 0x80001c30 },
+    { 2880, 0x80001d30 },
+    { 2976, 0x80001e30 },
+    { 3072, 0x80001f30 },
 };
 
-static int max_cpu_item = sizeof(cpu_clock) / sizeof(struct _cpu_clock);
+static int max_cpu_item = sizeof(cpu_clk) / sizeof(cpu_clk_t);
 #endif
 #endif
 
 #if defined(QX1000) || defined(XT897)
 static volatile int is_wl_thread_running = 0;
 
-static struct _wayland wl = {0};
-static pthread_t thread_id[2] = {0};
+static struct _wayland wl = { 0 };
+static pthread_t thread_id[2] = { 0 };
 
-EGLint egl_attribs[] = {
+EGLint egl_cfg[] = {
     EGL_SURFACE_TYPE,
     EGL_WINDOW_BIT,
     EGL_RENDERABLE_TYPE,
@@ -247,59 +296,11 @@ EGLint ctx_attribs[] = {
     2, 
     EGL_NONE
 };
+#endif
 
-GLfloat egl_bg_vertices[] = {
-    -1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 
-    -1.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-     1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 
-     1.0f,  1.0f, 0.0f, 1.0f, 0.0f
-};
-
-GLfloat egl_fb_vertices[] = {
-    -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 
-    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 
-     0.5f,  0.5f, 0.0f, 1.0f, 0.0f
-};
-
-GLushort egl_indices[] = {0, 1, 2, 0, 2, 3};
-
-const char *vShaderSrc =
-    "attribute vec4 a_position;   \n"
-    "attribute vec2 a_texCoord;   \n"
-    "varying vec2 v_texCoord;     \n"
-    "void main()                  \n"
-    "{                            \n"
-    "   gl_Position = a_position; \n"
-    "   v_texCoord = a_texCoord;  \n"
-    "}                            \n";
-
-const char *fShaderSrc =
-    "#ifdef GL_ES                                              \n"
-    "precision mediump float;                                  \n"
-    "#endif                                                    \n"
-    "varying vec2 v_texCoord;                                  \n"
-    "uniform float angle;                                      \n"
-    "uniform float aspect;                                     \n"
-    "uniform sampler2D s_texture;                              \n"
-    "const vec2 HALF = vec2(0.5);                              \n"
-    "void main()                                               \n"
-    "{                                                         \n"
-    "    float aSin = sin(angle);                              \n"
-    "    float aCos = cos(angle);                              \n"
-    "    vec2 tc = v_texCoord;                                 \n"
-    "    mat2 rotMat = mat2(aCos, -aSin, aSin, aCos);          \n"
-    "    mat2 scaleMat = mat2(aspect, 0.0, 0.0, 1.0);          \n"
-    "    mat2 scaleMatInv = mat2(1.0 / aspect, 0.0, 0.0, 1.0); \n"
-    "    tc -= HALF.xy;                                        \n"
-    "    tc = scaleMatInv * rotMat * scaleMat * tc;            \n"
-    "    tc += HALF.xy;                                        \n"
-    "    vec3 tex = texture2D(s_texture, tc).bgr;              \n"
-    "    gl_FragColor = vec4(tex, 1.0);                        \n"
-    "}                                                         \n";
-
-static void cb_remove(void *dat, struct wl_registry *reg, uint32_t id);
-static void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver);
+#if defined(QX1000) || defined(XT897)
+static void cb_remove(void *, struct wl_registry *, uint32_t);
+static void cb_handle(void *, struct wl_registry *, uint32_t, const char *, uint32_t);
 
 static struct wl_registry_listener cb_global = {
     .global = cb_handle,
@@ -346,14 +347,14 @@ void update_wayland_res(int w, int h)
     y0 = ((float)(wl.info.w * scale) / LCD_H);
     x0 = ((float)(wl.info.h * scale) / LCD_W);
 
-    egl_fb_vertices[0] = -x0;
-    egl_fb_vertices[1] = y0;
-    egl_fb_vertices[5] = -x0;
-    egl_fb_vertices[6] = -y0;
-    egl_fb_vertices[10] =  x0;
-    egl_fb_vertices[11] = -y0;
-    egl_fb_vertices[15] =  x0;
-    egl_fb_vertices[16] =  y0;
+    fg_vertices[0] = -x0;
+    fg_vertices[1] = y0;
+    fg_vertices[5] = -x0;
+    fg_vertices[6] = -y0;
+    fg_vertices[10] =  x0;
+    fg_vertices[11] = -y0;
+    fg_vertices[15] =  x0;
+    fg_vertices[16] =  y0;
 
     memset(wl.data, 0, LCD_W * LCD_H * 4);
     debug("new wayland width=%d, height=%d, scale=%.2f\n", w, h, scale);
@@ -369,6 +370,7 @@ static void* wl_thread(void* pParam)
             usleep(1000);
         }
     }
+
     return NULL;
 }
 
@@ -377,7 +379,7 @@ static void cb_ping(void *dat, struct wl_shell_surface *shell_surf, uint32_t ser
     wl_shell_surface_pong(shell_surf, serial);
 }
 
-static void cb_configure(void *dat, struct wl_shell_surface *shell_surf, uint32_t edges, int32_t w, int32_t h)
+static void cb_config(void *dat, struct wl_shell_surface *shell_surf, uint32_t edges, int32_t w, int32_t h)
 {
 }
 
@@ -387,7 +389,7 @@ static void cb_popup_done(void *dat, struct wl_shell_surface *shell_surf)
 
 static const struct wl_shell_surface_listener cb_shell_surf = {
     cb_ping,
-    cb_configure,
+    cb_config,
     cb_popup_done
 };
 
@@ -405,10 +407,11 @@ static void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 {
 }
 
-void egl_free(void)
+void quit_egl(void)
 {
     wl.init = 0;
     wl.ready = 0;
+
     eglDestroySurface(wl.egl.display, wl.egl.surface);
     eglDestroyContext(wl.egl.display, wl.egl.context);
     wl_egl_window_destroy(wl.egl.window);
@@ -418,23 +421,29 @@ void egl_free(void)
     glDeleteProgram(wl.egl.pObject);
 }
 
-void wl_free(void)
+void quit_wl(void)
 {
     wl.init = 0;
     wl.ready = 0;
+
     wl_shell_surface_destroy(wl.shell_surface);
     wl_shell_destroy(wl.shell);
     wl_surface_destroy(wl.surface);
     wl_compositor_destroy(wl.compositor);
     wl_registry_destroy(wl.registry);
     wl_display_disconnect(wl.display);
+
     SDL_free(wl.bg);
+    wl.bg = NULL;
+
     SDL_free(wl.data);
+    wl.data = NULL;
 }
 
-void wl_create(void)
+void init_wl(void)
 {
     pixel_filter = 0;
+
     wl.display = wl_display_connect(NULL);
     wl.registry = wl_display_get_registry(wl.display);
 
@@ -453,63 +462,40 @@ void wl_create(void)
     wl.egl.window = wl_egl_window_create(wl.surface, LCD_W, LCD_H);
 }
 
-void egl_create(void)
+void init_egl(void)
 {
-    GLint compiled = 0;
+    EGLint cnt = 0;
+    EGLint major = 0;
+    EGLint minor = 0;
     EGLConfig cfg = 0;
-    EGLint major = 0, minor = 0, cnt = 0;
 
     wl.egl.display = eglGetDisplay((EGLNativeDisplayType)wl.display);
     eglInitialize(wl.egl.display, &major, &minor);
     eglGetConfigs(wl.egl.display, NULL, 0, &cnt);
-    eglChooseConfig(wl.egl.display, egl_attribs, &cfg, 1, &cnt);
+    eglChooseConfig(wl.egl.display, egl_cfg, &cfg, 1, &cnt);
     wl.egl.surface = eglCreateWindowSurface(wl.egl.display, cfg, (EGLNativeWindowType)wl.egl.window, NULL);
     wl.egl.context = eglCreateContext(wl.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
     eglMakeCurrent(wl.egl.display, wl.egl.surface, wl.egl.surface, wl.egl.context);
 
     wl.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(wl.egl.vShader, 1, &vShaderSrc, NULL);
+    glShaderSource(wl.egl.vShader, 1, &vert_shader_src, NULL);
     glCompileShader(wl.egl.vShader);
 
-    glGetShaderiv(wl.egl.vShader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        GLint len = 0;
-        glGetShaderiv(wl.egl.vShader, GL_INFO_LOG_LENGTH, &len);
-        if (len > 1) {
-            char* info = malloc(sizeof(char) * len);
-            glGetShaderInfoLog(wl.egl.vShader, len, NULL, info);
-            debug("%s, failed to compile vShader: %s\n", __func__, info);
-            free(info);
-        }
-    }
-
     wl.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(wl.egl.fShader, 1, &fShaderSrc, NULL);
+    glShaderSource(wl.egl.fShader, 1, &frag_shader_src, NULL);
     glCompileShader(wl.egl.fShader);
     
-    glGetShaderiv(wl.egl.fShader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        GLint len = 0;
-        glGetShaderiv(wl.egl.fShader, GL_INFO_LOG_LENGTH, &len);
-        if (len > 1) {
-            char* info = malloc(sizeof(char) * len);
-            glGetShaderInfoLog(wl.egl.fShader, len, NULL, info);
-            debug("%s, failed to compile fShader: %s\n", __func__, info);
-            free(info);
-        }
-    }
-
     wl.egl.pObject = glCreateProgram();
     glAttachShader(wl.egl.pObject, wl.egl.vShader);
     glAttachShader(wl.egl.pObject, wl.egl.fShader);
     glLinkProgram(wl.egl.pObject);
     glUseProgram(wl.egl.pObject);
 
-    wl.egl.positionLoc = glGetAttribLocation(wl.egl.pObject, "a_position");
-    wl.egl.texCoordLoc = glGetAttribLocation(wl.egl.pObject, "a_texCoord");
-    wl.egl.samplerLoc = glGetUniformLocation(wl.egl.pObject, "s_texture");
-    glUniform1f(glGetUniformLocation(wl.egl.pObject, "angle"), 90 * (3.1415 * 2.0) / 360.0);
-    glUniform1f(glGetUniformLocation(wl.egl.pObject, "aspect"), 1);
+    wl.egl.positionLoc = glGetAttribLocation(wl.egl.pObject, "vert_pos");
+    wl.egl.texCoordLoc = glGetAttribLocation(wl.egl.pObject, "vert_coord");
+    wl.egl.samplerLoc = glGetUniformLocation(wl.egl.pObject, "frag_sampler");
+    glUniform1f(glGetUniformLocation(wl.egl.pObject, "frag_angle"), 90 * (3.1415 * 2.0) / 360.0);
+    glUniform1f(glGetUniformLocation(wl.egl.pObject, "frag_aspect"), 1);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glGenTextures(1, &wl.egl.textureId);
@@ -519,8 +505,8 @@ void egl_create(void)
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
-    glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
+    glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+    glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
     glEnableVertexAttribArray(wl.egl.positionLoc);
     glEnableVertexAttribArray(wl.egl.texCoordLoc);
     glActiveTexture(GL_TEXTURE0);
@@ -529,32 +515,41 @@ void egl_create(void)
 
 static void* draw_thread(void *pParam)
 {
-    wl_create();
-    egl_create();
+    int pre_filter = -1;
+
+    init_wl();
+    init_egl();
+
+    debug("call %s()\n", __func__);
 
     wl.init = 1;
     while (is_wl_thread_running) {
         if (wl.ready) {
-            if (pixel_filter) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            if (pre_filter != pixel_filter) {
+                pre_filter = pixel_filter;
+                if (pixel_filter) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                }
+                else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             }
-            else {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            }
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_bg_vertices);
-            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_bg_vertices[3]);
+            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.bg);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), egl_fb_vertices);
-            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &egl_fb_vertices[3]);
+
+            glVertexAttribPointer(wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+            glVertexAttribPointer(wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wl.info.w, wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, wl.pixels[wl.flip ^ 1]);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, egl_indices);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+
             eglSwapBuffers(wl.egl.display, wl.egl.surface);
         }
         else {
@@ -573,8 +568,10 @@ static void* prehook_cb_malloc(size_t size)
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
 
+    debug("call %s()\n");
+
     if ((size == (NDS_W * NDS_H * bpp)) || (size == (NDS_Wx2 * NDS_Hx2 * bpp))) {
-        r = gfx.lcd.virAddr[0][idx];
+        r = myvideo.lcd.virt_addr[0][idx];
         idx += 1;
         idx %= 2;
     }
@@ -590,9 +587,11 @@ static void prehook_cb_free(void *ptr)
     int c1 = 0;
     int found = 0;
 
+    debug("call %s()\n");
+
     for (c0 = 0; c0 < 2; c0++) {
         for (c1 = 0; c1 < 2; c1++) {
-            if (ptr == gfx.lcd.virAddr[c0][c1]) {
+            if (ptr == myvideo.lcd.virt_addr[c0][c1]) {
                 found = 1;
                 break;
             }
@@ -608,6 +607,8 @@ static void* prehook_cb_realloc(void *ptr, size_t size)
 {
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
+
+    debug("call %s()\n");
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -642,12 +643,12 @@ static int get_bat_val(void)
         return 0;
     }
 
-    if (vid.sar_fd < 0) {
+    if (myvideo.sar_fd < 0) {
         return 0;
     }
 
-    ioctl(vid.sar_fd, 0x6100, 0);
-    ioctl(vid.sar_fd, 0x6101, v);
+    ioctl(myvideo.sar_fd, 0x6100, 0);
+    ioctl(myvideo.sar_fd, 0x6101, v);
     r = 100 - (((BAT_MAX_VAL - v[1]) * 100) / (BAT_MAX_VAL - BAT_MIN_VAL));
     if (r > 100) {
         r = 100;
@@ -764,7 +765,7 @@ static int draw_drastic_menu_main(void)
     int draw_shot = 0;
     int x = 0, y = 0;
     SDL_Rect rt = {0};
-    CUST_MENU_SUB *p = NULL;
+    cust_menu_sub_t *p = NULL;
     char buf[MAX_PATH << 1] = {0};
 
 #if defined(TRIMUI)
@@ -1024,7 +1025,7 @@ static int draw_drastic_menu_option(void)
     int cnt = 0;
     int cursor = 0;
     SDL_Rect rt = {0};
-    CUST_MENU_SUB *p = NULL;
+    cust_menu_sub_t *p = NULL;
     char buf[MAX_PATH] = {0};
 
 #if defined(TRIMUI)
@@ -1096,7 +1097,7 @@ static int draw_drastic_menu_controller(void)
     int cursor = 0;
     SDL_Rect rt = {0};
     int s0 = 0, s1 = 0;
-    CUST_MENU_SUB *p = NULL;
+    cust_menu_sub_t *p = NULL;
     char buf[MAX_PATH] = {0};
 
 #if defined(TRIMUI)
@@ -1200,7 +1201,7 @@ static int draw_drastic_menu_controller2(void)
     int cursor = 0;
     SDL_Rect rt = {0};
     int s0 = 0, s1 = 0;
-    CUST_MENU_SUB *p = NULL;
+    cust_menu_sub_t *p = NULL;
     char buf[MAX_PATH] = {0};
 
 #if defined(TRIMUI)
@@ -1304,7 +1305,7 @@ static int draw_drastic_menu_firmware(void)
     int div = 1;
     int cnt = 0;
     SDL_Rect rt = {0};
-    CUST_MENU_SUB *p = NULL;
+    cust_menu_sub_t *p = NULL;
     char buf[MAX_PATH] = {0};
     char name[MAX_PATH] = {0};
 
@@ -1383,7 +1384,7 @@ static int draw_drastic_menu_cheat(void)
     int cursor = 0;
     SDL_Rect rt = {0};
     int s0 = 0, s1 = 0;
-    CUST_MENU_SUB *p = NULL;
+    cust_menu_sub_t *p = NULL;
     char buf[MAX_PATH] = {0};
 
 #if defined(TRIMUI)
@@ -1488,7 +1489,7 @@ static int draw_drastic_menu_rom(void)
     int cursor = 0;
     SDL_Rect rt = {0};
     int s0 = 0, s1 = 0;
-    CUST_MENU_SUB *p = NULL;
+    cust_menu_sub_t *p = NULL;
 
 #if defined(TRIMUI)
     div = 2;
@@ -1659,7 +1660,7 @@ static int process_screen(void)
     char buf[MAX_PATH] = {0};
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    int cur_sel = gfx.lcd.cur_sel ^ 1;
+    int cur_sel = myvideo.lcd.cur_sel ^ 1;
 #endif
 
     debug("call %s()\n", __func__);
@@ -1822,7 +1823,7 @@ static int process_screen(void)
             *((uint8_t *)myhook.var.sdl.screen[0].hires_mode);
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        nds.screen.pixels[idx] = gfx.lcd.virAddr[cur_sel][idx];
+        nds.screen.pixels[idx] = myvideo.lcd.virt_addr[cur_sel][idx];
 #else
         nds.screen.pixels[idx] = (idx == 0) ?
             (uint32_t *)(*((uint32_t *)myhook.var.sdl.screen[0].pixels)):
@@ -2119,7 +2120,7 @@ static int process_screen(void)
             }
         }
 
-        glBindTexture(GL_TEXTURE_2D, vid.texID[idx]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (pixel_filter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2170,7 +2171,7 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                flush_lcd(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(TEXTURE_LCD0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else
                 flush_lcd(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #endif
@@ -2199,7 +2200,7 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                flush_lcd(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(TEXTURE_LCD0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else 
                 flush_lcd(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #endif
@@ -2259,9 +2260,9 @@ void prehook_cb_update_screen(void)
     }
     else if (nds.update_screen == 0) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        gfx.lcd.cur_sel ^= 1;
-        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][0];
-        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)gfx.lcd.virAddr[gfx.lcd.cur_sel][1];
+        myvideo.lcd.cur_sel ^= 1;
+        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
+        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         nds.menu.drastic.enable = 0;
 #endif
@@ -2330,7 +2331,7 @@ void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint
 
 void prehook_cb_savestate_pre(void)
 {
-#if !defined(UT)
+#if !defined(UT) && !defined(PANDORA)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #1                 \n"
@@ -2344,7 +2345,7 @@ void prehook_cb_savestate_pre(void)
 
 void prehook_cb_savestate_post(void)
 {
-#if !defined(UT)
+#if !defined(UT) && !defined(PANDORA)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #0                 \n"
@@ -2420,56 +2421,56 @@ static void *video_handler(void *threadid)
 
     debug("call %s()\n", __func__);
 
-    vid.drm.fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
-    vid.drm.res = drmModeGetResources(vid.drm.fd);
-    vid.drm.conn = drmModeGetConnector(vid.drm.fd, vid.drm.res->connectors[1]);
-    vid.drm.enc = drmModeGetEncoder(vid.drm.fd, vid.drm.res->encoders[2]);
-    vid.drm.crtc = drmModeGetCrtc(vid.drm.fd, vid.drm.res->crtcs[1]);
+    myvideo.drm.fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+    myvideo.drm.res = drmModeGetResources(myvideo.drm.fd);
+    myvideo.drm.conn = drmModeGetConnector(myvideo.drm.fd, myvideo.drm.res->connectors[1]);
+    myvideo.drm.enc = drmModeGetEncoder(myvideo.drm.fd, myvideo.drm.res->encoders[2]);
+    myvideo.drm.crtc = drmModeGetCrtc(myvideo.drm.fd, myvideo.drm.res->crtcs[1]);
 
-    vid.drm.gbm = gbm_create_device(vid.drm.fd);
-    vid.drm.gs = gbm_surface_create(
-        vid.drm.gbm,
-        vid.drm.crtc->mode.hdisplay,
-        vid.drm.crtc->mode.vdisplay, 
+    myvideo.drm.gbm = gbm_create_device(myvideo.drm.fd);
+    myvideo.drm.gs = gbm_surface_create(
+        myvideo.drm.gbm,
+        myvideo.drm.crtc->mode.hdisplay,
+        myvideo.drm.crtc->mode.vdisplay, 
         GBM_FORMAT_XRGB8888,
         GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING
     );
 
-    vid.drm.pfn = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
-    vid.eglDisplay = vid.drm.pfn(EGL_PLATFORM_GBM_KHR, vid.drm.gbm, NULL);
-    eglInitialize(vid.eglDisplay, &major, &minor);
+    myvideo.drm.pfn = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
+    myvideo.eglDisplay = myvideo.drm.pfn(EGL_PLATFORM_GBM_KHR, myvideo.drm.gbm, NULL);
+    eglInitialize(myvideo.eglDisplay, &major, &minor);
     eglBindAPI(EGL_OPENGL_ES_API);
-    eglGetConfigs(vid.eglDisplay, NULL, 0, &cnt);
-    eglChooseConfig(vid.eglDisplay, surf_cfg, &cfg, 1, &cnt);
+    eglGetConfigs(myvideo.eglDisplay, NULL, 0, &cnt);
+    eglChooseConfig(myvideo.eglDisplay, surf_cfg, &cfg, 1, &cnt);
 
-    vid.eglSurface = eglCreateWindowSurface(vid.eglDisplay, cfg, (EGLNativeWindowType)vid.drm.gs, NULL);
-    vid.eglContext = eglCreateContext(vid.eglDisplay, cfg, EGL_NO_CONTEXT, ctx_cfg);
-    eglMakeCurrent(vid.eglDisplay, vid.eglSurface, vid.eglSurface, vid.eglContext);
+    myvideo.eglSurface = eglCreateWindowSurface(myvideo.eglDisplay, cfg, (EGLNativeWindowType)myvideo.drm.gs, NULL);
+    myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, cfg, EGL_NO_CONTEXT, ctx_cfg);
+    eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
 
-    vid.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vid.vShader, 1, &vShaderSrc, NULL);
-    glCompileShader(vid.vShader);
+    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.vShader);
 
-    vid.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vid.fShader, 1, &fShaderSrc, NULL);
-    glCompileShader(vid.fShader);
+    myvideo.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.fShader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.fShader);
     
-    vid.pObject = glCreateProgram();
-    glAttachShader(vid.pObject, vid.vShader);
-    glAttachShader(vid.pObject, vid.fShader);
-    glLinkProgram(vid.pObject);
-    glUseProgram(vid.pObject);
+    myvideo.pObject = glCreateProgram();
+    glAttachShader(myvideo.pObject, myvideo.vShader);
+    glAttachShader(myvideo.pObject, myvideo.fShader);
+    glLinkProgram(myvideo.pObject);
+    glUseProgram(myvideo.pObject);
 
-    vid.posLoc = glGetAttribLocation(vid.pObject, "a_position");
-    vid.texLoc = glGetAttribLocation(vid.pObject, "a_texCoord");
-    vid.samLoc = glGetUniformLocation(vid.pObject, "s_texture");
-    vid.alphaLoc = glGetUniformLocation(vid.pObject, "s_alpha");
+    myvideo.posLoc = glGetAttribLocation(myvideo.pObject, "vert_pos");
+    myvideo.texLoc = glGetAttribLocation(myvideo.pObject, "vert_coord");
+    myvideo.samLoc = glGetUniformLocation(myvideo.pObject, "frag_sampler");
+    myvideo.alphaLoc = glGetUniformLocation(myvideo.pObject, "s_alpha");
 
-    glUniform1i(vid.samLoc, 0);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glUniform1i(myvideo.samLoc, 0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 
-    glGenTextures(TEX_MAX, vid.texID);
-    glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_SCR0]);
+    glGenTextures(TEXTURE_MAX, myvideo.texID);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_LCD0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -2477,20 +2478,20 @@ static void *video_handler(void *threadid)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(vid.posLoc);
-    glEnableVertexAttribArray(vid.texLoc);
-    glUniform1i(vid.samLoc, 0);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.posLoc);
+    glEnableVertexAttribArray(myvideo.texLoc);
+    glUniform1i(myvideo.samLoc, 0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 
     pixel_filter = 0;
-    gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[0][1] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[1][0] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[1][1] = malloc(SCREEN_DMA_SIZE);
-    debug("buffer0=%p\n", gfx.lcd.virAddr[0][0]);
-    debug("buffer1=%p\n", gfx.lcd.virAddr[0][1]);
-    debug("buffer2=%p\n", gfx.lcd.virAddr[1][0]);
-    debug("buffer3=%p\n", gfx.lcd.virAddr[1][1]);
+    myvideo.lcd.virt_addr[0][0] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
+    debug("buffer0=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("buffer1=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("buffer2=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("buffer3=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
 #if defined(A30) || defined(RG28XX)
@@ -2515,64 +2516,64 @@ static void *video_handler(void *threadid)
         EGL_NONE,
     };
   
-    vid.eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    eglInitialize(vid.eglDisplay, &egl_major, &egl_minor);
-    eglChooseConfig(vid.eglDisplay, config_attribs, &vid.eglConfig, 1, &num_configs);
-    vid.eglSurface = eglCreateWindowSurface(vid.eglDisplay, vid.eglConfig, 0, window_attributes);
-    vid.eglContext = eglCreateContext(vid.eglDisplay, vid.eglConfig, EGL_NO_CONTEXT, context_attributes);
-    eglMakeCurrent(vid.eglDisplay, vid.eglSurface, vid.eglSurface, vid.eglContext);
+    myvideo.eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    eglInitialize(myvideo.eglDisplay, &egl_major, &egl_minor);
+    eglChooseConfig(myvideo.eglDisplay, config_attribs, &myvideo.eglConfig, 1, &num_configs);
+    myvideo.eglSurface = eglCreateWindowSurface(myvideo.eglDisplay, myvideo.eglConfig, 0, window_attributes);
+    myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, myvideo.eglConfig, EGL_NO_CONTEXT, context_attributes);
+    eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
   
-    vid.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vid.vShader, 1, &vShaderSrc, NULL);
-    glCompileShader(vid.vShader);
+    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.vShader);
   
-    vid.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vid.fShader, 1, &fShaderSrc, NULL);
-    glCompileShader(vid.fShader);
+    myvideo.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.fShader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.fShader);
    
-    vid.pObject = glCreateProgram();
-    glAttachShader(vid.pObject, vid.vShader);
-    glAttachShader(vid.pObject, vid.fShader);
-    glLinkProgram(vid.pObject);
-    glUseProgram(vid.pObject);
+    myvideo.pObject = glCreateProgram();
+    glAttachShader(myvideo.pObject, myvideo.vShader);
+    glAttachShader(myvideo.pObject, myvideo.fShader);
+    glLinkProgram(myvideo.pObject);
+    glUseProgram(myvideo.pObject);
 
-    eglSwapInterval(vid.eglDisplay, 1);
-    vid.posLoc = glGetAttribLocation(vid.pObject, "a_position");
-    vid.texLoc = glGetAttribLocation(vid.pObject, "a_texCoord");
-    vid.samLoc = glGetUniformLocation(vid.pObject, "s_texture");
-    vid.alphaLoc = glGetUniformLocation(vid.pObject, "s_alpha");
+    eglSwapInterval(myvideo.eglDisplay, 1);
+    myvideo.posLoc = glGetAttribLocation(myvideo.pObject, "vert_pos");
+    myvideo.texLoc = glGetAttribLocation(myvideo.pObject, "vert_coord");
+    myvideo.samLoc = glGetUniformLocation(myvideo.pObject, "frag_sampler");
+    myvideo.alphaLoc = glGetUniformLocation(myvideo.pObject, "s_alpha");
 
-    glGenTextures(TEX_MAX, vid.texID);
+    glGenTextures(TEXTURE_MAX, myvideo.texID);
 
     glViewport(0, 0, DEF_FB_H, DEF_FB_W);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(vid.posLoc);
-    glEnableVertexAttribArray(vid.texLoc);
-    glUniform1i(vid.samLoc, 0);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.posLoc);
+    glEnableVertexAttribArray(myvideo.texLoc);
+    glUniform1i(myvideo.samLoc, 0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 
     pixel_filter = 0;
-    gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[0][1] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[1][0] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[1][1] = malloc(SCREEN_DMA_SIZE);
-    debug("buffer0=%p\n", gfx.lcd.virAddr[0][0]);
-    debug("buffer1=%p\n", gfx.lcd.virAddr[0][1]);
-    debug("buffer2=%p\n", gfx.lcd.virAddr[1][0]);
-    debug("buffer3=%p\n", gfx.lcd.virAddr[1][1]);
+    myvideo.lcd.virt_addr[0][0] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
+    debug("buffer0=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("buffer1=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("buffer2=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("buffer3=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
 #if defined(GKD2) || defined(BRICK)
-    gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[0][1] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[1][0] = malloc(SCREEN_DMA_SIZE);
-    gfx.lcd.virAddr[1][1] = malloc(SCREEN_DMA_SIZE);
-    debug("buffer0=%p\n", gfx.lcd.virAddr[0][0]);
-    debug("buffer1=%p\n", gfx.lcd.virAddr[0][1]);
-    debug("buffer2=%p\n", gfx.lcd.virAddr[1][0]);
-    debug("buffer3=%p\n", gfx.lcd.virAddr[1][1]);
+    myvideo.lcd.virt_addr[0][0] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
+    debug("buffer0=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("buffer1=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("buffer2=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("buffer3=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
     while (is_video_thread_running) {
@@ -2611,42 +2612,42 @@ static void *video_handler(void *threadid)
     }
 
 #if defined(FLIP)
-    glDeleteTextures(TEX_MAX, vid.texID);
-    eglMakeCurrent(vid.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroySurface(vid.eglDisplay, vid.eglSurface);
-    eglDestroyContext(vid.eglDisplay, vid.eglContext);
+    glDeleteTextures(TEXTURE_MAX, myvideo.texID);
+    eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
+    eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
 
-    eglTerminate(vid.eglDisplay);
-    glDeleteShader(vid.vShader);
-    glDeleteShader(vid.fShader);
-    glDeleteProgram(vid.pObject);
+    eglTerminate(myvideo.eglDisplay);
+    glDeleteShader(myvideo.vShader);
+    glDeleteShader(myvideo.fShader);
+    glDeleteProgram(myvideo.pObject);
 
-    drmModeRmFB(vid.drm.fd, vid.drm.fb); 
-    drmModeFreeCrtc(vid.drm.crtc);
-    drmModeFreeEncoder(vid.drm.enc);
-    drmModeFreeConnector(vid.drm.conn);
-    drmModeFreeResources(vid.drm.res);
-    close(vid.drm.fd);
+    drmModeRmFB(myvideo.drm.fd, myvideo.drm.fb); 
+    drmModeFreeCrtc(myvideo.drm.crtc);
+    drmModeFreeEncoder(myvideo.drm.enc);
+    drmModeFreeConnector(myvideo.drm.conn);
+    drmModeFreeResources(myvideo.drm.res);
+    close(myvideo.drm.fd);
 #endif
 
 #if defined(A30) || defined(RG28XX)
-    glDeleteTextures(TEX_MAX, vid.texID);
-    eglMakeCurrent(vid.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(vid.eglDisplay, vid.eglContext);
-    eglDestroySurface(vid.eglDisplay, vid.eglSurface);
-    eglTerminate(vid.eglDisplay);
+    glDeleteTextures(TEXTURE_MAX, myvideo.texID);
+    eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
+    eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
+    eglTerminate(myvideo.eglDisplay);
 
-    free(gfx.lcd.virAddr[0][0]);
-    free(gfx.lcd.virAddr[0][1]);
-    free(gfx.lcd.virAddr[1][0]);
-    free(gfx.lcd.virAddr[1][1]);
+    free(myvideo.lcd.virt_addr[0][0]);
+    free(myvideo.lcd.virt_addr[0][1]);
+    free(myvideo.lcd.virt_addr[1][0]);
+    free(myvideo.lcd.virt_addr[1][1]);
 #endif
 
 #if defined(GKD2) || defined(BRICK)
-    free(gfx.lcd.virAddr[0][0]);
-    free(gfx.lcd.virAddr[0][1]);
-    free(gfx.lcd.virAddr[1][0]);
-    free(gfx.lcd.virAddr[1][1]);
+    free(myvideo.lcd.virt_addr[0][0]);
+    free(myvideo.lcd.virt_addr[0][1]);
+    free(myvideo.lcd.virt_addr[1][0]);
+    free(myvideo.lcd.virt_addr[1][1]);
 #endif
 
     pthread_exit(NULL);
@@ -2822,11 +2823,6 @@ static int read_config(void)
         nds.mincore = json_object_get_int(jval);
     }
 
-    json_object_object_get_ex(jfile, JSON_NDS_OVERLAY, &jval);
-    if (jval) {
-        nds.overlay.sel = json_object_get_int(jval);
-    }
-
     json_object_object_get_ex(jfile, JSON_NDS_SWAP_L1L2, &jval);
     if (jval) {
         nds.swap_l1l2 = json_object_get_int(jval) ? 1 : 0;
@@ -2983,13 +2979,10 @@ static int read_config(void)
             nds.menu.sel = 0;
         }
     }
-    reload_menu();
-
-    reload_pen();
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    reload_overlay();
-#endif
     json_object_put(jfile);
+
+    reload_menu();
+    reload_pen();
 
 #if defined(TRIMUI) || defined(PANDORA)
     fd = open("/dev/dsp", O_RDWR);
@@ -2998,8 +2991,8 @@ static int read_config(void)
 #endif
 
 #if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(PANDORA)
-    set_auto_state(nds.auto_state, nds.auto_slot);
-    set_half_vol(nds.half_vol);
+    //set_auto_state(nds.auto_state, nds.auto_slot);
+    //set_half_vol(nds.half_vol);
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA)
@@ -3055,7 +3048,6 @@ static int write_config(void)
     json_object_object_add(jfile, JSON_NDS_ALPHA_VALUE, json_object_new_int(nds.alpha.val));
     json_object_object_add(jfile, JSON_NDS_ALPHA_POSITION, json_object_new_int(nds.alpha.pos));
     json_object_object_add(jfile, JSON_NDS_ALPHA_BORDER, json_object_new_int(nds.alpha.border));
-    json_object_object_add(jfile, JSON_NDS_OVERLAY, json_object_new_int(nds.overlay.sel));
     json_object_object_add(jfile, JSON_NDS_ALT_MODE, json_object_new_int(nds.alt_mode));
     json_object_object_add(jfile, JSON_NDS_KEYS_ROTATE, json_object_new_int(nds.keys_rotate));
     json_object_object_add(jfile, JSON_NDS_LANG, json_object_new_string(nds.lang.trans[DEF_LANG_SLOT]));
@@ -3342,46 +3334,41 @@ static int get_pen_count(void)
     return get_file_count(nds.pen.path);
 }
 
-static int get_overlay_count(void)
-{
-    return get_file_count(nds.overlay.path);
-}
-
 #if defined(UT)
-int fb_init(void)
+int init_lcd(void)
 {
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     return 0;
 }
 #endif
 
 #if defined(GKD2) || defined(BRICK)
-int fb_init(void)
+int init_lcd(void)
 {
-    vid.shm.fd = shm_open(SHM_NAME, O_RDWR, 0777);
-    debug("shm fd=%d\n", vid.shm.fd);
+    myvideo.shm.fd = shm_open(SHM_NAME, O_RDWR, 0777);
+    debug("shm fd=%d\n", myvideo.shm.fd);
 
-    vid.shm.buf = (shm_buf_t *) mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, vid.shm.fd, 0);
-    debug("shm buf=%p\n", vid.shm.buf);
+    myvideo.shm.buf = (shm_buf_t *) mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.shm.fd, 0);
+    debug("shm buf=%p\n", myvideo.shm.buf);
 
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
-    vid.shm.buf->valid = 1;
-    vid.shm.buf->cmd = SHM_CMD_QUIT;
+    myvideo.shm.buf->valid = 1;
+    myvideo.shm.buf->cmd = SHM_CMD_QUIT;
     debug("send SHM_CMD_QUIT\n");
 
-    while (vid.shm.buf->valid) {
+    while (myvideo.shm.buf->valid) {
         usleep(10);
     }
 
-    munmap(vid.shm.buf, sizeof(shm_buf_t));
+    munmap(myvideo.shm.buf, sizeof(shm_buf_t));
     shm_unlink(SHM_NAME);
 
     return 0;
@@ -3446,13 +3433,13 @@ static void set_core(int n)
     }
 }
 
-int fb_init(void)
+int init_lcd(void
 {
    set_core(INIT_CPU_CORE); 
    return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
    set_core(DEINIT_CPU_CORE); 
    return 0;
@@ -3460,7 +3447,7 @@ int fb_quit(void)
 #endif
 
 #if defined(QX1000) || defined(XT897)
-int fb_init(void)
+int init_lcd(void)
 {
     is_wl_thread_running = 1;
     wl.bg = SDL_malloc(LCD_W * LCD_H * 4);
@@ -3482,56 +3469,56 @@ int fb_init(void)
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     return 0;
 }
 #endif
 
 #if defined(PANDORA)
-int fb_init(void)
+int init_lcd(void)
 {
-    gfx.fb_dev[0] = open("/dev/fb0", O_RDWR);
-    gfx.fb_dev[1] = open("/dev/fb1", O_RDWR);
-    ioctl(gfx.fb_dev[1], OMAPFB_QUERY_PLANE, &gfx.pi);
-    ioctl(gfx.fb_dev[1], OMAPFB_QUERY_MEM, &gfx.mi);
+    myvideo.fb.fd[0] = open("/dev/fb0", O_RDWR);
+    myvideo.fb.fd[1] = open("/dev/fb1", O_RDWR);
+    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &gfx.pi);
+    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_MEM, &gfx.mi);
     if(gfx.pi.enabled){
         gfx.pi.enabled = 0;
-        ioctl(gfx.fb_dev[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+        ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &gfx.pi);
     }
     gfx.mi.size = FB_SIZE;
-    ioctl(gfx.fb_dev[1], OMAPFB_SETUP_MEM, &gfx.mi);
+    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_MEM, &gfx.mi);
 
     gfx.pi.enabled = 1;
     gfx.pi.pos_x = 0;
     gfx.pi.pos_y = 0;
     gfx.pi.out_width = FB_W;
     gfx.pi.out_height = FB_H;
-    ioctl(gfx.fb_dev[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &gfx.pi);
 
-    ioctl(gfx.fb_dev[0], FBIOGET_VSCREENINFO, &gfx.vinfo);
-    ioctl(gfx.fb_dev[0], FBIOGET_FSCREENINFO, &gfx.finfo);
-    gfx.hw.mem[0] = mmap(0, FB_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, gfx.fb_dev[0], 0);
-    memset(gfx.hw.mem[0], 0, FB_SIZE);
+    ioctl(myvideo.fb.fd[0], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
+    ioctl(myvideo.fb.fd[0], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
+    myvideo.gfx.mem[0] = mmap(0, FB_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[0], 0);
+    memset(myvideo.gfx.mem[0], 0, FB_SIZE);
 
-    ioctl(gfx.fb_dev[1], FBIOGET_VSCREENINFO, &gfx.vinfo);
-    ioctl(gfx.fb_dev[1], FBIOGET_FSCREENINFO, &gfx.finfo);
-    gfx.hw.mem[1] = mmap(0, FB_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, gfx.fb_dev[1], 0);
-    memset(gfx.hw.mem[1], 0, FB_SIZE);
+    ioctl(myvideo.fb.fd[1], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
+    ioctl(myvideo.fb.fd[1], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
+    myvideo.gfx.mem[1] = mmap(0, FB_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[1], 0);
+    memset(myvideo.gfx.mem[1], 0, FB_SIZE);
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
-    ioctl(gfx.fb_dev[1], OMAPFB_QUERY_PLANE, &gfx.pi);
+    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &gfx.pi);
     gfx.pi.enabled = 0;
-    ioctl(gfx.fb_dev[1], OMAPFB_SETUP_PLANE, &gfx.pi);
-    munmap(gfx.hw.mem[0], FB_SIZE);
-    munmap(gfx.hw.mem[1], FB_SIZE);
-    close(gfx.fb_dev[0]);
-    close(gfx.fb_dev[1]);
-    gfx.fb_dev[0] = -1;
-    gfx.fb_dev[1] = -1;
+    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+    munmap(myvideo.gfx.mem[0], FB_SIZE);
+    munmap(myvideo.gfx.mem[1], FB_SIZE);
+    close(myvideo.fb.fd[0]);
+    close(myvideo.fb.fd[1]);
+    myvideo.fb.fd[0] = -1;
+    myvideo.fb.fd[1] = -1;
     return 0;
 }
 #endif
@@ -3585,109 +3572,109 @@ static void ion_free(int ion_fd, ion_alloc_info_t* info)
     }
 }
 
-int fb_init(void)
+int init_lcd(void)
 {
     int r = 0;
-    uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
+    uint32_t args[4] = {0, (uintptr_t)&myvideo.gfx.disp, 1, 0};
 
-    gfx.fb_dev = open("/dev/fb0", O_RDWR);
-    gfx.ion_dev = open("/dev/ion", O_RDWR);
-    gfx.mem_dev = open("/dev/mem", O_RDWR);
-    gfx.disp_dev = open("/dev/disp", O_RDWR);
-    if (gfx.fb_dev < 0) {
+    myvideo.fb.fd = open("/dev/fb0", O_RDWR);
+    myvideo.gfx.ion_fd = open("/dev/ion", O_RDWR);
+    myvideo.gfx.mem_fd = open("/dev/mem", O_RDWR);
+    myvideo.gfx.disp_fd = open("/dev/disp", O_RDWR);
+    if (myvideo.fb.fd < 0) {
         debug("failed to open /dev/fb0\n");
         return -1;
     }
 
-    memset(&gfx.hw.disp, 0, sizeof(disp_layer_config));
-    memset(&gfx.hw.buf, 0, sizeof(disp_layer_config));
-    gfx.hw.mem = mmap(0, sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE, MAP_SHARED, gfx.mem_dev, OVL_V);
+    memset(&myvideo.gfx.disp, 0, sizeof(disp_layer_config));
+    memset(&myvideo.gfx.buf, 0, sizeof(disp_layer_config));
+    myvideo.gfx.mem = mmap(0, sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.gfx.mem_fd, OVL_V);
 
-    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+    ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
 
-    gfx.hw.disp.channel = DEF_FB_CH;
-    gfx.hw.disp.layer_id = DEF_FB_LAYER;
-    ioctl(gfx.disp_dev, DISP_LAYER_GET_CONFIG, args);
+    myvideo.gfx.disp.channel = DEF_FB_CH;
+    myvideo.gfx.disp.layer_id = DEF_FB_LAYER;
+    ioctl(myvideo.gfx.disp_fd, DISP_LAYER_GET_CONFIG, args);
 
-    gfx.hw.disp.enable = 0;
-    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+    myvideo.gfx.disp.enable = 0;
+    ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
-    gfx.hw.ion.size = ION_W * ION_H * FB_BPP * 2;
-    ion_alloc(gfx.ion_dev, &gfx.hw.ion);
+    myvideo.gfx.ion.size = ION_W * ION_H * FB_BPP * 2;
+    ion_alloc(myvideo.gfx.ion_fd, &myvideo.gfx.ion);
 
-    gfx.hw.buf.channel = SCALER_CH;
-    gfx.hw.buf.layer_id = SCALER_LAYER;
-    gfx.hw.buf.enable = 1;
-    gfx.hw.buf.info.fb.format = DISP_FORMAT_ARGB_8888;
-    gfx.hw.buf.info.fb.addr[0] = (uintptr_t)gfx.hw.ion.padd;
-    gfx.hw.buf.info.fb.size[0].width = FB_H;
-    gfx.hw.buf.info.fb.size[0].height = FB_W;
-    gfx.hw.buf.info.mode = LAYER_MODE_BUFFER;
-    gfx.hw.buf.info.zorder = SCALER_ZORDER;
-    gfx.hw.buf.info.alpha_mode = 0;
-    gfx.hw.buf.info.alpha_value = 0;
-    gfx.hw.buf.info.screen_win.x = 0;
-    gfx.hw.buf.info.screen_win.y = 0;
-    gfx.hw.buf.info.screen_win.width  = FB_H;
-    gfx.hw.buf.info.screen_win.height = FB_W;
-    gfx.hw.buf.info.fb.pre_multiply = 0;
-    gfx.hw.buf.info.fb.crop.x = (uint64_t)0 << 32;
-    gfx.hw.buf.info.fb.crop.y = (uint64_t)0 << 32;
-    gfx.hw.buf.info.fb.crop.width  = (uint64_t)FB_H << 32;
-    gfx.hw.buf.info.fb.crop.height = (uint64_t)FB_W << 32;
-    args[1] = (uintptr_t)&gfx.hw.buf;
-    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
-    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+    myvideo.gfx.buf.channel = SCALER_CH;
+    myvideo.gfx.buf.layer_id = SCALER_LAYER;
+    myvideo.gfx.buf.enable = 1;
+    myvideo.gfx.buf.info.fb.format = DISP_FORMAT_ARGB_8888;
+    myvideo.gfx.buf.info.fb.addr[0] = (uintptr_t)myvideo.gfx.ion.padd;
+    myvideo.gfx.buf.info.fb.size[0].width = FB_H;
+    myvideo.gfx.buf.info.fb.size[0].height = FB_W;
+    myvideo.gfx.buf.info.mode = LAYER_MODE_BUFFER;
+    myvideo.gfx.buf.info.zorder = SCALER_ZORDER;
+    myvideo.gfx.buf.info.alpha_mode = 0;
+    myvideo.gfx.buf.info.alpha_value = 0;
+    myvideo.gfx.buf.info.screen_win.x = 0;
+    myvideo.gfx.buf.info.screen_win.y = 0;
+    myvideo.gfx.buf.info.screen_win.width  = FB_H;
+    myvideo.gfx.buf.info.screen_win.height = FB_W;
+    myvideo.gfx.buf.info.fb.pre_multiply = 0;
+    myvideo.gfx.buf.info.fb.crop.x = (uint64_t)0 << 32;
+    myvideo.gfx.buf.info.fb.crop.y = (uint64_t)0 << 32;
+    myvideo.gfx.buf.info.fb.crop.width  = (uint64_t)FB_H << 32;
+    myvideo.gfx.buf.info.fb.crop.height = (uint64_t)FB_W << 32;
+    args[1] = (uintptr_t)&myvideo.gfx.buf;
+    ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
+    ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
-    uint32_t args[4] = {0, (uintptr_t)&gfx.hw.disp, 1, 0};
+    uint32_t args[4] = {0, (uintptr_t)&myvideo.gfx.disp, 1, 0};
 
-    gfx.hw.disp.enable = gfx.hw.buf.enable = 0;
-    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+    myvideo.gfx.disp.enable = myvideo.gfx.buf.enable = 0;
+    ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
-    args[1] = (uintptr_t)&gfx.hw.buf;
-    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+    args[1] = (uintptr_t)&myvideo.gfx.buf;
+    ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
-    gfx.hw.disp.enable = 1;
-    gfx.hw.disp.channel = DEF_FB_CH;
-    gfx.hw.disp.layer_id = DEF_FB_LAYER;
-    args[1] = (uintptr_t)&gfx.hw.disp;
-    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
+    myvideo.gfx.disp.enable = 1;
+    myvideo.gfx.disp.channel = DEF_FB_CH;
+    myvideo.gfx.disp.layer_id = DEF_FB_LAYER;
+    args[1] = (uintptr_t)&myvideo.gfx.disp;
+    ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
-    ion_free(gfx.ion_dev, &gfx.hw.ion);
-    munmap(gfx.hw.mem, sysconf(_SC_PAGESIZE));
+    ion_free(myvideo.gfx.ion_fd, &myvideo.gfx.ion);
+    munmap(myvideo.gfx.mem, sysconf(_SC_PAGESIZE));
 
-    close(gfx.fb_dev);
-    close(gfx.ion_dev);
-    close(gfx.mem_dev);
-    close(gfx.disp_dev);
+    close(myvideo.fb.fd);
+    close(myvideo.gfx.ion_fd);
+    close(myvideo.gfx.mem_fd);
+    close(myvideo.gfx.disp_fd);
 
-    gfx.fb_dev = -1;
-    gfx.ion_dev = -1;
-    gfx.mem_dev = -1;
-    gfx.disp_dev = -1;
+    myvideo.fb.fd = -1;
+    myvideo.gfx.ion_fd = -1;
+    myvideo.gfx.mem_fd = -1;
+    myvideo.gfx.disp_fd = -1;
     return 0;
 }
 
 void disp_resize(void)
 {
     int r = 0;
-    uint32_t args[4] = {0, (uintptr_t)&gfx.hw.buf, 1, 0};
+    uint32_t args[4] = {0, (uintptr_t)&myvideo.gfx.buf, 1, 0};
 
-    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+    ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
     if (nds.dis_mode == NDS_DIS_MODE_S0) {
-        gfx.hw.buf.info.fb.crop.width  = ((uint64_t)FB_H) << 32;
-        gfx.hw.buf.info.fb.crop.height = ((uint64_t)FB_W) << 32;
+        myvideo.gfx.buf.info.fb.crop.width  = ((uint64_t)FB_H) << 32;
+        myvideo.gfx.buf.info.fb.crop.height = ((uint64_t)FB_W) << 32;
     }
     else {
-        gfx.hw.buf.info.fb.crop.width  = ((uint64_t)NDS_H) << 32;
-        gfx.hw.buf.info.fb.crop.height = ((uint64_t)NDS_W) << 32;
+        myvideo.gfx.buf.info.fb.crop.width  = ((uint64_t)NDS_H) << 32;
+        myvideo.gfx.buf.info.fb.crop.height = ((uint64_t)NDS_W) << 32;
     }
-    ioctl(gfx.disp_dev, DISP_LAYER_SET_CONFIG, args);
-    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
+    ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
+    ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
 }
 #endif
 
@@ -3749,55 +3736,55 @@ static void set_core(int n)
     }
 }
 
-int fb_init(void)
+int init_lcd(void)
 {
-    gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
-    if (gfx.fb_dev < 0) {
+    myvideo.fb.fd = open("/dev/fb0", O_RDWR, 0);
+    if (myvideo.fb.fd < 0) {
         debug("failed to open /dev/fb0\n");
         return -1;
     }
 
-    if (ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo) < 0) {
+    if (ioctl(myvideo.fb.fd, FBIOGET_VSCREENINFO, &myvideo.fb.var_info) < 0) {
         debg("failed to get fb info\n");
         return -1;
     }
 
-    gfx.fb.virAddr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fb_dev, 0);
-    if (gfx.fb.virAddr == (void *)-1) {
-        close(gfx.fb_dev);
-        gfx.fb_dev = -1;
+    myvideo.fb.virt_addr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.fb.fd, 0);
+    if (myvideo.fb.virt_addr == (void *)-1) {
+        close(myvideo.fb.fd);
+        myvideo.fb.fd = -1;
         debug("failed to mmap fb\n");
         return -1;
     }
-    debug("fb virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
-    memset(gfx.fb.virAddr, 0 , FB_SIZE);
+    debug("fb virAddr %p (size:%d)\n", myvideo.fb.virt_addr, FB_SIZE);
+    memset(myvideo.fb.virt_addr, 0 , FB_SIZE);
 
-    gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
-    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
+    ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
 
     set_core(INIT_CPU_CORE);
     system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     set_core(DEINIT_CPU_CORE);
     system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
 
-    if (gfx.fb.virAddr) {
-        munmap(gfx.fb.virAddr, FB_SIZE);
-        gfx.fb.virAddr = NULL;
+    if (myvideo.fb.virt_addr) {
+        munmap(myvideo.fb.virt_addr, FB_SIZE);
+        myvideo.fb.virt_addr = NULL;
     }
 
-    if (gfx.fb_dev > 0) {
-        close(gfx.fb_dev);
-        gfx.fb_dev = -1;
+    if (myvideo.fb.fd > 0) {
+        close(myvideo.fb.fd);
+        myvideo.fb.fd = -1;
     }
 
-    if (vid.mem_fd > 0) {
-        close(vid.mem_fd);
-        vid.mem_fd = -1;
+    if (myvideo.mem_fd > 0) {
+        close(myvideo.mem_fd);
+        myvideo.mem_fd = -1;
     }
     return 0;
 }
@@ -3832,28 +3819,28 @@ static void check_before_set(int num, int v)
 static void set_core(int n)
 {           
     if (n <= 1) {
-        printf(PREFIX"New CPU Core: 1\n");
+        debug("cpu core=1\n");
         check_before_set(0, 1);
         check_before_set(1, 0);
         check_before_set(2, 0);
         check_before_set(3, 0);
     }       
     else if (n == 2) {
-        printf(PREFIX"New CPU Core: 2\n");
+        debug("cpu core=2\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 0);
         check_before_set(3, 0);
     }       
     else if (n == 3) {
-        printf(PREFIX"New CPU Core: 3\n");
+        debug("cpu core=3\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 1);
         check_before_set(3, 0);
     }
     else {
-        printf(PREFIX"New CPU Core: 4\n");
+        debug("cpu core=4\n");
         check_before_set(0, 1);
         check_before_set(1, 1);
         check_before_set(2, 1);
@@ -3867,213 +3854,174 @@ static int set_best_match_cpu_clock(int clk)
 
     system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
     for (cc = 0; cc < max_cpu_item; cc++) {
-        if (cpu_clock[cc].clk >= clk) {
-            printf(PREFIX"Set Best Match CPU %dMHz (0x%08x)\n", cpu_clock[cc].clk, cpu_clock[cc].reg);
-            *vid.cpu_ptr = cpu_clock[cc].reg;
+        if (cpu_clk[cc].clk >= clk) {
+            debug("set cpu %dMHz (0x%08x)\n", cpu_clk[cc].clk, cpu_clk[cc].reg);
+            *myvideo.cpu_ptr = cpu_clk[cc].reg;
             return cc;
         }
     }
     return -1;
 }
 
-int fb_init(void)
+int init_lcd(void)
 {
-    gfx.fb_dev = open("/dev/fb0", O_RDWR, 0);
-    if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open /dev/fb0\n");
+    myvideo.fb.fd = open("/dev/fb0", O_RDWR, 0);
+    if (myvideo.fb.fd < 0) {
+        debug("failed to open /dev/fb0\n");
         return -1;
     }
 
-    if (ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo) < 0) {
-        printf(PREFIX"Failed to get fb info\n");
+    if (ioctl(myvideo.fb.fd, FBIOGET_VSCREENINFO, &myvideo.fb.var_info) < 0) {
+        debug("failed to get fb info\n");
         return -1;
     }
 
-    gfx.fb.virAddr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gfx.fb_dev, 0);
-    if (gfx.fb.virAddr == (void *)-1) {
-        close(gfx.fb_dev);
-        gfx.fb_dev = -1;
-        printf(PREFIX"Failed to mmap fb\n");
+    myvideo.fb.virt_addr = mmap(NULL, FB_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.fb.fd, 0);
+    if (myvideo.fb.virt_addr == (void *)-1) {
+        close(myvideo.fb.fd);
+        myvideo.fb.fd = -1;
+        debug("failed to mmap fb\n");
         return -1;
     }
-    printf(PREFIX"FB virAddr %p (size:%d)\n", gfx.fb.virAddr, FB_SIZE);
-    memset(gfx.fb.virAddr, 0 , FB_SIZE);
+    debug("fb addr=%p, size=%d\n", myvideo.fb.virt_addr, FB_SIZE);
+    memset(myvideo.fb.virt_addr, 0 , FB_SIZE);
 
-    gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
-    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
+    ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
 
-    vid.mem_fd = open("/dev/mem", O_RDWR);
-    if (vid.mem_fd < 0) { 
-        printf("Failed to open /dev/mem\n");
+    myvideo.mem_fd = open("/dev/mem", O_RDWR);
+    if (myvideo.mem_fd < 0) { 
+        debug("failed to open /dev/mem\n");
         return -1;
     }    
-    vid.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, CCU_BASE);
-    if (vid.ccu_mem == MAP_FAILED) {
-        printf("Failed to map memory\n");
+    myvideo.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.mem_fd, CCU_BASE);
+    if (myvideo.ccu_mem == MAP_FAILED) {
+        debug("failed to map memory\n");
         return -1;
     }    
-    printf(PREFIX"CCU MMap %p\n", vid.ccu_mem);
-    vid.cpu_ptr = (uint32_t *)&vid.ccu_mem[0x00];
+    debug("ccp mem=%p\n", myvideo.ccu_mem);
+    myvideo.cpu_ptr = (uint32_t *)&myvideo.ccu_mem[0x00];
 
-    vid.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, DAC_BASE);
-    if (vid.dac_mem == MAP_FAILED) {
-        printf("Failed to map memory\n");
+    myvideo.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.mem_fd, DAC_BASE);
+    if (myvideo.dac_mem == MAP_FAILED) {
+        debug("failed to map memory\n");
         return -1;
     }    
-    printf(PREFIX"DAC MMap %p\n", vid.dac_mem);
-    vid.vol_ptr = (uint32_t *)(&vid.dac_mem[0xc00 + 0x258]);
+    debug("dac mem=%p\n", myvideo.dac_mem);
+    myvideo.vol_ptr = (uint32_t *)(&myvideo.dac_mem[0xc00 + 0x258]);
 
     set_best_match_cpu_clock(INIT_CPU_CLOCK);
     set_core(INIT_CPU_CORE);
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
     set_best_match_cpu_clock(DEINIT_CPU_CLOCK);
     set_core(DEINIT_CPU_CORE);
     system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
 
-    if (gfx.fb.virAddr) {
-        munmap(gfx.fb.virAddr, FB_SIZE);
-        gfx.fb.virAddr = NULL;
+    if (myvideo.fb.virt_addr) {
+        munmap(myvideo.fb.virt_addr, FB_SIZE);
+        myvideo.fb.virt_addr = NULL;
     }
 
-    if (gfx.fb_dev > 0) {
-        close(gfx.fb_dev);
-        gfx.fb_dev = -1;
+    if (myvideo.fb.fd > 0) {
+        close(myvideo.fb.fd);
+        myvideo.fb.fd = -1;
     }
 
-    if (vid.ccu_mem != MAP_FAILED) {
-        munmap(vid.ccu_mem, 4096);
-        vid.ccu_mem = NULL;
+    if (myvideo.ccu_mem != MAP_FAILED) {
+        munmap(myvideo.ccu_mem, 4096);
+        myvideo.ccu_mem = NULL;
     }
 
-    if (vid.dac_mem != MAP_FAILED) {
-        munmap(vid.dac_mem, 4096);
-        vid.dac_mem = NULL;
+    if (myvideo.dac_mem != MAP_FAILED) {
+        munmap(myvideo.dac_mem, 4096);
+        myvideo.dac_mem = NULL;
     }
 
-    if (vid.mem_fd > 0) {
-        close(vid.mem_fd);
-        vid.mem_fd = -1;
+    if (myvideo.mem_fd > 0) {
+        close(myvideo.mem_fd);
+        myvideo.mem_fd = -1;
     }
     return 0;
 }
 #endif
 
 #if defined(MINI)
-int fb_init(void)
+int init_lcd(void)
 {
-#if USE_MASK
-    int c0 = 0;
-    int c1 = 0;
-    uint32_t *p = NULL;
-#endif
-
     MI_SYS_Init();
     MI_GFX_Open();
 
-    gfx.fb_dev = open("/dev/fb0", O_RDWR);
-    if (gfx.fb_dev < 0) {
-        printf(PREFIX"Failed to open /dev/fb0\n");
+    myvideo.fb.fd = open("/dev/fb0", O_RDWR);
+    if (myvideo.fb.fd < 0) {
+        debug("failed to open /dev/fb0\n");
         return -1;
     }
-    ioctl(gfx.fb_dev, FBIOGET_FSCREENINFO, &gfx.finfo);
-    ioctl(gfx.fb_dev, FBIOGET_VSCREENINFO, &gfx.vinfo);
-    gfx.vinfo.yoffset = 0;
-    gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
-    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
+    ioctl(myvideo.fb.fd, FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
+    ioctl(myvideo.fb.fd, FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
+    myvideo.fb.var_info.yoffset = 0;
+    myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
+    ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
 
-    gfx.fb.phyAddr = gfx.finfo.smem_start;
-    MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
-    MI_SYS_Mmap(gfx.fb.phyAddr, gfx.finfo.smem_len, &gfx.fb.virAddr, TRUE);
-    memset(&gfx.hw.opt, 0, sizeof(gfx.hw.opt));
+    myvideo.fb.phy_addr = myvideo.fb.fix_info.smem_start;
+    MI_SYS_MemsetPa(myvideo.fb.phy_addr, 0, FB_SIZE);
+    MI_SYS_Mmap(myvideo.fb.phy_addr, myvideo.fb.fix_info.smem_len, &myvideo.fb.virt_addr, TRUE);
+    memset(&myvideo.gfx.opt, 0, sizeof(myvideo.gfx.opt));
 
-    MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.tmp.phyAddr);
-    MI_SYS_Mmap(gfx.tmp.phyAddr, TMP_SIZE, &gfx.tmp.virAddr, TRUE);
+    MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &myvideo.tmp.phy_addr);
+    MI_SYS_Mmap(myvideo.tmp.phy_addr, TMP_SIZE, &myvideo.tmp.virt_addr, TRUE);
 
-    MI_SYS_MMA_Alloc(NULL, TMP_SIZE, &gfx.overlay.phyAddr);
-    MI_SYS_Mmap(gfx.overlay.phyAddr, TMP_SIZE, &gfx.overlay.virAddr, TRUE);
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[0][0]);
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[0][1]);
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[1][0]);
+    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[1][1]);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][0], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[0][0], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][1], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[0][1], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][0], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[1][0], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][1], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[1][1], TRUE);
+    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
 
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[0][0]);
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[0][1]);
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[1][0]);
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &gfx.lcd.phyAddr[1][1]);
-    MI_SYS_Mmap(gfx.lcd.phyAddr[0][0], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[0][0], TRUE);
-    MI_SYS_Mmap(gfx.lcd.phyAddr[0][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[0][1], TRUE);
-    MI_SYS_Mmap(gfx.lcd.phyAddr[1][0], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][0], TRUE);
-    MI_SYS_Mmap(gfx.lcd.phyAddr[1][1], SCREEN_DMA_SIZE, &gfx.lcd.virAddr[1][1], TRUE);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[0][1]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][0]);
-    printf(PREFIX"Ping-pong Buffer %p\n", gfx.lcd.virAddr[1][1]);
-
-#if USE_MASK
-    MI_SYS_MMA_Alloc(NULL, MASK_SIZE, &gfx.mask.phyAddr[0]);
-    MI_SYS_MMA_Alloc(NULL, MASK_SIZE, &gfx.mask.phyAddr[1]);
-    MI_SYS_Mmap(gfx.mask.phyAddr[0], MASK_SIZE, &gfx.mask.virAddr[0], TRUE);
-    MI_SYS_Mmap(gfx.mask.phyAddr[1], MASK_SIZE, &gfx.mask.virAddr[1], TRUE);
-
-    p = (uint32_t *)gfx.mask.virAddr[0];
-    for (c0 = 0; c0 < NDS_Hx3; c0++) {
-        for (c1 = 0; c1 < NDS_Wx3; c1++) {
-            if (((c0 % 3) == 0) || (c1 % 3) == 0) {
-                *p++ = 0xff000000;
-            }
-            else {
-                *p++ = 0x00000000;
-            }
-        }
-    }
-    MI_SYS_FlushInvCache(gfx.mask.virAddr[0], MASK_SIZE);
-#endif
-
-    vid.sar_fd = open("/dev/sar", O_RDWR);
+    myvideo.sar_fd = open("/dev/sar", O_RDWR);
     return 0;
 }
 
-int fb_quit(void)
+int quit_lcd(void)
 {
-    MI_SYS_Munmap(gfx.fb.virAddr, TMP_SIZE);
+    MI_SYS_Munmap(myvideo.fb.virt_addr, TMP_SIZE);
 
-    MI_SYS_Munmap(gfx.tmp.virAddr, TMP_SIZE);
-    MI_SYS_MMA_Free(gfx.tmp.phyAddr);
+    MI_SYS_Munmap(myvideo.tmp.virt_addr, TMP_SIZE);
+    MI_SYS_MMA_Free(myvideo.tmp.phy_addr);
 
-    MI_SYS_Munmap(gfx.overlay.virAddr, TMP_SIZE);
-    MI_SYS_MMA_Free(gfx.overlay.phyAddr);
-
-#if USE_MASK
-    MI_SYS_Munmap(gfx.mask.virAddr[0], MASK_SIZE);
-    MI_SYS_Munmap(gfx.mask.virAddr[1], MASK_SIZE);
-    MI_SYS_MMA_Free(gfx.mask.phyAddr[0]);
-    MI_SYS_MMA_Free(gfx.mask.phyAddr[1]);
-#endif
-
-    MI_SYS_Munmap(gfx.lcd.virAddr[0][0], SCREEN_DMA_SIZE);
-    MI_SYS_Munmap(gfx.lcd.virAddr[0][1], SCREEN_DMA_SIZE);
-    MI_SYS_Munmap(gfx.lcd.virAddr[1][0], SCREEN_DMA_SIZE);
-    MI_SYS_Munmap(gfx.lcd.virAddr[1][1], SCREEN_DMA_SIZE);
-    MI_SYS_MMA_Free(gfx.lcd.phyAddr[0][0]);
-    MI_SYS_MMA_Free(gfx.lcd.phyAddr[0][1]);
-    MI_SYS_MMA_Free(gfx.lcd.phyAddr[1][0]);
-    MI_SYS_MMA_Free(gfx.lcd.phyAddr[1][1]);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][0], SCREEN_DMA_SIZE);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][1], SCREEN_DMA_SIZE);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][0], SCREEN_DMA_SIZE);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][1], SCREEN_DMA_SIZE);
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][0]);
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][1]);
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][0]);
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][1]);
 
     MI_GFX_Close();
     MI_SYS_Exit();
 
-    gfx.vinfo.yoffset = 0;
-    ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
-    close(gfx.fb_dev);
-    gfx.fb_dev = -1;
+    myvideo.fb.var_info.yoffset = 0;
+    ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
+    close(myvideo.fb.fd);
+    myvideo.fb.fd = -1;
 
-    close(vid.sar_fd);
-    vid.sar_fd = -1;
+    close(myvideo.sar_fd);
+    myvideo.sar_fd = -1;
     return 0;
 }
 #endif
 
-void GFX_Init(void)
+void init_gfx(void)
 {
     struct stat st = {0};
 
@@ -4086,7 +4034,7 @@ void GFX_Init(void)
     uint32_t *dst = NULL;
 #endif
 
-    fb_init();
+    init_lcd();
     memset(nds.pen.path, 0, sizeof(nds.pen.path));
     if (getcwd(nds.pen.path, sizeof(nds.pen.path))) {
         strcat(nds.pen.path, "/");
@@ -4102,12 +4050,6 @@ void GFX_Init(void)
     if (getcwd(nds.theme.path, sizeof(nds.theme.path))) {
         strcat(nds.theme.path, "/");
         strcat(nds.theme.path, THEME_PATH);
-    }
-
-    memset(nds.overlay.path, 0, sizeof(nds.overlay.path));
-    if (getcwd(nds.overlay.path, sizeof(nds.overlay.path))) {
-        strcat(nds.overlay.path, "/");
-        strcat(nds.overlay.path, OVERLAY_PATH);
     }
 
     memset(nds.lang.path, 0, sizeof(nds.lang.path));
@@ -4139,8 +4081,6 @@ void GFX_Init(void)
     nds.theme.sel = 0;
     nds.theme.max = get_theme_count();
 
-    nds.overlay.sel = nds.overlay.max = get_overlay_count();
-
     nds.menu.sel = 0;
     nds.menu.max = get_menu_count();
 
@@ -4169,11 +4109,11 @@ void GFX_Init(void)
     cc = 0;
     for (y = 0; y < NDS_H; y++) {
         for (x = 0; x < NDS_W; x++) {
-            dst = (uint32_t *)gfx.hw.ion.vadd;
+            dst = (uint32_t *)myvideo.gfx.ion.vadd;
             LUT_256x192_S00[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * FB_H) + y + oy);
             LUT_256x192_S10[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * FB_H) + y);
 
-            dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H);
+            dst = (uint32_t *)myvideo.gfx.ion.vadd + (FB_W * FB_H);
             LUT_256x192_S01[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * FB_H) + y + oy);
             LUT_256x192_S11[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * FB_H) + y);
             cc+= 1;
@@ -4193,9 +4133,9 @@ void GFX_Quit(void)
     is_video_thread_running = 0;
     pthread_join(thread, &ret);
 
-    GFX_Clear();
+    clear_lcd();
     printf(PREFIX"Free FB resources\n");
-    fb_quit();
+    quit_lcd();
 
     if (cvt) {
         SDL_FreeSurface(cvt);
@@ -4203,15 +4143,15 @@ void GFX_Quit(void)
     }
 }
 
-void GFX_Clear(void)
+void clear_lcd(void)
 {
 #if defined(MINI)
-    MI_SYS_MemsetPa(gfx.fb.phyAddr, 0, FB_SIZE);
-    MI_SYS_MemsetPa(gfx.tmp.phyAddr, 0, TMP_SIZE);
-    MI_SYS_MemsetPa(gfx.lcd.phyAddr[0][0], 0, SCREEN_DMA_SIZE);
-    MI_SYS_MemsetPa(gfx.lcd.phyAddr[0][1], 0, SCREEN_DMA_SIZE);
-    MI_SYS_MemsetPa(gfx.lcd.phyAddr[1][0], 0, SCREEN_DMA_SIZE);
-    MI_SYS_MemsetPa(gfx.lcd.phyAddr[1][1], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(myvideo.fb.phy_addr, 0, FB_SIZE);
+    MI_SYS_MemsetPa(myvideo.tmp.phy_addr, 0, TMP_SIZE);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][0], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][1], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][0], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][1], 0, SCREEN_DMA_SIZE);
 #endif
 }
 
@@ -4272,28 +4212,28 @@ int draw_pen(void *pixels, int width, int pitch)
     }
 
 #if 0
-    vVertices[0] = ((((float)x) / NDS_W) - 0.5) * 2.0;
-    vVertices[1] = ((((float)y) / NDS_H) - 0.5) * -2.0;
+    fg_vertices[0] = ((((float)x) / NDS_W) - 0.5) * 2.0;
+    fg_vertices[1] = ((((float)y) / NDS_H) - 0.5) * -2.0;
 
-    vVertices[5] = vVertices[0];
-    vVertices[6] = ((((float)(y + nds.pen.img->h)) / NDS_H) - 0.5) * -2.0;
+    fg_vertices[5] = fg_vertices[0];
+    fg_vertices[6] = ((((float)(y + nds.pen.img->h)) / NDS_H) - 0.5) * -2.0;
 
-    vVertices[10] = ((((float)(x + nds.pen.img->w)) / NDS_W) - 0.5) * 2.0;
-    vVertices[11] = vVertices[6];
+    fg_vertices[10] = ((((float)(x + nds.pen.img->w)) / NDS_W) - 0.5) * 2.0;
+    fg_vertices[11] = fg_vertices[6];
 
-    vVertices[15] = vVertices[10];
-    vVertices[16] = vVertices[1];
+    fg_vertices[15] = fg_vertices[10];
+    fg_vertices[16] = fg_vertices[1];
 
-    glUniform1f(vid.alphaLoc, 1.0);
+    glUniform1f(myvideo.alphaLoc, 1.0);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_PEN]);
-    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
-    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
+    glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     glDisable(GL_BLEND);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 #endif
 
 #if !defined(UT)
@@ -4347,85 +4287,104 @@ int draw_pen(void *pixels, int width, int pitch)
 
 int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
+#if defined(TRIMUI)
+    int x = 0;
+    int y = 0;
+    int ox = 0;
+    int oy = 0;
+    int sw = srcrect.w;
+    int sh = srcrect.h;
+    uint32_t *dst = NULL;
+    uint32_t *src = (uint32_t *)pixels;
+#endif
+
+#if defined(MINI)
+    int cc = 0;
+    int copy_it = 1;
+    int dma_found = 0;
+    MI_U16 u16Fence = 0;
+    int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
+#endif
+
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    int tex = (id >= 0) ? id : TEX_TMP;
+    int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
     debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d, rotate=%d)\n", __func__, id, pixels, pitch, alpha, rotate);
 
 #if defined(GKD2) || defined(BRICK)
-    vid.shm.buf->srt.x = srcrect.x;
-    vid.shm.buf->srt.y = srcrect.y;
-    vid.shm.buf->srt.w = srcrect.w;
-    vid.shm.buf->srt.h = srcrect.h;
+    myvideo.shm.buf->srt.x = srcrect.x;
+    myvideo.shm.buf->srt.y = srcrect.y;
+    myvideo.shm.buf->srt.w = srcrect.w;
+    myvideo.shm.buf->srt.h = srcrect.h;
 
-    vid.shm.buf->drt.x = dstrect.x;
-    vid.shm.buf->drt.y = dstrect.y;
-    vid.shm.buf->drt.w = dstrect.w;
-    vid.shm.buf->drt.h = dstrect.h;
+    myvideo.shm.buf->drt.x = dstrect.x;
+    myvideo.shm.buf->drt.y = dstrect.y;
+    myvideo.shm.buf->drt.w = dstrect.w;
+    myvideo.shm.buf->drt.h = dstrect.h;
 
-    memcpy(vid.shm.buf->buf, pixels, srcrect.h * pitch);
+    memcpy(myvideo.shm.buf->buf, pixels, srcrect.h * pitch);
 
-    vid.shm.buf->cmd = SHM_CMD_FLUSH;
-    vid.shm.buf->tex_id = tex;
-    vid.shm.buf->pitch = pitch;
-    vid.shm.buf->alpha = alpha;
-    vid.shm.buf->rotate = rotate;
-    vid.shm.buf->dis_mode = nds.dis_mode;
-    vid.shm.buf->len = srcrect.h * pitch;
-    vid.shm.buf->pixel_filter = pixel_filter;
+    myvideo.shm.buf->cmd = SHM_CMD_FLUSH;
+    myvideo.shm.buf->tex_id = tex;
+    myvideo.shm.buf->pitch = pitch;
+    myvideo.shm.buf->alpha = alpha;
+    myvideo.shm.buf->rotate = rotate;
+    myvideo.shm.buf->dis_mode = nds.dis_mode;
+    myvideo.shm.buf->len = srcrect.h * pitch;
+    myvideo.shm.buf->pixel_filter = pixel_filter;
     debug("send SHM_CMD_FLUSH, pitch=%d, alpha=%d, rotate=%d\n", pitch, alpha, rotate);
 
-    vid.shm.buf->valid = 1;
-    __clear_cache((uint8_t *)vid.shm.buf, (uint8_t *)vid.shm.buf + sizeof(shm_buf_t));
-    while (vid.shm.buf->valid) {
+    myvideo.shm.buf->valid = 1;
+    __clear_cache((uint8_t *)myvideo.shm.buf, (uint8_t *)myvideo.shm.buf + sizeof(shm_buf_t));
+    while (myvideo.shm.buf->valid) {
         usleep(10);
     }
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH1) || (nds.dis_mode == NDS_DIS_MODE_HH3))) {
-        vVertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        vVertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        fg_vertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
-        vVertices[10] = vVertices[5];
-        vVertices[11] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[10] = fg_vertices[5];
+        fg_vertices[11] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
 
-        vVertices[15] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
-        vVertices[16] = vVertices[11];
+        fg_vertices[15] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[16] = fg_vertices[11];
 
-        vVertices[0] = vVertices[15];
-        vVertices[1] = vVertices[6];
+        fg_vertices[0] = fg_vertices[15];
+        fg_vertices[1] = fg_vertices[6];
     }
     else if ((id != -1) && ((nds.dis_mode == NDS_DIS_MODE_HH0) || (nds.dis_mode == NDS_DIS_MODE_HH2))) {
-        vVertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        vVertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        fg_vertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
-        vVertices[0] = vVertices[15];
-        vVertices[1] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[0] = fg_vertices[15];
+        fg_vertices[1] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
 
-        vVertices[5] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
-        vVertices[6] = vVertices[1];
+        fg_vertices[5] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[6] = fg_vertices[1];
 
-        vVertices[10] = vVertices[5];
-        vVertices[11] = vVertices[16];
+        fg_vertices[10] = fg_vertices[5];
+        fg_vertices[11] = fg_vertices[16];
     }
     else {
-        vVertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        vVertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
+        fg_vertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
-        vVertices[5] = vVertices[0];
-        vVertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[5] = fg_vertices[0];
+        fg_vertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
 
-        vVertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
-        vVertices[11] = vVertices[6];
+        fg_vertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[11] = fg_vertices[6];
 
-        vVertices[15] = vVertices[10];
-        vVertices[16] = vVertices[1];
+        fg_vertices[15] = fg_vertices[10];
+        fg_vertices[16] = fg_vertices[1];
     }
 
-    if (tex == TEX_TMP) {
-        glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
+    if (tex == TEXTURE_TMP) {
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (pixel_filter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -4438,19 +4397,19 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srcrect.w, srcrect.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
-    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
-        glUniform1f(vid.alphaLoc, 1.0 - ((float)nds.alpha.val / 10.0));
+    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
+        glUniform1f(myvideo.alphaLoc, 1.0 - ((float)nds.alpha.val / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
-    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), vVertices);
-    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &vVertices[3]);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
+    glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
-        glUniform1f(vid.alphaLoc, 0.0);
+    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
+        glUniform1f(myvideo.alphaLoc, 0.0);
         glDisable(GL_BLEND);
     }
 #endif
@@ -4502,7 +4461,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 
 #if defined(PANDORA)
     if ((pitch == 1024) && (srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
-        uint32_t *dst = (uint32_t *)gfx.hw.mem[(gfx.vinfo.yoffset == 0) ? 0 : 1];
+        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
         if (dstrect.y == 0) {
             dst += 16;
@@ -4855,7 +4814,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         int x = 0;
         int y = 0;
         const uint32_t *src = pixels;
-        uint32_t *dst = (uint32_t *)gfx.hw.mem[(gfx.vinfo.yoffset == 0) ? 0 : 1];
+        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
         for (y = 0; y < srcrect.h; y++) {
             for (x = 0; x < srcrect.w; x++) {
@@ -4867,15 +4826,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 #endif
 
 #if defined(TRIMUI)
-    int x = 0;
-    int y = 0;
-    int ox = 0;
-    int oy = 0;
-    int sw = srcrect.w;
-    int sh = srcrect.h;
-    uint32_t *dst = NULL;
-    uint32_t *src = (uint32_t *)pixels;
-
     if (pixels == NULL) {
         return -1;
     }
@@ -4892,10 +4842,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 
     if((srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
         if (nds.dis_mode == NDS_DIS_MODE_S0) {
-            dst = gfx.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
+            dst = myvideo.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
         }
         else {
-            dst = gfx.fb.flip ? LUT_256x192_S11 : LUT_256x192_S10;
+            dst = myvideo.fb.flip ? LUT_256x192_S11 : LUT_256x192_S10;
         }
 
         asm volatile (
@@ -4979,7 +4929,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
             sh = FB_H;
         }
 
-        dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * gfx.fb.flip);
+        dst = (uint32_t *)myvideo.gfx.ion.vadd + (FB_W * FB_H * myvideo.fb.flip);
         for (y = 0; y < sh; y++) {
             for (x = 0; x < sw; x++) {
                 dst[((((sw - 1) - x) + ox) * FB_H) + y + oy] = *src++;
@@ -4989,25 +4939,19 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 #endif
 
 #if defined(MINI)
-    int cc = 0;
-    int copy_it = 1;
-    int dma_found = 0;
-    MI_U16 u16Fence = 0;
-    int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
-
     if (pixels == NULL) {
         return -1;
     }
 
     for (cc = 0; cc < 2; cc++) {
-        if (pixels == gfx.lcd.virAddr[cc][0]) {
+        if (pixels == myvideo.lcd.virt_addr[cc][0]) {
             dma_found = 1;
-            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][0];
+            myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[cc][0];
             break;
         }
-        if (pixels == gfx.lcd.virAddr[cc][1]) {
+        if (pixels == myvideo.lcd.virt_addr[cc][1]) {
             dma_found = 1;
-            gfx.hw.src.surf.phyAddr = gfx.lcd.phyAddr[cc][1];
+            myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[cc][1];
             break;
         }
     }
@@ -5020,11 +4964,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         if (nds.alpha.val > 0) {
             float m0 = (float)nds.alpha.val / 10;
             float m1 = 1.0 - m0;
-            uint32_t *d = gfx.tmp.virAddr;
+            uint32_t *d = myvideo.tmp.virt_addr;
             uint32_t r0 = 0, g0 = 0, b0 = 0;
             uint32_t r1 = 0, g1 = 0, b1 = 0;
             int x = 0, y = 0, ax = 0, ay = 0, sw = 0, sh = 0;
-            const uint32_t *s0 = gfx.fb.virAddr + (FB_W * gfx.vinfo.yoffset * FB_BPP);
+            const uint32_t *s0 = myvideo.fb.virt_addr + (FB_W * myvideo.fb.var_info.yoffset * FB_BPP);
             const uint16_t *s1_565 = pixels;
             const uint32_t *s1_888 = pixels;
             uint32_t col[] = {
@@ -5165,397 +5109,332 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
             }
 
             if (pitch == 1024) {
-#if USE_MASK
-                if (dma_found) {
-                    gfx.hw.opt.u32GlobalSrcConstColor = 0;
-                    gfx.hw.opt.eRotate = 0;
-                    gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
-                    gfx.hw.opt.eDstDfbBldOp = 0;
-                    gfx.hw.opt.eDFBBlendFlag = 0;
+                asm volatile (
+                    "0:  add r8, %1, %2         ;"
+                    "1:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "2:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "3:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "4:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "5:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "6:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "7:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "8:  vldmia %0!, {q0-q3}    ;"
+                    "    vldmia %0!, {q8-q11}   ;"
+                    "    vdup.32 d15, d7[1]     ;"
+                    "    vdup.32 d14, d7[0]     ;"
+                    "    vdup.32 d13, d6[1]     ;"
+                    "    vdup.32 d12, d6[0]     ;"
+                    "    vdup.32 d11, d5[1]     ;"
+                    "    vdup.32 d10, d5[0]     ;"
+                    "    vdup.32 d9, d4[1]      ;"
+                    "    vdup.32 d8, d4[0]      ;"
+                    "    vdup.32 d7, d3[1]      ;"
+                    "    vdup.32 d6, d3[0]      ;"
+                    "    vdup.32 d5, d2[1]      ;"
+                    "    vdup.32 d4, d2[0]      ;"
+                    "    vdup.32 d3, d1[1]      ;"
+                    "    vdup.32 d2, d1[0]      ;"
+                    "    vdup.32 d1, d0[1]      ;"
+                    "    vdup.32 d0, d0[0]      ;"
+                    "    vdup.32 d31, d23[1]    ;"
+                    "    vdup.32 d30, d23[0]    ;"
+                    "    vdup.32 d29, d22[1]    ;"
+                    "    vdup.32 d28, d22[0]    ;"
+                    "    vdup.32 d27, d21[1]    ;"
+                    "    vdup.32 d26, d21[0]    ;"
+                    "    vdup.32 d25, d20[1]    ;"
+                    "    vdup.32 d24, d20[0]    ;"
+                    "    vdup.32 d23, d19[1]    ;"
+                    "    vdup.32 d22, d19[0]    ;"
+                    "    vdup.32 d21, d18[1]    ;"
+                    "    vdup.32 d20, d18[0]    ;"
+                    "    vdup.32 d19, d17[1]    ;"
+                    "    vdup.32 d18, d17[0]    ;"
+                    "    vdup.32 d17, d16[1]    ;"
+                    "    vdup.32 d16, d16[0]    ;"
+                    "    vstmia %1!, {q0-q7}    ;"
+                    "    vstmia %1!, {q8-q15}   ;"
+                    "    vstmia r8!, {q0-q7}    ;"
+                    "    vstmia r8!, {q8-q15}   ;"
+                    "    add %1, %1, %2         ;"
+                    "    subs %3, #1            ;"
+                    "    bne 0b                 ;"
+                    :
+                    : "r"(pixels), "r"(myvideo.tmp.virt_addr), "r"(NDS_Wx2 * 4), "r"(NDS_H)
+                    : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
+                );
 
-                    gfx.hw.src.rt.s32Xpos = 0;
-                    gfx.hw.src.rt.s32Ypos = 0;
-                    gfx.hw.src.rt.u32Width = NDS_W;
-                    gfx.hw.src.rt.u32Height = NDS_H;
-                    gfx.hw.src.surf.u32Width = NDS_W;
-                    gfx.hw.src.surf.u32Height = NDS_H;
-                    gfx.hw.src.surf.u32Stride = pitch;
-                    gfx.hw.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
-
-                    gfx.hw.dst.rt.s32Xpos = 0;
-                    gfx.hw.dst.rt.s32Ypos = 0;
-                    gfx.hw.dst.rt.u32Width = NDS_Wx3;
-                    gfx.hw.dst.rt.u32Height = NDS_Hx3;
-                    gfx.hw.dst.surf.u32Width = NDS_Wx3;
-                    gfx.hw.dst.surf.u32Height = NDS_Hx3;
-                    gfx.hw.dst.surf.u32Stride = NDS_Wx3 * FB_BPP;
-                    gfx.hw.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
-                    gfx.hw.dst.surf.phyAddr = gfx.mask.phyAddr[1];
-
-                    MI_GFX_BitBlit(&gfx.hw.src.surf, &gfx.hw.src.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
-                    MI_GFX_WaitAllDone(FALSE, u16Fence);
-
-                    gfx.hw.overlay.surf.phyAddr = gfx.mask.phyAddr[0];
-                    gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
-                    gfx.hw.overlay.surf.u32Width = NDS_Wx3;
-                    gfx.hw.overlay.surf.u32Height = NDS_Hx3;
-                    gfx.hw.overlay.surf.u32Stride = NDS_Wx3 * FB_BPP;
-                    gfx.hw.overlay.rt.s32Xpos = 0;
-                    gfx.hw.overlay.rt.s32Ypos = 0;
-                    gfx.hw.overlay.rt.u32Width = NDS_Wx3;
-                    gfx.hw.overlay.rt.u32Height = NDS_Hx3;
-
-                    gfx.hw.dst.rt.s32Xpos = 0;
-                    gfx.hw.dst.rt.s32Ypos = 0;
-                    gfx.hw.dst.rt.u32Width = NDS_Wx3;
-                    gfx.hw.dst.rt.u32Height = NDS_Hx3;
-                    gfx.hw.dst.surf.phyAddr = gfx.mask.phyAddr[1];
-
-                    gfx.hw.opt.u32GlobalSrcConstColor = 0xff000000;
-                    gfx.hw.opt.eRotate = 0;
-                    gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
-                    gfx.hw.opt.eDstDfbBldOp = E_MI_GFX_DFB_BLD_INVSRCALPHA;
-                    gfx.hw.opt.eDFBBlendFlag = E_MI_GFX_DFB_BLEND_SRC_PREMULTIPLY | E_MI_GFX_DFB_BLEND_COLORALPHA | E_MI_GFX_DFB_BLEND_ALPHACHANNEL;
-                    MI_GFX_BitBlit(&gfx.hw.overlay.surf, &gfx.hw.overlay.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
-                    MI_GFX_WaitAllDone(FALSE, u16Fence);
-
-                    copy_it = 0;
-                    srcrect.x = 0;
-                    srcrect.y = 0;
-                    srcrect.w = NDS_Wx3;
-                    srcrect.h = NDS_Hx3;
-                    pitch = srcrect.w * 4;
-                }
-                else
-#endif
-                {
-                    asm volatile (
-                        "0:  add r8, %1, %2         ;"
-                        "1:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "2:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "3:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "4:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "5:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "6:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "7:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "8:  vldmia %0!, {q0-q3}    ;"
-                        "    vldmia %0!, {q8-q11}   ;"
-                        "    vdup.32 d15, d7[1]     ;"
-                        "    vdup.32 d14, d7[0]     ;"
-                        "    vdup.32 d13, d6[1]     ;"
-                        "    vdup.32 d12, d6[0]     ;"
-                        "    vdup.32 d11, d5[1]     ;"
-                        "    vdup.32 d10, d5[0]     ;"
-                        "    vdup.32 d9, d4[1]      ;"
-                        "    vdup.32 d8, d4[0]      ;"
-                        "    vdup.32 d7, d3[1]      ;"
-                        "    vdup.32 d6, d3[0]      ;"
-                        "    vdup.32 d5, d2[1]      ;"
-                        "    vdup.32 d4, d2[0]      ;"
-                        "    vdup.32 d3, d1[1]      ;"
-                        "    vdup.32 d2, d1[0]      ;"
-                        "    vdup.32 d1, d0[1]      ;"
-                        "    vdup.32 d0, d0[0]      ;"
-                        "    vdup.32 d31, d23[1]    ;"
-                        "    vdup.32 d30, d23[0]    ;"
-                        "    vdup.32 d29, d22[1]    ;"
-                        "    vdup.32 d28, d22[0]    ;"
-                        "    vdup.32 d27, d21[1]    ;"
-                        "    vdup.32 d26, d21[0]    ;"
-                        "    vdup.32 d25, d20[1]    ;"
-                        "    vdup.32 d24, d20[0]    ;"
-                        "    vdup.32 d23, d19[1]    ;"
-                        "    vdup.32 d22, d19[0]    ;"
-                        "    vdup.32 d21, d18[1]    ;"
-                        "    vdup.32 d20, d18[0]    ;"
-                        "    vdup.32 d19, d17[1]    ;"
-                        "    vdup.32 d18, d17[0]    ;"
-                        "    vdup.32 d17, d16[1]    ;"
-                        "    vdup.32 d16, d16[0]    ;"
-                        "    vstmia %1!, {q0-q7}    ;"
-                        "    vstmia %1!, {q8-q15}   ;"
-                        "    vstmia r8!, {q0-q7}    ;"
-                        "    vstmia r8!, {q8-q15}   ;"
-                        "    add %1, %1, %2         ;"
-                        "    subs %3, #1            ;"
-                        "    bne 0b                 ;"
-                        :
-                        : "r"(pixels), "r"(gfx.tmp.virAddr), "r"(NDS_Wx2 * 4), "r"(NDS_H)
-                        : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
-                    );
-
-                    copy_it = 0;
-                    srcrect.x = 0;
-                    srcrect.y = 0;
-                    srcrect.w = NDS_Wx2;
-                    srcrect.h = NDS_Hx2;
-                    pitch = srcrect.w * 4;
-                }
+                copy_it = 0;
+                srcrect.x = 0;
+                srcrect.y = 0;
+                srcrect.w = NDS_Wx2;
+                srcrect.h = NDS_Hx2;
+                pitch = srcrect.w * 4;
             }
             else {
                 int x = 0, y = 0;
                 uint16_t *s0 = NULL;
                 uint16_t *s1 = (uint16_t*)pixels;
-                uint16_t *d = (uint16_t*)gfx.tmp.virAddr;
+                uint16_t *d = (uint16_t*)myvideo.tmp.virt_addr;
 
                 for (y=0; y<srcrect.h; y++) {
                     s0 = d;
@@ -5579,74 +5458,43 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 
     if (copy_it) {
         if (dma_found == 0) {
-            neon_memcpy(gfx.tmp.virAddr, pixels, srcrect.h * pitch);
-            gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
-            MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
+            neon_memcpy(myvideo.tmp.virt_addr, pixels, srcrect.h * pitch);
+            myvideo.gfx.src.surf.phyAddr = myvideo.tmp.phy_addr;
+            MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srcrect.h);
         }
     }
     else {
-#if USE_MASK
-        gfx.hw.src.surf.phyAddr = gfx.mask.phyAddr[1];
-        MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
-#else
-        gfx.hw.src.surf.phyAddr = gfx.tmp.phyAddr;
-        MI_SYS_FlushInvCache(gfx.tmp.virAddr, pitch * srcrect.h);
-#endif
+        myvideo.gfx.src.surf.phyAddr = myvideo.tmp.phy_addr;
+        MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srcrect.h);
     }
 
-    gfx.hw.opt.u32GlobalSrcConstColor = 0;
-    gfx.hw.opt.eRotate = rotate;
-    gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
-    gfx.hw.opt.eDstDfbBldOp = 0;
-    gfx.hw.opt.eDFBBlendFlag = 0;
+    myvideo.gfx.opt.u32GlobalSrcConstColor = 0;
+    myvideo.gfx.opt.eRotate = rotate;
+    myvideo.gfx.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+    myvideo.gfx.opt.eDstDfbBldOp = 0;
+    myvideo.gfx.opt.eDFBBlendFlag = 0;
 
-    gfx.hw.src.rt.s32Xpos = srcrect.x;
-    gfx.hw.src.rt.s32Ypos = srcrect.y;
-    gfx.hw.src.rt.u32Width = srcrect.w;
-    gfx.hw.src.rt.u32Height = srcrect.h;
-    gfx.hw.src.surf.u32Width = srcrect.w;
-    gfx.hw.src.surf.u32Height = srcrect.h;
-    gfx.hw.src.surf.u32Stride = pitch;
-    gfx.hw.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
+    myvideo.gfx.src.rt.s32Xpos = srcrect.x;
+    myvideo.gfx.src.rt.s32Ypos = srcrect.y;
+    myvideo.gfx.src.rt.u32Width = srcrect.w;
+    myvideo.gfx.src.rt.u32Height = srcrect.h;
+    myvideo.gfx.src.surf.u32Width = srcrect.w;
+    myvideo.gfx.src.surf.u32Height = srcrect.h;
+    myvideo.gfx.src.surf.u32Stride = pitch;
+    myvideo.gfx.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
 
-    gfx.hw.dst.rt.s32Xpos = dstrect.x;
-    gfx.hw.dst.rt.s32Ypos = dstrect.y;
-    gfx.hw.dst.rt.u32Width = dstrect.w;
-    gfx.hw.dst.rt.u32Height = dstrect.h;
-    gfx.hw.dst.surf.u32Width = FB_W;
-    gfx.hw.dst.surf.u32Height = FB_H;
-    gfx.hw.dst.surf.u32Stride = FB_W * FB_BPP;
-    gfx.hw.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
-    gfx.hw.dst.surf.phyAddr = gfx.fb.phyAddr + (FB_W * gfx.vinfo.yoffset * FB_BPP);
+    myvideo.gfx.dst.rt.s32Xpos = dstrect.x;
+    myvideo.gfx.dst.rt.s32Ypos = dstrect.y;
+    myvideo.gfx.dst.rt.u32Width = dstrect.w;
+    myvideo.gfx.dst.rt.u32Height = dstrect.h;
+    myvideo.gfx.dst.surf.u32Width = FB_W;
+    myvideo.gfx.dst.surf.u32Height = FB_H;
+    myvideo.gfx.dst.surf.u32Stride = FB_W * FB_BPP;
+    myvideo.gfx.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
+    myvideo.gfx.dst.surf.phyAddr = myvideo.fb.phy_addr + (FB_W * myvideo.fb.var_info.yoffset * FB_BPP);
 
-    MI_GFX_BitBlit(&gfx.hw.src.surf, &gfx.hw.src.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
+    MI_GFX_BitBlit(&myvideo.gfx.src.surf, &myvideo.gfx.src.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &u16Fence);
     MI_GFX_WaitAllDone(FALSE, u16Fence);
-
-    if ((nds.menu.enable == 0) && (srcrect.w != 800) && ((srcrect.w == NDS_W) || (srcrect.w == NDS_Wx2)) && (nds.overlay.sel < nds.overlay.max)) {
-        gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
-        gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
-        gfx.hw.overlay.surf.u32Width = FB_W;
-        gfx.hw.overlay.surf.u32Height = FB_H;
-        gfx.hw.overlay.surf.u32Stride = FB_W * FB_BPP;
-        gfx.hw.overlay.rt.s32Xpos = 0;
-        gfx.hw.overlay.rt.s32Ypos = 0;
-        gfx.hw.overlay.rt.u32Width = FB_W;
-        gfx.hw.overlay.rt.u32Height = FB_H;
-
-        gfx.hw.dst.rt.s32Xpos = 0;
-        gfx.hw.dst.rt.s32Ypos = 0;
-        gfx.hw.dst.rt.u32Width = FB_W;
-        gfx.hw.dst.rt.u32Height = FB_H;
-        gfx.hw.dst.surf.phyAddr = gfx.fb.phyAddr + (FB_W * gfx.vinfo.yoffset * FB_BPP);
-
-        gfx.hw.opt.u32GlobalSrcConstColor = 0xff000000;
-        gfx.hw.opt.eRotate = E_MI_GFX_ROTATE_180;
-        gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
-        gfx.hw.opt.eDstDfbBldOp = E_MI_GFX_DFB_BLD_INVSRCALPHA;
-        gfx.hw.opt.eDFBBlendFlag = E_MI_GFX_DFB_BLEND_SRC_PREMULTIPLY | E_MI_GFX_DFB_BLEND_COLORALPHA | E_MI_GFX_DFB_BLEND_ALPHACHANNEL;
-        MI_GFX_BitBlit(&gfx.hw.overlay.surf, &gfx.hw.overlay.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
-        MI_GFX_WaitAllDone(FALSE, u16Fence);
-    }
 #endif
 
     return 0;
@@ -5668,13 +5516,21 @@ drmEventContext drm_evctx = {
 
 void flip_lcd(void)
 {
+#if defined(TRIMUI)
+    int r = 0;
+#endif
+
+#if defined(PANDORA)
+    int arg = 0;
+#endif
+
 #if defined(GKD2) || defined(BRICK)
-    vid.shm.buf->cmd = SHM_CMD_FLIP;
+    myvideo.shm.buf->cmd = SHM_CMD_FLIP;
     debug("send SHM_CMD_FLIP\n");
 
-    vid.shm.buf->valid = 1;
-    __clear_cache((uint8_t *)vid.shm.buf, (uint8_t *)vid.shm.buf + sizeof(shm_buf_t));
-    while (vid.shm.buf->valid) {
+    myvideo.shm.buf->valid = 1;
+    __clear_cache((uint8_t *)myvideo.shm.buf, (uint8_t *)myvideo.shm.buf + sizeof(shm_buf_t));
+    while (myvideo.shm.buf->valid) {
         usleep(10);
     }
 #endif
@@ -5690,54 +5546,50 @@ void flip_lcd(void)
 #endif
 
 #if defined(PANDORA)
-    int arg = 0;
-
-    ioctl(gfx.fb_dev[1], FBIOPAN_DISPLAY, &gfx.vinfo);
-    ioctl(gfx.fb_dev[1], FBIO_WAITFORVSYNC, &arg);
-    gfx.vinfo.yoffset ^= FB_H;
+    ioctl(myvideo.fb.fd[1], FBIOPAN_DISPLAY, &myvideo.fb.var_info);
+    ioctl(myvideo.fb.fd[1], FBIO_WAITFORVSYNC, &arg);
+    myvideo.fb.var_info.yoffset ^= FB_H;
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-    eglSwapBuffers(vid.eglDisplay, vid.eglSurface);
+    eglSwapBuffers(myvideo.eglDisplay, myvideo.eglSurface);
 
 #if defined(FLIP) 
-    vid.drm.wait_for_flip = 1;
-    vid.drm.bo = gbm_surface_lock_front_buffer(vid.drm.gs);
-    drmModeAddFB(vid.drm.fd, DEF_FB_W, DEF_FB_H, 24, 32, gbm_bo_get_stride(vid.drm.bo), gbm_bo_get_handle(vid.drm.bo).u32, (uint32_t *)&vid.drm.fb);
-    drmModeSetCrtc(vid.drm.fd, vid.drm.crtc->crtc_id, vid.drm.fb, 0, 0, (uint32_t *)vid.drm.conn, 1, &vid.drm.crtc->mode);
-    drmModePageFlip(vid.drm.fd, vid.drm.crtc->crtc_id, vid.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&vid.drm.wait_for_flip);
+    myvideo.drm.wait_for_flip = 1;
+    myvideo.drm.bo = gbm_surface_lock_front_buffer(myvideo.drm.gs);
+    drmModeAddFB(myvideo.drm.fd, DEF_FB_W, DEF_FB_H, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
+    drmModeSetCrtc(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, 0, 0, (uint32_t *)myvideo.drm.conn, 1, &myvideo.drm.crtc->mode);
+    drmModePageFlip(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvideo.drm.wait_for_flip);
 
     //wait_cnt = 10;
-    //while (wait_cnt-- && vid.drm.wait_for_flip) {
+    //while (wait_cnt-- && myvideo.drm.wait_for_flip) {
         //usleep(10);
-        //drmHandleEvent(vid.drm.fd, &drm_evctx);
+        //drmHandleEvent(myvideo.drm.fd, &drm_evctx);
     //}
 
-    gbm_surface_release_buffer(vid.drm.gs, vid.drm.bo);
+    gbm_surface_release_buffer(myvideo.drm.gs, myvideo.drm.bo);
 #endif
 
     if (nds.theme.img) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
-        glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bgVertices);
-        glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bgVertices[3]);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
+        glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+        glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     }
 
 #endif
 
 #if defined(MINI)
-    ioctl(gfx.fb_dev, FBIOPAN_DISPLAY, &gfx.vinfo);
-    gfx.vinfo.yoffset ^= FB_H;
+    ioctl(myvideo.fb.fd, FBIOPAN_DISPLAY, &myvideo.fb.var_info);
+    myvideo.fb.var_info.yoffset ^= FB_H;
 #endif
 
 #if defined(TRIMUI)
-    int r = 0;
-
-    gfx.hw.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)gfx.hw.ion.padd + (FB_W * FB_H * gfx.fb.flip));
-    gfx.hw.mem[OVL_V_TOP_LADD0 / 4] = gfx.hw.buf.info.fb.addr[0];
-    ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &r);
-    gfx.fb.flip^= 1;
+    myvideo.gfx.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)myvideo.gfx.ion.padd + (FB_W * FB_H * myvideo.fb.flip));
+    myvideo.gfx.mem[OVL_V_TOP_LADD0 / 4] = myvideo.gfx.buf.info.fb.addr[0];
+    ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
+    myvideo.fb.flip^= 1;
 #endif
 }
 
@@ -5873,7 +5725,7 @@ int reload_pen(void)
                         *dst++ = *src++;
                     }
                 }
-                glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_PEN]);
+                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -6012,11 +5864,11 @@ int reload_menu(void)
 
 int reload_bg(void)
 {
-#if !defined(PANDORA) && !defined(QX1000) && !defined(XT897) && !defined(UT)
+#if !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_sel = -1;
 #endif
 
-#if !defined(PANDORA) && !defined(QX1000) && !defined(XT897) && !defined(UT)
+#if !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_mode = -1;
 #endif
 
@@ -6031,123 +5883,113 @@ int reload_bg(void)
         srt.h = FB_H;
     }
 
-    if (nds.overlay.sel >= nds.overlay.max) {
-        if ((pre_sel != nds.theme.sel) || (pre_mode != nds.dis_mode)) {
-            pre_mode = nds.dis_mode;
-            pre_sel = nds.theme.sel;
+    if ((pre_sel != nds.theme.sel) || (pre_mode != nds.dis_mode)) {
+        pre_mode = nds.dis_mode;
+        pre_sel = nds.theme.sel;
 
-            if (nds.theme.img) {
-                SDL_FreeSurface(nds.theme.img);
-                nds.theme.img = NULL;
-            }
-
-            nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
-            if (nds.theme.img) {
-                SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
-
-                if (get_dir_path(nds.theme.path, nds.theme.sel, buf) == 0) {
-                    switch (nds.dis_mode) {
-                    case NDS_DIS_MODE_VH_T0:
-                    case NDS_DIS_MODE_VH_T1:
-                        return 0;
-                    case NDS_DIS_MODE_S0:
-                        strcat(buf, "/bg_s0.png");
-                        break;
-                    case NDS_DIS_MODE_S1:
-                        return 0;
-                    case NDS_DIS_MODE_V0:
-                        strcat(buf, "/bg_v0.png");
-                        break;
-                    case NDS_DIS_MODE_V1:
-                        strcat(buf, "/bg_v1.png");
-                        break;
-                    case NDS_DIS_MODE_H0:
-                        strcat(buf, "/bg_h0.png");
-                        break;
-                    case NDS_DIS_MODE_H1:
-                        strcat(buf, "/bg_h1.png");
-                        break;
-                    case NDS_DIS_MODE_VH_S0:
-                        strcat(buf, "/bg_vh_s0.png");
-                        break;
-                    case NDS_DIS_MODE_VH_S1:
-                        strcat(buf, "/bg_vh_s1.png");
-                        break;
-                    case NDS_DIS_MODE_VH_S2:
-                        strcat(buf, "/bg_vh_s2.png");
-                        break;
-                    case NDS_DIS_MODE_VH_S3:
-                        strcat(buf, "/bg_vh_s3.png");
-                        break;
-                    case NDS_DIS_MODE_VH_S4:
-                        strcat(buf, "/bg_vh_s4.png");
-                        break;
-                    case NDS_DIS_MODE_VH_S5:
-                        strcat(buf, "/bg_vh_s5.png");
-                        break;
-                    case NDS_DIS_MODE_VH_C0:
-                        strcat(buf, "/bg_vh_c0.png");
-                        break;
-                    case NDS_DIS_MODE_VH_C1:
-                        strcat(buf, "/bg_vh_c1.png");
-                        break;
-                    case NDS_DIS_MODE_HH0:
-                    case NDS_DIS_MODE_HH1:
-                        strcat(buf, "/bg_hh0.png");
-                        break;
-                    case NDS_DIS_MODE_HRES0:
-                        strcat(buf, "/bg_hres0.png");
-                        break;
-                    case NDS_DIS_MODE_HRES1:
-                        return 0;
-                    }
-                    
-                    t = IMG_Load(buf);
-                    if (t) {
-#if defined(GKD2) || defined(BRICK)
-                        strcpy(vid.shm.buf->bg_path, buf);
-#endif
-
-                        SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
-                        SDL_FreeSurface(t);
-#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
-#if defined(GKD2) || defined(BRICK)
-                        flush_lcd(TEX_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
-#else
-                        flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
-#endif
-#endif
-                    }
-                    else {
-                        printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
-                    }
-                }
-            }
+        if (nds.theme.img) {
+            SDL_FreeSurface(nds.theme.img);
+            nds.theme.img = NULL;
         }
-        else {
-            if (nds.theme.img) {
+
+        nds.theme.img = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
+        if (nds.theme.img) {
+            SDL_FillRect(nds.theme.img, &nds.theme.img->clip_rect, SDL_MapRGB(nds.theme.img->format, 0x00, 0x00, 0x00));
+
+            if (get_dir_path(nds.theme.path, nds.theme.sel, buf) == 0) {
+                switch (nds.dis_mode) {
+                case NDS_DIS_MODE_VH_T0:
+                case NDS_DIS_MODE_VH_T1:
+                    return 0;
+                case NDS_DIS_MODE_S0:
+                    strcat(buf, "/bg_s0.png");
+                    break;
+                case NDS_DIS_MODE_S1:
+                    return 0;
+                case NDS_DIS_MODE_V0:
+                    strcat(buf, "/bg_v0.png");
+                    break;
+                case NDS_DIS_MODE_V1:
+                    strcat(buf, "/bg_v1.png");
+                    break;
+                case NDS_DIS_MODE_H0:
+                    strcat(buf, "/bg_h0.png");
+                    break;
+                case NDS_DIS_MODE_H1:
+                    strcat(buf, "/bg_h1.png");
+                    break;
+                case NDS_DIS_MODE_VH_S0:
+                    strcat(buf, "/bg_vh_s0.png");
+                    break;
+                case NDS_DIS_MODE_VH_S1:
+                    strcat(buf, "/bg_vh_s1.png");
+                    break;
+                case NDS_DIS_MODE_VH_S2:
+                    strcat(buf, "/bg_vh_s2.png");
+                    break;
+                case NDS_DIS_MODE_VH_S3:
+                    strcat(buf, "/bg_vh_s3.png");
+                    break;
+                case NDS_DIS_MODE_VH_S4:
+                    strcat(buf, "/bg_vh_s4.png");
+                    break;
+                case NDS_DIS_MODE_VH_S5:
+                    strcat(buf, "/bg_vh_s5.png");
+                    break;
+                case NDS_DIS_MODE_VH_C0:
+                    strcat(buf, "/bg_vh_c0.png");
+                    break;
+                case NDS_DIS_MODE_VH_C1:
+                    strcat(buf, "/bg_vh_c1.png");
+                    break;
+                case NDS_DIS_MODE_HH0:
+                case NDS_DIS_MODE_HH1:
+                    strcat(buf, "/bg_hh0.png");
+                    break;
+                case NDS_DIS_MODE_HRES0:
+                    strcat(buf, "/bg_hres0.png");
+                    break;
+                case NDS_DIS_MODE_HRES1:
+                    return 0;
+                }
+                
+                t = IMG_Load(buf);
+                if (t) {
+#if defined(GKD2) || defined(BRICK)
+                    strcpy(myvideo.shm.buf->bg_path, buf);
+#endif
+
+                    SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
+                    SDL_FreeSurface(t);
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
 #if defined(GKD2) || defined(BRICK)
-                flush_lcd(TEX_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
+                    flush_lcd(TEXTURE_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
 #else
-                flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+                    flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #endif
-#else
-                glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, nds.theme.img->w, nds.theme.img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nds.theme.img->pixels);
 #endif
+                }
+                else {
+                    printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
+                }
             }
         }
     }
     else {
-        t = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
-        if (t) {
-            SDL_FillRect(t, &t->clip_rect, SDL_MapRGB(t->format, 0x00, 0x00, 0x00));
-            flush_lcd(-1, t->pixels, t->clip_rect, drt, t->pitch, 0, E_MI_GFX_ROTATE_180);
-            SDL_FreeSurface(t);
+        if (nds.theme.img) {
+#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
+#if defined(GKD2) || defined(BRICK)
+            flush_lcd(TEXTURE_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
+#else
+            flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
+#endif
+#else
+            glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, nds.theme.img->w, nds.theme.img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nds.theme.img->pixels);
+#endif
         }
     }
 #endif
@@ -6198,10 +6040,10 @@ int reload_bg(void)
         uint32_t *dst = NULL;
         uint32_t *src = NULL;
 
-        ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
+        ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &z);
         for (z=0; z<2; z++) {
             src = (uint32_t *)nds.theme.img->pixels;
-            dst = (uint32_t *)gfx.hw.ion.vadd + (FB_W * FB_H * z);
+            dst = (uint32_t *)myvideo.gfx.ion.vadd + (FB_W * FB_H * z);
             for (y = 0; y < FB_H; y++) {
                 for (x = 0; x < FB_W; x++) {
                     dst[(((FB_W - 1) - x) * FB_H) + y] = *src;
@@ -6210,7 +6052,7 @@ int reload_bg(void)
                 src+= IMG_W;
             }
         }
-        ioctl(gfx.fb_dev, FBIO_WAITFORVSYNC, &z);
+        ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &z);
     }
 #endif
 
@@ -6259,119 +6101,64 @@ int reload_bg(void)
     }
 
     if (nds.theme.img) {
-        neon_memcpy(gfx.hw.mem[(gfx.vinfo.yoffset == 0) ? 0 : 1], nds.theme.img->pixels, FB_W * FB_H * 4);
+        neon_memcpy(myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1], nds.theme.img->pixels, FB_W * FB_H * 4);
     }
 #endif
     return 0;
 }
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-int reload_overlay(void)
+static void quit_device(SDL_VideoDevice *d)
 {
-    static int pre_sel = -1;
-
-    char buf[MAX_PATH] = {0};
-    SDL_Surface *t = NULL;
-
-    if ((nds.overlay.sel < nds.overlay.max) && (pre_sel != nds.overlay.sel)) {
-        pre_sel = nds.overlay.sel;
-
-        if (nds.overlay.img) {
-            SDL_FreeSurface(nds.overlay.img);
-            nds.overlay.img = NULL;
-        }
-
-        nds.overlay.img = SDL_CreateRGBSurface(SDL_SWSURFACE, FB_W, FB_H, 32, 0, 0, 0, 0);
-        if (nds.overlay.img) {
-            SDL_FillRect(nds.overlay.img, &nds.overlay.img->clip_rect, SDL_MapRGB(nds.overlay.img->format, 0x00, 0x00, 0x00));
-
-            if (get_file_path(nds.overlay.path, nds.overlay.sel, buf, 1) == 0) {
-                t = IMG_Load(buf);
-                if (t) {
-                    SDL_BlitSurface(t, NULL, nds.overlay.img, NULL);
-                    SDL_FreeSurface(t);
-
-#if defined(MINI)
-                    neon_memcpy(gfx.overlay.virAddr, nds.overlay.img->pixels, FB_W * FB_H * 4);
-                    MI_SYS_FlushInvCache(gfx.overlay.virAddr, FB_W * FB_H * FB_BPP);
-#endif
-                }
-                else {
-                    printf(PREFIX"Failed to load overlay (%s)\n", buf);
-                }
-            }
-        }
-    }
-    return 0;
-}
-#endif
-
-static int MMIYOO_Available(void)
-{
-    return 1;
+    SDL_free(d);
 }
 
-static void MMIYOO_DeleteDevice(SDL_VideoDevice *device)
+int create_window(_THIS, SDL_Window *w)
 {
-    SDL_free(device);
-}
+    debug("call %s(w=%d, h=%d)\n", __func__, w->w, w->h);
 
-int MMIYOO_CreateWindow(_THIS, SDL_Window *window)
-{
-    debug("call %s(w=%d, h=%d)\n", __func__, window->w, window->h);
-
-    vid.window = window;
-    SDL_SetMouseFocus(window);
-    SDL_SetKeyboardFocus(window);
+    myvideo.win = w;
+    SDL_SetMouseFocus(w);
+    SDL_SetKeyboardFocus(w);
     return 0;
 }
 
-int MMIYOO_CreateWindowFrom(_THIS, SDL_Window *window, const void *data)
+int create_window_from(_THIS, SDL_Window *w, const void *d)
 {
     return SDL_Unsupported();
 }
 
-static SDL_VideoDevice *MMIYOO_CreateDevice(int devindex)
+static SDL_VideoDevice *create_device(int idx)
 {
-    SDL_VideoDevice *device = NULL;
+    SDL_VideoDevice *d = NULL;
 
-    if(!MMIYOO_Available()) {
-        return (0);
-    }
+    d = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
 
-    device = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
-    if(!device) {
+    if (!d) {
         SDL_OutOfMemory();
-        return (0);
+        return 0;
     }
-    device->is_dummy = SDL_TRUE;
 
-    device->VideoInit = MMIYOO_VideoInit;
-    device->VideoQuit = MMIYOO_VideoQuit;
-    device->SetDisplayMode = MMIYOO_SetDisplayMode;
-    device->CreateSDLWindow = MMIYOO_CreateWindow;
-    device->CreateSDLWindowFrom = MMIYOO_CreateWindowFrom;
-    device->free = MMIYOO_DeleteDevice;
-    device->PumpEvents = pump_event;
-    return device;
+    d->VideoInit = init_video;
+    d->VideoQuit = quit_video;
+    d->SetDisplayMode = set_disp_mode;
+    d->CreateSDLWindow = create_window;
+    d->CreateSDLWindowFrom = create_window_from;
+    d->free = quit_device;
+    d->PumpEvents = pump_event;
+
+    return d;
 }
 
-VideoBootStrap NDS_bootstrap = { "NDS", "NDS Video Driver", MMIYOO_CreateDevice};
+VideoBootStrap NDS_bootstrap = {
+    "NDS",
+    "NDS Video Driver",
+    create_device
+};
 
-void test(uint32_t v)
+int init_video(_THIS)
 {
-    debug("call %s()\n", __func__);
-}
-
-int MMIYOO_VideoInit(_THIS)
-{
-#if defined(MINI)
-    FILE *fd = NULL;
-    char buf[MAX_PATH] = {0};
-#endif
-
-    SDL_DisplayMode mode = {0};
-    SDL_VideoDisplay display = {0};
+    SDL_DisplayMode mode = { 0 };
+    SDL_VideoDisplay display = { 0 };
 
     debug("call %s()\n", __func__);
 
@@ -6390,6 +6177,7 @@ int MMIYOO_VideoInit(_THIS)
     mode.h = 480;
     mode.refresh_rate = 60;
     SDL_AddDisplayMode(&display, &mode);
+
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
     mode.w = 800;
@@ -6442,34 +6230,18 @@ int MMIYOO_VideoInit(_THIS)
     FB_SIZE = FB_W * FB_H * FB_BPP * 2;
     TMP_SIZE = FB_W * FB_H * FB_BPP;
 
-#if defined(MINI)
-    fd = popen("fbset | grep \"mode \"", "r");
-    if (fd) {
-        fgets(buf, sizeof(buf), fd);
-        pclose(fd);
-
-        if (strstr(buf, "752")) {
-            FONT_SIZE = 27;
-            LINE_H = FONT_SIZE + 8;
-
-            FB_W = 752;
-            FB_H = 560;
-            FB_SIZE = (FB_W * FB_H * FB_BPP * 2);
-            TMP_SIZE = (FB_W * FB_H * FB_BPP);
-            nds.enable_752x560 = 1;
-        }
-    }
-#endif
-
-    GFX_Init();
+    init_gfx();
     read_config();
     init_event();
 
     init_hook(sysconf(_SC_PAGESIZE), nds.states.path);
 
+    add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
     add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
+#if !defined(PANDORA)
     add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
     add_prehook_cb(myhook.fun.savestate_post,   prehook_cb_savestate_post);
+#endif
     add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
     add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
 
@@ -6481,14 +6253,14 @@ int MMIYOO_VideoInit(_THIS)
     return 0;
 }
 
-static int MMIYOO_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
+static int set_disp_mode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
     return 0;
 }
 
-void MMIYOO_VideoQuit(_THIS)
+void quit_video(_THIS)
 {
-    printf(PREFIX"MMIYOO_VideoQuit\n");
+    printf(PREFIX"quit_video\n");
     printf(PREFIX"Wait for savestate complete\n");
     while (savestate_busy) {
         usleep(1000000);
@@ -6510,11 +6282,6 @@ void MMIYOO_VideoQuit(_THIS)
     if (nds.theme.img) {
         SDL_FreeSurface(nds.theme.img);
         nds.theme.img = NULL;
-    }
-
-    if (nds.overlay.img) {
-        SDL_FreeSurface(nds.overlay.img);
-        nds.overlay.img = NULL;
     }
 
     if (nds.menu.bg) {
@@ -6575,7 +6342,7 @@ void MMIYOO_VideoQuit(_THIS)
     lang_unload();
 }
 
-#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK) || defined(XT897) || defined(TRIMUI)
 static const char *DIS_MODE0_640[] = {
     "640*480",
     "640*480",
@@ -6746,7 +6513,6 @@ enum {
 #else
     MENU_CPU,
 #endif
-    MENU_OVERLAY,
     MENU_DIS,
     MENU_DIS_ALPHA,
     MENU_DIS_BORDER,
@@ -6917,11 +6683,6 @@ int handle_menu(int key)
             break;
         case MENU_SWAP_R1R2:
             nds.swap_r1r2 = 0;
-            break;
-        case MENU_OVERLAY:
-            if (nds.overlay.sel < nds.overlay.max) {
-                nds.overlay.sel+= 1;
-            }
             break;
         case MENU_DIS:
             if (nds.hres_mode == 0) {
@@ -7099,11 +6860,6 @@ int handle_menu(int key)
             break;
         case MENU_SWAP_R1R2:
             nds.swap_r1r2 = 1;
-            break;
-        case MENU_OVERLAY:
-            if (nds.overlay.sel > 0) {
-                nds.overlay.sel-= 1;
-            }
             break;
         case MENU_DIS:
             if (nds.hres_mode == 0) {
@@ -7477,17 +7233,6 @@ int handle_menu(int key)
         case MENU_SWAP_R1R2:
             sprintf(buf, "%s", to_lang(nds.swap_r1r2 ? "Yes" : "No"));
             break;
-        case MENU_OVERLAY:
-            if (nds.overlay.sel < nds.overlay.max) {
-                get_file_path(nds.overlay.path, nds.overlay.sel, buf, 0);
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                reload_overlay();
-#endif
-            }
-            else {
-                sprintf(buf, to_lang("None"));
-            }
-            break;
         case MENU_DIS:
             if (nds.hres_mode == 0) {
                 sprintf(buf, "[%d]   %s", nds.dis_mode, nds.enable_752x560 ? DIS_MODE0_752[nds.dis_mode] : DIS_MODE0_640[nds.dis_mode]);
@@ -7591,14 +7336,7 @@ int handle_menu(int key)
 
     sx = nds.enable_752x560 ? 540 : 450;
     sy = nds.enable_752x560 ? 430 : 360;
-    if ((cur_sel == MENU_OVERLAY) && (nds.overlay.sel < nds.overlay.max) && (nds.overlay.img)) {
-        rt.x = sx;
-        rt.y = sy;
-        rt.w = 128;
-        rt.h = 96;
-        SDL_SoftStretch(nds.overlay.img, NULL, cvt, &rt);
-    }
-    else if(dis_mode >= 0) {
+    if(dis_mode >= 0) {
         switch (dis_mode) {
         case NDS_DIS_MODE_VH_T0:
             rt.x = sx;

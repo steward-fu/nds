@@ -15,9 +15,8 @@
 #include "unity_fixture.h"
 #endif
 
-#include "util.h"
 #include "hook.h"
-#include "debug.h"
+#include "common.h"
 #include "nds_firmware.h"
 #include "nds_bios_arm7.h"
 #include "nds_bios_arm9.h"
@@ -480,44 +479,6 @@ TEST(detour, add_prehook_cb)
 }
 #endif
 
-static int write_file(const char *fpath, const void *buf, int len)
-{
-    int r = -1;
-    int fd = -1;
-
-    debug("call %s()\n", __func__);
-
-    if (!fpath || !buf) {
-        error("invalid parameters(0x%x, 0x%x)\n", fpath, buf);
-        return r;
-    }
-
-    fd = open(fpath, O_CREAT | O_WRONLY, 0644);
-    if (fd < 0) {
-        error("failed to create \"%s\"\n", fpath);
-        return r;
-    }
-
-    r = write(fd, buf, len);
-    if (r != len) {
-        error("failed to write data to \"%s\"\n", fpath);
-        return r;
-    }
-
-    close(fd);
-    return r;
-}
-
-#if defined(UT)
-TEST(detour, write_file)
-{
-    char buf[] = { "1234567890" };
-
-    TEST_ASSERT_EQUAL_INT(-1, write_file("/XXX/XXX", buf, strlen(buf)));
-    TEST_ASSERT_EQUAL_INT(10, write_file("/tmp/0", buf, strlen(buf)));
-}
-#endif
-
 int drop_bios_files(const char *path)
 {
     int r = 0;
@@ -634,6 +595,7 @@ static int init_table(void)
     myhook.fun.save_state = (void *)0x0809580c;
     myhook.fun.blit_screen_menu = (void *)0x080a62d8;
     myhook.fun.initialize_backup = (void *)0x08092f40;
+    myhook.fun.platform_get_input = (void *)0x080a8c30;
     myhook.fun.set_screen_menu_off = (void *)0x080a8240;
     myhook.fun.get_screen_ptr = (void *)0x080a890c;
     myhook.fun.spu_adpcm_decode_block = (void *)0x0808d268;
@@ -777,7 +739,7 @@ int patch_elf(uint64_t pos, uint64_t pfn)
 }
 
 #if defined(UT)
-TEST(detour_hook, patch_elf)
+TEST(detour, patch_elf)
 {
     TEST_ASSERT_EQUAL_INT(-1, patch_elf(0, 0));
 }

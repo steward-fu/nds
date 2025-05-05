@@ -23,16 +23,16 @@
 #include "../../thread/SDL_systhread.h"
 #include "../../joystick/nds/nds_joy.h"
 
-#include "debug.h"
+#include "common.h"
 #include "nds_video.h"
 #include "nds_event.h"
 
 nds_event myevent = { 0 };
-extern nds_joy myjoy;
 
-extern GFX gfx;
+extern nds_joy myjoy;
+extern nds_video myvideo;
+
 extern NDS nds;
-extern MMIYOO_VideoInfo vid;
 extern int pixel_filter;
 extern int FB_W;
 extern int FB_H;
@@ -588,7 +588,7 @@ static int trans_joy_to_touch(jval_t *j, int idx)
 
             x = (myevent.touch.x * 160) / myevent.touch.max_x;
             y = (myevent.touch.y * 120) / myevent.touch.max_y;
-            SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+            SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
         }
         nds.joy.show_cnt = MYJOY_SHOW_CNT;
     }
@@ -915,9 +915,9 @@ static int handle_hotkey(void)
         time_t t = time(NULL);
         struct tm tm = *localtime(&t);
 
-        // for MMIYOO
+        // for MINI
         // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
-        dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
+        dst = (uint32_t *)myvideo.gfx.ion.vadd + (w * h * (myvideo.fb.flip ? 0 : 1));
 
         if (nds.dis_mode == NDS_DIS_MODE_S0) {
             w = NDS_H;
@@ -946,8 +946,7 @@ static int handle_hotkey(void)
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
-                if ((nds.overlay.sel >= nds.overlay.max) &&
-                    (nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
+                if ((nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
                     (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
                     (nds.dis_mode != NDS_DIS_MODE_S1) &&
                     (nds.dis_mode != NDS_DIS_MODE_HRES1))
@@ -1131,7 +1130,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
 #if defined(A30) || defined(FLIP)
         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.joy.show_cnt = MYJOY_SHOW_CNT;
-            SDL_SendMouseButton(vid.window, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+            SDL_SendMouseButton(myvideo.win, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
         }
 #endif
         set_key_bit(KEY_BIT_L2, v);
@@ -1172,9 +1171,9 @@ static int update_key_bit(uint32_t c, uint32_t v)
     }
     if (c == myevent.keypad.vol_up) {
         set_key_bit(KEY_BIT_VOLUP, v);
-        if (is_stock_os) {
+        if (myevent.stock) {
             if (v == 0) {
-                myevent.vol = volume_inc();
+                myevent.vol = 0;//inc_mini_vol();
             }
         }
         else {
@@ -1183,15 +1182,14 @@ static int update_key_bit(uint32_t c, uint32_t v)
     }
     if (c == myevent.keypad.vol_down) {
         set_key_bit(KEY_BIT_VOLDOWN, v);
-        if (is_stock_os) {
+        if (myevent.stock) {
             if (v == 0) {
-                myevent.vol = volume_dec();
+                myevent.vol = 0;//dec_mini_vol();
             }
         }
         else {
             nds.defer_update_bg = 60;
         }
-        break;
     }
 #endif
 
@@ -1199,13 +1197,13 @@ static int update_key_bit(uint32_t c, uint32_t v)
     if (c == myevent.keypad.vol_up) {
         set_key_bit(KEY_BIT_VOLUP, v);
         if (v == 0) {
-            myevent.vol = volume_inc();
+            myevent.vol = 0;//inc_a30_vol();
         }
     }
     if (c == myevent.keypad.vol_down) {
         set_key_bit(KEY_BIT_VOLDOWN, v);
         if (v == 0) {
-            myevent.vol = volume_dec();
+            myevent.vol = 0;//dec_a30_vol();
         }
     }
 #endif
@@ -1574,9 +1572,9 @@ TEST(sdl2_event, update_latest_keypad_value)
 static int handle_trimui_special_key(void)
 {
 #if !defined(UT)
-    if (cust_key.gpio != NULL) {
+    if (myevent.cust_key.gpio != NULL) {
         static uint32_t pre_value = 0;
-        uint32_t v = *cust_key.gpio & 0x800;
+        uint32_t v = *myevent.cust_key.gpio & 0x800;
 
         if (v != pre_value) {
             pre_value = v;
@@ -1725,21 +1723,21 @@ void init_event(void)
 #endif
 
 #if defined(TRIMUI)
-    cust_key.gpio = NULL;
-    cust_key.fd = open("/dev/mem", O_RDWR);
-    if (cust_key.fd > 0) {
-        cust_key.mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, cust_key.fd, 0x01c20000);
-        if (cust_key.mem != MAP_FAILED) {
+    myevent.cust_key.gpio = NULL;
+    myevent.cust_key.fd = open("/dev/mem", O_RDWR);
+    if (myevent.cust_key.fd > 0) {
+        myevent.cust_key.mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myevent.cust_key.fd, 0x01c20000);
+        if (myevent.cust_key.mem != MAP_FAILED) {
             uint32_t *p = NULL;
 
-            p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
-            cust_key.pre_cfg = *p;
+            p = (uint32_t *)(myevent.cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
+            myevent.cust_key.pre_cfg = *p;
             *p &= 0xfff000ff;
 
-            p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x1c);
+            p = (uint32_t *)(myevent.cust_key.mem + 0x800 + (0x24 * 6) + 0x1c);
             *p |= 0x01500000;
 
-            cust_key.gpio = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
+            myevent.cust_key.gpio = (uint32_t *)(myevent.cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
         }
     }
 #endif
@@ -1760,7 +1758,7 @@ void init_event(void)
         closedir(dir);
     }
     else {
-        is_stock_os = 1;
+        myevent.stock = 1;
         debug("it is stock system\n");
     }
 #endif
@@ -1791,15 +1789,15 @@ void quit_event(void)
     }
 
 #if defined(TRIMUI)
-    if (cust_key.fd > 0) {
-        uint32_t *p = (uint32_t *)(cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
+    if (myevent.cust_key.fd > 0) {
+        uint32_t *p = (uint32_t *)(myevent.cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
 
-        *p = cust_key.pre_cfg;
-        munmap(cust_key.mem, 4096);
-        close(cust_key.fd);
+        *p = myevent.cust_key.pre_cfg;
+        munmap(myevent.cust_key.mem, 4096);
+        close(myevent.cust_key.fd);
 
-        cust_key.gpio = NULL;
-        cust_key.fd = -1;
+        myevent.cust_key.gpio = NULL;
+        myevent.cust_key.fd = -1;
     }
 #endif
 }
@@ -1981,7 +1979,7 @@ static int send_touch_key(void)
 
     if (changed & (1 << KEY_BIT_A)) {
 #if !defined(UT)
-        SDL_SendMouseButton(vid.window, 0, (myevent.keypad.cur_bits & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+        SDL_SendMouseButton(myvideo.win, 0, (myevent.keypad.cur_bits & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
 #endif
     }
 
@@ -2030,7 +2028,7 @@ static int send_touch_axis(void)
     x = (myevent.touch.x * 160) / myevent.touch.max_x;
     y = (myevent.touch.y * 120) / myevent.touch.max_y;
 
-    SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+    SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
 #endif
 
     return 0;
@@ -2098,7 +2096,10 @@ void pump_event(_THIS)
 {
     debug("call %s()\n", __func__);
 
+#if !defined(UT)
     SDL_SemWait(myevent.sem);
+#endif
+
     if (nds.menu.enable) {
         send_key_to_menu();
     }
@@ -2112,13 +2113,29 @@ void pump_event(_THIS)
             send_touch_event();
         }
     }
+
+#if !defined(UT)
     SDL_SemPost(myevent.sem);
+#endif
 }
 
 #if defined(UT)
 TEST(sdl2_event, pump_event)
 {
     pump_event(NULL);
+    TEST_PASS();
+}
+#endif
+
+void prehook_cb_platform_get_input(input_struct *input)
+{
+    debug(SDL"call %s(%p)\n", __func__, input);
+}
+
+#if defined(UT)
+TEST(sdl2_event, prehook_cb_platform_get_input)
+{
+    prehook_cb_platform_get_input(NULL);
     TEST_PASS();
 }
 #endif
