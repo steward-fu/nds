@@ -30,6 +30,7 @@
 nds_event myevent = { 0 };
 
 extern nds_joy myjoy;
+extern nds_hook myhook;
 extern nds_video myvideo;
 
 extern NDS nds;
@@ -996,7 +997,7 @@ static int handle_hotkey(void)
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
-        set_key_bit(KEY_BIT_EXIT, 1);
+        set_key_bit(KEY_BIT_QUIT, 1);
 #endif
         set_key_bit(KEY_BIT_START, 0);
     }
@@ -1036,7 +1037,7 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_L1)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        set_key_bit(KEY_BIT_EXIT, 1);
+        set_key_bit(KEY_BIT_QUIT, 1);
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA)
@@ -1160,7 +1161,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_FAST, v);
     }
     if (c == myevent.keypad.exit) {
-        set_key_bit(KEY_BIT_EXIT, v);
+        set_key_bit(KEY_BIT_QUIT, v);
     }
 #endif
 #endif
@@ -1839,9 +1840,55 @@ TEST(sdl2_event, send_key_to_menu)
 }
 #endif
 
-static int send_key_event(void)
+static int update_raw_input_statue(uint32_t kbit, int val)
+{
+    uint32_t b = 0;
+
+    switch (kbit) {
+    case KEY_BIT_UP:        b = NDS_KEY_BIT_UP;     break;
+    case KEY_BIT_DOWN:      b = NDS_KEY_BIT_DOWN;   break;
+    case KEY_BIT_LEFT:      b = NDS_KEY_BIT_LEFT;   break;
+    case KEY_BIT_RIGHT:     b = NDS_KEY_BIT_RIGHT;  break;
+    case KEY_BIT_A:         b = NDS_KEY_BIT_A;      break;
+    case KEY_BIT_B:         b = NDS_KEY_BIT_B;      break;
+    case KEY_BIT_X:         b = NDS_KEY_BIT_X;      break;
+    case KEY_BIT_Y:         b = NDS_KEY_BIT_Y;      break;
+    case KEY_BIT_L1:        b = NDS_KEY_BIT_L;      break;
+    case KEY_BIT_R1:        b = NDS_KEY_BIT_R;      break;
+    case KEY_BIT_R2:        b = NDS_KEY_BIT_SWAP;   break;
+    case KEY_BIT_SELECT:    b = NDS_KEY_BIT_SELECT; break;
+    case KEY_BIT_START:     b = NDS_KEY_BIT_START;  break;
+    case KEY_BIT_SWAP:      b = NDS_KEY_BIT_SWAP;   break;
+    case KEY_BIT_MENU:      b = NDS_KEY_BIT_MENU;   break;
+    case KEY_BIT_ONION:     b = NDS_KEY_BIT_MENU;   break;
+    case KEY_BIT_QUIT:      b = NDS_KEY_BIT_QUIT;   break;
+    }
+
+    if (val) {
+        myevent.input.button_status |= b;
+    }
+    else {
+        myevent.input.button_status &= ~b;
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, update_raw_input_statue)
+{
+    myevent.input.state = 0;
+    TEST_ASSERT_EQUAL_INT(0, update_raw_input_statue(KEY_BIT_UP, 1));
+    TEST_ASSERT_EQUAL_INT(NDS_KEY_BIT_UP, myevent.input.state);
+    TEST_ASSERT_EQUAL_INT(0, update_raw_input_statue(KEY_BIT_UP, 0));
+    TEST_ASSERT_EQUAL_INT(0, myevent.input.state);
+}
+#endif
+
+static int send_key_event(int raw_event)
 {
     int cc = 0;
+    int pressed = 0;
     uint32_t bit = 0;
     uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
@@ -1849,6 +1896,7 @@ static int send_key_event(void)
 
     for (cc=0; cc<=KEY_BIT_LAST; cc++) {
         bit = 1 << cc;
+        pressed = !!(myevent.keypad.cur_bits & bit);
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if ((nds.hotkey == HOTKEY_BIND_MENU) && (cc == KEY_BIT_MENU)) {
@@ -1863,10 +1911,16 @@ static int send_key_event(void)
 #endif
 
         if (changed & bit) {
+            if (raw_event) {
+                debug("input bit=0x%x, pressed=%d\n", cc, pressed);
+                update_raw_input_statue(cc, pressed);
+            }
+            else {
+                debug("send code=0x%04x, pressed=%d\n", nds_key_code[cc], pressed);
 #if !defined(UT)
-            debug("send code=0x%04x, pressed=%d\n", nds_key_code[cc], !!(myevent.keypad.cur_bits & bit));
-            SDL_SendKeyboardKey((myevent.keypad.cur_bits & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
+                SDL_SendKeyboardKey(pressed ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif
+            }
         }
     }
 
@@ -1881,20 +1935,25 @@ static int send_key_event(void)
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_SAVE)) {
         nds.state|= NDS_STATE_QSAVE;
         set_key_bit(KEY_BIT_SAVE, 0);
+        update_raw_input_statue(KEY_BIT_SAVE, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_LOAD)) {
         nds.state|= NDS_STATE_QLOAD;
         set_key_bit(KEY_BIT_LOAD, 0);
+        update_raw_input_statue(KEY_BIT_LOAD, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
         nds.state|= NDS_STATE_FF;
         set_key_bit(KEY_BIT_FAST, 0);
+        update_raw_input_statue(KEY_BIT_FAST, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_ONION)) {
         set_key_bit(KEY_BIT_ONION, 0);
+        update_raw_input_statue(KEY_BIT_ONION, 0);
     }
-    if (myevent.keypad.pre_bits & (1 << KEY_BIT_EXIT)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();
+        update_raw_input_statue(KEY_BIT_QUIT, 0);
     }
     myevent.keypad.pre_bits = myevent.keypad.cur_bits;
 
@@ -1905,10 +1964,10 @@ static int send_key_event(void)
 TEST(sdl2_event, send_key_event)
 {
     myevent.keypad.pre_bits = 0;
-    myevent.keypad.cur_bits = (1 << KEY_BIT_EXIT);
-    TEST_ASSERT_EQUAL_INT(0, send_key_event());
-    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_EXIT), myevent.keypad.cur_bits);
-    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_EXIT), myevent.keypad.pre_bits);
+    myevent.keypad.cur_bits = (1 << KEY_BIT_QUIT);
+    TEST_ASSERT_EQUAL_INT(0, send_key_event(0));
+    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_QUIT), myevent.keypad.cur_bits);
+    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_QUIT), myevent.keypad.pre_bits);
 }
 #endif
 
@@ -1986,7 +2045,7 @@ static int send_touch_key(void)
     for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
         bit = 1 << cc;
 
-        if ((cc == KEY_BIT_FAST) || (cc == KEY_BIT_SAVE) || (cc == KEY_BIT_LOAD) || (cc == KEY_BIT_EXIT) || (cc == KEY_BIT_R2)) {
+        if ((cc == KEY_BIT_FAST) || (cc == KEY_BIT_SAVE) || (cc == KEY_BIT_LOAD) || (cc == KEY_BIT_QUIT) || (cc == KEY_BIT_R2)) {
             if (changed & bit) {
 #if !defined(UT)
                 SDL_SendKeyboardKey((myevent.keypad.cur_bits & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
@@ -2074,7 +2133,7 @@ static int send_touch_event(void)
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
         set_key_bit(KEY_BIT_FAST, 0);
     }
-    if (myevent.keypad.pre_bits & (1 << KEY_BIT_EXIT)) {
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();
     }
     myevent.keypad.pre_bits = myevent.keypad.cur_bits;
@@ -2085,7 +2144,7 @@ static int send_touch_event(void)
 #if defined(UT)
 TEST(sdl2_event, send_touch_event)
 {
-    myevent.keypad.pre_bits = (1 << KEY_BIT_EXIT);
+    myevent.keypad.pre_bits = (1 << KEY_BIT_QUIT);
     TEST_ASSERT_EQUAL_INT(0, send_touch_event());
     TEST_ASSERT_EQUAL_INT(0, myevent.keypad.pre_bits);
     TEST_ASSERT_EQUAL_INT(0, myevent.keypad.cur_bits);
@@ -2106,7 +2165,7 @@ void pump_event(_THIS)
     else {
         if (myevent.mode == NDS_KEY_MODE) {
             if (myevent.keypad.pre_bits != myevent.keypad.cur_bits) {
-                send_key_event();
+                send_key_event(0);
             }
         }
         else if (myevent.mode == NDS_TOUCH_MODE) {
@@ -2127,9 +2186,33 @@ TEST(sdl2_event, pump_event)
 }
 #endif
 
-void prehook_cb_platform_get_input(input_struct *input)
+void prehook_cb_platform_get_input(uintptr_t p)
 {
-    debug(SDL"call %s(%p)\n", __func__, input);
+    static uint32_t pre_bits = 0;
+
+    input_struct *input = (input_struct *)(((uint8_t *)p) + 0x80000);
+
+    debug("call %s(%p)\n", __func__, input);
+
+    if (nds.menu.enable) {
+        send_key_to_menu();
+    }
+    else {
+        if (myevent.mode == NDS_KEY_MODE) {
+            if (myevent.keypad.pre_bits != myevent.keypad.cur_bits) {
+                send_key_event(1);
+            }
+        }
+        else if (myevent.mode == NDS_TOUCH_MODE) {
+            send_touch_event();
+        }
+    }
+
+    if (pre_bits != myevent.input.button_status) {
+        pre_bits = myevent.input.button_status;
+        input->button_status = myevent.input.button_status;
+        debug("button_status=0x%x\n", input->button_status);
+    }
 }
 
 #if defined(UT)

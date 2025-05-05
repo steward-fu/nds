@@ -281,16 +281,38 @@
 #define KEY_BIT_SAVE            15
 #define KEY_BIT_LOAD            16
 #define KEY_BIT_FAST            17
-#define KEY_BIT_EXIT            18
-#define KEY_BIT_ONION           19
-#define KEY_BIT_LAST            19
+#define KEY_BIT_QUIT            18
+#define KEY_BIT_SWAP            19
+#define KEY_BIT_ONION           20
+#define KEY_BIT_LAST            20
 
-#define KEY_BIT_POWER           20
-#define KEY_BIT_VOLUP           21
-#define KEY_BIT_VOLDOWN         22
+#define KEY_BIT_POWER           21
+#define KEY_BIT_VOLUP           22
+#define KEY_BIT_VOLDOWN         23
 
 #define NDS_KEY_MODE            0
 #define NDS_TOUCH_MODE          1
+
+#define NDS_KEY_BIT_UP          (1 << 0)
+#define NDS_KEY_BIT_DOWN        (1 << 1)
+#define NDS_KEY_BIT_LEFT        (1 << 2)
+#define NDS_KEY_BIT_RIGHT       (1 << 3)
+#define NDS_KEY_BIT_A           (1 << 4)
+#define NDS_KEY_BIT_B           (1 << 5)
+#define NDS_KEY_BIT_X           (1 << 6)
+#define NDS_KEY_BIT_Y           (1 << 7)
+#define NDS_KEY_BIT_L           (1 << 8)
+#define NDS_KEY_BIT_R           (1 << 9)
+#define NDS_KEY_BIT_START       (1 << 10)
+#define NDS_KEY_BIT_SELECT      (1 << 11)
+#define NDS_KEY_BIT_SAVE        0x0080000
+#define NDS_KEY_BIT_LOAD        0x0100000
+#define NDS_KEY_BIT_FAST        0x0200000
+#define NDS_KEY_BIT_SWAP        0x0400000
+#define NDS_KEY_BIT_SCREEN_V    0x0800000
+#define NDS_KEY_BIT_SCREEN_H    0x1000000
+#define NDS_KEY_BIT_MENU        0x2000000
+#define NDS_KEY_BIT_QUIT        0x4000000
 
 #if defined(TRIMUI)
 typedef struct _cust_key_t {
@@ -341,6 +363,8 @@ typedef struct {
         int slow_down;
     } touch;
 
+    input_struct input;
+
     int vol;
     int mode;
     SDL_sem *sem;
@@ -362,7 +386,7 @@ typedef struct {
 void init_event(void);
 void quit_event(void);
 void pump_event(_THIS);
-void prehook_cb_platform_get_input(input_struct *);
+void prehook_cb_platform_get_input(uintptr_t);
 
 #endif
 
