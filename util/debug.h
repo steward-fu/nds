@@ -14,7 +14,11 @@
 #define debug(...)
 #endif
 
+#if !defined(UT)
 #define error(...) printf("[ERROR] "__VA_ARGS__)
+#else
+#define error(...)
+#endif
 
 #endif
 

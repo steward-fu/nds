@@ -778,7 +778,7 @@ int patch_elf(uint64_t pos, uint64_t pfn)
 }
 
 #if defined(UT)
-TEST(detour_hook, patch_elf)
+TEST(detour, patch_elf)
 {
     TEST_ASSERT_EQUAL_INT(-1, patch_elf(0, 0));
 }

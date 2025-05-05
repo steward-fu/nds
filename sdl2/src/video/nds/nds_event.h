@@ -6,6 +6,7 @@
 
 #include "../../SDL_internal.h"
 #include "nds_event.h"
+#include "hook.h"
 
 #if defined(MINI)
 #define INPUT_DEV   "/dev/input/event0"

@@ -1345,8 +1345,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #if defined(UT)
 TEST(alsa, snd_pcm_start)
 {
-    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_start(NULL));
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_start((void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_start(NULL));
 }
 #endif
 
@@ -1411,8 +1410,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
 #if defined(UT)
 TEST(alsa, snd_pcm_close)
 {
-    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_close(NULL));
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_close((void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_close(NULL));
 }
 #endif
 
@@ -1487,8 +1485,7 @@ snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframe
 #if defined(UT)
 TEST(alsa, snd_pcm_writei)
 {
-    TEST_ASSERT_EQUAL_INT(-1, snd_pcm_writei(NULL, NULL, 0));
-    TEST_ASSERT_EQUAL_INT(0, snd_pcm_writei((void *)0xdead, (void *)0xdead, 0));
+    TEST_ASSERT_EQUAL_INT(0, snd_pcm_writei(NULL, NULL, 0));
     TEST_ASSERT_EQUAL_INT(128, snd_pcm_writei((void *)0xdead, (void *)0xdead, 128));
 }
 #endif

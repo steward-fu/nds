@@ -45,6 +45,8 @@ endif
 
 .PHONY: cfg
 cfg:
+	mkdir -p drastic/lib
+	mkdir -p drastic/system
 	cp -a assets/$(MOD)/* drastic/ || true
 
 ifeq ($(wildcard sdl2/Makefile),)
@@ -78,5 +80,3 @@ clean:
 	rm -rf drastic/config.json
 	rm -rf drastic/config/drastic.cf2
 	rm -rf drastic/input_capture_crash.ir
-	mkdir -p drastic/lib
-	mkdir -p drastic/system

@@ -2098,7 +2098,10 @@ void pump_event(_THIS)
 {
     debug("call %s()\n", __func__);
 
+#if !defined(UT)
     SDL_SemWait(myevent.sem);
+#endif
+
     if (nds.menu.enable) {
         send_key_to_menu();
     }
@@ -2112,7 +2115,10 @@ void pump_event(_THIS)
             send_touch_event();
         }
     }
+
+#if !defined(UT)
     SDL_SemPost(myevent.sem);
+#endif
 }
 
 #if defined(UT)
