@@ -20,7 +20,7 @@
 #include <GLES2/gl2.h>
 #include <SDL2/SDL.h>
 
-#include "debug.h"
+#include "common.h"
 #include "runner.h"
 
 const char *vert_shader_code =
