@@ -382,13 +382,13 @@
 #define PEN_YV_MAX                      500000
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-enum _TEX_TYPE {
-    TEX_SCR0 = 0,
-    TEX_SCR1,
-    TEX_BG,
-    TEX_PEN,
-    TEX_TMP,
-    TEX_MAX
+enum _TEXTURE_TYPE {
+    TEXTURE_SCR0 = 0,
+    TEXTURE_SCR1,
+    TEXTURE_BG,
+    TEXTURE_PEN,
+    TEXTURE_TMP,
+    TEXTURE_MAX
 };
 #endif
 
@@ -446,7 +446,7 @@ typedef struct {
     GLuint vShader;
     GLuint fShader;
     GLuint pObject;
-    GLuint texID[TEX_MAX];
+    GLuint texID[TEXTURE_MAX];
     GLint posLoc;
     GLint texLoc;
     GLint samLoc;
@@ -487,9 +487,8 @@ typedef struct {
         shm_buf_t *buf;
     } shm;
 #endif
-} nds_video;
 
-typedef struct _GFX {
+struct {
 #if defined(PANDORA)
     int fb_dev[2];
     struct omapfb_mem_info mi;
@@ -520,14 +519,7 @@ typedef struct _GFX {
 #if defined(TRIMUI)
         int flip;
 #endif
-    } fb, tmp, overlay;
-
-#if defined(MINI)
-    struct {
-        void *virAddr[2];
-        MI_PHY phyAddr[2];
-    } mask;
-#endif
+    } fb, tmp;
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
     struct {
@@ -537,11 +529,10 @@ typedef struct _GFX {
 #if defined(MINI)
         MI_PHY phyAddr[2][2];
 #endif
-
     } lcd;
 #endif
 
-    struct _HW {
+    struct {
 #if defined(MINI)
         struct _BUF {
             MI_GFX_Surface_t surf;
@@ -562,6 +553,8 @@ typedef struct _GFX {
 #endif
     } hw;
 } GFX;
+
+} nds_video;
 
 typedef struct _NDS {
     int mincore;
@@ -709,10 +702,10 @@ typedef struct _CUST_MENU {
 } CUST_MENU;
 
 #if defined(A30)
-struct _cpu_clock {
+typedef struct {
     int clk;
     uint32_t reg;
-};
+} cpu_clk_t;
 #endif
 
 void clear_lcd(void);

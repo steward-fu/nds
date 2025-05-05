@@ -479,7 +479,7 @@ void init_egl(void)
     wl.egl.context = eglCreateContext(wl.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
     eglMakeCurrent(wl.egl.display, wl.egl.surface, wl.egl.surface, wl.egl.context);
 
-    wl.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
+    wl.egl.vShader = glCreateShader(GL_VERTEXTURE_SHADER);
     glShaderSource(wl.egl.vShader, 1, &vert_shader_src, NULL);
     glCompileShader(wl.egl.vShader);
 
@@ -2173,7 +2173,7 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                flush_lcd(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(TEXTURE_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else
                 flush_lcd(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #endif
@@ -2202,7 +2202,7 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                flush_lcd(TEX_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
+                flush_lcd(TEXTURE_SCR0, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #else 
                 flush_lcd(-1, nds.screen.pixels[0], srt, drt, nds.screen.pitch[0], 1, rotate);
 #endif
@@ -2449,7 +2449,7 @@ static void *video_handler(void *threadid)
     myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, cfg, EGL_NO_CONTEXT, ctx_cfg);
     eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
 
-    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
+    myvideo.vShader = glCreateShader(GL_VERTEXTURE_SHADER);
     glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
     glCompileShader(myvideo.vShader);
 
@@ -2471,8 +2471,8 @@ static void *video_handler(void *threadid)
     glUniform1i(myvideo.samLoc, 0);
     glUniform1f(myvideo.alphaLoc, 0.0);
 
-    glGenTextures(TEX_MAX, myvideo.texID);
-    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_SCR0]);
+    glGenTextures(TEXTURE_MAX, myvideo.texID);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_SCR0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -2525,7 +2525,7 @@ static void *video_handler(void *threadid)
     myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, myvideo.eglConfig, EGL_NO_CONTEXT, context_attributes);
     eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
   
-    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
+    myvideo.vShader = glCreateShader(GL_VERTEXTURE_SHADER);
     glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
     glCompileShader(myvideo.vShader);
   
@@ -2545,7 +2545,7 @@ static void *video_handler(void *threadid)
     myvideo.samLoc = glGetUniformLocation(myvideo.pObject, "frag_sampler");
     myvideo.alphaLoc = glGetUniformLocation(myvideo.pObject, "s_alpha");
 
-    glGenTextures(TEX_MAX, myvideo.texID);
+    glGenTextures(TEXTURE_MAX, myvideo.texID);
 
     glViewport(0, 0, DEF_FB_H, DEF_FB_W);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -2614,7 +2614,7 @@ static void *video_handler(void *threadid)
     }
 
 #if defined(FLIP)
-    glDeleteTextures(TEX_MAX, myvideo.texID);
+    glDeleteTextures(TEXTURE_MAX, myvideo.texID);
     eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
     eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
@@ -2633,7 +2633,7 @@ static void *video_handler(void *threadid)
 #endif
 
 #if defined(A30) || defined(RG28XX)
-    glDeleteTextures(TEX_MAX, myvideo.texID);
+    glDeleteTextures(TEXTURE_MAX, myvideo.texID);
     eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
     eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
@@ -4232,7 +4232,7 @@ int draw_pen(void *pixels, int width, int pitch)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_PEN]);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
     glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
     glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
@@ -4292,7 +4292,7 @@ int draw_pen(void *pixels, int width, int pitch)
 int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
 {
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    int tex = (id >= 0) ? id : TEX_TMP;
+    int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
     debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d, rotate=%d)\n", __func__, id, pixels, pitch, alpha, rotate);
@@ -4368,7 +4368,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         fg_vertices[16] = fg_vertices[1];
     }
 
-    if (tex == TEX_TMP) {
+    if (tex == TEXTURE_TMP) {
         glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (pixel_filter) {
@@ -4382,7 +4382,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srcrect.w, srcrect.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
-    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
+    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_SCR0)) {
         glUniform1f(myvideo.alphaLoc, 1.0 - ((float)nds.alpha.val / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
@@ -4393,7 +4393,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
+    if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_SCR0)) {
         glUniform1f(myvideo.alphaLoc, 0.0);
         glDisable(GL_BLEND);
     }
@@ -5662,7 +5662,7 @@ void flip_lcd(void)
 
     if (nds.theme.img) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_BG]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
         glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
         glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
@@ -5817,7 +5817,7 @@ int reload_pen(void)
                         *dst++ = *src++;
                     }
                 }
-                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_PEN]);
+                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -6056,7 +6056,7 @@ int reload_bg(void)
                         SDL_FreeSurface(t);
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
 #if defined(GKD2) || defined(BRICK)
-                        flush_lcd(TEX_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
+                        flush_lcd(TEXTURE_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
 #else
                         flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #endif
@@ -6072,12 +6072,12 @@ int reload_bg(void)
             if (nds.theme.img) {
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
 #if defined(GKD2) || defined(BRICK)
-                flush_lcd(TEX_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
+                flush_lcd(TEXTURE_BG, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, 0);
 #else
                 flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #endif
 #else
-                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_BG]);
+                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
