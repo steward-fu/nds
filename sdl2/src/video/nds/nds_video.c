@@ -567,7 +567,7 @@ static void* prehook_cb_malloc(size_t size)
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
 
-    debug("call %s()\n");
+    debug("call %s()\n", __func__);
 
     if ((size == (NDS_W * NDS_H * bpp)) || (size == (NDS_Wx2 * NDS_Hx2 * bpp))) {
         r = myvideo.lcd.virt_addr[0][idx];
@@ -586,7 +586,7 @@ static void prehook_cb_free(void *ptr)
     int c1 = 0;
     int found = 0;
 
-    debug("call %s()\n");
+    debug("call %s()\n", __func__);
 
     for (c0 = 0; c0 < 2; c0++) {
         for (c1 = 0; c1 < 2; c1++) {
@@ -607,7 +607,7 @@ static void* prehook_cb_realloc(void *ptr, size_t size)
     void *r = NULL;
     uint32_t bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
 
-    debug("call %s()\n");
+    debug("call %s()\n", __func__);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
