@@ -3433,7 +3433,7 @@ static void set_core(int n)
     }
 }
 
-int init_lcd(void
+int init_lcd(void)
 {
    set_core(INIT_CPU_CORE); 
    return 0;
