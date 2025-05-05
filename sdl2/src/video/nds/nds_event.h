@@ -357,6 +357,7 @@ typedef struct {
 void init_event(void);
 void quit_event(void);
 void pump_event(_THIS);
+void prehook_cb_platform_get_input(input_struct *);
 
 #endif
 

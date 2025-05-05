@@ -634,6 +634,7 @@ static int init_table(void)
     myhook.fun.save_state = (void *)0x0809580c;
     myhook.fun.blit_screen_menu = (void *)0x080a62d8;
     myhook.fun.initialize_backup = (void *)0x08092f40;
+    myhook.fun.platform_get_input = (void *)0x080a8c30;
     myhook.fun.set_screen_menu_off = (void *)0x080a8240;
     myhook.fun.get_screen_ptr = (void *)0x080a890c;
     myhook.fun.spu_adpcm_decode_block = (void *)0x0808d268;

@@ -2123,3 +2123,16 @@ TEST(sdl2_event, pump_event)
 }
 #endif
 
+void prehook_cb_platform_get_input(input_struct *input)
+{
+    debug(SDL"call %s(%p)\n", __func__, input);
+}
+
+#if defined(UT)
+TEST(sdl2_event, prehook_cb_platform_get_input)
+{
+    prehook_cb_platform_get_input(NULL);
+    TEST_PASS();
+}
+#endif
+

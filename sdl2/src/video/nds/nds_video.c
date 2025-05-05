@@ -6384,6 +6384,7 @@ int init_video(_THIS)
 
     init_hook(sysconf(_SC_PAGESIZE), nds.states.path);
 
+    add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
     add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
 #if !defined(PANDORA)
     add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
