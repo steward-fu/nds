@@ -52,7 +52,7 @@
 
 NDS nds = { 0 };
 GFX gfx = { 0 };
-MMIYOO_VideoInfo vid = { 0 };
+nds_video myvideo = { 0 };
 
 extern nds_hook myhook;
 extern nds_event myevent;
@@ -645,12 +645,12 @@ static int get_bat_val(void)
         return 0;
     }
 
-    if (vid.sar_fd < 0) {
+    if (myvideo.sar_fd < 0) {
         return 0;
     }
 
-    ioctl(vid.sar_fd, 0x6100, 0);
-    ioctl(vid.sar_fd, 0x6101, v);
+    ioctl(myvideo.sar_fd, 0x6100, 0);
+    ioctl(myvideo.sar_fd, 0x6101, v);
     r = 100 - (((BAT_MAX_VAL - v[1]) * 100) / (BAT_MAX_VAL - BAT_MIN_VAL));
     if (r > 100) {
         r = 100;
@@ -2122,7 +2122,7 @@ static int process_screen(void)
             }
         }
 
-        glBindTexture(GL_TEXTURE_2D, vid.texID[idx]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (pixel_filter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2423,56 +2423,56 @@ static void *video_handler(void *threadid)
 
     debug("call %s()\n", __func__);
 
-    vid.drm.fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
-    vid.drm.res = drmModeGetResources(vid.drm.fd);
-    vid.drm.conn = drmModeGetConnector(vid.drm.fd, vid.drm.res->connectors[1]);
-    vid.drm.enc = drmModeGetEncoder(vid.drm.fd, vid.drm.res->encoders[2]);
-    vid.drm.crtc = drmModeGetCrtc(vid.drm.fd, vid.drm.res->crtcs[1]);
+    myvideo.drm.fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+    myvideo.drm.res = drmModeGetResources(myvideo.drm.fd);
+    myvideo.drm.conn = drmModeGetConnector(myvideo.drm.fd, myvideo.drm.res->connectors[1]);
+    myvideo.drm.enc = drmModeGetEncoder(myvideo.drm.fd, myvideo.drm.res->encoders[2]);
+    myvideo.drm.crtc = drmModeGetCrtc(myvideo.drm.fd, myvideo.drm.res->crtcs[1]);
 
-    vid.drm.gbm = gbm_create_device(vid.drm.fd);
-    vid.drm.gs = gbm_surface_create(
-        vid.drm.gbm,
-        vid.drm.crtc->mode.hdisplay,
-        vid.drm.crtc->mode.vdisplay, 
+    myvideo.drm.gbm = gbm_create_device(myvideo.drm.fd);
+    myvideo.drm.gs = gbm_surface_create(
+        myvideo.drm.gbm,
+        myvideo.drm.crtc->mode.hdisplay,
+        myvideo.drm.crtc->mode.vdisplay, 
         GBM_FORMAT_XRGB8888,
         GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING
     );
 
-    vid.drm.pfn = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
-    vid.eglDisplay = vid.drm.pfn(EGL_PLATFORM_GBM_KHR, vid.drm.gbm, NULL);
-    eglInitialize(vid.eglDisplay, &major, &minor);
+    myvideo.drm.pfn = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
+    myvideo.eglDisplay = myvideo.drm.pfn(EGL_PLATFORM_GBM_KHR, myvideo.drm.gbm, NULL);
+    eglInitialize(myvideo.eglDisplay, &major, &minor);
     eglBindAPI(EGL_OPENGL_ES_API);
-    eglGetConfigs(vid.eglDisplay, NULL, 0, &cnt);
-    eglChooseConfig(vid.eglDisplay, surf_cfg, &cfg, 1, &cnt);
+    eglGetConfigs(myvideo.eglDisplay, NULL, 0, &cnt);
+    eglChooseConfig(myvideo.eglDisplay, surf_cfg, &cfg, 1, &cnt);
 
-    vid.eglSurface = eglCreateWindowSurface(vid.eglDisplay, cfg, (EGLNativeWindowType)vid.drm.gs, NULL);
-    vid.eglContext = eglCreateContext(vid.eglDisplay, cfg, EGL_NO_CONTEXT, ctx_cfg);
-    eglMakeCurrent(vid.eglDisplay, vid.eglSurface, vid.eglSurface, vid.eglContext);
+    myvideo.eglSurface = eglCreateWindowSurface(myvideo.eglDisplay, cfg, (EGLNativeWindowType)myvideo.drm.gs, NULL);
+    myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, cfg, EGL_NO_CONTEXT, ctx_cfg);
+    eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
 
-    vid.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vid.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(vid.vShader);
+    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.vShader);
 
-    vid.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vid.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(vid.fShader);
+    myvideo.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.fShader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.fShader);
     
-    vid.pObject = glCreateProgram();
-    glAttachShader(vid.pObject, vid.vShader);
-    glAttachShader(vid.pObject, vid.fShader);
-    glLinkProgram(vid.pObject);
-    glUseProgram(vid.pObject);
+    myvideo.pObject = glCreateProgram();
+    glAttachShader(myvideo.pObject, myvideo.vShader);
+    glAttachShader(myvideo.pObject, myvideo.fShader);
+    glLinkProgram(myvideo.pObject);
+    glUseProgram(myvideo.pObject);
 
-    vid.posLoc = glGetAttribLocation(vid.pObject, "vert_pos");
-    vid.texLoc = glGetAttribLocation(vid.pObject, "vert_coord");
-    vid.samLoc = glGetUniformLocation(vid.pObject, "frag_sampler");
-    vid.alphaLoc = glGetUniformLocation(vid.pObject, "s_alpha");
+    myvideo.posLoc = glGetAttribLocation(myvideo.pObject, "vert_pos");
+    myvideo.texLoc = glGetAttribLocation(myvideo.pObject, "vert_coord");
+    myvideo.samLoc = glGetUniformLocation(myvideo.pObject, "frag_sampler");
+    myvideo.alphaLoc = glGetUniformLocation(myvideo.pObject, "s_alpha");
 
-    glUniform1i(vid.samLoc, 0);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glUniform1i(myvideo.samLoc, 0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 
-    glGenTextures(TEX_MAX, vid.texID);
-    glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_SCR0]);
+    glGenTextures(TEX_MAX, myvideo.texID);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_SCR0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -2480,10 +2480,10 @@ static void *video_handler(void *threadid)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(vid.posLoc);
-    glEnableVertexAttribArray(vid.texLoc);
-    glUniform1i(vid.samLoc, 0);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.posLoc);
+    glEnableVertexAttribArray(myvideo.texLoc);
+    glUniform1i(myvideo.samLoc, 0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 
     pixel_filter = 0;
     gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
@@ -2518,43 +2518,43 @@ static void *video_handler(void *threadid)
         EGL_NONE,
     };
   
-    vid.eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    eglInitialize(vid.eglDisplay, &egl_major, &egl_minor);
-    eglChooseConfig(vid.eglDisplay, config_attribs, &vid.eglConfig, 1, &num_configs);
-    vid.eglSurface = eglCreateWindowSurface(vid.eglDisplay, vid.eglConfig, 0, window_attributes);
-    vid.eglContext = eglCreateContext(vid.eglDisplay, vid.eglConfig, EGL_NO_CONTEXT, context_attributes);
-    eglMakeCurrent(vid.eglDisplay, vid.eglSurface, vid.eglSurface, vid.eglContext);
+    myvideo.eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    eglInitialize(myvideo.eglDisplay, &egl_major, &egl_minor);
+    eglChooseConfig(myvideo.eglDisplay, config_attribs, &myvideo.eglConfig, 1, &num_configs);
+    myvideo.eglSurface = eglCreateWindowSurface(myvideo.eglDisplay, myvideo.eglConfig, 0, window_attributes);
+    myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, myvideo.eglConfig, EGL_NO_CONTEXT, context_attributes);
+    eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
   
-    vid.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vid.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(vid.vShader);
+    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.vShader);
   
-    vid.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(vid.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(vid.fShader);
+    myvideo.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.fShader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.fShader);
    
-    vid.pObject = glCreateProgram();
-    glAttachShader(vid.pObject, vid.vShader);
-    glAttachShader(vid.pObject, vid.fShader);
-    glLinkProgram(vid.pObject);
-    glUseProgram(vid.pObject);
+    myvideo.pObject = glCreateProgram();
+    glAttachShader(myvideo.pObject, myvideo.vShader);
+    glAttachShader(myvideo.pObject, myvideo.fShader);
+    glLinkProgram(myvideo.pObject);
+    glUseProgram(myvideo.pObject);
 
-    eglSwapInterval(vid.eglDisplay, 1);
-    vid.posLoc = glGetAttribLocation(vid.pObject, "vert_pos");
-    vid.texLoc = glGetAttribLocation(vid.pObject, "vert_coord");
-    vid.samLoc = glGetUniformLocation(vid.pObject, "frag_sampler");
-    vid.alphaLoc = glGetUniformLocation(vid.pObject, "s_alpha");
+    eglSwapInterval(myvideo.eglDisplay, 1);
+    myvideo.posLoc = glGetAttribLocation(myvideo.pObject, "vert_pos");
+    myvideo.texLoc = glGetAttribLocation(myvideo.pObject, "vert_coord");
+    myvideo.samLoc = glGetUniformLocation(myvideo.pObject, "frag_sampler");
+    myvideo.alphaLoc = glGetUniformLocation(myvideo.pObject, "s_alpha");
 
-    glGenTextures(TEX_MAX, vid.texID);
+    glGenTextures(TEX_MAX, myvideo.texID);
 
     glViewport(0, 0, DEF_FB_H, DEF_FB_W);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(vid.posLoc);
-    glEnableVertexAttribArray(vid.texLoc);
-    glUniform1i(vid.samLoc, 0);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.posLoc);
+    glEnableVertexAttribArray(myvideo.texLoc);
+    glUniform1i(myvideo.samLoc, 0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 
     pixel_filter = 0;
     gfx.lcd.virAddr[0][0] = malloc(SCREEN_DMA_SIZE);
@@ -2614,30 +2614,30 @@ static void *video_handler(void *threadid)
     }
 
 #if defined(FLIP)
-    glDeleteTextures(TEX_MAX, vid.texID);
-    eglMakeCurrent(vid.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroySurface(vid.eglDisplay, vid.eglSurface);
-    eglDestroyContext(vid.eglDisplay, vid.eglContext);
+    glDeleteTextures(TEX_MAX, myvideo.texID);
+    eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
+    eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
 
-    eglTerminate(vid.eglDisplay);
-    glDeleteShader(vid.vShader);
-    glDeleteShader(vid.fShader);
-    glDeleteProgram(vid.pObject);
+    eglTerminate(myvideo.eglDisplay);
+    glDeleteShader(myvideo.vShader);
+    glDeleteShader(myvideo.fShader);
+    glDeleteProgram(myvideo.pObject);
 
-    drmModeRmFB(vid.drm.fd, vid.drm.fb); 
-    drmModeFreeCrtc(vid.drm.crtc);
-    drmModeFreeEncoder(vid.drm.enc);
-    drmModeFreeConnector(vid.drm.conn);
-    drmModeFreeResources(vid.drm.res);
-    close(vid.drm.fd);
+    drmModeRmFB(myvideo.drm.fd, myvideo.drm.fb); 
+    drmModeFreeCrtc(myvideo.drm.crtc);
+    drmModeFreeEncoder(myvideo.drm.enc);
+    drmModeFreeConnector(myvideo.drm.conn);
+    drmModeFreeResources(myvideo.drm.res);
+    close(myvideo.drm.fd);
 #endif
 
 #if defined(A30) || defined(RG28XX)
-    glDeleteTextures(TEX_MAX, vid.texID);
-    eglMakeCurrent(vid.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(vid.eglDisplay, vid.eglContext);
-    eglDestroySurface(vid.eglDisplay, vid.eglSurface);
-    eglTerminate(vid.eglDisplay);
+    glDeleteTextures(TEX_MAX, myvideo.texID);
+    eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
+    eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
+    eglTerminate(myvideo.eglDisplay);
 
     free(gfx.lcd.virAddr[0][0]);
     free(gfx.lcd.virAddr[0][1]);
@@ -3365,26 +3365,26 @@ int quit_lcd(void)
 #if defined(GKD2) || defined(BRICK)
 int init_lcd(void)
 {
-    vid.shm.fd = shm_open(SHM_NAME, O_RDWR, 0777);
-    debug("shm fd=%d\n", vid.shm.fd);
+    myvideo.shm.fd = shm_open(SHM_NAME, O_RDWR, 0777);
+    debug("shm fd=%d\n", myvideo.shm.fd);
 
-    vid.shm.buf = (shm_buf_t *) mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, vid.shm.fd, 0);
-    debug("shm buf=%p\n", vid.shm.buf);
+    myvideo.shm.buf = (shm_buf_t *) mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.shm.fd, 0);
+    debug("shm buf=%p\n", myvideo.shm.buf);
 
     return 0;
 }
 
 int quit_lcd(void)
 {
-    vid.shm.buf->valid = 1;
-    vid.shm.buf->cmd = SHM_CMD_QUIT;
+    myvideo.shm.buf->valid = 1;
+    myvideo.shm.buf->cmd = SHM_CMD_QUIT;
     debug("send SHM_CMD_QUIT\n");
 
-    while (vid.shm.buf->valid) {
+    while (myvideo.shm.buf->valid) {
         usleep(10);
     }
 
-    munmap(vid.shm.buf, sizeof(shm_buf_t));
+    munmap(myvideo.shm.buf, sizeof(shm_buf_t));
     shm_unlink(SHM_NAME);
 
     return 0;
@@ -3739,9 +3739,9 @@ int quit_lcd(void)
         gfx.fb_dev = -1;
     }
 
-    if (vid.mem_fd > 0) {
-        close(vid.mem_fd);
-        vid.mem_fd = -1;
+    if (myvideo.mem_fd > 0) {
+        close(myvideo.mem_fd);
+        myvideo.mem_fd = -1;
     }
     return 0;
 }
@@ -3813,7 +3813,7 @@ static int set_best_match_cpu_clock(int clk)
     for (cc = 0; cc < max_cpu_item; cc++) {
         if (cpu_clock[cc].clk >= clk) {
             debug("set cpu %dMHz (0x%08x)\n", cpu_clock[cc].clk, cpu_clock[cc].reg);
-            *vid.cpu_ptr = cpu_clock[cc].reg;
+            *myvideo.cpu_ptr = cpu_clock[cc].reg;
             return cc;
         }
     }
@@ -3846,26 +3846,26 @@ int init_lcd(void)
     gfx.vinfo.yres_virtual = gfx.vinfo.yres * 2;
     ioctl(gfx.fb_dev, FBIOPUT_VSCREENINFO, &gfx.vinfo);
 
-    vid.mem_fd = open("/dev/mem", O_RDWR);
-    if (vid.mem_fd < 0) { 
+    myvideo.mem_fd = open("/dev/mem", O_RDWR);
+    if (myvideo.mem_fd < 0) { 
         debug("failed to open /dev/mem\n");
         return -1;
     }    
-    vid.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, CCU_BASE);
-    if (vid.ccu_mem == MAP_FAILED) {
+    myvideo.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.mem_fd, CCU_BASE);
+    if (myvideo.ccu_mem == MAP_FAILED) {
         debug("failed to map memory\n");
         return -1;
     }    
-    debug("ccp mem=%p\n", vid.ccu_mem);
-    vid.cpu_ptr = (uint32_t *)&vid.ccu_mem[0x00];
+    debug("ccp mem=%p\n", myvideo.ccu_mem);
+    myvideo.cpu_ptr = (uint32_t *)&myvideo.ccu_mem[0x00];
 
-    vid.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, vid.mem_fd, DAC_BASE);
-    if (vid.dac_mem == MAP_FAILED) {
+    myvideo.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.mem_fd, DAC_BASE);
+    if (myvideo.dac_mem == MAP_FAILED) {
         debug("failed to map memory\n");
         return -1;
     }    
-    debug("dac mem=%p\n", vid.dac_mem);
-    vid.vol_ptr = (uint32_t *)(&vid.dac_mem[0xc00 + 0x258]);
+    debug("dac mem=%p\n", myvideo.dac_mem);
+    myvideo.vol_ptr = (uint32_t *)(&myvideo.dac_mem[0xc00 + 0x258]);
 
     set_best_match_cpu_clock(INIT_CPU_CLOCK);
     set_core(INIT_CPU_CORE);
@@ -3888,19 +3888,19 @@ int quit_lcd(void)
         gfx.fb_dev = -1;
     }
 
-    if (vid.ccu_mem != MAP_FAILED) {
-        munmap(vid.ccu_mem, 4096);
-        vid.ccu_mem = NULL;
+    if (myvideo.ccu_mem != MAP_FAILED) {
+        munmap(myvideo.ccu_mem, 4096);
+        myvideo.ccu_mem = NULL;
     }
 
-    if (vid.dac_mem != MAP_FAILED) {
-        munmap(vid.dac_mem, 4096);
-        vid.dac_mem = NULL;
+    if (myvideo.dac_mem != MAP_FAILED) {
+        munmap(myvideo.dac_mem, 4096);
+        myvideo.dac_mem = NULL;
     }
 
-    if (vid.mem_fd > 0) {
-        close(vid.mem_fd);
-        vid.mem_fd = -1;
+    if (myvideo.mem_fd > 0) {
+        close(myvideo.mem_fd);
+        myvideo.mem_fd = -1;
     }
     return 0;
 }
@@ -3973,7 +3973,7 @@ int init_lcd(void)
     MI_SYS_FlushInvCache(gfx.mask.virAddr[0], MASK_SIZE);
 #endif
 
-    vid.sar_fd = open("/dev/sar", O_RDWR);
+    myvideo.sar_fd = open("/dev/sar", O_RDWR);
     return 0;
 }
 
@@ -4011,8 +4011,8 @@ int quit_lcd(void)
     close(gfx.fb_dev);
     gfx.fb_dev = -1;
 
-    close(vid.sar_fd);
-    vid.sar_fd = -1;
+    close(myvideo.sar_fd);
+    myvideo.sar_fd = -1;
     return 0;
 }
 #endif
@@ -4228,16 +4228,16 @@ int draw_pen(void *pixels, int width, int pitch)
     fg_vertices[15] = fg_vertices[10];
     fg_vertices[16] = fg_vertices[1];
 
-    glUniform1f(vid.alphaLoc, 1.0);
+    glUniform1f(myvideo.alphaLoc, 1.0);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_PEN]);
-    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_PEN]);
+    glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     glDisable(GL_BLEND);
-    glUniform1f(vid.alphaLoc, 0.0);
+    glUniform1f(myvideo.alphaLoc, 0.0);
 #endif
 
 #if !defined(UT)
@@ -4298,31 +4298,31 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d, rotate=%d)\n", __func__, id, pixels, pitch, alpha, rotate);
 
 #if defined(GKD2) || defined(BRICK)
-    vid.shm.buf->srt.x = srcrect.x;
-    vid.shm.buf->srt.y = srcrect.y;
-    vid.shm.buf->srt.w = srcrect.w;
-    vid.shm.buf->srt.h = srcrect.h;
+    myvideo.shm.buf->srt.x = srcrect.x;
+    myvideo.shm.buf->srt.y = srcrect.y;
+    myvideo.shm.buf->srt.w = srcrect.w;
+    myvideo.shm.buf->srt.h = srcrect.h;
 
-    vid.shm.buf->drt.x = dstrect.x;
-    vid.shm.buf->drt.y = dstrect.y;
-    vid.shm.buf->drt.w = dstrect.w;
-    vid.shm.buf->drt.h = dstrect.h;
+    myvideo.shm.buf->drt.x = dstrect.x;
+    myvideo.shm.buf->drt.y = dstrect.y;
+    myvideo.shm.buf->drt.w = dstrect.w;
+    myvideo.shm.buf->drt.h = dstrect.h;
 
-    memcpy(vid.shm.buf->buf, pixels, srcrect.h * pitch);
+    memcpy(myvideo.shm.buf->buf, pixels, srcrect.h * pitch);
 
-    vid.shm.buf->cmd = SHM_CMD_FLUSH;
-    vid.shm.buf->tex_id = tex;
-    vid.shm.buf->pitch = pitch;
-    vid.shm.buf->alpha = alpha;
-    vid.shm.buf->rotate = rotate;
-    vid.shm.buf->dis_mode = nds.dis_mode;
-    vid.shm.buf->len = srcrect.h * pitch;
-    vid.shm.buf->pixel_filter = pixel_filter;
+    myvideo.shm.buf->cmd = SHM_CMD_FLUSH;
+    myvideo.shm.buf->tex_id = tex;
+    myvideo.shm.buf->pitch = pitch;
+    myvideo.shm.buf->alpha = alpha;
+    myvideo.shm.buf->rotate = rotate;
+    myvideo.shm.buf->dis_mode = nds.dis_mode;
+    myvideo.shm.buf->len = srcrect.h * pitch;
+    myvideo.shm.buf->pixel_filter = pixel_filter;
     debug("send SHM_CMD_FLUSH, pitch=%d, alpha=%d, rotate=%d\n", pitch, alpha, rotate);
 
-    vid.shm.buf->valid = 1;
-    __clear_cache((uint8_t *)vid.shm.buf, (uint8_t *)vid.shm.buf + sizeof(shm_buf_t));
-    while (vid.shm.buf->valid) {
+    myvideo.shm.buf->valid = 1;
+    __clear_cache((uint8_t *)myvideo.shm.buf, (uint8_t *)myvideo.shm.buf + sizeof(shm_buf_t));
+    while (myvideo.shm.buf->valid) {
         usleep(10);
     }
 #endif
@@ -4369,7 +4369,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     }
 
     if (tex == TEX_TMP) {
-        glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (pixel_filter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -4383,18 +4383,18 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     }
 
     if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
-        glUniform1f(vid.alphaLoc, 1.0 - ((float)nds.alpha.val / 10.0));
+        glUniform1f(myvideo.alphaLoc, 1.0 - ((float)nds.alpha.val / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, vid.texID[tex]);
-    glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
+    glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
     if (((nds.dis_mode == NDS_DIS_MODE_VH_T0) || (nds.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEX_SCR0)) {
-        glUniform1f(vid.alphaLoc, 0.0);
+        glUniform1f(myvideo.alphaLoc, 0.0);
         glDisable(GL_BLEND);
     }
 #endif
@@ -5613,12 +5613,12 @@ drmEventContext drm_evctx = {
 void flip_lcd(void)
 {
 #if defined(GKD2) || defined(BRICK)
-    vid.shm.buf->cmd = SHM_CMD_FLIP;
+    myvideo.shm.buf->cmd = SHM_CMD_FLIP;
     debug("send SHM_CMD_FLIP\n");
 
-    vid.shm.buf->valid = 1;
-    __clear_cache((uint8_t *)vid.shm.buf, (uint8_t *)vid.shm.buf + sizeof(shm_buf_t));
-    while (vid.shm.buf->valid) {
+    myvideo.shm.buf->valid = 1;
+    __clear_cache((uint8_t *)myvideo.shm.buf, (uint8_t *)myvideo.shm.buf + sizeof(shm_buf_t));
+    while (myvideo.shm.buf->valid) {
         usleep(10);
     }
 #endif
@@ -5642,29 +5642,29 @@ void flip_lcd(void)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-    eglSwapBuffers(vid.eglDisplay, vid.eglSurface);
+    eglSwapBuffers(myvideo.eglDisplay, myvideo.eglSurface);
 
 #if defined(FLIP) 
-    vid.drm.wait_for_flip = 1;
-    vid.drm.bo = gbm_surface_lock_front_buffer(vid.drm.gs);
-    drmModeAddFB(vid.drm.fd, DEF_FB_W, DEF_FB_H, 24, 32, gbm_bo_get_stride(vid.drm.bo), gbm_bo_get_handle(vid.drm.bo).u32, (uint32_t *)&vid.drm.fb);
-    drmModeSetCrtc(vid.drm.fd, vid.drm.crtc->crtc_id, vid.drm.fb, 0, 0, (uint32_t *)vid.drm.conn, 1, &vid.drm.crtc->mode);
-    drmModePageFlip(vid.drm.fd, vid.drm.crtc->crtc_id, vid.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&vid.drm.wait_for_flip);
+    myvideo.drm.wait_for_flip = 1;
+    myvideo.drm.bo = gbm_surface_lock_front_buffer(myvideo.drm.gs);
+    drmModeAddFB(myvideo.drm.fd, DEF_FB_W, DEF_FB_H, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
+    drmModeSetCrtc(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, 0, 0, (uint32_t *)myvideo.drm.conn, 1, &myvideo.drm.crtc->mode);
+    drmModePageFlip(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvideo.drm.wait_for_flip);
 
     //wait_cnt = 10;
-    //while (wait_cnt-- && vid.drm.wait_for_flip) {
+    //while (wait_cnt-- && myvideo.drm.wait_for_flip) {
         //usleep(10);
-        //drmHandleEvent(vid.drm.fd, &drm_evctx);
+        //drmHandleEvent(myvideo.drm.fd, &drm_evctx);
     //}
 
-    gbm_surface_release_buffer(vid.drm.gs, vid.drm.bo);
+    gbm_surface_release_buffer(myvideo.drm.gs, myvideo.drm.bo);
 #endif
 
     if (nds.theme.img) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
-        glVertexAttribPointer(vid.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
-        glVertexAttribPointer(vid.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_BG]);
+        glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+        glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     }
 
@@ -5817,7 +5817,7 @@ int reload_pen(void)
                         *dst++ = *src++;
                     }
                 }
-                glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_PEN]);
+                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_PEN]);
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -6049,7 +6049,7 @@ int reload_bg(void)
                     t = IMG_Load(buf);
                     if (t) {
 #if defined(GKD2) || defined(BRICK)
-                        strcpy(vid.shm.buf->bg_path, buf);
+                        strcpy(myvideo.shm.buf->bg_path, buf);
 #endif
 
                         SDL_BlitSurface(t, NULL, nds.theme.img, NULL);
@@ -6077,7 +6077,7 @@ int reload_bg(void)
                 flush_lcd(-1, nds.theme.img->pixels, nds.theme.img->clip_rect, drt, nds.theme.img->pitch, 0, E_MI_GFX_ROTATE_180);
 #endif
 #else
-                glBindTexture(GL_TEXTURE_2D, vid.texID[TEX_BG]);
+                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEX_BG]);
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -6259,7 +6259,7 @@ int create_window(_THIS, SDL_Window *w)
 {
     debug("call %s(w=%d, h=%d)\n", __func__, w->w, w->h);
 
-    vid.window = w;
+    myvideo.win = w;
     SDL_SetMouseFocus(w);
     SDL_SetKeyboardFocus(w);
     return 0;

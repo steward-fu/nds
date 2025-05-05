@@ -50,7 +50,7 @@
 #include "util.h"
 #include "debug.h"
 
-#if defined(MMIYOO)
+#if defined(MINI)
 #include "mi_sys.h"
 #include "mi_gfx.h"
 #endif
@@ -63,55 +63,12 @@
 #include "runner.h"
 #endif
 
-#if !defined(MMIYOO)
+#if !defined(MINI)
     #define E_MI_GFX_ROTATE_90      0
     #define E_MI_GFX_ROTATE_180     1
     #define E_MI_GFX_ROTATE_270     2
     #define E_MI_GFX_FMT_RGB565     0
     #define E_MI_GFX_FMT_ARGB8888   1
-#endif
-
-#if defined(QX1000) || defined(XT897)
-    struct _wayland {
-        struct wl_shell *shell;
-        struct wl_region *region;
-        struct wl_display *display;
-        struct wl_surface *surface;
-        struct wl_registry *registry;
-        struct wl_compositor *compositor;
-        struct wl_shell_surface *shell_surface;
-
-        struct _egl {
-            EGLConfig config;
-            EGLContext context;
-            EGLDisplay display;
-            EGLSurface surface;
-
-            GLuint vShader;
-            GLuint fShader;
-            GLuint pObject;
-
-            GLuint textureId;
-            GLint positionLoc;
-            GLint texCoordLoc;
-            GLint samplerLoc;
-            struct wl_egl_window *window;
-        } egl;
-        
-        struct _org {
-            int w;
-            int h;
-            int bpp;
-            int size;
-        } info;
-
-        int init;
-        int ready;
-        int flip;
-        uint8_t *bg;
-        uint8_t *data;
-        uint16_t *pixels[2];
-    };
 #endif
 
 #define NDS_VER                     "v1.9"
@@ -178,7 +135,7 @@
     #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/capacity"
 #endif
 
-#ifdef A30
+#if defined(A30)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
     #define FB_BPP                  4
@@ -435,8 +392,51 @@ enum _TEX_TYPE {
 };
 #endif
 
-typedef struct MMIYOO_VideoInfo {
-    SDL_Window *window;
+typedef struct {
+    SDL_Window *win;
+
+#if defined(QX1000) || defined(XT897)
+    struct {
+        struct wl_shell *shell;
+        struct wl_region *region;
+        struct wl_display *display;
+        struct wl_surface *surface;
+        struct wl_registry *registry;
+        struct wl_compositor *compositor;
+        struct wl_shell_surface *shell_surface;
+
+        struct _egl {
+            EGLConfig config;
+            EGLContext context;
+            EGLDisplay display;
+            EGLSurface surface;
+
+            GLuint vShader;
+            GLuint fShader;
+            GLuint pObject;
+
+            GLuint textureId;
+            GLint positionLoc;
+            GLint texCoordLoc;
+            GLint samplerLoc;
+            struct wl_egl_window *window;
+        } egl;
+        
+        struct _org {
+            int w;
+            int h;
+            int bpp;
+            int size;
+        } info;
+
+        int init;
+        int ready;
+        int flip;
+        uint8_t *bg;
+        uint8_t *data;
+        uint16_t *pixels[2];
+    } wl;
+#endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     EGLConfig eglConfig;
@@ -459,7 +459,7 @@ typedef struct MMIYOO_VideoInfo {
     uint32_t *cpu_ptr;
 #endif
 
-#ifdef FLIP
+#if defined(FLIP)
     struct {
         int fd;
         int fb;
@@ -487,7 +487,7 @@ typedef struct MMIYOO_VideoInfo {
         shm_buf_t *buf;
     } shm;
 #endif
-} MMIYOO_VideoInfo;
+} nds_video;
 
 typedef struct _GFX {
 #if defined(PANDORA)
@@ -708,15 +708,12 @@ typedef struct _CUST_MENU {
     CUST_MENU_SUB item[MAX_MENU_LINE];
 } CUST_MENU;
 
-#ifdef A30
+#if defined(A30)
 struct _cpu_clock {
     int clk;
     uint32_t reg;
 };
 #endif
-
-int snd_nds_savestate(int slot);
-void snd_nds_reload_config(void);
 
 void clear_lcd(void);
 void flip_lcd(void);
@@ -728,9 +725,6 @@ int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor
 int get_font_width(const char *info);
 int get_font_height(const char *info);
 int get_dir_path(const char *path, int desire, char *buf);
-
-int fb_init(void);
-int fb_uninit(void);
 
 int reload_bg(void);
 int reload_pen(void);

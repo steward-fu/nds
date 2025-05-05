@@ -29,10 +29,10 @@
 
 nds_event myevent = { 0 };
 extern nds_joy myjoy;
+extern nds_video myvideo;
 
 extern GFX gfx;
 extern NDS nds;
-extern MMIYOO_VideoInfo vid;
 extern int pixel_filter;
 extern int FB_W;
 extern int FB_H;
@@ -588,7 +588,7 @@ static int trans_joy_to_touch(jval_t *j, int idx)
 
             x = (myevent.touch.x * 160) / myevent.touch.max_x;
             y = (myevent.touch.y * 120) / myevent.touch.max_y;
-            SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+            SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
         }
         nds.joy.show_cnt = MYJOY_SHOW_CNT;
     }
@@ -915,7 +915,7 @@ static int handle_hotkey(void)
         time_t t = time(NULL);
         struct tm tm = *localtime(&t);
 
-        // for MMIYOO
+        // for MINI
         // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
         dst = (uint32_t *)gfx.hw.ion.vadd + (w * h * (gfx.fb.flip ? 0 : 1));
 
@@ -1131,7 +1131,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
 #if defined(A30) || defined(FLIP)
         if (nds.joy.mode == MYJOY_MODE_STYLUS) {
             nds.joy.show_cnt = MYJOY_SHOW_CNT;
-            SDL_SendMouseButton(vid.window, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+            SDL_SendMouseButton(myvideo.window, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
         }
 #endif
         set_key_bit(KEY_BIT_L2, v);
@@ -1981,7 +1981,7 @@ static int send_touch_key(void)
 
     if (changed & (1 << KEY_BIT_A)) {
 #if !defined(UT)
-        SDL_SendMouseButton(vid.window, 0, (myevent.keypad.cur_bits & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+        SDL_SendMouseButton(myvideo.window, 0, (myevent.keypad.cur_bits & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
 #endif
     }
 
@@ -2030,7 +2030,7 @@ static int send_touch_axis(void)
     x = (myevent.touch.x * 160) / myevent.touch.max_x;
     y = (myevent.touch.y * 120) / myevent.touch.max_y;
 
-    SDL_SendMouseMotion(vid.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+    SDL_SendMouseMotion(myvideo.window, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
 #endif
 
     return 0;
