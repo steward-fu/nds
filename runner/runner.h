@@ -13,11 +13,6 @@
 #define MAX_PATH        255
 #endif
 
-#define NDS_W           256
-#define NDS_H           192
-#define NDS_Wx2         (NDS_W << 1)
-#define NDS_Hx2         (NDS_H << 1)
-
 #if defined(GKD2)
 #define R_LCD_W         640
 #define R_LCD_H         480

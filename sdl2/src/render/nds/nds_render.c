@@ -22,10 +22,9 @@ typedef struct {
     uint32_t w;
     uint32_t h;
     uint32_t pitch;
-} NDS_Texture;
+} nds_texture;
 
-extern NDS nds;
-extern int show_fps;
+extern nds_config myconfig;
 
 #if defined(TRIMUI)
 extern int need_restore;
@@ -61,7 +60,7 @@ TEST(sdl2_render, window_event)
 
 static int create_texture(SDL_Renderer *r, SDL_Texture *t)
 {
-    NDS_Texture *p = NULL;
+    nds_texture *p = NULL;
 
     debug("call %s(renderer=%p, texture=%p)\n", __func__, r, t);
 
@@ -70,7 +69,7 @@ static int create_texture(SDL_Renderer *r, SDL_Texture *t)
         return -1;
     }
 
-    p = (NDS_Texture *)SDL_calloc(1, sizeof(NDS_Texture));
+    p = (nds_texture *)SDL_calloc(1, sizeof(nds_texture));
     if (!p) {
         error("failed to allocate nds texture\n");
         return SDL_OutOfMemory();
@@ -105,7 +104,7 @@ TEST(sdl2_render, create_texture)
 
 static int lock_texture(SDL_Renderer *r, SDL_Texture *t, const SDL_Rect *rt, void **pixels, int *pitch)
 {
-    NDS_Texture *td = NULL;
+    nds_texture *td = NULL;
 
     debug("call %s(pixels=%p, pitch=%p)\n", __func__, pixels, pitch);
 
@@ -114,7 +113,7 @@ static int lock_texture(SDL_Renderer *r, SDL_Texture *t, const SDL_Rect *rt, voi
         return -1;
     }
 
-    td = (NDS_Texture *)t->driverdata;
+    td = (nds_texture *)t->driverdata;
     if (!td) {
         error("invalid td\n");
         return -1;
@@ -134,7 +133,7 @@ TEST(sdl2_render, lock_texture)
     SDL_Rect rt = { 0 };
     SDL_Texture t = { 0 };
     SDL_Renderer r = { 0 };
-    NDS_Texture td = { 0 };
+    nds_texture td = { 0 };
 
     TEST_ASSERT_EQUAL_INT(-1, lock_texture(NULL, NULL, NULL, NULL, NULL));
     TEST_ASSERT_EQUAL_INT(-1, lock_texture(NULL, &t, NULL, (void *)pixels, NULL));
@@ -170,7 +169,7 @@ TEST(sdl2_render, update_texture)
 static void unlock_texture(SDL_Renderer *r, SDL_Texture *t)
 {
     SDL_Rect rt = { 0 };
-    NDS_Texture *td = (NDS_Texture*)t->driverdata;
+    nds_texture *td = (nds_texture*)t->driverdata;
 
     debug("call %s()\n", __func__);
 
@@ -267,26 +266,26 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
     debug("call %s()\n", __func__);
 
 #if defined(QX1000) || defined(XT897)
-    if (nds.menu.drastic.enable == 0) {
+    if (myconfig.menu.drastic.enable == 0) {
         update_wayland_res(640, 480);
     }
 #endif
 
-    show_fps = 0;
-    nds.menu.drastic.enable = 1;
+    myconfig.show_fps = 0;
+    myconfig.menu.drastic.enable = 1;
     usleep(100000);
 
 #if defined(TRIMUI)
-    if (nds.dis_mode != NDS_DIS_MODE_S0) {
+    if (myconfig.dis_mode != NDS_DIS_MODE_S0) {
         need_restore = 1;
-        pre_dismode = nds.dis_mode;
+        pre_dismode = myconfig.dis_mode;
     }
-    nds.dis_mode = NDS_DIS_MODE_S0;
+    myconfig.dis_mode = NDS_DIS_MODE_S0;
     disp_resize();
 #endif
 
 #if !defined(UT)
-    process_drastic_menu();
+    handle_drastic_menu();
 #endif
 
     return 0;
@@ -295,9 +294,9 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
 #if defined(UT)
 TEST(sdl2_render, queue_copy)
 {
-    nds.menu.drastic.enable = 0;
+    myconfig.menu.drastic.enable = 0;
     TEST_ASSERT_EQUAL_INT(0, queue_copy(NULL, NULL, NULL, NULL, NULL));
-    TEST_ASSERT_EQUAL_INT(1, nds.menu.drastic.enable);
+    TEST_ASSERT_EQUAL_INT(1, myconfig.menu.drastic.enable);
 }
 #endif
 
@@ -347,7 +346,7 @@ static void destroy_texture(SDL_Renderer *r, SDL_Texture *t)
     debug("call %s(r=%p, t=%p)\n", __func__, r, t);
 
     if (t) {
-        NDS_Texture *td = (NDS_Texture *)t->driverdata;
+        nds_texture *td = (nds_texture *)t->driverdata;
 
         if (td) {
             if (td->pixels) {

@@ -62,31 +62,24 @@
 #include "runner.h"
 #endif
 
-#if !defined(MINI)
-    #define E_MI_GFX_ROTATE_90      0
-    #define E_MI_GFX_ROTATE_180     1
-    #define E_MI_GFX_ROTATE_270     2
-    #define E_MI_GFX_FMT_RGB565     0
-    #define E_MI_GFX_FMT_ARGB8888   1
+#if defined(TRIMUI)    
+#define FONT_SIZE   12
+#else
+#define FONT_SIZE   24
 #endif
 
-#define NDS_VER                     "v1.9"
-#if !defined(NDS_W)
-#define NDS_W                       256
-#define NDS_H                       192
-#define NDS_Wx2                     (NDS_W * 2)
-#define NDS_Hx2                     (NDS_H * 2)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897) || defined(BRICK)
+#define RELOAD_BG_COUNT     1
+#else
+#define RELOAD_BG_COUNT     120
 #endif
 
 #if defined(UT)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define RELOAD_BG_COUNT         120
-    #define DEF_FONT_SIZE           24
     #define MYJOY_SHOW_CNT          300
     #define MYJOY_MODE_STYLUS       2
     #define MYJOY_MODE_CUSKEY       3
@@ -96,14 +89,11 @@
 #if defined(RG28XX)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define RELOAD_BG_COUNT         120
     #define INIT_CPU_CORE           2
     #define DEINIT_CPU_CORE         2
-    #define DEF_FONT_SIZE           24
     #define BAT_MAX_VAL             4080000
     #define BAT_MIN_VAL             3400000
 #endif
@@ -111,11 +101,9 @@
 #if defined(FLIP)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define RELOAD_BG_COUNT         120
     #define MYJOY_MODE_DISABLE      0
     #define MYJOY_MODE_KEYPAD       1
     #define MYJOY_MODE_STYLUS       2
@@ -127,7 +115,6 @@
     #define INIT_CPU_CLOCK          1200
     #define DEINIT_CPU_CORE         2
     #define DEINIT_CPU_CLOCK        648
-    #define DEF_FONT_SIZE           24
     #define DAC_BASE                0x1c22000
     #define CCU_BASE                0x01c20000
     #define BAT_CHK_CNT             300
@@ -137,11 +124,9 @@
 #if defined(A30)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define RELOAD_BG_COUNT         120
     #define MYJOY_MODE_DISABLE      0
     #define MYJOY_MODE_KEYPAD       1
     #define MYJOY_MODE_STYLUS       2
@@ -153,7 +138,6 @@
     #define INIT_CPU_CLOCK          1200
     #define DEINIT_CPU_CORE         2
     #define DEINIT_CPU_CLOCK        648
-    #define DEF_FONT_SIZE           24
     #define DAC_BASE                0x1c22000
     #define CCU_BASE                0x01c20000
     #define BAT_CHK_CNT             300
@@ -165,16 +149,16 @@
 #if defined(MINI)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
     #define MASK_SIZE               (NDS_Wx3 * NDS_Hx3 * 4)
-    #define RELOAD_BG_COUNT         120
-    #define DEF_FONT_SIZE           24
     #define BAT_CHK_CNT             90
     #define BAT_MAX_VAL             630
     #define BAT_MIN_VAL             420
+    #define PLL_SIZE                0x1000
+    #define BASE_REG_RIU_PA         0x1f000000
+    #define BASE_REG_MPLL_PA        (BASE_REG_RIU_PA + 0x103000 * 2)
 #endif
 
 #if defined(TRIMUI)
@@ -182,21 +166,15 @@
     #define DEF_FB_H                240
     #define ION_W                   NDS_Wx2
     #define ION_H                   NDS_Hx2
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
-    #define RELOAD_BG_COUNT         1
-    #define DEF_FONT_SIZE           12
 #endif
 
 #if defined(PANDORA)
     #define DEF_FB_W                800
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   DEF_FB_W
     #define IMG_H                   DEF_FB_H
-    #define RELOAD_BG_COUNT         1
-    #define DEF_FONT_SIZE           24
 #endif
 
 #if defined(QX1000)
@@ -204,11 +182,8 @@
     #define LCD_H                   2160
     #define DEF_FB_W                (NDS_W * 2)
     #define DEF_FB_H                NDS_H
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
-    #define RELOAD_BG_COUNT         1
-    #define DEF_FONT_SIZE           24
 #endif
 
 #if defined(XT897)
@@ -216,148 +191,27 @@
     #define LCD_H                   960
     #define DEF_FB_W                (NDS_W * 2)
     #define DEF_FB_H                NDS_H
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
-    #define RELOAD_BG_COUNT         1
-    #define DEF_FONT_SIZE           24
 #endif
 
 #if defined(BRICK)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define RELOAD_BG_COUNT         120
-    #define DEF_FONT_SIZE           24
 #endif
 
 #if defined(GKD2)
     #define DEF_FB_W                640
     #define DEF_FB_H                480
-    #define FB_BPP                  4
     #define IMG_W                   640
     #define IMG_H                   480
     #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define RELOAD_BG_COUNT         120
     #define INIT_CPU_CORE           2
     #define DEINIT_CPU_CORE         2
-    #define DEF_FONT_SIZE           24
 #endif
-
-#define PREFIX                      "[SDL] "
-#define SHOT_PATH                   "/mnt/SDCARD/Screenshots"
-#define BIOS_PATH                   "system"
-#define CFG_PATH                    "res/cfg.json"
-#define THEME_PATH                  "res/bg"
-#define PEN_PATH                    "res/pen"
-#define LANG_PATH                   "res/lang"
-#define OVERLAY_PATH                "res/overlay"
-#define MENU_PATH                   "res/menu/640"
-#define MENU_BG_FILE                "bg.png"
-#define MENU_CURSOR_FILE            "cursor.png"
-#define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
-#define DRASTIC_MENU_BG1_FILE       "drastic_bg1.png"
-#define DRASTIC_MENU_YES_FILE       "drastic_yes.png"
-#define DRASTIC_MENU_NO_FILE        "drastic_no.png"
-#define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
-#define BASE_REG_RIU_PA             0x1f000000
-#define BASE_REG_MPLL_PA            (BASE_REG_RIU_PA + 0x103000 * 2)
-#define PLL_SIZE                    0x1000
-#define PEN_LT                      0
-#define PEN_LB                      1
-#define PEN_RT                      2
-#define PEN_RB                      3
-#define PEN_CP                      4
-#define FONT_PATH                   "res/font/font.ttf"
-
-#define NDS_DIS_MODE_VH_T0          0
-#define NDS_DIS_MODE_VH_T1          1
-#define NDS_DIS_MODE_S0             2
-#define NDS_DIS_MODE_S1             3
-#define NDS_DIS_MODE_V0             4
-#define NDS_DIS_MODE_V1             5
-#define NDS_DIS_MODE_H0             6
-#define NDS_DIS_MODE_H1             7
-#define NDS_DIS_MODE_VH_S0          8
-#define NDS_DIS_MODE_VH_S1          9
-#define NDS_DIS_MODE_VH_S2          10
-#define NDS_DIS_MODE_VH_S3          11
-#define NDS_DIS_MODE_VH_S4          12
-#define NDS_DIS_MODE_VH_S5          13
-#define NDS_DIS_MODE_VH_C0          14
-#define NDS_DIS_MODE_VH_C1          15
-#define NDS_DIS_MODE_HH0            16
-#define NDS_DIS_MODE_HH1            17
-#define NDS_DIS_MODE_HH2            18
-#define NDS_DIS_MODE_HH3            19
-#define NDS_DIS_MODE_LAST           19
-
-#define NDS_DIS_MODE_HRES0          20
-#define NDS_DIS_MODE_HRES1          21
-
-#define NDS_ALPHA_MAX               7
-#define NDS_BORDER_MAX              7
-
-#define NDS_STATE_QSAVE             1
-#define NDS_STATE_QLOAD             2
-#define NDS_STATE_FF                4
-
-#define JSON_NDS_PEN_XV             "xv"
-#define JSON_NDS_PEN_YV             "yv"
-#define JSON_NDS_PEN_SEL            "pen"
-#define JSON_NDS_PEN_POS            "touchpad"
-#define JSON_NDS_THEME_SEL          "theme"
-#define JSON_NDS_DIS_MODE           "mode"
-#define JSON_NDS_ALPHA_VALUE        "alpha"
-#define JSON_NDS_ALPHA_POSITION     "position"
-#define JSON_NDS_ALPHA_BORDER       "border"
-#define JSON_NDS_MAX_CORE           "maxcore"
-#define JSON_NDS_MIN_CORE           "mincore"
-#define JSON_NDS_MAX_CPU            "maxcpu"
-#define JSON_NDS_MIN_CPU            "mincpu"
-#define JSON_NDS_OVERLAY            "overlay"
-#define JSON_NDS_ALT_MODE           "alt"
-#define JSON_NDS_SWAP_L1L2          "swap_l1l2"
-#define JSON_NDS_SWAP_R1R2          "swap_r1r2"
-#define JSON_NDS_LANG               "lang"
-#define JSON_NDS_KEYS_ROTATE        "keys_rotate"
-#define JSON_NDS_MENU_C0            "menu_c0"
-#define JSON_NDS_MENU_C1            "menu_c1"
-#define JSON_NDS_MENU_C2            "menu_c2"
-#define JSON_NDS_AUTO_STATE         "auto_state"
-#define JSON_NDS_AUTO_SLOT          "auto_slot"
-#define JSON_NDS_HOTKEY             "hotkey"
-#define JSON_NDS_STATES             "states"
-#define JSON_NDS_MENU_BG            "menu_bg"
-#define JSON_NDS_MENU_CURSOR        "menu_cursor"
-#define JSON_NDS_FAST_FORWARD       "fast_forward"
-#define JSON_NDS_JOY_MODE           "joy_mode"
-#define JSON_NDS_JOY_DZONE          "joy_dzone"
-#define JSON_NDS_JOY_CUSKEY0        "joy_cuskey0"
-#define JSON_NDS_JOY_CUSKEY1        "joy_cuskey1"
-#define JSON_NDS_JOY_CUSKEY2        "joy_cuskey2"
-#define JSON_NDS_JOY_CUSKEY3        "joy_cuskey3"
-#define JSON_NDS_RJOY_MODE          "rjoy_mode"
-#define JSON_NDS_RJOY_DZONE         "rjoy_dzone"
-#define JSON_NDS_RJOY_CUSKEY0       "rjoy_cuskey0"
-#define JSON_NDS_RJOY_CUSKEY1       "rjoy_cuskey1"
-#define JSON_NDS_RJOY_CUSKEY2       "rjoy_cuskey2"
-#define JSON_NDS_RJOY_CUSKEY3       "rjoy_cuskey3"
-#define JSON_NDS_CHK_BAT            "chk_bat"
-#define JSON_NDS_VOL_KEY            "vol"
-#define JSON_NDS_AUTO_STATE         "auto_state"
-#define JSON_NDS_AUTO_SLOT          "auto_slot"
-#define JSON_NDS_HALF_VOL           "half_vol"
-
-#define DEF_LANG_SLOT               0
-#define DEF_LANG_LANG               "english"
-#define LANG_FILE_LEN               16
-#define MAX_LANG_FILE               32
-#define MAX_LANG_LINE               128
-#define MAX_MENU_LINE               128
 
 #define NDS_DRASTIC_MENU_MAIN           1
 #define NDS_DRASTIC_MENU_OPTION         2
@@ -379,6 +233,31 @@
 #define PEN_YV_INC                      1000
 #define PEN_YV_MAX                      500000
 
+#define DEF_LANG_SLOT               0
+#define DEF_LANG_LANG               "english"
+
+typedef enum {
+#if defined(MINI)
+    ROTATE_90 = E_MI_GFX_ROTATE_90,
+    ROTATE_180 = E_MI_GFX_ROTATE_180,
+    ROTATE_270 = E_MI_GFX_ROTATE_270,
+#else
+    ROTATE_90 = 0,
+    ROTATE_180,
+    ROTATE_270
+#endif
+} roatet_type_t;
+
+typedef enum {
+#if defined(MINI)
+    FMT_RGB565 = E_MI_GFX_FMT_RGB565,
+    FMT_ARGB888 = E_MI_GFX_FMT_ARGB8888
+#else
+    FMT_RGB565 = 0,
+    FMT_ARGB888
+#endif
+} gfx_fmt_t;
+
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
 enum _TEXTURE_TYPE {
     TEXTURE_LCD0 = 0,
@@ -391,7 +270,41 @@ enum _TEXTURE_TYPE {
 #endif
 
 typedef struct {
+    int x;
+    int y;
+    int cheat;
+    int enable;
+    uint32_t fg;
+    uint32_t bg;
+    char msg[MAX_PATH];
+} cust_menu_sub_t ;
+
+typedef struct _CUST_MENU {
+    int cnt;
+    cust_menu_sub_t idx[MAX_MENU_LINE];
+} cust_menu_t ;
+
+#if defined(A30)
+typedef struct {
+    int clk;
+    uint32_t reg;
+} cpu_clk_t;
+#endif
+
+typedef struct {
     SDL_Window *win;
+    int cur_w;
+    int cur_h;
+    int cur_buf_size;
+    int state_busy;
+    SDL_Surface *fps;
+    SDL_Surface *cvt;
+    char *lang[MAX_LANG_LINE];
+
+#if defined(TRIMUI)
+    int need_restore;
+    int pre_dismode;
+#endif
 
 #if defined(QX1000) || defined(XT897)
     struct {
@@ -549,177 +462,53 @@ typedef struct {
         } src, dst;
 #endif
     } gfx;
-} nds_video;
 
-typedef struct _NDS {
-    int mincore;
-    int maxcore;
-    int mincpu;
-    int maxcpu;
-    int volume;
-    int hotkey;
-    int chk_bat;
-    int dis_mode;
-    int alt_mode;
-    int hres_mode;
-    int swap_l1l2;
-    int swap_r1r2;
-    int auto_slot;
-    int auto_state;
-    int keys_rotate;
-    int update_menu;
-    int update_screen;
-    int enable_752x560;
-    int defer_update_bg;
-    uint8_t fast_forward;
-    int half_vol;
+    struct {
+        int line_h;
+        TTF_Font *font;
 
-    TTF_Font *font;
-    uint32_t state;
+        struct  {
+            SDL_Surface *bg;
+            SDL_Surface *cursor;
+        } sdl2;
 
-    struct _SCREEN {
-        uint32_t bpp;
-        uint32_t init;
-        uint32_t pitch[2];
-        uint32_t *pixels[2];
-        uint8_t hres_mode[2];
-    } screen;
-
-    struct _BIOS {
-        char path[MAX_PATH];
-    } bios;
-
-    struct _STATES {
-        char path[MAX_PATH];
-    } states;
-
-    struct _CFG {
-        char path[MAX_PATH];
-    } cfg;
-
-    struct _LANG {
-        char trans[MAX_LANG_FILE][LANG_FILE_LEN];
-        char path[MAX_PATH];
-    } lang;
-
-    struct _SHOT {
-        int take;
-        char path[MAX_PATH];
-    } shot;
-
-    struct _MENU {
-        int sel;
-        int max;
-        int enable;
-        int show_cursor;
-        SDL_Surface *bg;
-        SDL_Surface *cursor;
-        struct _DRASTIC {
-            int enable;
+        struct {
             SDL_Surface *bg0;
             SDL_Surface *bg1;
-            SDL_Surface *main;
-            SDL_Surface *yes;
             SDL_Surface *no;
+            SDL_Surface *yes;
+            SDL_Surface *frame;
             SDL_Surface *cursor;
+            cust_menu_t item;
         } drastic;
-        uint32_t c0;
-        uint32_t c1;
-        uint32_t c2;
-        char path[MAX_PATH];
     } menu;
 
-    struct _ALPHA {
-        int val;
-        int pos;
-        int border;
-    } alpha;
+    struct {
+        SDL_Surface *bg;
+        int reload_bg;
+    } layout;
 
-    struct _THEME {
-        int sel;
-        int max;
-        SDL_Surface *img;
-        char path[MAX_PATH];
-    } theme;
+    struct {
+        SDL_Surface *pen;
+    } touch;
 
-    struct _PEN {
-        int xv;
-        int yv;
-        int sel;
-        int max;
-        int pos;
-        int type;
-        SDL_Surface *img;
-        clock_t pre_ticks;
-        char path[MAX_PATH];
-    } pen;
-
-#if defined(A30) || defined(FLIP) || defined(UT)
-    struct _JOY {
-        int max_x;
-        int zero_x;
-        int min_x;
-
-        int max_y;
-        int zero_y;
-        int min_y;
-
-        int mode;
-        int dzone;
-        int show_cnt;
-
-        int cuskey[4];
-    } joy, rjoy;
-#endif
-} NDS;
-
-typedef struct {
-    int x;
-    int y;
-    int cheat;
-    int enable;
-    uint32_t fg;
-    uint32_t bg;
-    char msg[MAX_PATH];
-} cust_menu_sub_t ;
-
-typedef struct _CUST_MENU {
-    int cnt;
-    cust_menu_sub_t item[MAX_MENU_LINE];
-} cust_menu_t ;
-
-#if defined(A30)
-typedef struct {
-    int clk;
-    uint32_t reg;
-} cpu_clk_t;
-#endif
+    struct {
+        int running;
+        pthread_t id;
+    } thread;
+} nds_video;
 
 void clear_lcd(void);
 void flip_lcd(void);
 int flush_lcd(int, const void *, SDL_Rect, SDL_Rect, int, int, int);
 
-int draw_pen(void *pixels, int width, int pitch);
-int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor);
+void update_wayland_res(int, int);
 
-int get_font_width(const char *info);
-int get_font_height(const char *info);
-int get_dir_path(const char *path, int desire, char *buf);
-
-int reload_bg(void);
-int reload_pen(void);
-int reload_menu(void);
-int reload_overlay(void);
-void disp_resize(void);
-
-int get_pitch(void *chk);
-int handle_menu(int key);
-int process_drastic_menu(void);
-const void* get_pixels(void *chk);
-const char *to_lang(const char *p);
-void update_wayland_res(int w, int h);
-
-void render_scanline_tiled_4bpp(void);
+const char *l10n(const char *);
+int handle_sdl2_menu(int);
+int handle_drastic_menu(void);
+int load_touch_pen(void);
+int load_drastic_menu_resource(void);
 
 #endif
 

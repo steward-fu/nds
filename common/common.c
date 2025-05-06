@@ -19,6 +19,8 @@
 
 #include "common.h"
 
+nds_config myconfig = { 0 };
+
 #if defined(UT)
 TEST_GROUP(common);
 

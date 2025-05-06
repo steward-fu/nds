@@ -32,8 +32,8 @@ nds_event myevent = { 0 };
 extern nds_joy myjoy;
 extern nds_hook myhook;
 extern nds_video myvideo;
+extern nds_config myconfig;
 
-extern NDS nds;
 extern int pixel_filter;
 extern int FB_W;
 extern int FB_H;
@@ -183,10 +183,10 @@ TEST(sdl2_event, limit_touch_axis)
 
 static int is_hh_mode(void)
 {
-    if ((nds.dis_mode == NDS_DIS_MODE_HH0) ||
-        (nds.dis_mode == NDS_DIS_MODE_HH1) ||
-        (nds.dis_mode == NDS_DIS_MODE_HH2) ||
-        (nds.dis_mode == NDS_DIS_MODE_HH3))
+    if ((myconfig.dis_mode == NDS_DIS_MODE_HH0) ||
+        (myconfig.dis_mode == NDS_DIS_MODE_HH1) ||
+        (myconfig.dis_mode == NDS_DIS_MODE_HH2) ||
+        (myconfig.dis_mode == NDS_DIS_MODE_HH3))
     {
         return 1;
     }
@@ -196,9 +196,9 @@ static int is_hh_mode(void)
 #if defined(UT)
 TEST(sdl2_event, is_hh_mode)
 {
-    nds.dis_mode = NDS_DIS_MODE_HH0;
+    myconfig.dis_mode = NDS_DIS_MODE_HH0;
     TEST_ASSERT_EQUAL_INT(1, is_hh_mode());
-    nds.dis_mode = 0;
+    myconfig.dis_mode = 0;
     TEST_ASSERT_EQUAL_INT(0, is_hh_mode());
 }
 #endif
@@ -206,13 +206,13 @@ TEST(sdl2_event, is_hh_mode)
 static int inc_touch_axis(int type)
 {
     float move = 0.0;
-    float v = 100000.0 / ((float)nds.pen.xv / 10.0);
+    float v = 100000.0 / ((float)myconfig.pen.speed / 10.0);
 
     if (myevent.touch.slow_down) {
         v*= 2;
     }
 
-    move = ((float)clock() - nds.pen.pre_ticks) / v;
+    move = 100; //((float)clock() - myconfig.pen.pre_ticks) / v;
     if (move <= 0.0) {
         move = 1.0;
     }
@@ -254,7 +254,7 @@ TEST(sdl2_event, release_keys)
 static int hit_hotkey(uint32_t bit)
 {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    uint32_t mask = (1 << bit) | (1 << ((nds.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
+    uint32_t mask = (1 << bit) | (1 << ((myconfig.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
@@ -267,7 +267,7 @@ static int hit_hotkey(uint32_t bit)
 #if defined(UT)
 TEST(sdl2_event, hit_hotkey)
 {
-    nds.hotkey = HOTKEY_BIND_SELECT;
+    myconfig.hotkey = HOTKEY_BIND_SELECT;
     myevent.keypad.cur_bits = (1 << KEY_BIT_SELECT) | (1 << KEY_BIT_A);
     TEST_ASSERT_EQUAL_INT(1, hit_hotkey(KEY_BIT_A));
 }
@@ -285,7 +285,7 @@ static int set_key_bit(uint32_t bit, int val)
 #endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (nds.hotkey == HOTKEY_BIND_SELECT) {
+        if (myconfig.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == KEY_BIT_SELECT) {
                 myevent.keypad.cur_bits = (1 << KEY_BIT_SELECT);
             }
@@ -333,10 +333,10 @@ static int trans_joy_to_keypad(jval_t *j, int idx)
     uint32_t l_key = KEY_BIT_LEFT;
     uint32_t r_key = KEY_BIT_RIGHT;
 
-    int UP_TH = -1 * nds.joy.dzone;
-    int DOWN_TH = nds.joy.dzone;
-    int LEFT_TH = -1 * nds.joy.dzone;
-    int RIGHT_TH = nds.joy.dzone;
+    int UP_TH = -1 * myconfig.joy.dzone;
+    int DOWN_TH = myconfig.joy.dzone;
+    int LEFT_TH = -1 * myconfig.joy.dzone;
+    int RIGHT_TH = myconfig.joy.dzone;
 
     debug("call %s(idx=%d)\n", __func__, idx);
 
@@ -346,10 +346,10 @@ static int trans_joy_to_keypad(jval_t *j, int idx)
         l_key = KEY_BIT_Y;
         r_key = KEY_BIT_A;
 
-        UP_TH = -1 * nds.rjoy.dzone;
-        DOWN_TH = nds.rjoy.dzone;
-        LEFT_TH = -1 * nds.rjoy.dzone;
-        RIGHT_TH = nds.rjoy.dzone;
+        UP_TH = -1 * myconfig.rjoy.dzone;
+        DOWN_TH = myconfig.rjoy.dzone;
+        LEFT_TH = -1 * myconfig.rjoy.dzone;
+        RIGHT_TH = myconfig.rjoy.dzone;
     }
 
     if (j->x != pre_x[idx]) {
@@ -460,18 +460,18 @@ static int trans_joy_to_touch(jval_t *j, int idx)
     static int pre_left[2] = { 0 };
     static int pre_right[2] = { 0 };
 
-    int UP_TH = -1 * nds.joy.dzone;
-    int DOWN_TH = nds.joy.dzone;
-    int LEFT_TH = -1 * nds.joy.dzone;
-    int RIGHT_TH = nds.joy.dzone;
+    int UP_TH = -1 * myconfig.joy.dzone;
+    int DOWN_TH = myconfig.joy.dzone;
+    int LEFT_TH = -1 * myconfig.joy.dzone;
+    int RIGHT_TH = myconfig.joy.dzone;
 
     debug("call %s(idx=%d)\n", __func__, idx);
 
     if (idx) {
-        UP_TH = -1 * nds.rjoy.dzone;
-        DOWN_TH = nds.rjoy.dzone;
-        LEFT_TH = -1 * nds.rjoy.dzone;
-        RIGHT_TH = nds.rjoy.dzone;
+        UP_TH = -1 * myconfig.rjoy.dzone;
+        DOWN_TH = myconfig.rjoy.dzone;
+        LEFT_TH = -1 * myconfig.rjoy.dzone;
+        RIGHT_TH = myconfig.rjoy.dzone;
     }
 
     if (j->x != pre_x[idx]) {
@@ -541,11 +541,11 @@ static int trans_joy_to_touch(jval_t *j, int idx)
                 static int cc = 0;
 
                 if (cc == 0) {
-                    nds.pen.sel+= 1;
-                    if (nds.pen.sel >= nds.pen.max) {
-                        nds.pen.sel = 0;
+                    myconfig.pen.img+= 1;
+                    if (myconfig.pen.img >= myconfig.pen.max) {
+                        myconfig.pen.img = 0;
                     }
-                    reload_pen();
+                    load_touch_pen();
                     cc = 30;
                 }
                 else {
@@ -557,7 +557,7 @@ static int trans_joy_to_touch(jval_t *j, int idx)
             int x = 0;
             int y = 0;
 
-            if (is_hh_mode() && (nds.keys_rotate == 0)) {
+            if (is_hh_mode() && (myconfig.keys_rotate == 0)) {
                 if (pre_up[idx]) {
                     myevent.touch.x+= inc_touch_axis(1);
                 }
@@ -589,14 +589,9 @@ static int trans_joy_to_touch(jval_t *j, int idx)
 
             x = (myevent.touch.x * 160) / myevent.touch.max_x;
             y = (myevent.touch.y * 120) / myevent.touch.max_y;
-            SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+            SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (myconfig.pen.pos ? 120 : 0));
         }
-        nds.joy.show_cnt = MYJOY_SHOW_CNT;
-    }
-    else {
-        if (!(myevent.keypad.cur_bits & 0x0f)) {
-            nds.pen.pre_ticks = clock();
-        }
+        myconfig.joy.show_cnt = MYJOY_SHOW_CNT;
     }
 
     return r;
@@ -622,28 +617,28 @@ static int trans_joy_to_custkey(jval_t *j, int idx)
     static int pre_left[2] = { 0 };
     static int pre_right[2] = { 0 };
 
-    uint32_t u_key = nds.joy.cuskey[0];
-    uint32_t d_key = nds.joy.cuskey[1];
-    uint32_t l_key = nds.joy.cuskey[2];
-    uint32_t r_key = nds.joy.cuskey[3];
+    uint32_t u_key = myconfig.joy.cuskey[0];
+    uint32_t d_key = myconfig.joy.cuskey[1];
+    uint32_t l_key = myconfig.joy.cuskey[2];
+    uint32_t r_key = myconfig.joy.cuskey[3];
 
-    int UP_TH = -1 * nds.joy.dzone;
-    int DOWN_TH = nds.joy.dzone;
-    int LEFT_TH = -1 * nds.joy.dzone;
-    int RIGHT_TH = nds.joy.dzone;
+    int UP_TH = -1 * myconfig.joy.dzone;
+    int DOWN_TH = myconfig.joy.dzone;
+    int LEFT_TH = -1 * myconfig.joy.dzone;
+    int RIGHT_TH = myconfig.joy.dzone;
 
     debug("call %s(idx=%d)\n", __func__, idx);
 
     if (idx) {
-        UP_TH = -1 * nds.rjoy.dzone;
-        DOWN_TH = nds.rjoy.dzone;
-        LEFT_TH = -1 * nds.rjoy.dzone;
-        RIGHT_TH = nds.rjoy.dzone;
+        UP_TH = -1 * myconfig.rjoy.dzone;
+        DOWN_TH = myconfig.rjoy.dzone;
+        LEFT_TH = -1 * myconfig.rjoy.dzone;
+        RIGHT_TH = myconfig.rjoy.dzone;
 
-        u_key = nds.rjoy.cuskey[0];
-        d_key = nds.rjoy.cuskey[1];
-        l_key = nds.rjoy.cuskey[2];
-        r_key = nds.rjoy.cuskey[3];
+        u_key = myconfig.rjoy.cuskey[0];
+        d_key = myconfig.rjoy.cuskey[1];
+        l_key = myconfig.rjoy.cuskey[2];
+        r_key = myconfig.rjoy.cuskey[3];
     }
 
     if (j->x != pre_x[idx]) {
@@ -750,23 +745,23 @@ static int update_joy_state(void)
 
     debug("call %s()\n", __func__);
 
-    if (nds.joy.mode == MYJOY_MODE_KEYPAD) {
+    if (myconfig.joy.mode == MYJOY_MODE_KEYPAD) {
         r |= trans_joy_to_keypad(&myjoy.left.last, 0);
     }
-    else if (nds.joy.mode == MYJOY_MODE_STYLUS) {
+    else if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
         r |= trans_joy_to_touch(&myjoy.left.last, 0);
     }
-    else if (nds.joy.mode == MYJOY_MODE_CUSKEY) {
+    else if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
         r |= trans_joy_to_custkey(&myjoy.left.last, 0);
     }
 
-    if (nds.rjoy.mode == MYJOY_MODE_KEYPAD) {
+    if (myconfig.rjoy.mode == MYJOY_MODE_KEYPAD) {
         r |= trans_joy_to_keypad(&myjoy.right.last, 1);
     }
-    else if (nds.rjoy.mode == MYJOY_MODE_STYLUS) {
+    else if (myconfig.rjoy.mode == MYJOY_MODE_STYLUS) {
         r |= trans_joy_to_touch(&myjoy.right.last, 1);
     }
-    else if (nds.rjoy.mode == MYJOY_MODE_CUSKEY) {
+    else if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
         r |= trans_joy_to_custkey(&myjoy.right.last, 1);
     }
 
@@ -792,26 +787,26 @@ static int handle_hotkey(void)
     debug("call %s()\n", __func__);
 
     check_hotkey = 1;
-    if (nds.menu.enable || nds.menu.drastic.enable) {
+    if (myconfig.menu.enable || myconfig.menu.drastic.enable) {
         check_hotkey = 0;
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_UP)) {
         if (myevent.mode == NDS_TOUCH_MODE) {
-            switch (nds.dis_mode) {
+            switch (myconfig.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
             case NDS_DIS_MODE_VH_T1:
             case NDS_DIS_MODE_S0:
             case NDS_DIS_MODE_S1:
                 break;
             default:
-                nds.pen.pos = 1;
+                myconfig.pen.pos = 1;
                 break;
             }
         }
 #if defined(A30) || defined(FLIP)
-        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
-            nds.pen.pos = 1;
+        if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
+            myconfig.pen.pos = 1;
         }
 #endif
         set_key_bit(KEY_BIT_UP, 0);
@@ -820,20 +815,20 @@ static int handle_hotkey(void)
     if (check_hotkey && hit_hotkey(KEY_BIT_DOWN)) {
 #if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myevent.mode == NDS_TOUCH_MODE) {
-            switch (nds.dis_mode) {
+            switch (myconfig.dis_mode) {
             case NDS_DIS_MODE_VH_T0:
             case NDS_DIS_MODE_VH_T1:
             case NDS_DIS_MODE_S0:
             case NDS_DIS_MODE_S1:
                 break;
             default:
-                nds.pen.pos = 0;
+                myconfig.pen.pos = 0;
                 break;
             }
         }
 #if defined(A30) || defined(FLIP)
-        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
-            nds.pen.pos = 0;
+        if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
+            myconfig.pen.pos = 0;
         }
 #endif
 #endif
@@ -842,18 +837,18 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (nds.hres_mode == 0) {
-            if (nds.dis_mode > 0) {
-                nds.dis_mode -= 1;
+        if (myconfig.hres_mode == 0) {
+            if (myconfig.dis_mode > 0) {
+                myconfig.dis_mode -= 1;
             }
         }
         else {
-            nds.dis_mode = NDS_DIS_MODE_HRES0;
+            myconfig.dis_mode = NDS_DIS_MODE_HRES0;
         }
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA)
-        if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+        if ((myconfig.menu.enable == 0) && (myconfig.menu.drastic.enable == 0)) {
             myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
 
             if (myevent.mode == NDS_TOUCH_MODE) {
@@ -867,13 +862,13 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_RIGHT)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (nds.hres_mode == 0) {
-            if (nds.dis_mode < NDS_DIS_MODE_LAST) {
-                nds.dis_mode += 1;
+        if (myconfig.hres_mode == 0) {
+            if (myconfig.dis_mode < NDS_DIS_MODE_LAST) {
+                myconfig.dis_mode += 1;
             }
         }
         else {
-            nds.dis_mode = NDS_DIS_MODE_HRES1;
+            myconfig.dis_mode = NDS_DIS_MODE_HRES1;
         }
 #endif
 
@@ -885,15 +880,15 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if ((myevent.mode == NDS_KEY_MODE) && (nds.hres_mode == 0)) {
-            uint32_t tmp = nds.alt_mode;
-            nds.alt_mode = nds.dis_mode;
-            nds.dis_mode = tmp;
+        if ((myevent.mode == NDS_KEY_MODE) && (myconfig.hres_mode == 0)) {
+            uint32_t tmp = myconfig.alt_mode;
+            myconfig.alt_mode = myconfig.dis_mode;
+            myconfig.dis_mode = tmp;
         }
 #endif
 
 #if defined(TRIMUI)
-        nds.dis_mode = (nds.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
+        myconfig.dis_mode = (myconfig.dis_mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
         disp_resize();
 #endif
         set_key_bit(KEY_BIT_A, 0);
@@ -920,7 +915,7 @@ static int handle_hotkey(void)
         // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
         dst = (uint32_t *)myvideo.gfx.ion.vadd + (w * h * (myvideo.fb.flip ? 0 : 1));
 
-        if (nds.dis_mode == NDS_DIS_MODE_S0) {
+        if (myconfig.dis_mode == NDS_DIS_MODE_S0) {
             w = NDS_H;
             h = NDS_W;
         }
@@ -933,13 +928,13 @@ static int handle_hotkey(void)
         if (dst) {
             p = SDL_CreateRGBSurfaceFrom(dst, w, h, 32, pitch, 0, 0, 0, 0);
             if (p) {
-                sprintf(buf, "%s/%02d%02d%02d.png", nds.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                sprintf(buf, "%s/%02d%02d%02d.png", myconfig.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
                 IMG_SavePNG(p, buf);
                 SDL_FreeSurface(p);
                 debug("saved \'%s\'\n", buf);
             }
         }
-        nds.shot.take = 1;
+        myconfig.shot.take = 1;
 #endif
         set_key_bit(KEY_BIT_X, 0);
     }
@@ -947,33 +942,33 @@ static int handle_hotkey(void)
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
-                if ((nds.dis_mode != NDS_DIS_MODE_VH_T0) &&
-                    (nds.dis_mode != NDS_DIS_MODE_VH_T1) &&
-                    (nds.dis_mode != NDS_DIS_MODE_S1) &&
-                    (nds.dis_mode != NDS_DIS_MODE_HRES1))
+                if ((myconfig.dis_mode != NDS_DIS_MODE_VH_T0) &&
+                    (myconfig.dis_mode != NDS_DIS_MODE_VH_T1) &&
+                    (myconfig.dis_mode != NDS_DIS_MODE_S1) &&
+                    (myconfig.dis_mode != NDS_DIS_MODE_HRES1))
                 {
-                    nds.theme.sel+= 1;
-                    if (nds.theme.sel > nds.theme.max) {
-                        nds.theme.sel = 0;
+                    myconfig.layout.img+= 1;
+                    if (myconfig.layout.img > myconfig.layout.max) {
+                        myconfig.layout.img = 0;
                     }
                 }
             }
             else {
-                nds.pen.sel+= 1;
-                if (nds.pen.sel >= nds.pen.max) {
-                    nds.pen.sel = 0;
+                myconfig.pen.img+= 1;
+                if (myconfig.pen.img >= myconfig.pen.max) {
+                    myconfig.pen.img = 0;
                 }
-                reload_pen();
+                load_touch_pen();
             }
         }
         else {
-            nds.menu.sel+= 1;
-            if (nds.menu.sel >= nds.menu.max) {
-                nds.menu.sel = 0;
+            myconfig.menu.sel+= 1;
+            if (myconfig.menu.sel >= myconfig.menu.max) {
+                myconfig.menu.sel = 0;
             }
-            reload_menu();
+            load_drastic_menu_resource();
 
-            if (nds.menu.drastic.enable) {
+            if (myconfig.menu.drastic.enable) {
                 SDL_SendKeyboardKey(SDL_PRESSED, SDLK_e);
                 usleep(100000);
                 SDL_SendKeyboardKey(SDL_RELEASED, SDLK_e);
@@ -984,14 +979,14 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_START)) {
 #if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (nds.menu.enable == 0) {
+        if (myconfig.menu.enable == 0) {
 #if defined(QX1000) || defined(XT897)
             update_wayland_res(640, 480);
 #endif
 
-            nds.menu.enable = 1;
+            myconfig.menu.enable = 1;
             usleep(100000);
-            handle_menu(-1);
+            handle_sdl2_menu(-1);
             myevent.keypad.pre_bits = myevent.keypad.cur_bits = 0;
         }
 #endif
@@ -1002,7 +997,7 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_START, 0);
     }
 
-    if (nds.hotkey == HOTKEY_BIND_MENU) {
+    if (myconfig.hotkey == HOTKEY_BIND_MENU) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
             set_key_bit(KEY_BIT_ONION, 1);
@@ -1022,9 +1017,9 @@ static int handle_hotkey(void)
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         static int pre_ff = 0;
 
-        if (pre_ff != nds.fast_forward) {
-            pre_ff = nds.fast_forward;
-            fast_forward(nds.fast_forward);
+        if (pre_ff != myconfig.fast_forward) {
+            pre_ff = myconfig.fast_forward;
+            fast_forward(myconfig.fast_forward);
         }
         set_key_bit(KEY_BIT_FAST, 1);
 #endif
@@ -1066,9 +1061,9 @@ static int handle_hotkey(void)
     }
     else if (myevent.keypad.cur_bits & (1 << KEY_BIT_L2)) {
 #if defined(A30) || defined(FLIP)
-        if (nds.joy.mode != MYJOY_MODE_STYLUS) {
+        if (myconfig.joy.mode != MYJOY_MODE_STYLUS) {
 #endif
-            if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0)) {
+            if ((myconfig.menu.enable == 0) && (myconfig.menu.drastic.enable == 0)) {
                 myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
                 set_key_bit(KEY_BIT_L2, 0);
 
@@ -1129,8 +1124,8 @@ static int update_key_bit(uint32_t c, uint32_t v)
     }
     if (c == myevent.keypad.r2) {
 #if defined(A30) || defined(FLIP)
-        if (nds.joy.mode == MYJOY_MODE_STYLUS) {
-            nds.joy.show_cnt = MYJOY_SHOW_CNT;
+        if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
+            myconfig.joy.show_cnt = MYJOY_SHOW_CNT;
             SDL_SendMouseButton(myvideo.win, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
         }
 #endif
@@ -1178,7 +1173,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
             }
         }
         else {
-            nds.defer_update_bg = 60;
+            myconfig.defer_update_bg = 60;
         }
     }
     if (c == myevent.keypad.vol_down) {
@@ -1189,7 +1184,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
             }
         }
         else {
-            nds.defer_update_bg = 60;
+            myconfig.defer_update_bg = 60;
         }
     }
 #endif
@@ -1503,8 +1498,8 @@ static int update_latest_keypad_value(void)
 {
     debug("call %s()\n", __func__);
 
-    if ((nds.menu.enable == 0) && (nds.menu.drastic.enable == 0) && nds.keys_rotate) {
-        if (nds.keys_rotate == 1) {
+    if ((myconfig.menu.enable == 0) && (myconfig.menu.drastic.enable == 0) && myconfig.keys_rotate) {
+        if (myconfig.keys_rotate == 1) {
             myevent.keypad.up = DEV_KEY_CODE_LEFT;
             myevent.keypad.down = DEV_KEY_CODE_RIGHT;
             myevent.keypad.left = DEV_KEY_CODE_DOWN;
@@ -1539,7 +1534,7 @@ static int update_latest_keypad_value(void)
         myevent.keypad.y = DEV_KEY_CODE_Y;
     }
 
-    if (nds.swap_l1l2) {
+    if (myconfig.swap_l1l2) {
         myevent.keypad.l1 = DEV_KEY_CODE_L2;
         myevent.keypad.l2 = DEV_KEY_CODE_L1;
     }
@@ -1548,7 +1543,7 @@ static int update_latest_keypad_value(void)
         myevent.keypad.l2 = DEV_KEY_CODE_L2;
     }
 
-    if (nds.swap_r1r2) {
+    if (myconfig.swap_r1r2) {
         myevent.keypad.r1 = DEV_KEY_CODE_R2;
         myevent.keypad.r2 = DEV_KEY_CODE_R1;
     }
@@ -1654,15 +1649,6 @@ int input_handler(void *data)
         SDL_SemPost(myevent.sem);
 
         usleep(10000);
-
-#if defined(A30) || defined(FLIP)
-        if ((nds.joy.mode != MYJOY_MODE_STYLUS) && (nds.rjoy.mode != MYJOY_MODE_STYLUS))
-#endif
-        {
-            if (!(myevent.keypad.cur_bits & 0x0f)) {
-                nds.pen.pre_ticks = clock();
-            }
-        }
     }
     
     return 0;
@@ -1824,7 +1810,7 @@ static int send_key_to_menu(void)
 
         if (changed & bit) {
             if ((myevent.keypad.cur_bits & bit) == 0) {
-                handle_menu(cc);
+                handle_sdl2_menu(cc);
             }
         }
     }
@@ -1899,7 +1885,7 @@ static int send_key_event(int raw_event)
         pressed = !!(myevent.keypad.cur_bits & bit);
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if ((nds.hotkey == HOTKEY_BIND_MENU) && (cc == KEY_BIT_MENU)) {
+        if ((myconfig.hotkey == HOTKEY_BIND_MENU) && (cc == KEY_BIT_MENU)) {
             continue;
         }
 #endif
@@ -1933,17 +1919,17 @@ static int send_key_event(int raw_event)
     }
 #endif
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_SAVE)) {
-        nds.state|= NDS_STATE_QSAVE;
+        myconfig.state|= NDS_STATE_QSAVE;
         set_key_bit(KEY_BIT_SAVE, 0);
         update_raw_input_statue(KEY_BIT_SAVE, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_LOAD)) {
-        nds.state|= NDS_STATE_QLOAD;
+        myconfig.state|= NDS_STATE_QLOAD;
         set_key_bit(KEY_BIT_LOAD, 0);
         update_raw_input_statue(KEY_BIT_LOAD, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
-        nds.state|= NDS_STATE_FF;
+        myconfig.state|= NDS_STATE_FF;
         set_key_bit(KEY_BIT_FAST, 0);
         update_raw_input_statue(KEY_BIT_FAST, 0);
     }
@@ -1977,7 +1963,7 @@ static int update_touch_axis(void)
 
     debug("call %s()\n", __func__);
 
-    if (is_hh_mode() && (nds.keys_rotate == 0)) {
+    if (is_hh_mode() && (myconfig.keys_rotate == 0)) {
         if (myevent.keypad.cur_bits & (1 << KEY_BIT_UP)) {
             r = 1;
             myevent.touch.x+= inc_touch_axis(1);
@@ -2087,7 +2073,7 @@ static int send_touch_axis(void)
     x = (myevent.touch.x * 160) / myevent.touch.max_x;
     y = (myevent.touch.y * 120) / myevent.touch.max_y;
 
-    SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (nds.pen.pos ? 120 : 0));
+    SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (myconfig.pen.pos ? 120 : 0));
 #endif
 
     return 0;
@@ -2159,7 +2145,7 @@ void pump_event(_THIS)
     SDL_SemWait(myevent.sem);
 #endif
 
-    if (nds.menu.enable) {
+    if (myconfig.menu.enable) {
         send_key_to_menu();
     }
     else {
@@ -2194,7 +2180,7 @@ void prehook_cb_platform_get_input(uintptr_t p)
 
     debug("call %s(%p)\n", __func__, input);
 
-    if (nds.menu.enable) {
+    if (myconfig.menu.enable) {
         send_key_to_menu();
     }
     else {
@@ -2218,7 +2204,7 @@ void prehook_cb_platform_get_input(uintptr_t p)
 #if defined(UT)
 TEST(sdl2_event, prehook_cb_platform_get_input)
 {
-    prehook_cb_platform_get_input(NULL);
+    prehook_cb_platform_get_input(0);
     TEST_PASS();
 }
 #endif
