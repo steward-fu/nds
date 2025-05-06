@@ -725,8 +725,8 @@ static int get_current_menu_layer(void)
     const char *P2 = "D-Pad Up";
     const char *P3 = "Enter Menu";
     const char *P4 = "Username";
-    const char *P5 = "KB Space: toggle cheat/folder    KB Left Ctrl: return to main menu";
-    const char *P6 = "KB Space: select";
+    const char *P5 = "KB Return: toggle cheat";
+    const char *P6 = "KB Return: select";
 
     for (cc=0; cc<drastic_menu.cnt; cc++) {
         if (!memcmp(drastic_menu.item[cc].msg, P0, strlen(P0))) {
@@ -1583,7 +1583,7 @@ int process_drastic_menu(void)
 {
     int layer = 0;
 
-    printf("call %s()\n", __func__);
+    debug("call %s()\n", __func__);
 
     layer = get_current_menu_layer();
     if (layer == NDS_DRASTIC_MENU_MAIN) {
@@ -1593,6 +1593,7 @@ int process_drastic_menu(void)
         SDL_SoftStretch(nds.menu.drastic.bg1, NULL, nds.menu.drastic.main, NULL);
     }
 
+    debug("cur layer=%d\n", layer);
     switch (layer) {
     case NDS_DRASTIC_MENU_MAIN:
         draw_drastic_menu_main();
@@ -1616,10 +1617,7 @@ int process_drastic_menu(void)
         draw_drastic_menu_rom();
         break;
     default:
-        SDL_SendKeyboardKey(SDL_PRESSED, SDL_GetScancodeFromKey(SDLK_RIGHT));
-        usleep(100000);
-        SDL_SendKeyboardKey(SDL_RELEASED, SDL_GetScancodeFromKey(SDLK_RIGHT));
-        memset(&drastic_menu, 0, sizeof(drastic_menu));
+        exit(-1);
         return 0;
     }
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
@@ -2254,7 +2252,6 @@ void prehook_cb_update_screen(void)
     debug("call %s(%d)\n", __func__, prepare_time);
 
     if (prepare_time) {
-        //process_screen();
         prepare_time -= 1;
     }
     else if (nds.update_screen == 0) {
@@ -2278,7 +2275,7 @@ void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint
     SDL_Surface *t1 = NULL;
     static int fps_cnt = 0;
 
-    debug("call %s()\n", __func__);
+    debug("call %s(p=\"%s\", fg=0x%x, bg=0x%x, x=%d, y=%d)\n", __func__, p, fg, bg, x, y);
 
     if (p && (strlen(p) > 0)) {
         if (drastic_menu.cnt < MAX_MENU_LINE) {
@@ -2487,10 +2484,10 @@ static void *video_handler(void *threadid)
     myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
     myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
     myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
-    debug("buffer0=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("buffer1=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("buffer2=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("buffer3=%p\n", myvideo.lcd.virt_addr[1][1]);
+    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
 #if defined(A30) || defined(RG28XX)
@@ -2558,10 +2555,10 @@ static void *video_handler(void *threadid)
     myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
     myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
     myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
-    debug("buffer0=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("buffer1=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("buffer2=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("buffer3=%p\n", myvideo.lcd.virt_addr[1][1]);
+    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
 #if defined(GKD2) || defined(BRICK)
@@ -2569,16 +2566,19 @@ static void *video_handler(void *threadid)
     myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
     myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
     myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
-    debug("buffer0=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("buffer1=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("buffer2=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("buffer3=%p\n", myvideo.lcd.virt_addr[1][1]);
+
+    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
     while (is_video_thread_running) {
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (nds.menu.enable) {
             if (nds.update_menu) {
+                debug("update sdl2 menu\n");
+
                 nds.update_menu = 0;
                 pre_filter = pixel_filter;
                 pixel_filter = 0;
@@ -2589,6 +2589,8 @@ static void *video_handler(void *threadid)
         }
         else if (nds.menu.drastic.enable) {
             if (nds.update_menu) {
+                debug("update drastic menu\n");
+
                 nds.update_menu = 0;
                 pre_filter = pixel_filter;
                 pixel_filter = 0;

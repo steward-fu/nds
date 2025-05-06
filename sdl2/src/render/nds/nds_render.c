@@ -271,6 +271,7 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
         update_wayland_res(640, 480);
     }
 #endif
+
     show_fps = 0;
     nds.menu.drastic.enable = 1;
     usleep(100000);
