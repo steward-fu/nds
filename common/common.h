@@ -258,7 +258,12 @@ typedef struct {
 #endif
 } nds_config;
 
+int load_config(void);
+int update_config(void);
+
+int read_file(const char *, void *, int);
 int write_file(const char *, const void *, int);
+
 int write_log_to_file(const char *, const char *, ...);
 void render_scanline_tiled_4bpp(void);
 void* neon_memcpy(void *, const void *, size_t);

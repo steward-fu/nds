@@ -33,6 +33,47 @@ TEST_TEAR_DOWN(common)
 }
 #endif
 
+int read_file(const char *fpath, void *buf, int len)
+{
+    int r = 0;
+    int fd = -1;
+
+    debug("call %s()\n", __func__);
+
+    if (!fpath || !buf) {
+        error("invalid parameters(0x%x, 0x%x)\n", fpath, buf);
+        return -1;
+    }
+
+    fd = open(fpath, O_RDONLY);
+    if (fd < 0) {
+        error("failed to open \"%s\"\n", fpath);
+        return -1;
+    }
+
+    r = read(fd, buf, len);
+    debug("read %d bytes\n", r);
+
+    close(fd);
+    return r;
+}
+
+#if defined(UT)
+TEST(common, read_file)
+{
+    int len = 0;
+    char buf[32] = { "1234567890" };
+    const char *path = "/tmp/xxx";
+
+    TEST_ASSERT_EQUAL_INT(-1, read_file(NULL, NULL, 0));
+
+    len = strlen(buf);
+    TEST_ASSERT_EQUAL_INT(len, write_file(path, buf, len));
+    TEST_ASSERT_EQUAL_INT(len, read_file(path, buf, sizeof(buf)));
+    unlink(path);
+}
+#endif
+
 int write_file(const char *fpath, const void *buf, int len)
 {
     int r = 0;
@@ -112,3 +153,18 @@ int write_log_to_file(const char *msg, const char *fmt, ...)
 
     return 0;
 }
+
+int load_config(void)
+{
+    read_file(CFG_PATH, &myconfig, sizeof(myconfig));
+
+    return 0;
+}
+
+int update_config(void)
+{
+    write_file(CFG_PATH, &myconfig, sizeof(myconfig));
+
+    return 0;
+}
+
