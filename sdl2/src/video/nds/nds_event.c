@@ -896,7 +896,7 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_B)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        pixel_filter = pixel_filter ? 0 : 1;
+        myconfig.filter = (myconfig.filter == FILTER_PIXEL) ? FILTER_BLUR : FILTER_PIXEL;
 #endif
         set_key_bit(KEY_BIT_B, 0);
     }

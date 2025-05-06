@@ -2018,7 +2018,7 @@ static int process_screen(void)
                 drt.w = 501;
                 drt.h = 376;
             }
-            rotate = (myconfig.dis_mode == NDS_DIS_MODE_HH0) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
+            rotate = (myconfig.dis_mode == NDS_DIS_MODE_HH0) ? ROTATE_90 : ROTATE_270;
             break;
         case NDS_DIS_MODE_HH2:
         case NDS_DIS_MODE_HH3:
@@ -2034,7 +2034,7 @@ static int process_screen(void)
                 drt.w = 560;
                 drt.h = 376;
             }
-            rotate = (myconfig.dis_mode == NDS_DIS_MODE_HH2) ? E_MI_GFX_ROTATE_90 : E_MI_GFX_ROTATE_270;
+            rotate = (myconfig.dis_mode == NDS_DIS_MODE_HH2) ? ROTATE_90 : ROTATE_270;
             break;
         case NDS_DIS_MODE_HRES0:
             drt.w = NDS_Wx2;
@@ -2055,11 +2055,11 @@ static int process_screen(void)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (rotate == E_MI_GFX_ROTATE_180) {
-            drt.y = (DEF_myvideo.cur_h - drt.y) - drt.h;
-            drt.x = (DEF_myvideo.cur_w - drt.x) - drt.w;
+        if (rotate == ROTATE_180) {
+            drt.y = (DEF_FB_H - drt.y) - drt.h;
+            drt.x = (DEF_FB_W - drt.x) - drt.w;
         }
-        else if (rotate == E_MI_GFX_ROTATE_90) {
+        else if (rotate == ROTATE_90) {
             drt.x = (drt.x == 0) ? 320 : 0;
         }
 
@@ -2139,7 +2139,7 @@ static int process_screen(void)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 switch (myconfig.alpha.pos) {
                 case 0:
-                    drt.x = DEF_myvideo.cur_w - drt.w;
+                    drt.x = DEF_FB_W - drt.w;
                     drt.y = 0;
                     break;
                 case 1:
@@ -2148,11 +2148,11 @@ static int process_screen(void)
                     break;
                 case 2:
                     drt.x = 0;
-                    drt.y = DEF_myvideo.cur_h - drt.h;
+                    drt.y = DEF_FB_H - drt.h;
                     break;
                 case 3:
-                    drt.x = DEF_myvideo.cur_w - drt.w;
-                    drt.y = DEF_myvideo.cur_h - drt.h;
+                    drt.x = DEF_FB_W - drt.w;
+                    drt.y = DEF_FB_H - drt.h;
                     break;
                 }
                 flush_lcd(TEXTURE_LCD0, myconfig.screen.pixels[0], srt, drt, myconfig.screen.pitch[0], 1, rotate);
@@ -2168,7 +2168,7 @@ static int process_screen(void)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 switch (myconfig.alpha.pos) {
                 case 0:
-                    drt.x = DEF_myvideo.cur_w - drt.w;
+                    drt.x = DEF_FB_W - drt.w;
                     drt.y = 0;
                     break;
                 case 1:
@@ -2177,11 +2177,11 @@ static int process_screen(void)
                     break;
                 case 2:
                     drt.x = 0;
-                    drt.y = DEF_myvideo.cur_h - drt.h;
+                    drt.y = DEF_FB_H - drt.h;
                     break;
                 case 3:
-                    drt.x = DEF_myvideo.cur_w - drt.w;
-                    drt.y = DEF_myvideo.cur_h - drt.h;
+                    drt.x = DEF_FB_W - drt.w;
+                    drt.y = DEF_FB_H - drt.h;
                     break;
                 }
                 flush_lcd(TEXTURE_LCD0, myconfig.screen.pixels[0], srt, drt, myconfig.screen.pitch[0], 1, rotate);
@@ -2457,7 +2457,7 @@ static void *video_handler(void *threadid)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glViewport(0, 0, DEF_myvideo.cur_w, DEF_myvideo.cur_h);
+    glViewport(0, 0, DEF_FB_W, DEF_FB_H);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -2528,7 +2528,7 @@ static void *video_handler(void *threadid)
 
     glGenTextures(TEXTURE_MAX, myvideo.texID);
 
-    glViewport(0, 0, DEF_myvideo.cur_h, DEF_myvideo.cur_w);
+    glViewport(0, 0, DEF_FB_H, DEF_FB_W);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -2569,7 +2569,7 @@ static void *video_handler(void *threadid)
                 myconfig.update_menu = 0;
                 pre_filter = myconfig.filter;
                 myconfig.filter = 0;
-                flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, E_MI_GFX_ROTATE_180);
+                flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, ROTATE_180);
                 flip_lcd();
                 myconfig.filter = pre_filter;
             }
@@ -4307,7 +4307,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     myvideo.shm.buf->rotate = rotate;
     myvideo.shm.buf->dis_mode = myconfig.dis_mode;
     myvideo.shm.buf->len = srcrect.h * pitch;
-    myvideo.shm.buf->myconfig.filter = myconfig.filter;
+    myvideo.shm.buf->pixel_filter = myconfig.filter;
     debug("send SHM_CMD_FLUSH, pitch=%d, alpha=%d, rotate=%d\n", pitch, alpha, rotate);
 
     myvideo.shm.buf->valid = 1;
@@ -5532,7 +5532,7 @@ void flip_lcd(void)
 #if defined(FLIP) 
     myvideo.drm.wait_for_flip = 1;
     myvideo.drm.bo = gbm_surface_lock_front_buffer(myvideo.drm.gs);
-    drmModeAddFB(myvideo.drm.fd, DEF_myvideo.cur_w, DEF_myvideo.cur_h, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
+    drmModeAddFB(myvideo.drm.fd, DEF_FB_W, DEF_FB_H, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
     drmModeSetCrtc(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, 0, 0, (uint32_t *)myvideo.drm.conn, 1, &myvideo.drm.crtc->mode);
     drmModePageFlip(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvideo.drm.wait_for_flip);
 
@@ -5938,12 +5938,12 @@ static int load_layout_bg(void)
 #if defined(GKD2) || defined(BRICK)
                     flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, 0);
 #else
-                    flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, E_MI_GFX_ROTATE_180);
+                    flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, ROTATE_180);
 #endif
 #endif
                 }
                 else {
-                    printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
+                    debug("failed to load \"%s\"\n", buf);
                 }
             }
         }
@@ -5954,7 +5954,7 @@ static int load_layout_bg(void)
 #if defined(GKD2) || defined(BRICK)
             flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, 0);
 #else
-            flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, E_MI_GFX_ROTATE_180);
+            flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, ROTATE_180);
 #endif
 #else
             glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
