@@ -1,28 +1,30 @@
 TARGET   = ut
+CFLAGS  += $(MORE_CFLAGS)
 CFLAGS  += -ggdb
 CFLAGS  += -Isrc
 CFLAGS  += -Iextras/memory/src
 CFLAGS  += -Iextras/fixture/src
+LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -Wl,-rpath .
 LDFLAGS += -Wl,-rpath-link .
 LDFLAGS += -Wl,--no-undefined
 LDFLAGS += libdtr.so
-LDFLAGS += libutil.so
+LDFLAGS += libcommon.so
 LDFLAGS += libasound.so.2
 LDFLAGS += libSDL2-2.0.so.0
 SOURCES  = main.c cases.c src/unity.c extras/memory/src/unity_memory.c extras/fixture/src/unity_fixture.c
 
 .PHONY: all
 all: gen_cases
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(SOURCES)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCES) $(LDFLAGS)
 	LD_LIBRARY_PATH=. ./$(TARGET) -v
 
 .PHONY: gen_cases
 gen_cases:
 	@echo "#include \"unity_fixture.h\"" > cases.c
-	@echo "TEST_GROUP_RUNNER(util)" >> cases.c
+	@echo "TEST_GROUP_RUNNER(common)" >> cases.c
 	@echo "{" >> cases.c
-	@cat ../util/util.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
+	@cat ../common/common.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
 	@echo "TEST_GROUP_RUNNER(detour)" >> cases.c
 	@echo "{" >> cases.c
@@ -51,4 +53,4 @@ gen_cases:
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET)
+	rm -rf $(TARGET) cases.c

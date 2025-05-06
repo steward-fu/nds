@@ -1877,11 +1877,11 @@ static int update_raw_input_statue(uint32_t kbit, int val)
 #if defined(UT)
 TEST(sdl2_event, update_raw_input_statue)
 {
-    myevent.input.state = 0;
+    myevent.input.button_status = 0;
     TEST_ASSERT_EQUAL_INT(0, update_raw_input_statue(KEY_BIT_UP, 1));
-    TEST_ASSERT_EQUAL_INT(NDS_KEY_BIT_UP, myevent.input.state);
+    TEST_ASSERT_EQUAL_INT(NDS_KEY_BIT_UP, myevent.input.button_status);
     TEST_ASSERT_EQUAL_INT(0, update_raw_input_statue(KEY_BIT_UP, 0));
-    TEST_ASSERT_EQUAL_INT(0, myevent.input.state);
+    TEST_ASSERT_EQUAL_INT(0, myevent.input.button_status);
 }
 #endif
 

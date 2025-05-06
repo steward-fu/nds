@@ -20,13 +20,13 @@
 #include "common.h"
 
 #if defined(UT)
-TEST_GROUP(util);
+TEST_GROUP(common);
 
-TEST_SETUP(util)
+TEST_SETUP(common)
 {
 }
 
-TEST_TEAR_DOWN(util)
+TEST_TEAR_DOWN(common)
 {
 }
 #endif
@@ -62,7 +62,7 @@ int write_file(const char *fpath, const void *buf, int len)
 }
 
 #if defined(UT)
-TEST(util, write_file)
+TEST(common, write_file)
 {
     int len = 0;
     char buf[32] = { "1234567890" };

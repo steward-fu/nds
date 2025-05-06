@@ -3,12 +3,14 @@ export NDS_GCC=0
 export NDS_ALSA=1
 
 CFLAGS  = -DUT
-CFLAGS += -I../ut/src
-CFLAGS += -I../ut/extras/fixture/src
-CFLAGS += -I../ut/extras/memory/src
-#CFLAGS += -fsanitize=leak
-#CFLAGS += -fsanitize=address
+CFLAGS  += -I../ut/src
+CFLAGS  += -I../ut/extras/memory/src
+CFLAGS  += -I../ut/extras/fixture/src
+CFLAGS  += -fsanitize=leak
+CFLAGS  += -fsanitize=address
 
+LDFLAGS += -lasan
+LDFLAGS += -lubsan
 LDFLAGS += -lpulse
 
 export MORE_CFLAGS=${CFLAGS}

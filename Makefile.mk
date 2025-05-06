@@ -22,10 +22,10 @@ REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
 .PHONY: all
 all: cfg
 	make -C common MOD=$(MOD)
-	cp common/libcommon.so   drastic/lib/
+	cp common/libcommon.so drastic/lib/
 
 	make -C detour MOD=$(MOD)
-	cp detour/libdtr.so  drastic/lib/
+	cp detour/libdtr.so drastic/lib/
 
 ifeq ($(NDS_ALSA),1)
 	make -C alsa MOD=$(MOD)
