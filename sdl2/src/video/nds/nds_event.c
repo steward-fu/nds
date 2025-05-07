@@ -793,13 +793,8 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (myconfig.hres_mode == 0) {
-            if (myconfig.layout.mode > 0) {
-                myconfig.layout.mode -= 1;
-            }
-        }
-        else {
-            myconfig.layout.mode = NDS_DIS_MODE_HRES0;
+        if (myconfig.layout.mode > 0) {
+            myconfig.layout.mode -= 1;
         }
 #endif
 
@@ -818,13 +813,8 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_RIGHT)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (myconfig.hres_mode == 0) {
-            if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
-                myconfig.layout.mode += 1;
-            }
-        }
-        else {
-            myconfig.layout.mode = NDS_DIS_MODE_HRES1;
+        if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
+            myconfig.layout.mode += 1;
         }
 #endif
 
@@ -836,9 +826,9 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if ((myevent.mode == NDS_KEY_MODE) && (myconfig.hres_mode == 0)) {
-            uint32_t tmp = myconfig.alt_mode;
-            myconfig.alt_mode = myconfig.layout.mode;
+        if (myevent.mode == NDS_KEY_MODE) {
+            uint32_t tmp = myconfig.layout.alt;
+            myconfig.layout.alt = myconfig.layout.mode;
             myconfig.layout.mode = tmp;
         }
 #endif

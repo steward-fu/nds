@@ -175,7 +175,7 @@ int load_config(const char *path)
 
     if (myconfig.state_path[0] && stat(myconfig.state_path, &st) == -1) {
         mkdir(myconfig.state_path, 0755);
-        debug("created \"%s\" folder\n", myconfig.states.path);
+        debug("created \"%s\" folder\n", myconfig.state_path);
     }
 
     return 0;
