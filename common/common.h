@@ -15,7 +15,7 @@
 #define PEN_PATH                    "res/pen"
 #define LANG_PATH                   "res/lang"
 #define MENU_PATH                   "res/menu"
-#define CFG_PATH                    "res/cfg.json"
+#define CFG_PATH                    "res/nds.cfg"
 #define FONT_FILE                   "res/font/font.ttf"
 
 #define SDL2_MENU_BG_FILE           "bg.png"
@@ -175,20 +175,15 @@ typedef struct {
     uint32_t state;
 
     struct {
-        uint32_t bpp;
-        uint32_t init;
-        uint32_t pitch[2];
-        uint32_t *pixels[2];
-        uint8_t hres_mode[2];
-    } screen;
-
-    struct {
         char path[MAX_PATH];
     } bios;
 
     struct {
         char path[MAX_PATH];
     } states;
+
+    char cfg_path[MAX_PATH];
+    char home_path[MAX_PATH];
 
     struct {
         char path[MAX_PATH];
@@ -198,11 +193,6 @@ typedef struct {
         char trans[MAX_LANG_FILE][LANG_FILE_LEN];
         char path[MAX_PATH];
     } lang;
-
-    struct {
-        int take;
-        char path[MAX_PATH];
-    } shot;
 
     struct {
         int sel;

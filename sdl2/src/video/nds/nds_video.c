@@ -1678,7 +1678,6 @@ static int process_screen(void)
     }
 
     if ((cur_fb_w != myvideo.cur_w) ||
-        (myconfig.shot.take) ||
         (cur_touchpad != myconfig.pen.pos) ||
         (cur_dis_mode != myconfig.dis_mode) ||
         (cur_theme_sel != myconfig.layout.img) ||
@@ -1715,11 +1714,6 @@ static int process_screen(void)
         else if (cur_filter != myconfig.filter) {
             show_info_cnt = 50;
             sprintf(show_info_buf, " %s ", l10n(myconfig.filter ? "Pixel" : "Blur"));
-        }
-        else if (myconfig.shot.take) {
-            show_info_cnt = 50;
-            myconfig.shot.take = 0;
-            sprintf(show_info_buf, " %s ", l10n("Take Screenshot"));
         }
 
         cur_fb_w = myvideo.cur_w;
@@ -1785,9 +1779,6 @@ static int process_screen(void)
 #endif
     }
 
-    myconfig.screen.bpp = *((uint32_t *)myhook.var.sdl.bytes_per_pixel);
-    myconfig.screen.init = *((uint32_t *)myhook.var.sdl.needs_reinitializing);
-
     if (myvideo.layout.reload_bg) {
         load_layout_bg();
         myvideo.layout.reload_bg -= 1;
@@ -1799,25 +1790,21 @@ static int process_screen(void)
         int show_pen = 1;
         int need_update = 1;
         int rotate = ROTATE_180;
+        int pitch = 0;
+        void *pixels = NULL;
         SDL_Rect srt = {0, 0, NDS_W, NDS_H};
         SDL_Rect drt = {0, 0, 160, 120};
 
-        myconfig.screen.hres_mode[idx] = idx ?
-            *((uint8_t *)myhook.var.sdl.screen[1].hires_mode):
-            *((uint8_t *)myhook.var.sdl.screen[0].hires_mode);
-
+        pitch = *myhook.var.sdl.bytes_per_pixel * srt.w;
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        myconfig.screen.pixels[idx] = myvideo.lcd.virt_addr[cur_sel][idx];
+        pixels = myvideo.lcd.virt_addr[cur_sel][idx];
 #else
-        myconfig.screen.pixels[idx] = (idx == 0) ?
-            (uint32_t *)(*((uint32_t *)myhook.var.sdl.screen[0].pixels)):
-            (uint32_t *)(*((uint32_t *)myhook.var.sdl.screen[1].pixels));
+        pixels = (idx == 0) ? *myhook.var.sdl.screen[0].pixels: *myhook.var.sdl.screen[1].pixels;
 #endif
 
-        if (myconfig.screen.hres_mode[idx]) {
+        if (*myhook.var.sdl.screen[idx].hires_mode) {
             srt.w = NDS_Wx2;
             srt.h = NDS_Hx2;
-            myconfig.screen.pitch[idx] = myconfig.screen.bpp * srt.w;
             if (myconfig.hres_mode == 0) {
                 myconfig.pen.pos = 0;
                 myconfig.hres_mode = 1;
@@ -1831,7 +1818,6 @@ static int process_screen(void)
         else {
             srt.w = NDS_W;
             srt.h = NDS_H;
-            myconfig.screen.pitch[idx] = myconfig.screen.bpp * srt.w;
 
             drt.y = idx * 120;
             screen0 = (idx == 0);
@@ -2071,7 +2057,7 @@ static int process_screen(void)
 #else
         if (show_pen && (myevent.mode == NDS_TOUCH_MODE)) {
 #endif
-            draw_pen(myconfig.screen.pixels[idx], srt.w, myconfig.screen.pitch[idx]);
+            draw_pen(pixels, srt.w, pitch);
 
 #if defined(A30) || defined(FLIP)
             if (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_STYLUS)) {
@@ -2120,13 +2106,13 @@ static int process_screen(void)
 
         if (need_update) {
 #if defined(MINI)
-            MI_SYS_FlushInvCache(myconfig.screen.pixels[idx], myconfig.screen.pitch[idx] * srt.h);
+            MI_SYS_FlushInvCache(myconfig.screen.pixels[idx], pitch * srt.h);
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-            flush_lcd(idx, myconfig.screen.pixels[idx], srt, drt, myconfig.screen.pitch[idx], 0, rotate);
+            flush_lcd(idx, pixels, srt, drt, pitch, 0, rotate);
 #else
-            flush_lcd(-1, myconfig.screen.pixels[idx], srt, drt, myconfig.screen.pitch[idx], 0, rotate);
+            flush_lcd(-1, pixels, srt, drt, pitch, 0, rotate);
 #endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
@@ -2155,9 +2141,9 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                flush_lcd(TEXTURE_LCD0, myconfig.screen.pixels[0], srt, drt, myconfig.screen.pitch[0], 1, rotate);
+                flush_lcd(TEXTURE_LCD0, (const void *)*myhook.var.sdl.screen[0].pixels, srt, drt, pitch, 1, rotate);
 #else
-                flush_lcd(-1, myconfig.screen.pixels[0], srt, drt, myconfig.screen.pitch[0], 1, rotate);
+                flush_lcd(-1, (const void *)*myhook.var.sdl.screen[0].pixels, srt, drt, pitch, 1, rotate);
 #endif
                 break;
             case NDS_DIS_MODE_VH_T1:
@@ -2184,16 +2170,16 @@ static int process_screen(void)
                     drt.y = DEF_FB_H - drt.h;
                     break;
                 }
-                flush_lcd(TEXTURE_LCD0, myconfig.screen.pixels[0], srt, drt, myconfig.screen.pitch[0], 1, rotate);
+                flush_lcd(TEXTURE_LCD0, (const void *)*myhook.var.sdl.screen[0].pixels, srt, drt, pitch, 1, rotate);
 #else 
-                flush_lcd(-1, myconfig.screen.pixels[0], srt, drt, myconfig.screen.pitch[0], 1, rotate);
+                flush_lcd(-1, (const void *)*myhook.var.sdl.screen[0].pixels, srt, drt, pitch, 1, rotate);
 #endif
                 break;
             }
 #endif
         }
 
-        if (myconfig.screen.hres_mode[idx]) {
+        if (*myhook.var.sdl.screen[idx].hires_mode) {
             break;
         }
     }
@@ -2220,7 +2206,7 @@ static int process_screen(void)
     }
 #endif
 
-    if (myconfig.screen.init) {
+    if (*myhook.var.sdl.needs_reinitializing) {
         nds_set_screen_menu_off _func = (nds_set_screen_menu_off)myhook.fun.set_screen_menu_off;
         _func();
     }
@@ -3001,68 +2987,6 @@ static int read_config(void)
     myconfig.joy.zero_y = 135;
     myconfig.joy.min_y = 75;
 #endif
-    return 0;
-}
-
-static int write_config(void)
-{
-    struct json_object *jfile = NULL;
-
-    jfile = json_object_from_file(myconfig.cfg.path);
-    if (jfile == NULL) {
-        debug("failed to write settings to json file (%s)\n", myconfig.cfg.path);
-        return -1;
-    }
-
-#if defined(TRIMUI)
-    if (need_restore) {
-        myconfig.dis_mode = pre_dismode;
-    }
-#endif
-
-    if (myconfig.dis_mode > NDS_DIS_MODE_LAST) {
-        myconfig.dis_mode = NDS_DIS_MODE_VH_S0;
-        myconfig.alt_mode = NDS_DIS_MODE_S0;
-    }
-
-    json_object_object_add(jfile, NDS_JSON_PEN_IMG, json_object_new_int(myconfig.pen.img));
-    json_object_object_add(jfile, NDS_JSON_LAYOUT_IMG, json_object_new_int(myconfig.layout.img));
-    json_object_object_add(jfile, NDS_JSON_LAYOUT_MODE, json_object_new_int(myconfig.dis_mode));
-    json_object_object_add(jfile, NDS_JSON_ALPHA_VALUE, json_object_new_int(myconfig.alpha.val));
-    json_object_object_add(jfile, NDS_JSON_ALPHA_POSITION, json_object_new_int(myconfig.alpha.pos));
-    json_object_object_add(jfile, NDS_JSON_ALPHA_BORDER, json_object_new_int(myconfig.alpha.border));
-    json_object_object_add(jfile, NDS_JSON_ALT_MODE, json_object_new_int(myconfig.alt_mode));
-    json_object_object_add(jfile, NDS_JSON_KEYS_ROTATE, json_object_new_int(myconfig.keys_rotate));
-    json_object_object_add(jfile, NDS_JSON_LANG, json_object_new_string(myconfig.lang.trans[DEF_LANG_SLOT]));
-    json_object_object_add(jfile, NDS_JSON_HOTKEY, json_object_new_int(myconfig.hotkey));
-    json_object_object_add(jfile, NDS_JSON_SWAP_L1L2, json_object_new_int(myconfig.swap_l1l2));
-    json_object_object_add(jfile, NDS_JSON_SWAP_R1R2, json_object_new_int(myconfig.swap_r1r2));
-    json_object_object_add(jfile, NDS_JSON_PEN_SPEED, json_object_new_int(myconfig.pen.speed));
-    json_object_object_add(jfile, NDS_JSON_MENU_BG, json_object_new_int(myconfig.menu.sel));
-    json_object_object_add(jfile, NDS_JSON_MENU_CURSOR, json_object_new_int(myconfig.menu.show_cursor));
-    json_object_object_add(jfile, NDS_JSON_FAST_FORWARD, json_object_new_int(myconfig.fast_forward));
-    json_object_object_add(jfile, NDS_JSON_CHK_BAT, json_object_new_int(myconfig.chk_bat));
-
-#if defined(A30) || defined(FLIP)
-    json_object_object_add(jfile, NDS_JSON_JOY_MODE, json_object_new_int(myconfig.joy.mode));
-    json_object_object_add(jfile, NDS_JSON_JOY_DZONE, json_object_new_int(myconfig.joy.dzone));
-    json_object_object_add(jfile, NDS_JSON_JOY_CUSKEY0, json_object_new_int(myconfig.joy.cuskey[0]));
-    json_object_object_add(jfile, NDS_JSON_JOY_CUSKEY1, json_object_new_int(myconfig.joy.cuskey[1]));
-    json_object_object_add(jfile, NDS_JSON_JOY_CUSKEY2, json_object_new_int(myconfig.joy.cuskey[2]));
-    json_object_object_add(jfile, NDS_JSON_JOY_CUSKEY3, json_object_new_int(myconfig.joy.cuskey[3]));
-
-    json_object_object_add(jfile, NDS_JSON_RJOY_MODE, json_object_new_int(myconfig.rjoy.mode));
-    json_object_object_add(jfile, NDS_JSON_RJOY_DZONE, json_object_new_int(myconfig.rjoy.dzone));
-    json_object_object_add(jfile, NDS_JSON_RJOY_CUSKEY0, json_object_new_int(myconfig.rjoy.cuskey[0]));
-    json_object_object_add(jfile, NDS_JSON_RJOY_CUSKEY1, json_object_new_int(myconfig.rjoy.cuskey[1]));
-    json_object_object_add(jfile, NDS_JSON_RJOY_CUSKEY2, json_object_new_int(myconfig.rjoy.cuskey[2]));
-    json_object_object_add(jfile, NDS_JSON_RJOY_CUSKEY3, json_object_new_int(myconfig.rjoy.cuskey[3]));
-#endif
-    json_object_object_add(jfile, NDS_JSON_CHK_BAT, json_object_new_int(myconfig.chk_bat));
-
-    json_object_to_file_ext(myconfig.cfg.path, jfile, JSON_C_TO_STRING_PRETTY);
-    json_object_put(jfile);
-    debug("updated config !\n");
     return 0;
 }
 
@@ -6196,13 +6120,20 @@ int init_video(_THIS)
     SDL_AddVideoDisplay(&display, SDL_FALSE);
 
     myvideo.menu.line_h = 30;
-
     myvideo.cur_w = DEF_FB_W;
     myvideo.cur_h = DEF_FB_H;
     myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
 
+    getcwd(myconfig.home_path, sizeof(myconfig.home_path));
+    strcat(myconfig.home_path, "/");
+    printf("home_path=\"%s\"\n", myconfig.home_path);
+    strncpy(myconfig.cfg_path, myconfig.home_path, sizeof(myconfig.cfg_path));
+    strcat(myconfig.cfg_path, CFG_PATH);
+    printf("cfg_path=\"%s\"\n", myconfig.cfg_path);
+
+    load_config();
+    //read_config();
     init_gfx();
-    read_config();
     init_event();
 
     init_hook(sysconf(_SC_PAGESIZE), myconfig.states.path);
@@ -6241,7 +6172,7 @@ void quit_video(_THIS)
 
     system("sync");
     quit_hook();
-    write_config();
+    update_config();
 
     if (myvideo.fps) {
         SDL_FreeSurface(myvideo.fps);

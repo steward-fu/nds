@@ -156,15 +156,17 @@ int write_log_to_file(const char *msg, const char *fmt, ...)
 
 int load_config(void)
 {
-    read_file(CFG_PATH, &myconfig, sizeof(myconfig));
+    printf("call %s()\n", __func__);
 
+    read_file(myconfig.cfg_path, &myconfig, sizeof(myconfig));
     return 0;
 }
 
 int update_config(void)
 {
-    write_file(CFG_PATH, &myconfig, sizeof(myconfig));
+    printf("call %s()\n", __func__);
 
+    write_file(myconfig.cfg_path, &myconfig, sizeof(myconfig));
     return 0;
 }
 
