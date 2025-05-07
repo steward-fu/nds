@@ -299,7 +299,11 @@ typedef struct {
     int state_busy;
     SDL_Surface *fps;
     SDL_Surface *cvt;
-    char *lang[MAX_LANG_LINE];
+    char home[MAX_PATH];
+
+    struct {
+        char *trans[MAX_LANG_LINE];
+    } lang;
 
 #if defined(TRIMUI)
     int need_restore;
@@ -399,15 +403,22 @@ typedef struct {
     } shm;
 #endif
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
     struct {
+        int update;
+        int load_bg;
+        bool show_fps;
+        uint32_t status;
+
+
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
         int cur_sel;
         void *virt_addr[2][2];
+
 #if defined(MINI)
         MI_PHY phy_addr[2][2];
 #endif
-    } lcd;
 #endif
+    } lcd;
 
 #if defined(MINI)
     struct {
@@ -465,14 +476,17 @@ typedef struct {
 
     struct {
         int line_h;
+        int update;
         TTF_Font *font;
 
         struct  {
             SDL_Surface *bg;
             SDL_Surface *cursor;
+            bool enable;
         } sdl2;
 
         struct {
+            bool enable;
             SDL_Surface *bg0;
             SDL_Surface *bg1;
             SDL_Surface *no;
@@ -508,7 +522,7 @@ const char *l10n(const char *);
 int handle_sdl2_menu(int);
 int handle_drastic_menu(void);
 int load_touch_pen(void);
-int load_drastic_menu_resource(void);
+int load_menu_res(void);
 
 #endif
 

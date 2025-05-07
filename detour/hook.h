@@ -4,17 +4,6 @@
 #ifndef __HOOK_H__
 #define __HOOK_H__
 
-#define NDS_FIRMWARE        "nds_firmware.bin"
-#define NDS_BIOS_ARM7       "nds_bios_arm7.bin"
-#define NDS_BIOS_ARM9       "nds_bios_arm9.bin"
-#define DRASTIC_BIOS_ARM7   "drastic_bios_arm7.bin"
-#define DRASTIC_BIOS_ARM9   "drastic_bios_arm9.bin"
-#if defined(UT)
-#define BIOS_FOLDER         ""
-#else
-#define BIOS_FOLDER         "system"
-#endif
-
 #define MAX_STATE_SLOT      32
 #define CODE_FAST_FORWARD   0x08006ad0
 #define ALIGN_ADDR(addr)    ((void*)((size_t)(addr) & ~(page_size - 1)))
@@ -111,8 +100,8 @@ typedef struct {
 } system_t;
 
 typedef struct {
-    uintptr_t *texture;
-    uintptr_t *pixels;
+    void *texture;
+    void *pixels;
     uint32_t *x;
     uint32_t *y;
     uint32_t *w;
@@ -274,7 +263,6 @@ int load_state(int slot);
 int save_state(int slot);
 int fast_forward(uint8_t v);
 int unlock_protected_area(void *);
-int drop_bios_files(const char *);
 void render_polygon_setup_perspective_steps(void);
 
 #endif

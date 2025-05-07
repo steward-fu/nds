@@ -17,11 +17,6 @@
 
 #include "hook.h"
 #include "common.h"
-#include "nds_firmware.h"
-#include "nds_bios_arm7.h"
-#include "nds_bios_arm9.h"
-#include "drastic_bios_arm7.h"
-#include "drastic_bios_arm9.h"
 
 nds_hook myhook = { 0 };
 
@@ -476,50 +471,6 @@ TEST(detour, add_prehook_cb)
 {
     TEST_ASSERT_EQUAL_INT(-1, add_prehook_cb(0, 0));
     TEST_ASSERT_EQUAL_INT(0, add_prehook_cb((void *)0xdead, (void *)0xdead));
-}
-#endif
-
-int drop_bios_files(const char *path)
-{
-    int r = 0;
-    char buf[MAX_PATH] = { 0 };
-
-    sprintf(buf, "%s/" BIOS_FOLDER "/" DRASTIC_BIOS_ARM7, path);
-    r |= write_file(buf, drastic_bios_arm7, sizeof(drastic_bios_arm7));
-
-    sprintf(buf, "%s/" BIOS_FOLDER "/" DRASTIC_BIOS_ARM9, path);
-    r |= write_file(buf, drastic_bios_arm9, sizeof(drastic_bios_arm9));
-
-    sprintf(buf, "%s/" BIOS_FOLDER "/" NDS_BIOS_ARM7, path);
-    r |= write_file(buf, nds_bios_arm7, sizeof(nds_bios_arm7));
-
-    sprintf(buf, "%s/" BIOS_FOLDER "/" NDS_BIOS_ARM9, path);
-    r |= write_file(buf, nds_bios_arm9, sizeof(nds_bios_arm9));
-
-    sprintf(buf, "%s/" BIOS_FOLDER "/" NDS_FIRMWARE, path);
-    r |= write_file(buf, nds_firmware, sizeof(nds_firmware));
-
-    return r;
-}
-
-#if defined(UT)
-TEST(detour, drop_bios_files)
-{
-    #define VALID_PATH      "/tmp"
-    #define INVALID_PATH    "/XXX/XXXX"
-
-    TEST_ASSERT_EQUAL_INT(282624, drop_bios_files(VALID_PATH));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" DRASTIC_BIOS_ARM7, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" DRASTIC_BIOS_ARM9, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" NDS_BIOS_ARM7, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" NDS_BIOS_ARM9, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" NDS_FIRMWARE, F_OK));
-    TEST_ASSERT_EQUAL_INT(-1, drop_bios_files(INVALID_PATH));
-    unlink(VALID_PATH "/" DRASTIC_BIOS_ARM7);
-    unlink(VALID_PATH "/" DRASTIC_BIOS_ARM9);
-    unlink(VALID_PATH "/" NDS_BIOS_ARM7);
-    unlink(VALID_PATH "/" NDS_BIOS_ARM9);
-    unlink(VALID_PATH "/" NDS_FIRMWARE);
 }
 #endif
 

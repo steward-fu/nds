@@ -24,6 +24,7 @@ typedef struct {
     uint32_t pitch;
 } nds_texture;
 
+extern nds_video myvideo;
 extern nds_config myconfig;
 
 #if defined(TRIMUI)
@@ -266,13 +267,13 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
     debug("call %s()\n", __func__);
 
 #if defined(QX1000) || defined(XT897)
-    if (myconfig.menu.drastic.enable == 0) {
+    if (myvideo.menu.drastic.enable == 0) {
         update_wayland_res(640, 480);
     }
 #endif
 
-    myconfig.show_fps = 0;
-    myconfig.menu.drastic.enable = 1;
+    myvideo.lcd.show_fps = 0;
+    myvideo.menu.drastic.enable = 1;
     usleep(100000);
 
 #if defined(TRIMUI)
@@ -294,9 +295,9 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
 #if defined(UT)
 TEST(sdl2_render, queue_copy)
 {
-    myconfig.menu.drastic.enable = 0;
+    myvideo.menu.drastic.enable = 0;
     TEST_ASSERT_EQUAL_INT(0, queue_copy(NULL, NULL, NULL, NULL, NULL));
-    TEST_ASSERT_EQUAL_INT(1, myconfig.menu.drastic.enable);
+    TEST_ASSERT_EQUAL_INT(1, myvideo.menu.drastic.enable);
 }
 #endif
 

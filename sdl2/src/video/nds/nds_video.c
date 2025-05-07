@@ -54,6 +54,8 @@ nds_video myvideo = { 0 };
 extern nds_hook myhook;
 extern nds_event myevent;
 extern nds_config myconfig;
+        
+static char lang_file_name[MAX_LANG_FILE][MAX_LANG_NAME] = { 0 };
 
 #if defined(TRIMUI)
 static uint32_t LUT_256x192_S00[NDS_W * NDS_H] = { 0 };
@@ -69,7 +71,6 @@ static int draw_pen(void *, int, int);
 static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
-static int get_dir_path(const char *, int, char *);
 static int load_layout_bg(void);
 
 #if defined(TRIMUI)
@@ -762,7 +763,7 @@ static int draw_drastic_menu_main(void)
         draw = 0;
         x = 90 / div;
         w = myvideo.menu.line_h / div;
-        h = myconfig.enable_752x560 ? (115 / div) : (100 / div);
+        h = 100 / div;
 
 #if defined(TRIMUI)
         x = 30 / div;
@@ -838,7 +839,7 @@ static int draw_drastic_menu_main(void)
                 rt.w = myvideo.cur_w - (10 / div);
                 rt.h = w;
                 SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 
-                    (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                    (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
                 if ((p->y == 320) || (p->y == 328)) {
                     draw_shot = 1;
                 }
@@ -851,7 +852,7 @@ static int draw_drastic_menu_main(void)
                     SDL_BlitSurface(myvideo.menu.drastic.cursor, NULL, myvideo.menu.drastic.frame, &rt);
                 }
             }
-            draw_info(myvideo.menu.drastic.frame, buf, x, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+            draw_info(myvideo.menu.drastic.frame, buf, x, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
         }
     }
 
@@ -875,10 +876,10 @@ static int draw_drastic_menu_main(void)
 
 #if defined(MINI)
     if (myconfig.chk_bat) {
-        sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", myconfig.enable_752x560 ? "752*560" : "640*480", get_bat_val());
+        sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
     }
     else {
-        sprintf(buf, "Rel "NDS_VER", Res %s", myconfig.enable_752x560 ? "752*560" : "640*480");
+        sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
     }
 #endif
 
@@ -894,7 +895,7 @@ static int draw_drastic_menu_main(void)
     sprintf(buf, "Rel "NDS_VER);
 #endif
 
-    draw_info(myvideo.menu.drastic.frame, buf, 10, y / div, myconfig.menu.c1, 0);
+    draw_info(myvideo.menu.drastic.frame, buf, 10, y / div, MENU_COLOR1, 0);
 
     if (draw_shot) {
         const uint32_t len = NDS_W * NDS_H * 2;
@@ -924,8 +925,8 @@ static int draw_drastic_menu_main(void)
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                rt.x = myvideo.cur_w - (NDS_W + (myconfig.enable_752x560 ? 30 : 10));
-                rt.y = myconfig.enable_752x560 ? h - 20 : 50;
+                rt.x = myvideo.cur_w - (NDS_W + 10);
+                rt.y = 50;
                 rt.w = NDS_W;
                 rt.h = NDS_H;
                 SDL_BlitSurface(t, NULL, myvideo.menu.drastic.frame, &rt);
@@ -936,8 +937,8 @@ static int draw_drastic_menu_main(void)
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                rt.x = myvideo.cur_w - (NDS_W + (myconfig.enable_752x560 ? 30 : 10));
-                rt.y = myconfig.enable_752x560 ? (h + NDS_H) - 20 : 50 + NDS_H;
+                rt.x = myvideo.cur_w - (NDS_W + 10);
+                rt.y = 50 + NDS_H;
                 rt.w = NDS_W;
                 rt.h = NDS_H;
                 SDL_BlitSurface(t, NULL, myvideo.menu.drastic.frame, &rt);
@@ -1053,13 +1054,13 @@ static int draw_drastic_menu_option(void)
                 rt.w = myvideo.cur_w - (10 / div);
                 rt.h = ww;
                 SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 
-                    (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                    (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
             }
 
             if (p->y <= NDS_Hx2) {
                 strcpy(buf, l10n(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
-                draw_info(myvideo.menu.drastic.frame, buf, myvideo.cur_w - w - (ww / div), y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, buf, myvideo.cur_w - w - (ww / div), y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
 
                 mark_double_spaces(p->msg);
                 strcpy(buf, l10n(p->msg));
@@ -1067,7 +1068,7 @@ static int draw_drastic_menu_option(void)
             else {
                 strcpy(buf, l10n(p->msg));
             }
-            draw_info(myvideo.menu.drastic.frame, buf, ww / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+            draw_info(myvideo.menu.drastic.frame, buf, ww / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
         }
     }
     return 0;
@@ -1136,7 +1137,7 @@ static int draw_drastic_menu_controller(void)
             if ((p->y >= 240) && (p->y <= 376)) {
                 if (myvideo.menu.drastic.item.idx[cc + 1].bg || myvideo.menu.drastic.item.idx[cc + 2].bg) {
                     int sum = myvideo.menu.drastic.item.idx[cc + 1].bg + myvideo.menu.drastic.item.idx[cc + 2].bg;
-                    uint32_t c = sum > 500 ? 0xff0000 : myconfig.menu.c2;
+                    uint32_t c = sum > 500 ? 0xff0000 : MENU_COLOR2;
 
                     rt.x = 5 / div;
                     rt.y = y - (3 / div);
@@ -1144,16 +1145,10 @@ static int draw_drastic_menu_controller(void)
                     rt.h = w;
                     SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff));
                 }
-                draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
                 if ((p->y >= 240) && (p->y <= 376)) {
-                    if (myconfig.enable_752x560) {
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 1].msg), 320 / div, y, myvideo.menu.drastic.item.idx[cc + 1].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 2].msg), 550 / div, y, myvideo.menu.drastic.item.idx[cc + 2].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                    }
-                    else {
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 1].msg), 300 / div, y, myvideo.menu.drastic.item.idx[cc + 1].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 2].msg), 480 / div, y, myvideo.menu.drastic.item.idx[cc + 2].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                    }
+                    draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 1].msg), 300 / div, y, myvideo.menu.drastic.item.idx[cc + 1].bg ? MENU_COLOR0 : MENU_COLOR1, 0);
+                    draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 2].msg), 480 / div, y, myvideo.menu.drastic.item.idx[cc + 2].bg ? MENU_COLOR0 : MENU_COLOR1, 0);
                 }
             }
             else {
@@ -1163,9 +1158,9 @@ static int draw_drastic_menu_controller(void)
                     rt.w = myvideo.cur_w - (10 / div);
                     rt.h = w;
                     SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 
-                        (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                        (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
                 }
-                draw_info(myvideo.menu.drastic.frame, l10n(p->msg), 20 / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, l10n(p->msg), 20 / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
             }
         }
 
@@ -1240,7 +1235,7 @@ static int draw_drastic_menu_controller2(void)
             if ((p->y >= 240) && (p->y <= NDS_Hx2)) {
                 if (myvideo.menu.drastic.item.idx[cc + 1].bg || myvideo.menu.drastic.item.idx[cc + 2].bg) {
                     int sum = myvideo.menu.drastic.item.idx[cc + 1].bg + myvideo.menu.drastic.item.idx[cc + 2].bg;
-                    uint32_t c = sum > 500 ? 0xff0000 : myconfig.menu.c2;
+                    uint32_t c = sum > 500 ? 0xff0000 : MENU_COLOR2;
 
                     rt.x = 5 / div;
                     rt.y = y - (3 / div);
@@ -1248,16 +1243,10 @@ static int draw_drastic_menu_controller2(void)
                     rt.h = w;
                     SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff));
                 }
-                draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
                 if ((p->y >= 240) && (p->y <= NDS_Hx2)) {
-                    if (myconfig.enable_752x560) {
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 1].msg), 320 / div, y, myvideo.menu.drastic.item.idx[cc + 1].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 2].msg), 550 / div, y, myvideo.menu.drastic.item.idx[cc + 2].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                    }
-                    else {
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 1].msg), 300 / div, y, myvideo.menu.drastic.item.idx[cc + 1].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                        draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 2].msg), 480 / div, y, myvideo.menu.drastic.item.idx[cc + 2].bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
-                    }
+                    draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 1].msg), 300 / div, y, myvideo.menu.drastic.item.idx[cc + 1].bg ? MENU_COLOR0 : MENU_COLOR1, 0);
+                    draw_info(myvideo.menu.drastic.frame, l10n(myvideo.menu.drastic.item.idx[cc + 2].msg), 480 / div, y, myvideo.menu.drastic.item.idx[cc + 2].bg ? MENU_COLOR0 : MENU_COLOR1, 0);
                 }
             }
             else {
@@ -1267,9 +1256,9 @@ static int draw_drastic_menu_controller2(void)
                     rt.w = myvideo.cur_w - (10 / div);
                     rt.h = w;
                     SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 
-                        (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                        (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
                 }
-                draw_info(myvideo.menu.drastic.frame, l10n(p->msg), 20 / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, l10n(p->msg), 20 / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
             }
         }
 
@@ -1318,7 +1307,7 @@ static int draw_drastic_menu_firmware(void)
                 rt.w = myvideo.cur_w - (10 / div);
                 rt.h = ww;
                 SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 
-                    (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                    (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
             }
 
             cnt+= 1;
@@ -1328,7 +1317,7 @@ static int draw_drastic_menu_firmware(void)
             }
             else if (p->y == 296) {
                 w = get_font_width(name);
-                draw_info(myvideo.menu.drastic.frame, name, myvideo.cur_w - w - (ww / div), 25 / div, myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, name, myvideo.cur_w - w - (ww / div), 25 / div, MENU_COLOR1, 0);
 
                 w = strlen(p->msg);
                 p->msg[w - 3] = 0;
@@ -1339,14 +1328,14 @@ static int draw_drastic_menu_firmware(void)
                     }
                 }
                 w = get_font_width(buf);
-                draw_info(myvideo.menu.drastic.frame, buf, myvideo.cur_w - w - (ww / div), y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, buf, myvideo.cur_w - w - (ww / div), y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
 
                 strcpy(buf, l10n("Favorite Color"));
             }
             else if (p->y <= 312) {
                 strcpy(buf, l10n(find_menu_string_tail(p->msg)));
                 w = get_font_width(buf);
-                draw_info(myvideo.menu.drastic.frame, buf, myvideo.cur_w - w - (ww / div), y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, buf, myvideo.cur_w - w - (ww / div), y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
 
                 mark_double_spaces(p->msg);
                 strcpy(buf, l10n(p->msg));
@@ -1354,7 +1343,7 @@ static int draw_drastic_menu_firmware(void)
             else {
                 strcpy(buf, l10n(p->msg));
             }
-            draw_info(myvideo.menu.drastic.frame, buf, ww / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+            draw_info(myvideo.menu.drastic.frame, buf, ww / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
         }
     }
     return 0;
@@ -1446,11 +1435,11 @@ static int draw_drastic_menu_cheat(void)
                 rt.w = myvideo.cur_w - (10 / div);
                 rt.h = w;
                 SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format,
-                    (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                    (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
             }
 
             cnt+= 1;
-            draw_info(myvideo.menu.drastic.frame, p->msg, w / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+            draw_info(myvideo.menu.drastic.frame, p->msg, w / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
             if (p->cheat && myvideo.menu.drastic.yes && myvideo.menu.drastic.no) {
                 rt.x = myvideo.cur_w - myvideo.menu.drastic.yes->w - (w / div);
                 rt.y = y - 1;
@@ -1556,9 +1545,9 @@ static int draw_drastic_menu_rom(void)
                     rt.w = myvideo.cur_w - (10 / div);
                     rt.h = w;
                     SDL_FillRect(myvideo.menu.drastic.frame, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format,
-                        (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                        (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
                 }
-                draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? MENU_COLOR0 : MENU_COLOR1, 0);
             }
             cnt+= 1;
         }
@@ -1608,7 +1597,7 @@ int handle_drastic_menu(void)
         return 0;
     }
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    myconfig.update_menu = 1;
+    myvide.menu.update = 1;
 #else
     flush_lcd(-1, myvideo.menu.drastic.frame->pixels, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->pitch, 0, ROTATE_180);
     flip_lcd();
@@ -1625,10 +1614,8 @@ static int process_screen(void)
     static int need_loadstate = 15;
     static int show_info_cnt = 0;
     static int cur_fb_w = 0;
-    static int cur_volume = 0;
     static int cur_dis_mode = 0;
-    static int cur_touchpad = 0;
-    static int cur_theme_sel = 0;
+    static int cur_bg_sel = 0;
     static int cur_filter = 0;
     static int pre_dis_mode = NDS_DIS_MODE_VH_S0;
     static int pre_hres_mode = NDS_DIS_MODE_HRES0;
@@ -1641,7 +1628,6 @@ static int process_screen(void)
 
     int idx = 0;
     int screen_cnt = 0;
-    char buf[MAX_PATH] = {0};
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     int cur_sel = myvideo.lcd.cur_sel ^ 1;
@@ -1655,22 +1641,22 @@ static int process_screen(void)
     screen_cnt = 1;
 #endif
 
-    if (myconfig.auto_state > 0) {
+    if (myconfig.autostate.enable > 0) {
         if (need_loadstate > 0) {
             need_loadstate-= 1;
             if (need_loadstate == 0) {
-                load_state(myconfig.auto_slot);
+                load_state(myconfig.autostate.slot);
             }
         }
     }
 
-    if (myconfig.menu.enable) {
+    if (myvideo.menu.sdl2.enable) {
         myvideo.layout.reload_bg = RELOAD_BG_COUNT;
         return 0;
     }
 
-    if (myconfig.menu.drastic.enable) {
-        myconfig.menu.drastic.enable = 0;
+    if (myvideo.menu.drastic.enable) {
+        myvideo.menu.drastic.enable = 0;
         myvideo.layout.reload_bg = RELOAD_BG_COUNT;
 #if defined(QX1000) || defined(XT897)
         update_wayland_res(NDS_W * 2, NDS_H);
@@ -1678,49 +1664,26 @@ static int process_screen(void)
     }
 
     if ((cur_fb_w != myvideo.cur_w) ||
-        (cur_touchpad != myconfig.pen.pos) ||
-        (cur_dis_mode != myconfig.dis_mode) ||
-        (cur_theme_sel != myconfig.layout.img) ||
-        (cur_filter != myconfig.filter) ||
-        (cur_volume != myconfig.volume))
+        (cur_dis_mode != myconfig.layout.mode) ||
+        (cur_bg_sel != myconfig.layout.bg.sel) ||
+        (cur_filter != myconfig.filter))
     {
         if (cur_fb_w != myvideo.cur_w) {
             show_info_cnt = 150;
             sprintf(show_info_buf, " %d x %d ", myvideo.cur_w, myvideo.cur_h);
         }
-        else if (cur_volume != myconfig.volume) {
+        else if (cur_bg_sel != myconfig.layout.bg.sel) {
             show_info_cnt = 50;
-            sprintf(show_info_buf, " %s %d ", l10n("Volume"), myconfig.volume);
-        }
-        else if (cur_touchpad != myconfig.pen.pos) {
-            show_info_cnt = 50;
-            sprintf(show_info_buf, " %s %d ", l10n("Touchpad"), myconfig.pen.pos);
-        }
-        else if (cur_theme_sel != myconfig.layout.img) {
-            show_info_cnt = 50;
-            if ((myconfig.layout.max > 0) && (myconfig.layout.img < myconfig.layout.max)) {
-                if (get_dir_path(myconfig.layout.path, myconfig.layout.img, buf) == 0) {
-                    int off = strlen(myconfig.layout.path);
-                    sprintf(show_info_buf, " %s %s ", l10n("Wallpaper"), &buf[off + 1]);
-                }
-                else {
-                    sprintf(show_info_buf, " %s %d ", l10n("Wallpaper"), myconfig.layout.img);
-                }
-            }
-            else {
-                sprintf(show_info_buf, " %s %s ", l10n("Wallpaper"), l10n("None"));
-            }
+            sprintf(show_info_buf, " %s %d ", l10n("Wallpaper"), myconfig.layout.bg.sel);
         }
         else if (cur_filter != myconfig.filter) {
             show_info_cnt = 50;
-            sprintf(show_info_buf, " %s ", l10n(myconfig.filter ? "Pixel" : "Blur"));
+            sprintf(show_info_buf, " %s ", l10n((myconfig.filter == FILTER_PIXEL) ? "Pixel" : "Blur"));
         }
 
         cur_fb_w = myvideo.cur_w;
-        cur_theme_sel = myconfig.layout.img;
-        cur_volume = myconfig.volume;
-        cur_dis_mode = myconfig.dis_mode;
-        cur_touchpad = myconfig.pen.pos;
+        cur_bg_sel = myconfig.layout.bg.sel;
+        cur_dis_mode = myconfig.layout.mode;
         cur_filter = myconfig.filter;
         myvideo.layout.reload_bg = RELOAD_BG_COUNT;
     }
@@ -1732,33 +1695,33 @@ static int process_screen(void)
         col_bg = 0x000000;
     }
         
-    if (myconfig.defer_update_bg > 0) {
-        myconfig.defer_update_bg-= 1;
+    if (myvideo.lcd.load_bg > 0) {
+        myvideo.lcd.load_bg-= 1;
     }
-    else if (myconfig.defer_update_bg == 0) {
-        myconfig.defer_update_bg = -1;
+    else if (myvideo.lcd.load_bg == 0) {
+        myvideo.lcd.load_bg = -1;
         myvideo.layout.reload_bg = RELOAD_BG_COUNT;
     }
 
-    if (myconfig.state) {
-        if (myconfig.state & NDS_STATE_QSAVE) {
+    if (myvideo.lcd.status) {
+        if (myvideo.lcd.status & NDS_STATE_SAVE) {
             show_info_cnt = 50;
             sprintf(show_info_buf, " %s ", l10n("Quick Save"));
-            myconfig.state&= ~NDS_STATE_QSAVE;
+            myvideo.lcd.status&= ~NDS_STATE_SAVE;
         }
-        else if (myconfig.state & NDS_STATE_QLOAD) {
+        else if (myvideo.lcd.status & NDS_STATE_LOAD) {
             show_info_cnt = 50;
             sprintf(show_info_buf, " %s ", l10n("Quick Load"));
-            myconfig.state&= ~NDS_STATE_QLOAD;
+            myvideo.lcd.status&= ~NDS_STATE_LOAD;
         }
-        else if (myconfig.state & NDS_STATE_FF) {
+        else if (myvideo.lcd.status & NDS_STATE_FAST) {
             show_info_cnt = 50;
             sprintf(show_info_buf, " %s ", l10n("Fast Forward"));
-            myconfig.state&= ~NDS_STATE_FF;
+            myvideo.lcd.status&= ~NDS_STATE_FAST;
         }
     }
 
-    if (myconfig.chk_bat) {
+    if (myconfig.check_battery) {
 #if defined(MINI) || defined(A30) || defined(FLIP)
         bat_chk_cnt -= 1;
         if (bat_chk_cnt <= 0) {
@@ -1799,17 +1762,21 @@ static int process_screen(void)
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         pixels = myvideo.lcd.virt_addr[cur_sel][idx];
 #else
-        pixels = (idx == 0) ? *myhook.var.sdl.screen[0].pixels: *myhook.var.sdl.screen[1].pixels;
+        if (idx == 0) {
+            pixels = (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels));
+        }
+        else {
+            pixels = (void *)(*((uintptr_t *)myhook.var.sdl.screen[1].pixels));
+        }
 #endif
 
         if (*myhook.var.sdl.screen[idx].hires_mode) {
             srt.w = NDS_Wx2;
             srt.h = NDS_Hx2;
-            if (myconfig.hres_mode == 0) {
-                myconfig.pen.pos = 0;
-                myconfig.hres_mode = 1;
-                pre_dis_mode = myconfig.dis_mode;
-                myconfig.dis_mode = pre_hres_mode;
+            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
+                *myhook.var.sdl.screen[0].hires_mode = 1;
+                pre_dis_mode = myconfig.layout.mode;
+                myconfig.layout.mode = pre_hres_mode;
 #if defined(QX1000) || defined(XT897)
                 update_wayland_res(NDS_Wx2, NDS_Hx2);
 #endif
@@ -1822,11 +1789,11 @@ static int process_screen(void)
             drt.y = idx * 120;
             screen0 = (idx == 0);
             screen1 = (idx != 0);
-            show_pen = myconfig.pen.pos ? screen1 : screen0;
-            if (myconfig.hres_mode == 1) {
-                myconfig.hres_mode = 0;
-                pre_hres_mode = myconfig.dis_mode;
-                myconfig.dis_mode = pre_dis_mode;
+            show_pen = *myhook.var.sdl.swap_screens ? screen1 : screen0;
+            if (*myhook.var.sdl.screen[0].hires_mode == 1) {
+                *myhook.var.sdl.screen[0].hires_mode = 0;
+                pre_hres_mode = myconfig.layout.mode;
+                myconfig.layout.mode = pre_dis_mode;
 #if defined(QX1000) || defined(XT897)
                 update_wayland_res(NDS_W * 2, NDS_H);
 #endif
@@ -1838,7 +1805,7 @@ static int process_screen(void)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
 #elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        switch (myconfig.dis_mode) {
+        switch (myconfig.layout.mode) {
         case NDS_DIS_MODE_VH_T0:
             if (screen1) {
                 drt.x = 0;
@@ -1846,7 +1813,6 @@ static int process_screen(void)
                 drt.w = myvideo.cur_w;
                 drt.h = myvideo.cur_h;
                 show_pen = 1;
-                myconfig.pen.pos = 1;
             }
             else {
                 show_pen = 0;
@@ -1860,7 +1826,6 @@ static int process_screen(void)
                 drt.w = myvideo.cur_w;
                 drt.h = myvideo.cur_h;
                 show_pen = 1;
-                myconfig.pen.pos = 1;
             }
             else {
                 show_pen = 0;
@@ -1874,7 +1839,6 @@ static int process_screen(void)
                 drt.x = (myvideo.cur_w - drt.w) / 2;
                 drt.y = (myvideo.cur_h - drt.h) / 2;
                 show_pen = 1;
-                myconfig.pen.pos = 1;
             }
             else {
                 show_pen = 0;
@@ -1888,7 +1852,6 @@ static int process_screen(void)
                 drt.w = myvideo.cur_w;
                 drt.h = myvideo.cur_h;
                 show_pen = 1;
-                myconfig.pen.pos = 1;
             }
             else {
                 show_pen = 0;
@@ -1899,47 +1862,24 @@ static int process_screen(void)
             drt.w = NDS_W;
             drt.h = NDS_H;
             drt.x = (myvideo.cur_w - drt.w) / 2;
-            if (myconfig.enable_752x560 == 0) {
-                drt.y = screen0 ? 48 : 48 + drt.h;
-            }
-            else {
-                drt.y = screen0 ? 88 : 88 + drt.h;
-            }
+            drt.y = screen0 ? 48 : 48 + drt.h;
             break;
         case NDS_DIS_MODE_V1:
-            if (myconfig.enable_752x560 == 0) {
-                drt.w = 320;
-                drt.h = 240;
-            }
-            else {
-                drt.w = 373;
-                drt.h = 280;
-            }
+            drt.w = 373;
+            drt.h = 280;
             drt.x = (myvideo.cur_w - drt.w) / 2;
             drt.y = screen0 ? 0 : drt.h;
             break;
         case NDS_DIS_MODE_H0:
             drt.w = NDS_W;
             drt.h = NDS_H;
-            if (myconfig.enable_752x560 == 0) {
-                drt.x = screen0 ? 64 : 64 + drt.w;
-            }
-            else {
-                drt.x = screen0 ? 120 : 120 + drt.w;
-            }
+            drt.x = screen0 ? 64 : 64 + drt.w;
             drt.y = (myvideo.cur_h - drt.h) / 2;
             break;
         case NDS_DIS_MODE_H1:
-            if (myconfig.enable_752x560 == 0) {
-                drt.w = 320;
-                drt.h = 240;
-                drt.x = screen0 ? 0 : drt.w;
-            }
-            else {
-                drt.w = 373;
-                drt.h = 280;
-                drt.x = screen0 ? 3 : (drt.w + 3);
-            }
+            drt.w = 320;
+            drt.h = 240;
+            drt.x = screen0 ? 0 : drt.w;
             drt.y = (myvideo.cur_h - drt.h) / 2;
             break;
         case NDS_DIS_MODE_VH_S0:
@@ -1992,35 +1932,19 @@ static int process_screen(void)
             break;
         case NDS_DIS_MODE_HH0:
         case NDS_DIS_MODE_HH1:
-            if (myconfig.enable_752x560 == 0) {
-                drt.x = screen0 ? 0 : 320;
-                drt.y = 26;
-                drt.w = 427;
-                drt.h = 320;
-            }
-            else {
-                drt.x = screen0 ? 0 : 376;
-                drt.y = 29;
-                drt.w = 501;
-                drt.h = 376;
-            }
-            rotate = (myconfig.dis_mode == NDS_DIS_MODE_HH0) ? ROTATE_90 : ROTATE_270;
+            drt.x = screen0 ? 0 : 320;
+            drt.y = 26;
+            drt.w = 427;
+            drt.h = 320;
+            rotate = (myconfig.layout.mode == NDS_DIS_MODE_HH0) ? ROTATE_90 : ROTATE_270;
             break;
         case NDS_DIS_MODE_HH2:
         case NDS_DIS_MODE_HH3:
-            if (myconfig.enable_752x560 == 0) {
-                drt.x = screen0 ? 0 : 320;
-                drt.y = 0;
-                drt.w = 480;
-                drt.h = 320;
-            }
-            else {
-                drt.x = screen0 ? 0 : 376;
-                drt.y = 0;
-                drt.w = 560;
-                drt.h = 376;
-            }
-            rotate = (myconfig.dis_mode == NDS_DIS_MODE_HH2) ? ROTATE_90 : ROTATE_270;
+            drt.x = screen0 ? 0 : 320;
+            drt.y = 0;
+            drt.w = 480;
+            drt.h = 320;
+            rotate = (myconfig.layout.mode == NDS_DIS_MODE_HH2) ? ROTATE_90 : ROTATE_270;
             break;
         case NDS_DIS_MODE_HRES0:
             drt.w = NDS_Wx2;
@@ -2067,7 +1991,7 @@ static int process_screen(void)
         }
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-        if ((idx == 0) && (myconfig.alpha.border > 0) && ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
+        if ((idx == 0) && (myconfig.layout.alpha.border > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
             int c0 = 0;
             uint32_t *p0 = NULL;
             uint32_t *p1 = NULL;
@@ -2076,15 +2000,15 @@ static int process_screen(void)
             p0 = (uint32_t *)myconfig.screen.pixels[idx];
             p1 = (uint32_t *)myconfig.screen.pixels[idx] + ((srt.h - 1) * srt.w);
             for (c0 = 0; c0 < srt.w; c0++) {
-                *p0++ = col[myconfig.alpha.border];
-                *p1++ = col[myconfig.alpha.border];
+                *p0++ = col[myconfig.layout.alpha.border];
+                *p1++ = col[myconfig.layout.alpha.border];
             }
 
             p0 = (uint32_t *)myconfig.screen.pixels[idx];
             p1 = (uint32_t *)myconfig.screen.pixels[idx] + (srt.w - 1);
             for (c0 = 0; c0 < srt.h; c0++) {
-                *p0 = col[myconfig.alpha.border];
-                *p1 = col[myconfig.alpha.border];
+                *p0 = col[myconfig.layout.alpha.border];
+                *p1 = col[myconfig.layout.alpha.border];
                 p0 += srt.w;
                 p1 += srt.w;
             }
@@ -2116,14 +2040,14 @@ static int process_screen(void)
 #endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-            switch (myconfig.dis_mode) {
+            switch (myconfig.layout.mode) {
             case NDS_DIS_MODE_VH_T0:
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = 160;
                 drt.h = 120;
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                switch (myconfig.alpha.pos) {
+                switch (myconfig.layout.alpha.pos) {
                 case 0:
                     drt.x = DEF_FB_W - drt.w;
                     drt.y = 0;
@@ -2152,7 +2076,7 @@ static int process_screen(void)
                 drt.w = NDS_W;
                 drt.h = NDS_H;
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                switch (myconfig.alpha.pos) {
+                switch (myconfig.layout.alpha.pos) {
                 case 0:
                     drt.x = DEF_FB_W - drt.w;
                     drt.y = 0;
@@ -2188,7 +2112,7 @@ static int process_screen(void)
         draw_info(NULL, show_info_buf, myvideo.cur_w - get_font_width(show_info_buf), 0, col_fg, col_bg);
         show_info_cnt-= 1;
     }
-    else if (myconfig.show_fps && myvideo.fps) {
+    else if (myvideo.lcd.show_fps && myvideo.fps) {
         SDL_Rect rt = {0};
 
         rt.x = myvideo.cur_w - myvideo.fps->w;
@@ -2201,7 +2125,7 @@ static int process_screen(void)
 #if defined(TRIMUI)
     if (need_restore) {
         need_restore = 0;
-        myconfig.dis_mode = pre_dismode;
+        myconfig.layout.mode = pre_dismode;
         disp_resize();
     }
 #endif
@@ -2227,16 +2151,16 @@ void prehook_cb_update_screen(void)
     if (prepare_time) {
         prepare_time -= 1;
     }
-    else if (myconfig.update_screen == 0) {
+    else if (myvideo.lcd.update == 0) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         myvideo.lcd.cur_sel ^= 1;
         *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
         *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        myconfig.menu.drastic.enable = 0;
+        myvideo.menu.drastic.enable = 0;
 #endif
 #endif
-        myconfig.update_screen = 1;
+        myvideo.lcd.update = 1;
     }
 }
 
@@ -2293,7 +2217,7 @@ void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint
                 }
                 SDL_FreeSurface(t0);
             }
-            myconfig.show_fps = 1;
+            myvideo.lcd.show_fps = 1;
         }
     }
 }
@@ -2548,11 +2472,11 @@ static void *video_handler(void *threadid)
 
     while (myvideo.thread.running) {
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (myconfig.menu.enable) {
-            if (myconfig.update_menu) {
+        if (myvideo.menu.sdl2.enable) {
+            if (myvide.menu.update) {
                 debug("update sdl2 menu\n");
 
-                myconfig.update_menu = 0;
+                myvide.menu.update = 0;
                 pre_filter = myconfig.filter;
                 myconfig.filter = 0;
                 flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, ROTATE_180);
@@ -2560,11 +2484,11 @@ static void *video_handler(void *threadid)
                 myconfig.filter = pre_filter;
             }
         }
-        else if (myconfig.menu.drastic.enable) {
-            if (myconfig.update_menu) {
+        else if (myvideo.menu.drastic.enable) {
+            if (myvide.menu.update) {
                 debug("update drastic menu\n");
 
-                myconfig.update_menu = 0;
+                myvide.menu.update = 0;
                 pre_filter = myconfig.filter;
                 myconfig.filter = 0;
                 flush_lcd(-1, myvideo.menu.drastic.frame->pixels, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->pitch, 0, 0);
@@ -2572,13 +2496,13 @@ static void *video_handler(void *threadid)
                 myconfig.filter = pre_filter;
             }
         }
-        else if (myconfig.update_screen) {
+        else if (myvideo.lcd.update) {
 #else
-        if (myconfig.update_screen) {
+        if (myvideo.lcd.update) {
 #endif
 
             process_screen();
-            myconfig.update_screen = 0;
+            myvideo.lcd.update = 0;
         }
         else {
             usleep(0);
@@ -2627,27 +2551,27 @@ static void *video_handler(void *threadid)
     pthread_exit(NULL);
 }
 
-static int lang_unload(void)
+static int quit_lang(void)
 {
     int cc = 0;
 
-    for (cc=0; myvideo.lang[cc]; cc++) {
-        if (myvideo.lang[cc]) {
-            free(myvideo.lang[cc]);
+    for (cc=0; myvideo.lang.trans[cc]; cc++) {
+        if (myvideo.lang.trans[cc]) {
+            free(myvideo.lang.trans[cc]);
         }
-        myvideo.lang[cc] = NULL;
+        myvideo.lang.trans[cc] = NULL;
     }
-    memset(myvideo.lang, 0, sizeof(myvideo.lang));
+    memset(myvideo.lang.trans, 0, sizeof(myvideo.lang.trans));
     return 0;
 }
 
-static int lang_load(const char *lang)
+static int load_lang_file(const char *lang)
 {
     FILE *f = NULL;
     char buf[MAX_PATH << 1] = {0};
 
-    if (strcasecmp(myconfig.lang.trans[DEF_LANG_SLOT], DEF_LANG_LANG)) {
-        sprintf(buf, "%s/%s", myconfig.lang.path, lang);
+    if (strcasecmp(lang_file_name[DEF_LANG_SLOT], DEF_LANG_LANG)) {
+        sprintf(buf, "%s%s/%s", myvideo.home, LANG_PATH, lang);
         f = fopen(buf, "r");
 
         if (f != NULL) {
@@ -2661,13 +2585,13 @@ static int lang_load(const char *lang)
                     continue;
                 }
 
-                if (myvideo.lang[cc] != NULL) {
-                    free(myvideo.lang[cc]);
+                if (myvideo.lang.trans[cc] != NULL) {
+                    free(myvideo.lang.trans[cc]);
                 }
-                myvideo.lang[cc] = malloc(len);
-                if (myvideo.lang[cc] != NULL) {
-                    memcpy(myvideo.lang[cc], buf, len);
-                    debug("lang=\"%s\", len=%d\n", myvideo.lang[cc], len);
+                myvideo.lang.trans[cc] = malloc(len);
+                if (myvideo.lang.trans[cc] != NULL) {
+                    memcpy(myvideo.lang.trans[cc], buf, len);
+                    debug("lang=\"%s\", len=%d\n", myvideo.lang.trans[cc], len);
                 }
                 cc+= 1;
                 if (cc >= MAX_LANG_LINE) {
@@ -2684,15 +2608,19 @@ static int lang_load(const char *lang)
     return 0;
 }
 
-static void lang_enum(void)
+static void enum_lang_file(void)
 {
     int idx = 2;
     DIR *d = NULL;
     struct dirent *dir = NULL;
+    char buf[MAX_PATH] = { 0 };
 
-    strcpy(myconfig.lang.trans[DEF_LANG_SLOT], DEF_LANG_LANG);
-    strcpy(myconfig.lang.trans[DEF_LANG_SLOT + 1], DEF_LANG_LANG);
-    d = opendir(myconfig.lang.path);
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, LANG_PATH);
+
+    strcpy(lang_file_name[DEF_LANG_SLOT], DEF_LANG_LANG);
+    strcpy(lang_file_name[DEF_LANG_SLOT + 1], DEF_LANG_LANG);
+
+    d = opendir(buf);
     if (d) {
         while ((dir = readdir(d)) != NULL) {
             if (dir->d_type == DT_DIR) {
@@ -2706,7 +2634,7 @@ static void lang_enum(void)
             }
 
             debug("found lang \'lang[%d]=%s\'\n", idx, dir->d_name);
-            strcpy(myconfig.lang.trans[idx], dir->d_name);
+            strcpy(lang_file_name[idx], dir->d_name);
             idx+= 1;
             if (idx >= MAX_LANG_FILE) {
                 break;
@@ -2714,280 +2642,6 @@ static void lang_enum(void)
         }
         closedir(d);
     }
-}
-
-static int read_config(void)
-{
-#if defined(TRIMUI) || defined(PANDORA)
-    int fd = -1;
-#endif
-
-    struct json_object *jval = NULL;
-    struct json_object *jfile = NULL;
-
-    jfile = json_object_from_file(myconfig.cfg.path);
-    if (jfile == NULL) {
-        debug("failed to open \"%s\"\n", myconfig.cfg.path);
-        return -1;
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_PEN_IMG, &jval);
-    if (jval) {
-        myconfig.pen.img = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_LAYOUT_IMG, &jval);
-    if (jval) {
-        myconfig.layout.img = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_LAYOUT_MODE, &jval);
-    if (jval) {
-        myconfig.dis_mode = json_object_get_int(jval);
-    }
-    
-    json_object_object_get_ex(jfile, NDS_JSON_ALT_MODE, &jval);
-    if (jval) {
-        myconfig.alt_mode = json_object_get_int(jval);
-    }
-    
-    json_object_object_get_ex(jfile, NDS_JSON_PEN_SPEED, &jval);
-    if (jval) {
-        myconfig.pen.speed = json_object_get_int(jval);
-    }
-    
-    json_object_object_get_ex(jfile, NDS_JSON_ALPHA_VALUE, &jval);
-    if (jval) {
-        myconfig.alpha.val = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_ALPHA_POSITION, &jval);
-    if (jval) {
-        myconfig.alpha.pos = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_ALPHA_BORDER, &jval);
-    if (jval) {
-        myconfig.alpha.border = json_object_get_int(jval);
-        myconfig.alpha.border%= NDS_BORDER_MAX;
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_MAX_CPU_FREQ, &jval);
-    if (jval) {
-        myconfig.cpu.freq.max = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_MIN_CPU_FREQ, &jval);
-    if (jval) {
-        myconfig.cpu.freq.min = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_MAX_CPU_CORE, &jval);
-    if (jval) {
-        myconfig.cpu.core.max = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_MIN_CPU_CORE, &jval);
-    if (jval) {
-        myconfig.cpu.core.min = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_SWAP_L1L2, &jval);
-    if (jval) {
-        myconfig.swap_l1l2 = json_object_get_int(jval) ? 1 : 0;
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_SWAP_R1R2, &jval);
-    if (jval) {
-        myconfig.swap_r1r2 = json_object_get_int(jval) ? 1 : 0;
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_KEYS_ROTATE, &jval);
-    if (jval) {
-        myconfig.keys_rotate = json_object_get_int(jval) % 3;
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_CHK_BAT, &jval);
-    if (jval) {
-        myconfig.chk_bat = json_object_get_int(jval) ? 1: 0;
-    }
-
-#if defined(A30) || defined(FLIP)
-    json_object_object_get_ex(jfile, NDS_JSON_JOY_MODE, &jval);
-    myconfig.joy.mode = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_JOY_DZONE, &jval);
-    myconfig.joy.dzone = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_JOY_CUSKEY0, &jval);
-    myconfig.joy.cuskey[0] = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_JOY_CUSKEY1, &jval);
-    myconfig.joy.cuskey[1] = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_JOY_CUSKEY2, &jval);
-    myconfig.joy.cuskey[2] = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_JOY_CUSKEY3, &jval);
-    myconfig.joy.cuskey[3] = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_RJOY_MODE, &jval);
-    myconfig.rjoy.mode = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_RJOY_DZONE, &jval);
-    myconfig.rjoy.dzone = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_RJOY_CUSKEY0, &jval);
-    myconfig.rjoy.cuskey[0] = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_RJOY_CUSKEY1, &jval);
-    myconfig.rjoy.cuskey[1] = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_RJOY_CUSKEY2, &jval);
-    myconfig.rjoy.cuskey[2] = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_RJOY_CUSKEY3, &jval);
-    myconfig.rjoy.cuskey[3] = json_object_get_int(jval);
-#endif
-
-    myconfig.menu.c0 = 0xffffff;
-    json_object_object_get_ex(jfile, NDS_JSON_MENU_C0, &jval);
-    if (jval) {
-        const char *p = json_object_get_string(jval);
-        myconfig.menu.c0 = strtol(p, NULL, 16);
-    }
-
-    myconfig.menu.c1 = 0x000000;
-    json_object_object_get_ex(jfile, NDS_JSON_MENU_C1, &jval);
-    if (jval) {
-        const char *p = json_object_get_string(jval);
-        myconfig.menu.c1 = strtol(p, NULL, 16);
-    }
-
-    myconfig.menu.c2 = 0x289a35;
-    json_object_object_get_ex(jfile, NDS_JSON_MENU_C2, &jval);
-    if (jval) {
-        const char *p = json_object_get_string(jval);
-        myconfig.menu.c2 = strtol(p, NULL, 16);
-    }
-
-    myconfig.auto_state = 1;
-    json_object_object_get_ex(jfile, NDS_JSON_AUTO_STATE, &jval);
-    if (jval) {
-        myconfig.auto_state = json_object_get_int(jval) ? 1 : 0;
-    }
-
-    myconfig.auto_slot = 1;
-    json_object_object_get_ex(jfile, NDS_JSON_AUTO_SLOT, &jval);
-    if (jval) {
-        myconfig.auto_slot = json_object_get_int(jval);
-    }
-
-    lang_enum();
-    json_object_object_get_ex(jfile, NDS_JSON_LANG, &jval);
-    if (jval) {
-        const char *lang = json_object_get_string(jval);
-
-        strcpy(myconfig.lang.trans[DEF_LANG_SLOT], lang);
-        lang_load(lang);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_HOTKEY, &jval);
-    if (jval) {
-        myconfig.hotkey = json_object_get_int(jval);
-    }
-
-    myconfig.menu.show_cursor = 0;
-    json_object_object_get_ex(jfile, NDS_JSON_MENU_CURSOR, &jval);
-    if (jval) {
-        myconfig.menu.show_cursor = json_object_get_int(jval);
-    }
-
-    myconfig.fast_forward = 6;
-    json_object_object_get_ex(jfile, NDS_JSON_FAST_FORWARD, &jval);
-    if (jval) {
-        myconfig.fast_forward = json_object_get_int(jval);
-    }
-
-    json_object_object_get_ex(jfile, NDS_JSON_AUTO_STATE, &jval);
-    myconfig.auto_state = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_AUTO_SLOT, &jval);
-    myconfig.auto_slot = json_object_get_int(jval);
-
-    json_object_object_get_ex(jfile, NDS_JSON_HALF_VOL, &jval);
-    myconfig.half_vol = json_object_get_int(jval) ? 1 : 0;
-
-#if defined(MINI) || defined(A30) || defined(QX1000) || defined(XT897) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    json_object_object_get_ex(jfile, NDS_JSON_STATES, &jval);
-    if (jval) {
-        struct stat st = {0};
-        const char *path = json_object_get_string(jval);
-
-        if ((path != NULL) && (path[0] != 0)) {
-            strcpy(myconfig.states.path, path);
-
-            if (stat(myconfig.states.path, &st) == -1) {
-                mkdir(myconfig.states.path, 0755);
-                debug("Create states folder in \'%s\'\n", myconfig.states.path);
-            }
-        }
-    }
-#endif
-
-    if (myconfig.dis_mode > NDS_DIS_MODE_LAST) {
-        myconfig.dis_mode = NDS_DIS_MODE_VH_S0;
-        myconfig.alt_mode = NDS_DIS_MODE_S0;
-    }
-
-    myconfig.menu.sel = 0;
-    json_object_object_get_ex(jfile, NDS_JSON_MENU_BG, &jval);
-    if (jval) {
-        myconfig.menu.sel = json_object_get_int(jval);
-        if (myconfig.menu.sel >= myconfig.menu.max) {
-            myconfig.menu.sel = 0;
-        }
-    }
-    json_object_put(jfile);
-
-    load_drastic_menu_resource();
-    load_touch_pen();
-
-#if defined(TRIMUI) || defined(PANDORA)
-    fd = open("/dev/dsp", O_RDWR);
-    if (fd > 0) {
-        close(fd);
-#endif
-
-#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(PANDORA)
-    //set_auto_state(myconfig.auto_state, myconfig.auto_slot);
-    //set_half_vol(myconfig.half_vol);
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA)
-    }
-#endif
-
-#if defined(TRIMUI)
-    if ((myconfig.dis_mode != NDS_DIS_MODE_S0) && (myconfig.dis_mode != NDS_DIS_MODE_S1)) {
-        myconfig.dis_mode = NDS_DIS_MODE_S0;
-    }
-    disp_resize();
-#endif
-
-#if defined(QX1000) || defined(XT897)
-    myconfig.dis_mode = NDS_DIS_MODE_H0;
-#endif
-
-#if defined(A30)
-    myconfig.joy.max_x = 200;
-    myconfig.joy.zero_x = 135;
-    myconfig.joy.min_x = 75;
-    myconfig.joy.max_y = 200;
-    myconfig.joy.zero_y = 135;
-    myconfig.joy.min_y = 75;
-#endif
-    return 0;
 }
 
 #if defined(MINI)
@@ -3107,38 +2761,6 @@ static int set_cpuclock(uint32_t newclock)
 }
 #endif
 
-static int get_dir_path(const char *path, int desire, char *buf)
-{
-    DIR *d = NULL;
-    int count = 0, r = -1;
-    struct dirent *dir = NULL;
-
-    d = opendir(path);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (strcmp(dir->d_name, ".") == 0) {
-                continue;
-            }
-
-            if (strcmp(dir->d_name, "..") == 0) {
-                continue;
-            }
-
-            if (dir->d_type != DT_DIR) {
-                continue;
-            }
-
-            if (count == desire) {
-                r = snprintf(buf, MAX_PATH, "%s/%s", path, dir->d_name) ? 0 : 1;
-                break;
-            }
-            count+= 1;
-        }
-        closedir(d);
-    }
-    return r;
-}
-
 static int get_file_path(const char *path, int desire, char *buf, int add_path)
 {
     DIR *d = NULL;
@@ -3226,19 +2848,28 @@ static int get_file_count(const char *path)
     return count;
 }
 
-static int get_theme_count(void)
+static int get_layout_bg_cnt(void)
 {
-    return get_dir_count(myconfig.layout.path);
+    char buf[MAX_PATH] = { 0 };
+
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, BG_PATH);
+    return get_dir_count(buf);
 }
 
-static int get_menu_count(void)
+static int get_menu_cnt(void)
 {
-    return get_dir_count(MENU_PATH);
+    char buf[MAX_PATH] = { 0 };
+
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, MENU_PATH);
+    return get_dir_count(buf);
 }
 
-static int get_pen_count(void)
+static int get_pen_cnt(void)
 {
-    return get_file_count(myconfig.pen.path);
+    char buf[MAX_PATH] = { 0 };
+
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
+    return get_file_count(buf);
 }
 
 #if defined(UT)
@@ -3572,7 +3203,7 @@ static void disp_resize(void)
     uint32_t args[4] = {0, (uintptr_t)&myvideo.gfx.buf, 1, 0};
 
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
-    if (myconfig.dis_mode == NDS_DIS_MODE_S0) {
+    if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
         myvideo.gfx.buf.info.fb.crop.width  = ((uint64_t)myvideo.cur_h) << 32;
         myvideo.gfx.buf.info.fb.crop.height = ((uint64_t)myvideo.cur_w) << 32;
     }
@@ -3928,120 +3559,6 @@ int quit_lcd(void)
 }
 #endif
 
-void init_gfx(void)
-{
-#if defined(TRIMUI)
-    int x = 0;
-    int y = 0;
-    int ox = 32;
-    int oy = 24;
-    int cc = 0;
-    uint32_t *dst = NULL;
-#endif
-
-    init_lcd();
-    memset(myconfig.pen.path, 0, sizeof(myconfig.pen.path));
-    if (getcwd(myconfig.pen.path, sizeof(myconfig.pen.path))) {
-        strcat(myconfig.pen.path, "/");
-        strcat(myconfig.pen.path, PEN_PATH);
-    }
-
-    memset(myconfig.layout.path, 0, sizeof(myconfig.layout.path));
-    if (getcwd(myconfig.layout.path, sizeof(myconfig.layout.path))) {
-        strcat(myconfig.layout.path, "/");
-        strcat(myconfig.layout.path, BG_PATH);
-    }
-
-    memset(myconfig.lang.path, 0, sizeof(myconfig.lang.path));
-    if (getcwd(myconfig.lang.path, sizeof(myconfig.lang.path))) {
-        strcat(myconfig.lang.path, "/");
-        strcat(myconfig.lang.path, LANG_PATH);
-    }
-
-    memset(myconfig.menu.path, 0, sizeof(myconfig.menu.path));
-    if (getcwd(myconfig.menu.path, sizeof(myconfig.menu.path))) {
-        strcat(myconfig.menu.path, "/");
-        strcat(myconfig.menu.path, MENU_PATH);
-    }
-
-    memset(myconfig.bios.path, 0, sizeof(myconfig.bios.path));
-    if (getcwd(myconfig.bios.path, sizeof(myconfig.bios.path))) {
-        drop_bios_files(myconfig.bios.path);
-    }
-
-#if defined(QX1000) || defined(XT897)
-    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
-#else
-    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
-#endif
-
-    myconfig.pen.img = 0;
-    myconfig.pen.max = get_pen_count();
-
-    myconfig.layout.img = 0;
-    myconfig.layout.max = get_theme_count();
-
-    myconfig.menu.sel = 0;
-    myconfig.menu.max = get_menu_count();
-
-#if defined(QX1000) || defined(XT897)
-    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
-#else
-    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
-#endif
-    if (myvideo.menu.drastic.frame) {
-        if (myvideo.menu.drastic.bg0) {
-            SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
-        }
-    }
-
-    getcwd(myconfig.cfg.path, sizeof(myconfig.cfg.path));
-    strcat(myconfig.cfg.path, "/");
-    strcat(myconfig.cfg.path, CFG_PATH);
-
-    TTF_Init();
-    myvideo.menu.font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
-
-#if defined(TRIMUI)
-    cc = 0;
-    for (y = 0; y < NDS_H; y++) {
-        for (x = 0; x < NDS_W; x++) {
-            dst = (uint32_t *)myvideo.gfx.ion.vadd;
-            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * myvideo.cur_h) + y + oy);
-            LUT_256x192_S10[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * myvideo.cur_h) + y);
-
-            dst = (uint32_t *)myvideo.gfx.ion.vadd + (myvideo.cur_w * myvideo.cur_h);
-            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * myvideo.cur_h) + y + oy);
-            LUT_256x192_S11[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * myvideo.cur_h) + y);
-            cc+= 1;
-        }
-    }
-#endif
-
-    myvideo.thread.running = 1;
-    pthread_create(&myvideo.thread.id, NULL, video_handler, (void *)NULL);
-}
-
-void quit_gfx(void)
-{
-    void *r = NULL;
-
-    debug("call %s()\n", __func__);
-
-    debug("wait for video_handler complete\n");
-    myvideo.thread.running = 0;
-    pthread_join(myvideo.thread.id, &r);
-    debug("completed\n");
-
-    clear_lcd();
-    quit_lcd();
-
-    if (myvideo.cvt) {
-        SDL_FreeSurface(myvideo.cvt);
-        myvideo.cvt = NULL;
-    }
-}
-
 void clear_lcd(void)
 {
 #if defined(MINI)
@@ -4229,7 +3746,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     myvideo.shm.buf->pitch = pitch;
     myvideo.shm.buf->alpha = alpha;
     myvideo.shm.buf->rotate = rotate;
-    myvideo.shm.buf->dis_mode = myconfig.dis_mode;
+    myvideo.shm.buf->dis_mode = myconfig.layout.mode;
     myvideo.shm.buf->len = srcrect.h * pitch;
     myvideo.shm.buf->pixel_filter = myconfig.filter;
     debug("send SHM_CMD_FLUSH, pitch=%d, alpha=%d, rotate=%d\n", pitch, alpha, rotate);
@@ -4242,7 +3759,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-    if ((id != -1) && ((myconfig.dis_mode == NDS_DIS_MODE_HH1) || (myconfig.dis_mode == NDS_DIS_MODE_HH3))) {
+    if ((id != -1) && ((myconfig.layout.mode == NDS_DIS_MODE_HH1) || (myconfig.layout.mode == NDS_DIS_MODE_HH3))) {
         fg_vertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
         fg_vertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
@@ -4255,7 +3772,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         fg_vertices[0] = fg_vertices[15];
         fg_vertices[1] = fg_vertices[6];
     }
-    else if ((id != -1) && ((myconfig.dis_mode == NDS_DIS_MODE_HH0) || (myconfig.dis_mode == NDS_DIS_MODE_HH2))) {
+    else if ((id != -1) && ((myconfig.layout.mode == NDS_DIS_MODE_HH0) || (myconfig.layout.mode == NDS_DIS_MODE_HH2))) {
         fg_vertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
         fg_vertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
 
@@ -4296,8 +3813,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srcrect.w, srcrect.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
-    if (((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
-        glUniform1f(myvideo.alphaLoc, 1.0 - ((float)myconfig.alpha.val / 10.0));
+    if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
+        glUniform1f(myvideo.alphaLoc, 1.0 - ((float)myconfig.layout.alpha.val / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
@@ -4307,7 +3824,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if (((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
+    if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
         glUniform1f(myvideo.alphaLoc, 0.0);
         glDisable(GL_BLEND);
     }
@@ -4734,13 +4251,13 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         return -1;
     }
 
-    if (myconfig.dis_mode == NDS_DIS_MODE_S0) {
+    if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
         ox = 32;
         oy = 24;
     }
 
     if((srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
-        if (myconfig.dis_mode == NDS_DIS_MODE_S0) {
+        if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
             dst = myvideo.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
         }
         else {
@@ -4856,12 +4373,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     }
 
     if (alpha != 0) {
-        if (myconfig.alpha.val > NDS_ALPHA_MAX) {
-            myconfig.alpha.val = 0;
+        if (myconfig.layout.alpha.val > NDS_ALPHA_MAX) {
+            myconfig.layout.alpha.val = 0;
         }
 
-        if (myconfig.alpha.val > 0) {
-            float m0 = (float)myconfig.alpha.val / 10;
+        if (myconfig.layout.alpha.val > 0) {
+            float m0 = (float)myconfig.layout.alpha.val / 10;
             float m1 = 1.0 - m0;
             uint32_t *d = myvideo.tmp.virt_addr;
             uint32_t r0 = 0, g0 = 0, b0 = 0;
@@ -4874,7 +4391,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
                 0x000000, 0xa0a0a0, 0x400000, 0x004000, 0x000040, 0x000000, 0xa0a000, 0x00a0a0
             };
 
-            switch (myconfig.dis_mode) {
+            switch (myconfig.layout.mode) {
             case NDS_DIS_MODE_VH_T0:
                 sw = 170;
                 sh = 128;
@@ -4887,7 +4404,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 
             ay = 0;
             for (y=0; y<sh; y++) {
-                switch (myconfig.dis_mode) {
+                switch (myconfig.layout.mode) {
                 case NDS_DIS_MODE_VH_T0:
                     if (y && ((y % 2) == 0)) {
                         ay+= 1;
@@ -4898,11 +4415,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
                 ax = 0;
                 for (x=0; x<sw; x++) {
                     asm ("PLD [%0, #128]"::"r" (s0));
-                    if ((myconfig.alpha.border > 0) && ((y == 0) || (y == (sh - 1)) || (x == 0) || (x == (sw - 1)))) {
-                        *d++ = col[myconfig.alpha.border];
+                    if ((myconfig.layout.alpha.border > 0) && ((y == 0) || (y == (sh - 1)) || (x == 0) || (x == (sw - 1)))) {
+                        *d++ = col[myconfig.layout.alpha.border];
                     }
                     else {
-                        switch (myconfig.dis_mode) {
+                        switch (myconfig.layout.mode) {
                         case NDS_DIS_MODE_VH_T0:
                             if (x && ((x % 2) == 0)) {
                                 ax+= 1;
@@ -4923,7 +4440,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
                             b1 = (s1_888[((y + ay) * srcrect.w) + x + ax] & 0x0000ff) >> 0;
                         }
 
-                        switch (myconfig.alpha.pos % 4) {
+                        switch (myconfig.layout.alpha.pos % 4) {
                         case 0:
                             r0 = (s0[((sh - y + (myvideo.cur_h - sh) - 1) * myvideo.cur_w) + (sw - x - 1)] & 0xff0000) >> 16;
                             g0 = (s0[((sh - y + (myvideo.cur_h - sh) - 1) * myvideo.cur_w) + (sw - x - 1)] & 0x00ff00) >> 8;
@@ -4956,11 +4473,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
             copy_it = 0;
         }
 
-        switch (myconfig.dis_mode) {
+        switch (myconfig.layout.mode) {
         case NDS_DIS_MODE_VH_T0:
             dstrect.w = 170;
             dstrect.h = 128;
-            if (myconfig.alpha.val > 0) {
+            if (myconfig.layout.alpha.val > 0) {
                 srcrect.w = dstrect.w;
                 srcrect.h = dstrect.h;
                 pitch = srcrect.w * 4;
@@ -4969,7 +4486,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         case NDS_DIS_MODE_VH_T1:
             dstrect.w = NDS_W;
             dstrect.h = NDS_H;
-            if (myconfig.alpha.val > 0) {
+            if (myconfig.layout.alpha.val > 0) {
                 srcrect.w = dstrect.w;
                 srcrect.h = dstrect.h;
                 pitch = srcrect.w * 4;
@@ -4977,7 +4494,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
             break;
         }
 
-        switch (myconfig.alpha.pos % 4) {
+        switch (myconfig.layout.alpha.pos % 4) {
         case 0:
             dstrect.x = 0;
             dstrect.y = myvideo.cur_h - dstrect.h;
@@ -4999,7 +4516,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
 
     if (copy_it && myconfig.filter) {
         do {
-            if (myconfig.hres_mode != 0) {
+            if (*myhook.var.sdl.screen[0].hires_mode != 0) {
                 break;
             }
 
@@ -5518,7 +5035,7 @@ const char *l10n(const char *p)
     char buf[MAX_PATH] = {0};
     int cc = 0, r = 0, len = 0;
     
-    if (!strcmp(myconfig.lang.trans[DEF_LANG_SLOT], DEF_LANG_LANG) || (p == NULL)) {
+    if (!strcmp(lang_file_name[DEF_LANG_SLOT], DEF_LANG_LANG) || (p == NULL)) {
         return p;
     }
 
@@ -5529,10 +5046,10 @@ const char *l10n(const char *p)
         return 0;
     }
 
-    for (cc=0; myvideo.lang[cc]; cc++) {
-        if (memcmp(buf, myvideo.lang[cc], len) == 0) {
+    for (cc=0; myvideo.lang.trans[cc]; cc++) {
+        if (memcmp(buf, myvideo.lang.trans[cc], len) == 0) {
             r = 1;
-            info = &myvideo.lang[cc][len];
+            info = &myvideo.lang.trans[cc][len];
             break;
         }
     }
@@ -5595,11 +5112,12 @@ int load_touch_pen(void)
 {
     static int pre_sel = -1;
 
-    char buf[MAX_PATH] = {0};
+    char buf[MAX_PATH] = { 0 };
+    char path[MAX_PATH] = { 0 };
     SDL_Surface *t = NULL;
 
-    if (pre_sel != myconfig.pen.img) {
-        pre_sel = myconfig.pen.img;
+    if (pre_sel != myconfig.pen.sel) {
+        pre_sel = myconfig.pen.sel;
 
         if (myvideo.touch.pen) {
             SDL_FreeSurface(myvideo.touch.pen);
@@ -5607,8 +5125,9 @@ int load_touch_pen(void)
         }
 
         myconfig.pen.type = PEN_LB;
-        if (get_file_path(myconfig.pen.path, myconfig.pen.img, buf, 1) == 0) {
-            t = IMG_Load(buf);
+        snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
+        if (get_file_path(buf, myconfig.pen.sel, path, 1) == 0) {
+            t = IMG_Load(path);
             if (t) {
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
                 int x = 0;
@@ -5634,16 +5153,16 @@ int load_touch_pen(void)
                 myvideo.touch.pen = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
                 SDL_FreeSurface(t);
 
-                if (strstr(buf, "_lt")) {
+                if (strstr(path, "_lt")) {
                     myconfig.pen.type = PEN_LT;
                 }
-                else if (strstr(buf, "_rt")) {
+                else if (strstr(path, "_rt")) {
                     myconfig.pen.type = PEN_RT;
                 }
-                else if (strstr(buf, "_rb")) {
+                else if (strstr(path, "_rb")) {
                     myconfig.pen.type = PEN_RB;
                 }
-                else if (strstr(buf, "_lb")) {
+                else if (strstr(path, "_lb")) {
                     myconfig.pen.type = PEN_LB;
                 }
                 else {
@@ -5651,108 +5170,115 @@ int load_touch_pen(void)
                 }
             }
             else {
-                error("failed to load pen (%s)\n", buf);
+                error("failed to load \"%s\"\n", path);
             }
         }
     }
     return 0;
 }
 
-int load_drastic_menu_resource(void)
+SDL_Surface* load_menu_img(const char *name)
 {
+    char buf[MAX_PATH] = { 0 };
+
+    debug("call %s(name=\"%s\")\n", __func__, name);
+
+    snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, MENU_PATH, myconfig.menu.sel, name);
+    return IMG_Load(buf);
+}
+
+int free_menu_img(void)
+{
+    if (myvideo.menu.sdl2.bg) {
+        SDL_FreeSurface(myvideo.menu.sdl2.bg);
+        myvideo.menu.sdl2.bg = NULL;
+    }
+    if (myvideo.menu.sdl2.cursor) {
+        SDL_FreeSurface(myvideo.menu.sdl2.cursor);
+        myvideo.menu.sdl2.cursor = NULL;
+    }
+    if (myvideo.menu.drastic.bg0) {
+        SDL_FreeSurface(myvideo.menu.drastic.bg0);
+        myvideo.menu.drastic.bg0 = NULL;
+    }
+    if (myvideo.menu.drastic.bg1) {
+        SDL_FreeSurface(myvideo.menu.drastic.bg1);
+        myvideo.menu.drastic.bg1 = NULL;
+    }
+    if (myvideo.menu.drastic.cursor) {
+        SDL_FreeSurface(myvideo.menu.drastic.cursor);
+        myvideo.menu.drastic.cursor = NULL;
+    }
+    if (myvideo.menu.drastic.yes) {
+        SDL_FreeSurface(myvideo.menu.drastic.yes);
+        myvideo.menu.drastic.yes = NULL;
+    }
+    if (myvideo.menu.drastic.no) {
+        SDL_FreeSurface(myvideo.menu.drastic.no);
+        myvideo.menu.drastic.no = NULL;
+    }
+
+    return 0;
+}
+
+int load_menu_res(void)
+{
+    SDL_Rect rt = { 0 };
     SDL_Surface *t = NULL;
-    char folder[MAX_PATH] = {0};
-    char buf[MAX_PATH << 1] = {0};
 
-    if (get_dir_path(myconfig.menu.path, myconfig.menu.sel, folder) != 0) {
-        return -1;
-    }
+    free_menu_img();
 
-    sprintf(buf, "%s/%s", folder, SDL2_MENU_BG_FILE);
-    t = IMG_Load(buf);
+    myvideo.menu.sdl2.bg = load_menu_img(SDL2_MENU_BG_FILE);
+    myvideo.menu.sdl2.cursor = load_menu_img(SDL2_MENU_CURSOR_FILE);
+    myvideo.menu.drastic.bg0 = load_menu_img(DRASTIC_MENU_BG0_FILE);
+    myvideo.menu.drastic.bg1 = load_menu_img(DRASTIC_MENU_BG1_FILE);
+    myvideo.menu.drastic.cursor = load_menu_img(DRASTIC_MENU_CURSOR_FILE);
+
+    t = load_menu_img(DRASTIC_MENU_YES_FILE);
     if (t) {
-        if (myvideo.menu.sdl2.bg) {
-            SDL_FreeSurface(myvideo.menu.sdl2.bg);
-        }
-        myvideo.menu.sdl2.bg = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
-        SDL_FreeSurface(t);
-    }
+        rt.w = myvideo.menu.line_h - 2;
+        rt.h = myvideo.menu.line_h - 2;
 
-    sprintf(buf, "%s/%s", folder, SDL2_MENU_CURSOR_FILE);
-    myvideo.menu.sdl2.cursor = IMG_Load(buf);
-
-    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_BG0_FILE);
-    t = IMG_Load(buf);
-    if (t) {
-        if (myvideo.menu.drastic.bg0) {
-            SDL_FreeSurface(myvideo.menu.drastic.bg0);
-        }
-        myvideo.menu.drastic.bg0 = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
-        SDL_FreeSurface(t);
-    }
-
-    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_BG1_FILE);
-    t = IMG_Load(buf);
-    if (t) {
-        if (myvideo.menu.drastic.bg1) {
-            SDL_FreeSurface(myvideo.menu.drastic.bg1);
-        }
-        myvideo.menu.drastic.bg1 = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
-        SDL_FreeSurface(t);
-    }
-
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_CURSOR_FILE);
-    myvideo.menu.drastic.cursor = IMG_Load(buf);
-#endif
-
-#if defined(TRIMUI)
-    myvideo.menu.drastic.cursor = NULL;
-#endif
-
-    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_YES_FILE);
-    t = IMG_Load(buf);
-    if (t) {
-        SDL_Rect nrt = { 0 };
-
-#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        nrt.w = myvideo.menu.line_h - 2;
-        nrt.h = myvideo.menu.line_h - 2;
-#endif
 #if defined(TRIMUI) || defined(PANDORA)
-        nrt.w = t->w >> 1;
-        nrt.h = t->h >> 1;
+        rt.w = t->w >> 1;
+        rt.h = t->h >> 1;
 #endif
-        if (myvideo.menu.drastic.yes) {
-            SDL_FreeSurface(myvideo.menu.drastic.yes);
-        }
-        myvideo.menu.drastic.yes = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
-        if (myvideo.menu.drastic.yes) {
-            SDL_SoftStretch(t, NULL, myvideo.menu.drastic.yes, NULL);
-        }
+        myvideo.menu.drastic.yes = SDL_CreateRGBSurface(
+            SDL_SWSURFACE,
+            rt.w,
+            rt.h,
+            32,
+            t->format->Rmask,
+            t->format->Gmask,
+            t->format->Bmask,
+            t->format->Amask
+        );
+
+        SDL_SoftStretch(t, NULL, myvideo.menu.drastic.yes, NULL);
         SDL_FreeSurface(t);
     }
 
-    sprintf(buf, "%s/%s", folder, DRASTIC_MENU_NO_FILE);
-    t = IMG_Load(buf);
+    t = load_menu_img(DRASTIC_MENU_NO_FILE);
     if (t) {
-        SDL_Rect nrt = { 0 };
+        rt.w = myvideo.menu.line_h - 2;
+        rt.h = myvideo.menu.line_h - 2;
 
-#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        nrt.w = myvideo.menu.line_h - 2;
-        nrt.h = myvideo.menu.line_h - 2;
-#endif
 #if defined(TRIMUI) || defined(PANDORA)
-        nrt.w = t->w >> 1;
-        nrt.h = t->h >> 1;
+        rt.w = t->w >> 1;
+        rt.h = t->h >> 1;
 #endif
-        if (myvideo.menu.drastic.no) {
-            SDL_FreeSurface(myvideo.menu.drastic.no);
-        }
-        myvideo.menu.drastic.no = SDL_CreateRGBSurface(SDL_SWSURFACE, nrt.w, nrt.h, 32, t->format->Rmask, t->format->Gmask, t->format->Bmask, t->format->Amask);
-        if (myvideo.menu.drastic.no) {
-            SDL_SoftStretch(t, NULL, myvideo.menu.drastic.no, NULL);
-        }
+        myvideo.menu.drastic.no = SDL_CreateRGBSurface(
+            SDL_SWSURFACE,
+            rt.w,
+            rt.h,
+            32,
+            t->format->Rmask,
+            t->format->Gmask,
+            t->format->Bmask,
+            t->format->Amask
+        );
+
+        SDL_SoftStretch(t, NULL, myvideo.menu.drastic.no, NULL);
         SDL_FreeSurface(t);
     }
 
@@ -5775,14 +5301,9 @@ static int load_layout_bg(void)
     SDL_Rect srt = {0, 0, IMG_W, IMG_H};
     SDL_Rect drt = {0, 0, myvideo.cur_w, myvideo.cur_h};
 
-    if (myconfig.enable_752x560) {
-        srt.w = myvideo.cur_w;
-        srt.h = myvideo.cur_h;
-    }
-
-    if ((pre_sel != myconfig.layout.img) || (pre_mode != myconfig.dis_mode)) {
-        pre_mode = myconfig.dis_mode;
-        pre_sel = myconfig.layout.img;
+    if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode)) {
+        pre_mode = myconfig.layout.mode;
+        pre_sel = myconfig.layout.bg.sel;
 
         if (myvideo.layout.bg) {
             SDL_FreeSurface(myvideo.layout.bg);
@@ -5793,8 +5314,8 @@ static int load_layout_bg(void)
         if (myvideo.layout.bg) {
             SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
 
-            if (get_dir_path(myconfig.layout.path, myconfig.layout.img, buf) == 0) {
-                switch (myconfig.dis_mode) {
+            if (get_dir_path(myconfig.layout.path, myconfig.layout.bg.sel, buf) == 0) {
+                switch (myconfig.layout.mode) {
                 case NDS_DIS_MODE_VH_T0:
                 case NDS_DIS_MODE_VH_T1:
                     return 0;
@@ -5895,17 +5416,17 @@ static int load_layout_bg(void)
     char buf[MAX_PATH] = {0};
     SDL_Surface *t = NULL;
 
-    if (myconfig.dis_mode == NDS_DIS_MODE_S1) {
+    if (myconfig.layout.mode == NDS_DIS_MODE_S1) {
         return 0;
     }
 
-    if (pre_mode != myconfig.dis_mode) {
-        pre_mode = myconfig.dis_mode;
+    if (pre_mode != myconfig.layout.mode) {
+        pre_mode = myconfig.layout.mode;
         disp_resize();
     }
 
-    if (pre_sel != myconfig.layout.img) {
-        pre_sel = myconfig.layout.img;
+    if (pre_sel != myconfig.layout.bg.sel) {
+        pre_sel = myconfig.layout.bg.sel;
 
         if (myvideo.layout.bg) {
             SDL_FreeSurface(myvideo.layout.bg);
@@ -5916,7 +5437,7 @@ static int load_layout_bg(void)
         if (myvideo.layout.bg) {
             SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
 
-            if (get_dir_path(myconfig.layout.path, myconfig.layout.img, buf) == 0) {
+            if (get_dir_path(myconfig.layout.path, myconfig.layout.bg.sel, buf) == 0) {
                 strcat(buf, "/bg_s0.png");
                 t = IMG_Load(buf);
                 if (t) {
@@ -5957,8 +5478,8 @@ static int load_layout_bg(void)
     SDL_Surface *t = NULL;
     char buf[MAX_PATH] = {0};
 
-    if (pre_sel != myconfig.layout.img) {
-        pre_sel = myconfig.layout.img;
+    if (pre_sel != myconfig.layout.bg.sel) {
+        pre_sel = myconfig.layout.bg.sel;
 
         if (myvideo.layout.bg) {
             SDL_FreeSurface(myvideo.layout.bg);
@@ -5969,7 +5490,7 @@ static int load_layout_bg(void)
         if (myvideo.layout.bg) {
             SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
 
-            if (get_dir_path(myconfig.layout.path, myconfig.layout.img, buf) == 0) {
+            if (get_dir_path(myconfig.layout.path, myconfig.layout.bg.sel, buf) == 0) {
                 strcat(buf, "/bg.png");
                 t = IMG_Load(buf);
                 if (t) {
@@ -6004,7 +5525,7 @@ static int load_layout_bg(void)
     return 0;
 }
 
-static void quit_device(SDL_VideoDevice *d)
+static void free_device(SDL_VideoDevice *d)
 {
     SDL_free(d);
 }
@@ -6040,7 +5561,7 @@ static SDL_VideoDevice *create_device(int idx)
     d->SetDisplayMode = set_disp_mode;
     d->CreateSDLWindow = create_window;
     d->CreateSDLWindowFrom = create_window_from;
-    d->free = quit_device;
+    d->free = free_device;
     d->PumpEvents = pump_event;
 
     return d;
@@ -6052,6 +5573,115 @@ VideoBootStrap NDS_bootstrap = {
     create_device
 };
 
+static int init_device(void)
+{
+#if defined(TRIMUI)
+    int x = 0;
+    int y = 0;
+    int ox = 32;
+    int oy = 24;
+    int cc = 0;
+    uint32_t *dst = NULL;
+#endif
+
+    debug("call %s()\n", __func__);
+
+    myvideo.menu.line_h = 30;
+    myvideo.cur_w = DEF_FB_W;
+    myvideo.cur_h = DEF_FB_H;
+    myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
+
+    getcwd(myvideo.home, sizeof(myvideo.home));
+    strcat(myvideo.home, "/");
+    debug("home=\"%s\"\n", myvideo.home);
+
+    load_config(myvideo.home);
+    enum_lang_file();
+    load_lang_file(myconfig.lang);
+    load_menu_res();
+    load_touch_pen();
+
+#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(PANDORA)
+    //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
+    //set_half_vol(myconfig.half_vol);
+#endif
+
+#if defined(TRIMUI)
+    if ((myconfig.layout.mode != NDS_DIS_MODE_S0) && (myconfig.layout.mode != NDS_DIS_MODE_S1)) {
+        myconfig.layout.mode = NDS_DIS_MODE_S0;
+    }
+    disp_resize();
+#endif
+
+#if defined(QX1000) || defined(XT897)
+    myconfig.layout.mode = NDS_DIS_MODE_H0;
+#endif
+
+    init_lcd();
+    
+    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
+
+    myconfig.pen.sel = 0;
+    myconfig.pen.max = get_pen_cnt();
+
+    myconfig.layout.bg.sel = 0;
+    myconfig.layout.bg.max = get_layout_bg_cnt();
+
+    myconfig.menu.sel = 0;
+    myconfig.menu.max = get_menu_cnt();
+
+#if defined(QX1000) || defined(XT897)
+    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+#else
+    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
+#endif
+    if (myvideo.menu.drastic.frame) {
+        if (myvideo.menu.drastic.bg0) {
+            SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
+        }
+    }
+
+    myvideo.menu.font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
+
+#if defined(TRIMUI)
+    cc = 0;
+    for (y = 0; y < NDS_H; y++) {
+        for (x = 0; x < NDS_W; x++) {
+            dst = (uint32_t *)myvideo.gfx.ion.vadd;
+            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * myvideo.cur_h) + y + oy);
+            LUT_256x192_S10[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * myvideo.cur_h) + y);
+
+            dst = (uint32_t *)myvideo.gfx.ion.vadd + (myvideo.cur_w * myvideo.cur_h);
+            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * myvideo.cur_h) + y + oy);
+            LUT_256x192_S11[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * myvideo.cur_h) + y);
+            cc+= 1;
+        }
+    }
+#endif
+
+    init_event();
+    init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
+    add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
+    add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
+#if !defined(PANDORA)
+    add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
+    add_prehook_cb(myhook.fun.savestate_post,   prehook_cb_savestate_post);
+#endif
+    add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
+    add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
+
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
+    add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
+    add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
+    add_prehook_cb(myhook.fun.free,    prehook_cb_free);
+#endif
+
+    myvideo.thread.running = 1;
+    pthread_create(&myvideo.thread.id, NULL, video_handler, (void *)NULL);
+
+    return 0;
+}
+
 int init_video(_THIS)
 {
     SDL_DisplayMode mode = { 0 };
@@ -6059,7 +5689,9 @@ int init_video(_THIS)
 
     debug("call %s()\n", __func__);
 
+#if !defined(UT)
     signal(SIGTERM, sigterm_handler);
+#endif
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
@@ -6119,39 +5751,8 @@ int init_video(_THIS)
 
     SDL_AddVideoDisplay(&display, SDL_FALSE);
 
-    myvideo.menu.line_h = 30;
-    myvideo.cur_w = DEF_FB_W;
-    myvideo.cur_h = DEF_FB_H;
-    myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
-
-    getcwd(myconfig.home_path, sizeof(myconfig.home_path));
-    strcat(myconfig.home_path, "/");
-    printf("home_path=\"%s\"\n", myconfig.home_path);
-    strncpy(myconfig.cfg_path, myconfig.home_path, sizeof(myconfig.cfg_path));
-    strcat(myconfig.cfg_path, CFG_PATH);
-    printf("cfg_path=\"%s\"\n", myconfig.cfg_path);
-
-    load_config();
-    //read_config();
-    init_gfx();
-    init_event();
-
-    init_hook(sysconf(_SC_PAGESIZE), myconfig.states.path);
-
-    add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
-    add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
-#if !defined(PANDORA)
-    add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
-    add_prehook_cb(myhook.fun.savestate_post,   prehook_cb_savestate_post);
-#endif
-    add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
-    add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
-
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
-    add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
-    add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
-    add_prehook_cb(myhook.fun.free,    prehook_cb_free);
-#endif
+    TTF_Init();
+    init_device();
     return 0;
 }
 
@@ -6160,9 +5761,11 @@ static int set_disp_mode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode
     return 0;
 }
 
-void quit_video(_THIS)
+static int quit_device(void)
 {
-    debug(" call%s()\n" , __func__);
+    void *r = NULL;
+
+    debug("call %s()\n", __func__);
 
     debug("wait for savestate complete\n");
     while (myvideo.state_busy) {
@@ -6172,7 +5775,7 @@ void quit_video(_THIS)
 
     system("sync");
     quit_hook();
-    update_config();
+    update_config(myvideo.home);
 
     if (myvideo.fps) {
         SDL_FreeSurface(myvideo.fps);
@@ -6189,44 +5792,11 @@ void quit_video(_THIS)
         myvideo.layout.bg = NULL;
     }
 
-    if (myvideo.menu.sdl2.bg) {
-        SDL_FreeSurface(myvideo.menu.sdl2.bg);
-        myvideo.menu.sdl2.bg = NULL;
-    }
 
-    if (myvideo.menu.sdl2.cursor) {
-        SDL_FreeSurface(myvideo.menu.sdl2.cursor);
-        myvideo.menu.sdl2.cursor = NULL;
-    }
-
-    if (myvideo.menu.drastic.bg0) {
-        SDL_FreeSurface(myvideo.menu.drastic.bg0);
-        myvideo.menu.drastic.bg0 = NULL;
-    }
-
-    if (myvideo.menu.drastic.bg1) {
-        SDL_FreeSurface(myvideo.menu.drastic.bg1);
-        myvideo.menu.drastic.bg1 = NULL;
-    }
-
-    if (myvideo.menu.drastic.cursor) {
-        SDL_FreeSurface(myvideo.menu.drastic.cursor);
-        myvideo.menu.drastic.cursor = NULL;
-    }
-
+    free_menu_img();
     if (myvideo.menu.drastic.frame) {
         SDL_FreeSurface(myvideo.menu.drastic.frame);
         myvideo.menu.drastic.frame = NULL;
-    }
-
-    if (myvideo.menu.drastic.yes) {
-        SDL_FreeSurface(myvideo.menu.drastic.yes);
-        myvideo.menu.drastic.yes = NULL;
-    }
-
-    if (myvideo.menu.drastic.no) {
-        SDL_FreeSurface(myvideo.menu.drastic.no);
-        myvideo.menu.drastic.no = NULL;
     }
 
     if (myvideo.menu.font) {
@@ -6234,10 +5804,31 @@ void quit_video(_THIS)
         myvideo.menu.font = NULL;
     }
 
-    TTF_Quit();
-    quit_gfx();
+
+    debug("wait for video_handler complete\n");
+    myvideo.thread.running = 0;
+    pthread_join(myvideo.thread.id, &r);
+    debug("completed\n");
+
+    clear_lcd();
+    quit_lcd();
+
+    if (myvideo.cvt) {
+        SDL_FreeSurface(myvideo.cvt);
+        myvideo.cvt = NULL;
+    }
     quit_event();
-    lang_unload();
+    quit_lang();
+
+    return 0;
+}
+
+void quit_video(_THIS)
+{
+    debug("call%s()\n" , __func__);
+
+    TTF_Quit();
+    quit_device();
 }
 
 #if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK) || defined(XT897) || defined(TRIMUI)
@@ -6291,56 +5882,6 @@ static const char *DIS_MODE1_640[] = {
     "480*320",
 };
 
-static const char *DIS_MODE0_752[] = {
-    "752*560",
-    "752*560",
-    "512*384",
-    "752*560",
-    "256*192",
-    "373*280",
-    "256*192",
-    "373*280",
-    "592*440",
-    "496*368",
-    "496*368",
-
-    "512*384",
-    "512*384",
-    "512*384",
-
-    "496*368",
-    "496*368",
-    "501*376",
-    "501*376",
-    "560*376",
-    "560*376",
-};
-
-static const char *DIS_MODE1_752[] = {
-    "170*128",
-    "256*192",
-    "",
-    "",
-    "256*192",
-    "373*280",
-    "256*192",
-    "373*280",
-    "160*120",
-    "256*192",
-    "256*192",
-
-    "240*176",
-    "240*176",
-    "240*176",
-
-    "256*192",
-    "256*192",
-    "501*376",
-    "501*376",
-    "560*376",
-    "560*376",
-};
-
 static const char *POS[] = {
     "Top-Right", "Top-Left", "Bottom-Left", "Bottom-Right"
 };
@@ -6376,9 +5917,9 @@ static int lang_next(void)
     int cc = 0;
 
     for (cc=1; cc<(MAX_LANG_FILE-1); cc++) {
-        if (!strcmp(myconfig.lang.trans[DEF_LANG_SLOT], myconfig.lang.trans[cc])) {
-            if (strcmp(myconfig.lang.trans[cc + 1], "")) {
-                strcpy(myconfig.lang.trans[DEF_LANG_SLOT], myconfig.lang.trans[cc + 1]);
+        if (!strcmp(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc])) {
+            if (strcmp(lang_file_name[cc + 1], "")) {
+                strcpy(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc + 1]);
                 return 0;
             }
         }
@@ -6391,9 +5932,9 @@ static int lang_prev(void)
     int cc = 0;
 
     for (cc=(MAX_LANG_FILE-1); cc>1; cc--) {
-        if (!strcmp(myconfig.lang.trans[DEF_LANG_SLOT], myconfig.lang.trans[cc])) {
-            if (strcmp(myconfig.lang.trans[cc - 1], "")) {
-                strcpy(myconfig.lang.trans[DEF_LANG_SLOT], myconfig.lang.trans[cc - 1]);
+        if (!strcmp(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc])) {
+            if (strcmp(lang_file_name[cc - 1], "")) {
+                strcpy(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc - 1]);
                 return 0;
             }
         }
@@ -6503,11 +6044,11 @@ int handle_sdl2_menu(int key)
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
 #endif
-    static char pre_lang[LANG_FILE_LEN] = {0};
+    static char pre_lang[MAX_LANG_NAME] = {0};
 
-    const int SX = myconfig.enable_752x560 ? 200 : 150;
-    const int SY = myconfig.enable_752x560 ? 120 : 107;
-    const int SSX = myconfig.enable_752x560 ? 410 : 385;
+    const int SX = 150;
+    const int SY = 107;
+    const int SSX = 385;
 
     int cc = 0;
     int sx = 0;
@@ -6519,14 +6060,14 @@ int handle_sdl2_menu(int key)
     int dis_mode = -1;
     SDL_Rect rt = {0};
     char buf[MAX_PATH] = {0};
-    uint32_t sel_col = myconfig.menu.c0;
-    uint32_t unsel_col = myconfig.menu.c1;
+    uint32_t sel_col = MENU_COLOR0;
+    uint32_t unsel_col = MENU_COLOR1;
     uint32_t dis_col = 0x808080;
-    uint32_t val_col = myconfig.menu.c0;
+    uint32_t val_col = MENU_COLOR0;
     uint32_t col0 = 0, col1 = 0;
 
     if (pre_lang[0] == 0) {
-        strcpy(pre_lang, myconfig.lang.trans[DEF_LANG_SLOT]);
+        strcpy(pre_lang, lang_file_name[DEF_LANG_SLOT]);
     }
 
 #if !defined(RG28XX) && !defined(FLIP)
@@ -6577,45 +6118,45 @@ int handle_sdl2_menu(int key)
             myconfig.hotkey = HOTKEY_BIND_MENU;
             break;
         case MENU_SWAP_L1L2:
-            myconfig.swap_l1l2 = 0;
+            myconfig.swap_l1_l2 = 0;
             break;
         case MENU_SWAP_R1R2:
-            myconfig.swap_r1r2 = 0;
+            myconfig.swap_r1_r2 = 0;
             break;
         case MENU_DIS:
-            if (myconfig.hres_mode == 0) {
-                if (myconfig.dis_mode > 0) {
-                    myconfig.dis_mode-= 1;
+            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
+                if (myconfig.layout.mode > 0) {
+                    myconfig.layout.mode-= 1;
                 }
             }
             else {
-                myconfig.dis_mode = NDS_DIS_MODE_HRES0;
+                myconfig.layout.mode = NDS_DIS_MODE_HRES0;
             }
             break;
         case MENU_DIS_ALPHA:
-            if (((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.alpha.val > 0) {
-                    myconfig.alpha.val-= 1;
+            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.alpha.val > 0) {
+                    myconfig.layout.alpha.val-= 1;
                 }
             }
             break;
         case MENU_DIS_BORDER:
-            if ((myconfig.alpha.val > 0) && ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.alpha.border > 0) {
-                    myconfig.alpha.border-= 1;
+            if ((myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.alpha.border > 0) {
+                    myconfig.layout.alpha.border-= 1;
                 }
             }
             break;
         case MENU_DIS_POSITION:
-            if (((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.alpha.pos > 0) {
-                    myconfig.alpha.pos-= 1;
+            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.alpha.pos > 0) {
+                    myconfig.layout.alpha.pos-= 1;
                 }
             }
             break;
         case MENU_ALT:
-            if ((myconfig.hres_mode == 0) && (myconfig.alt_mode > 0)) {
-                myconfig.alt_mode-= 1;
+            if ((*myhook.var.sdl.screen[0].hires_mode == 0) && (myconfig.layout.alt > 0)) {
+                myconfig.layout.alt-= 1;
             }
             break;
         case MENU_KEYS:
@@ -6754,45 +6295,45 @@ int handle_sdl2_menu(int key)
             myconfig.hotkey = HOTKEY_BIND_SELECT;
             break;
         case MENU_SWAP_L1L2:
-            myconfig.swap_l1l2 = 1;
+            myconfig.swap_l1_l2 = 1;
             break;
         case MENU_SWAP_R1R2:
-            myconfig.swap_r1r2 = 1;
+            myconfig.swap_r1_r2 = 1;
             break;
         case MENU_DIS:
-            if (myconfig.hres_mode == 0) {
-                if (myconfig.dis_mode < NDS_DIS_MODE_LAST) {
-                    myconfig.dis_mode+= 1;
+            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
+                if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
+                    myconfig.layout.mode+= 1;
                 }
             }
             else {
-                myconfig.dis_mode = NDS_DIS_MODE_HRES1;
+                myconfig.layout.mode = NDS_DIS_MODE_HRES1;
             }
             break;
         case MENU_DIS_ALPHA:
-            if (((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.alpha.val < NDS_ALPHA_MAX) {
-                    myconfig.alpha.val+= 1;
+            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.alpha.val < NDS_ALPHA_MAX) {
+                    myconfig.layout.alpha.val+= 1;
                 }
             }
             break;
         case MENU_DIS_BORDER:
-            if ((myconfig.alpha.val > 0) && ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.alpha.border < NDS_BORDER_MAX) {
-                    myconfig.alpha.border+= 1;
+            if ((myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.alpha.border < NDS_BORDER_MAX) {
+                    myconfig.layout.alpha.border+= 1;
                 }
             }
             break;
         case MENU_DIS_POSITION:
-            if (((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.alpha.pos < 3) {
-                    myconfig.alpha.pos+= 1;
+            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.alpha.pos < 3) {
+                    myconfig.layout.alpha.pos+= 1;
                 }
             }
             break;
         case MENU_ALT:
-            if ((myconfig.hres_mode == 0) && (myconfig.alt_mode < NDS_DIS_MODE_LAST)) {
-                myconfig.alt_mode+= 1;
+            if ((*myhook.var.sdl.screen[0].hires_mode == 0) && (myconfig.layout.alt < NDS_DIS_MODE_LAST)) {
+                myconfig.layout.alt+= 1;
             }
             break;
         case MENU_KEYS:
@@ -6933,9 +6474,9 @@ int handle_sdl2_menu(int key)
         }
 #endif
 
-        if (strcmp(pre_lang, myconfig.lang.trans[DEF_LANG_SLOT])) {
-            lang_unload();
-            lang_load(myconfig.lang.trans[DEF_LANG_SLOT]);
+        if (strcmp(pre_lang, lang_file_name[DEF_LANG_SLOT])) {
+            quit_lang();
+            load_lang_file(lang_file_name[DEF_LANG_SLOT]);
             memset(pre_lang, 0, sizeof(pre_lang));
         }
 
@@ -6943,7 +6484,7 @@ int handle_sdl2_menu(int key)
             fast_forward(myconfig.fast_forward);
             pre_ff = myconfig.fast_forward;
         }
-        myconfig.menu.enable = 0;
+        myvideo.menu.sdl2.enable = 0;
 #if defined(QX1000) || defined(XT897)
         update_wayland_res(NDS_W * 2, NDS_H);
 #endif
@@ -6953,10 +6494,10 @@ int handle_sdl2_menu(int key)
     }
 
     if (cur_sel == MENU_DIS) {
-        dis_mode = myconfig.dis_mode;
+        dis_mode = myconfig.layout.mode;
     }
     if (cur_sel == MENU_ALT) {
-        dis_mode = myconfig.alt_mode;
+        dis_mode = myconfig.layout.alt;
     }
     SDL_SoftStretch(myvideo.menu.sdl2.bg, NULL, myvideo.cvt, NULL);
 
@@ -6984,11 +6525,11 @@ int handle_sdl2_menu(int key)
         switch (cc) {
         case MENU_DIS_ALPHA:
             sx = 20;
-            if ((cur_sel == MENU_DIS_ALPHA) && ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_DIS_ALPHA) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 col1 = val_col;
             }
             else {
-                if ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1)) {
+                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) {
                     col1 = unsel_col;
                 }
                 else {
@@ -6998,11 +6539,11 @@ int handle_sdl2_menu(int key)
             break;
         case MENU_DIS_BORDER:
             sx = 20;
-            if ((cur_sel == MENU_DIS_BORDER) && (myconfig.alpha.val > 0) && ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_DIS_BORDER) && (myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 col1 = val_col;
             }
             else {
-                if ((myconfig.alpha.val > 0) && ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
+                if ((myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                     col1 = unsel_col;
                 }
                 else {
@@ -7012,11 +6553,11 @@ int handle_sdl2_menu(int key)
             break;
         case MENU_DIS_POSITION:
             sx = 20;
-            if ((cur_sel == MENU_DIS_POSITION) && ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_DIS_POSITION) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 col1 = val_col;
             }
             else {
-                if ((myconfig.dis_mode == NDS_DIS_MODE_VH_T0) || (myconfig.dis_mode == NDS_DIS_MODE_VH_T1)) {
+                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) {
                     col1 = unsel_col;
                 }
                 else {
@@ -7025,7 +6566,7 @@ int handle_sdl2_menu(int key)
             }
             break;
         case MENU_ALT:
-            if (myconfig.hres_mode == 0) {
+            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
                 col1 = (cur_sel == cc) ? val_col : unsel_col;
             }
             else {
@@ -7064,25 +6605,25 @@ int handle_sdl2_menu(int key)
 
         if (col0 == sel_col) {
             if (myconfig.menu.show_cursor) {
-                rt.x = SX - (myconfig.enable_752x560 ? 43 : 10);
-                rt.w = 461 + (myconfig.enable_752x560 ? 41 : -40);
+                rt.x = SX - 10;
+                rt.w = 461 - 40;
             }
             else {
-                rt.x = SX - (myconfig.enable_752x560 ? 83 : 50);
-                rt.w = 461 + (myconfig.enable_752x560 ? 81 : 0);
+                rt.x = SX - 50;
+                rt.w = 461 + 0;
             }
             rt.y = SY + (h * idx) - 2;
             rt.h = FONT_SIZE + 3;
 
             if ((cc == MENU_DIS_ALPHA) || (cc == MENU_KEYS)) {
-                rt.w-= (myconfig.enable_752x560 ? 179 : 121);
+                rt.w -= 121;
             }
             if (col1 == dis_col) {
                 col1 = val_col;
                 SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 0x80, 0x80, 0x80));
             }
             else {
-                SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
             }
 
             if (myconfig.menu.show_cursor && myvideo.menu.sdl2.cursor) {
@@ -7094,11 +6635,11 @@ int handle_sdl2_menu(int key)
             }
 
             if ((cc == MENU_DIS) || (cc == MENU_ALT)) {
-                rt.x = myconfig.enable_752x560 ? 480 : 440;
+                rt.x = 440;
                 rt.y = SY + (h * (idx + 1)) - 7;
-                rt.w = myconfig.enable_752x560 ? 179 : 121;
+                rt.w = 121;
                 rt.h = FONT_SIZE + 8;
-                SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (myconfig.menu.c2 >> 16) & 0xff, (myconfig.menu.c2 >> 8) & 0xff, myconfig.menu.c2 & 0xff));
+                SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
             }
         }
         draw_info(myvideo.cvt, l10n(MENU_ITEM[cc]), SX + sx, SY + (h * idx), col0, 0);
@@ -7106,7 +6647,7 @@ int handle_sdl2_menu(int key)
         sx = 0;
         switch (cc) {
         case MENU_LANG:
-            sprintf(buf, "%s", myconfig.lang.trans[DEF_LANG_SLOT]);
+            sprintf(buf, "%s", lang_file_name[DEF_LANG_SLOT]);
             break;
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
         case MENU_CPU_CORE:
@@ -7126,49 +6667,44 @@ int handle_sdl2_menu(int key)
             sprintf(buf, "%s", l10n(HOTKEY[myconfig.hotkey]));
             break;
         case MENU_SWAP_L1L2:
-            sprintf(buf, "%s", l10n(myconfig.swap_l1l2 ? "Yes" : "No"));
+            sprintf(buf, "%s", l10n(myconfig.swap_l1_l2 ? "Yes" : "No"));
             break;
         case MENU_SWAP_R1R2:
-            sprintf(buf, "%s", l10n(myconfig.swap_r1r2 ? "Yes" : "No"));
+            sprintf(buf, "%s", l10n(myconfig.swap_r1_r2 ? "Yes" : "No"));
             break;
         case MENU_DIS:
-            if (myconfig.hres_mode == 0) {
-                sprintf(buf, "[%d]   %s", myconfig.dis_mode, myconfig.enable_752x560 ? DIS_MODE0_752[myconfig.dis_mode] : DIS_MODE0_640[myconfig.dis_mode]);
+            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
+                sprintf(buf, "[%d]   %s", myconfig.layout.mode, DIS_MODE0_640[myconfig.layout.mode]);
             }
             else {
-                if (myconfig.enable_752x560) {
-                    sprintf(buf, "[%d]   %s", myconfig.dis_mode, myconfig.dis_mode == NDS_DIS_MODE_HRES0 ? "512*384" : "752*560");
-                }
-                else {
-                    sprintf(buf, "[%d]   %s", myconfig.dis_mode, myconfig.dis_mode == NDS_DIS_MODE_HRES0 ? "512*384" : "640*480");
-                }
+                sprintf(buf, "[%d]   %s", myconfig.layout.mode, myconfig.layout.mode == NDS_DIS_MODE_HRES0 ? "512*384" : "640*480");
             }
             break;
         case MENU_DIS_ALPHA:
-            if (myconfig.hres_mode == 0) {
-                sprintf(buf, "[%d]   ", myconfig.dis_mode);
+            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
+                sprintf(buf, "[%d]   ", myconfig.layout.mode);
                 sx = get_font_width(buf);
-                sprintf(buf, "%s", myconfig.enable_752x560 ? DIS_MODE1_752[myconfig.dis_mode] : DIS_MODE1_640[myconfig.dis_mode]);
-                draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_DIS) ? myconfig.menu.c0 : myconfig.menu.c1, 0);
+                sprintf(buf, "%s", DIS_MODE1_640[myconfig.layout.mode]);
+                draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_DIS) ? MENU_COLOR0 : MENU_COLOR1, 0);
             }
 
             sx = 0;
-            sprintf(buf, "%d", myconfig.alpha.val);
+            sprintf(buf, "%d", myconfig.layout.alpha.val);
             break;
         case MENU_DIS_BORDER:
-            sprintf(buf, "%s", l10n(BORDER[myconfig.alpha.border]));
+            sprintf(buf, "%s", l10n(BORDER[myconfig.layout.alpha.border]));
             break;
         case MENU_DIS_POSITION:
-            sprintf(buf, "%s", l10n(POS[myconfig.alpha.pos]));
+            sprintf(buf, "%s", l10n(POS[myconfig.layout.alpha.pos]));
             break;
         case MENU_ALT:
-            sprintf(buf, "[%d]   %s", myconfig.alt_mode, myconfig.enable_752x560 ? DIS_MODE0_752[myconfig.alt_mode] : DIS_MODE0_640[myconfig.alt_mode]);
+            sprintf(buf, "[%d]   %s", myconfig.layout.alt, DIS_MODE0_640[myconfig.layout.alt]);
             break;
         case MENU_KEYS:
-            sprintf(buf, "[%d]   ", myconfig.alt_mode);
+            sprintf(buf, "[%d]   ", myconfig.layout.alt);
             sx = get_font_width(buf);
-            sprintf(buf, "%s", myconfig.enable_752x560 ? DIS_MODE1_752[myconfig.alt_mode] : DIS_MODE1_640[myconfig.alt_mode]);
-            draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (myconfig.hres_mode == 0) && (cur_sel == MENU_ALT) ? val_col : unsel_col, 0);
+            sprintf(buf, "%s", DIS_MODE1_640[myconfig.layout.alt]);
+            draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (*myhook.var.sdl.screen[0].hires_mode == 0) && (cur_sel == MENU_ALT) ? val_col : unsel_col, 0);
 
             sx = 0;
             sprintf(buf, "%s", DPAD[myconfig.keys_rotate % 3]);
@@ -7232,8 +6768,8 @@ int handle_sdl2_menu(int key)
         idx+= 1;
     }
 
-    sx = myconfig.enable_752x560 ? 540 : 450;
-    sy = myconfig.enable_752x560 ? 430 : 360;
+    sx = 450;
+    sy = 360;
     if(dis_mode >= 0) {
         switch (dis_mode) {
         case NDS_DIS_MODE_VH_T0:
@@ -7245,7 +6781,7 @@ int handle_sdl2_menu(int key)
            
             rt.w = 34;
             rt.h = 26;
-            switch (myconfig.alpha.pos) {
+            switch (myconfig.layout.alpha.pos) {
             case 0:
                 rt.x = (sx + 128) - rt.w;
                 rt.y = sy;
@@ -7263,7 +6799,7 @@ int handle_sdl2_menu(int key)
                 rt.y = (sy + 96) - rt.h;
                 break;
             }
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.alpha.val)));
+            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.alpha.val)));
             break;
         case NDS_DIS_MODE_VH_T1:
             rt.x = sx;
@@ -7274,7 +6810,7 @@ int handle_sdl2_menu(int key)
            
             rt.w = 51;
             rt.h = 38;
-            switch (myconfig.alpha.pos) {
+            switch (myconfig.layout.alpha.pos) {
             case 0:
                 rt.x = (sx + 128) - rt.w;
                 rt.y = sy;
@@ -7292,7 +6828,7 @@ int handle_sdl2_menu(int key)
                 rt.y = (sy + 96) - rt.h;
                 break;
             }
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.alpha.val)));
+            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.alpha.val)));
             break;
         case NDS_DIS_MODE_S0:
             rt.x = sx;
@@ -7642,7 +7178,7 @@ int handle_sdl2_menu(int key)
     }
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    myconfig.update_menu = 1;
+    myvide.menu.update = 1;
 #else
     flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, ROTATE_180);
     flip_lcd();
