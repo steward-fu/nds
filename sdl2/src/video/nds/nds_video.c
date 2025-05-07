@@ -1872,6 +1872,7 @@ static int process_screen(void)
             drt.h = NDS_H;
             drt.x = screen0 ? 64 : 64 + drt.w;
             drt.y = (myvideo.cur_h - drt.h) / 2;
+printf("screen %d, %d-%d-%d-%d\n", idx, drt.x, drt.y, drt.w, drt.h);
             break;
         case NDS_DIS_MODE_H1:
             drt.w = 320;
@@ -5327,18 +5328,18 @@ static int load_layout_bg(void)
             case NDS_DIS_MODE_VH_T1:
                 return 0;
             case NDS_DIS_MODE_S0:
-                strcat(buf, "/bg_s0.png");
+                strcat(buf, "/64-48-512-384.png");
                 break;
             case NDS_DIS_MODE_S1:
                 return 0;
             case NDS_DIS_MODE_V0:
-                strcat(buf, "/bg_v0.png");
+                strcat(buf, "/192-48-256-192_192-240-256-192.png");
                 break;
             case NDS_DIS_MODE_V1:
-                strcat(buf, "/bg_v1.png");
+                strcat(buf, "/133-0-373-280_133-280-373-280.png");
                 break;
             case NDS_DIS_MODE_H0:
-                strcat(buf, "/bg_h0.png");
+                strcat(buf, "/64-144-256-192_320-144-256-192.png");
                 break;
             case NDS_DIS_MODE_H1:
                 strcat(buf, "/bg_h1.png");
