@@ -155,6 +155,11 @@ int write_log(const char *msg, const char *fmt, ...)
     return 0;
 }
 
+int reset_config(void)
+{
+    myconfig.pen.speed = 10;
+}
+
 int load_config(const char *path)
 {
     struct stat st = { 0 };
@@ -166,7 +171,9 @@ int load_config(const char *path)
     strcat(buf, CFG_PATH);
     printf("cfg=\"%s\"\n", buf);
 
-    read_file(buf, &myconfig, sizeof(myconfig));
+    if (read_file(buf, &myconfig, sizeof(myconfig)) < 0) {
+        reset_config();
+    }
 
     strncpy(buf, path, sizeof(buf));
     strcat(buf, BIOS_PATH);

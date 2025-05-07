@@ -212,7 +212,7 @@ static int inc_touch_axis(int type)
         v*= 2;
     }
 
-    move = 100; //((float)clock() - myconfig.pen.pre_ticks) / v;
+    move = 500000.0 / v;
     if (move <= 0.0) {
         move = 1.0;
     }

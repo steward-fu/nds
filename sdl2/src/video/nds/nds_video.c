@@ -5157,16 +5157,16 @@ int load_touch_pen(void)
                 myvideo.touch.pen = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
                 SDL_FreeSurface(t);
 
-                if (strstr(path, "_lt")) {
+                if (strstr(path, "left_top_")) {
                     myconfig.pen.type = PEN_LT;
                 }
-                else if (strstr(path, "_rt")) {
+                else if (strstr(path, "right_top_")) {
                     myconfig.pen.type = PEN_RT;
                 }
-                else if (strstr(path, "_rb")) {
+                else if (strstr(path, "right_bottom_")) {
                     myconfig.pen.type = PEN_RB;
                 }
-                else if (strstr(path, "_lb")) {
+                else if (strstr(path, "left_bottom_")) {
                     myconfig.pen.type = PEN_LB;
                 }
                 else {
