@@ -10,20 +10,24 @@
 #define NDS_Wx2     (NDS_W << 1)
 #define NDS_Hx2     (NDS_H << 1)
 
-#define BIOS_PATH   "system"
-#define BG_PATH     "res/bg"
-#define PEN_PATH    "res/pen"
-#define LANG_PATH   "res/lang"
-#define MENU_PATH   "res/menu"
-#define CFG_PATH    "res/nds.cfg"
-#define FONT_FILE   "res/font/font.ttf"
+#define RES_PATH    "res"
+#define BG_PATH     RES_PATH"/bg"
+#define PEN_PATH    RES_PATH"/pen"
+#define LANG_PATH   RES_PATH"/lang"
+#define MENU_PATH   RES_PATH"/menu"
+#define CFG_PATH    RES_PATH"/nds.cfg"
+#define FONT_FILE   RES_PATH"/font/font.ttf"
 
-#define NDS_FIRMWARE        "nds_firmware.bin"
-#define NDS_BIOS_ARM7       "nds_bios_arm7.bin"
-#define NDS_BIOS_ARM9       "nds_bios_arm9.bin"
-#define DRASTIC_BIOS_ARM7   "drastic_bios_arm7.bin"
-#define DRASTIC_BIOS_ARM9   "drastic_bios_arm9.bin"
+#define BIOS_PATH                   "system"
+#define NDS_FIRMWARE_FILE           "nds_firmware.bin"
+#define NDS_BIOS_ARM7_FILE          "nds_bios_arm7.bin"
+#define NDS_BIOS_ARM9_FILE          "nds_bios_arm9.bin"
+#define DRASTIC_BIOS_ARM7_FILE      "drastic_bios_arm7.bin"
+#define DRASTIC_BIOS_ARM9_FILE      "drastic_bios_arm9.bin"
 
+#define MENU_COLOR0                 0xffffff
+#define MENU_COLOR1                 0x000000
+#define MENU_COLOR2                 0x289a35
 #define SDL2_MENU_BG_FILE           "bg.png"
 #define SDL2_MENU_CURSOR_FILE       "cursor.png"
 #define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
@@ -31,10 +35,6 @@
 #define DRASTIC_MENU_YES_FILE       "drastic_yes.png"
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
-
-#define MENU_COLOR0     0xffffff
-#define MENU_COLOR1     0x000000
-#define MENU_COLOR2     0x289a35
 
 #define NDS_DIS_MODE_VH_T0          0
 #define NDS_DIS_MODE_VH_T1          1
@@ -64,16 +64,14 @@
 #define NDS_ALPHA_MAX               7
 #define NDS_BORDER_MAX              7
 
-#define NDS_STATE_SAVE             1
-#define NDS_STATE_LOAD             2
-#define NDS_STATE_FAST             4
-
+#define MAX_PATH                    128
 #define MAX_LANG_NAME               16
 #define MAX_LANG_FILE               32
 #define MAX_LANG_LINE               256
 #define MAX_MENU_LINE               256
 
 #define DEBUG 0
+#define LOG_FILE_NAME "mynds.log"
 
 #if DEBUG
 #define debug(...) printf("[DEBUG] "__VA_ARGS__)
@@ -86,14 +84,6 @@
 #else
 #define error(...)
 #endif
-
-#define LOG_FILE_NAME "mynds.log"
-
-#if !defined(MAX_PATH)
-#define MAX_PATH        128
-#endif
-
-#define JSON_VOL_KEY "vol"
 
 typedef enum {
     PEN_LT = 0,

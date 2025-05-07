@@ -213,6 +213,10 @@
     #define DEINIT_CPU_CORE         2
 #endif
 
+#define NDS_STATE_SAVE             1
+#define NDS_STATE_LOAD             2
+#define NDS_STATE_FAST             4
+
 #define NDS_DRASTIC_MENU_MAIN           1
 #define NDS_DRASTIC_MENU_OPTION         2
 #define NDS_DRASTIC_MENU_CONTROLLER     3
@@ -354,24 +358,26 @@ typedef struct {
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-    EGLConfig eglConfig;
-    EGLDisplay eglDisplay;
-    EGLContext eglContext;
-    EGLSurface eglSurface;
-    GLuint vShader;
-    GLuint fShader;
-    GLuint pObject;
-    GLuint texID[TEXTURE_MAX];
-    GLint posLoc;
-    GLint texLoc;
-    GLint samLoc;
-    GLint alphaLoc;
+    struct {
+        EGLConfig eglConfig;
+        EGLDisplay eglDisplay;
+        EGLContext eglContext;
+        EGLSurface eglSurface;
+        GLuint vShader;
+        GLuint fShader;
+        GLuint pObject;
+        GLuint texID[TEXTURE_MAX];
+        GLint posLoc;
+        GLint texLoc;
+        GLint samLoc;
+        GLint alphaLoc;
 
-    int mem_fd;
-    uint8_t* ccu_mem;
-    uint8_t* dac_mem;
-    uint32_t *vol_ptr;
-    uint32_t *cpu_ptr;
+        int mem_fd;
+        uint8_t* ccu_mem;
+        uint8_t* dac_mem;
+        uint32_t *vol_ptr;
+        uint32_t *cpu_ptr;
+    } egl;
 #endif
 
 #if defined(FLIP)

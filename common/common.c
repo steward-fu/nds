@@ -200,19 +200,19 @@ int drop_bios_files(const char *path)
     int r = 0;
     char buf[MAX_PATH] = { 0 };
 
-    sprintf(buf, "%s/" DRASTIC_BIOS_ARM7, path);
+    sprintf(buf, "%s/" DRASTIC_BIOS_ARM7_FILE, path);
     r += write_file(buf, drastic_bios_arm7, sizeof(drastic_bios_arm7));
 
-    sprintf(buf, "%s/" DRASTIC_BIOS_ARM9, path);
+    sprintf(buf, "%s/" DRASTIC_BIOS_ARM9_FILE, path);
     r += write_file(buf, drastic_bios_arm9, sizeof(drastic_bios_arm9));
 
-    sprintf(buf, "%s/" NDS_BIOS_ARM7, path);
+    sprintf(buf, "%s/" NDS_BIOS_ARM7_FILE, path);
     r += write_file(buf, nds_bios_arm7, sizeof(nds_bios_arm7));
 
-    sprintf(buf, "%s/" NDS_BIOS_ARM9, path);
+    sprintf(buf, "%s/" NDS_BIOS_ARM9_FILE, path);
     r += write_file(buf, nds_bios_arm9, sizeof(nds_bios_arm9));
 
-    sprintf(buf, "%s/" NDS_FIRMWARE, path);
+    sprintf(buf, "%s/" NDS_FIRMWARE_FILE, path);
     r += write_file(buf, nds_firmware, sizeof(nds_firmware));
 
     return r;
@@ -226,17 +226,17 @@ TEST(common, drop_bios_files)
 
     mkdir(VALID_PATH "/" BIOS_PATH, 0755);
     TEST_ASSERT_EQUAL_INT(303104, drop_bios_files(VALID_PATH "/" BIOS_PATH));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" DRASTIC_BIOS_ARM7, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" DRASTIC_BIOS_ARM9, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" NDS_BIOS_ARM7, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" NDS_BIOS_ARM9, F_OK));
-    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" NDS_FIRMWARE, F_OK));
+    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" DRASTIC_BIOS_ARM7_FILE, F_OK));
+    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" DRASTIC_BIOS_ARM9_FILE, F_OK));
+    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" NDS_BIOS_ARM7_FILE, F_OK));
+    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" NDS_BIOS_ARM9_FILE, F_OK));
+    TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH "/" BIOS_PATH "/" NDS_FIRMWARE_FILE, F_OK));
     TEST_ASSERT_EQUAL_INT(-5, drop_bios_files(INVALID_PATH));
-    unlink(VALID_PATH "/" DRASTIC_BIOS_ARM7);
-    unlink(VALID_PATH "/" DRASTIC_BIOS_ARM9);
-    unlink(VALID_PATH "/" NDS_BIOS_ARM7);
-    unlink(VALID_PATH "/" NDS_BIOS_ARM9);
-    unlink(VALID_PATH "/" NDS_FIRMWARE);
+    unlink(VALID_PATH "/" BIOS_PATH "/" DRASTIC_BIOS_ARM7_FILE);
+    unlink(VALID_PATH "/" BIOS_PATH "/" DRASTIC_BIOS_ARM9_FILE);
+    unlink(VALID_PATH "/" BIOS_PATH "/" NDS_BIOS_ARM7_FILE);
+    unlink(VALID_PATH "/" BIOS_PATH "/" NDS_BIOS_ARM9_FILE);
+    unlink(VALID_PATH "/" BIOS_PATH "/" NDS_FIRMWARE_FILE);
     rmdir(VALID_PATH "/" BIOS_PATH);
 }
 #endif

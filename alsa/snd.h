@@ -21,11 +21,13 @@
 #define MI_AO_GETVOLUME     0xc008690c
 #define MI_AO_SETMUTE       0x4008690d
 #define JSON_APP_FILE       "/appconfigs/system.json"
+#define JSON_VOL_KEY        "vol"
 #endif
 
 #if defined(A30)
 #define MAX_VOL             20
 #define JSON_APP_FILE       "/config/system.json"
+#define JSON_VOL_KEY        "vol"
 #endif
 
 #if defined(MINI)
