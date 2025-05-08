@@ -69,176 +69,134 @@
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897) || defined(BRICK)
-#define RELOAD_BG_COUNT     1
+#define RELOAD_BG_COUNT 1
 #else
-#define RELOAD_BG_COUNT     120
+#define RELOAD_BG_COUNT 120
 #endif
 
+#define LAYOUT_BG_W     640
+#define LAYOUT_BG_H     480
+
+typedef enum {
+    MYJOY_MODE_DISABLE = 0,
+    MYJOY_MODE_KEYPAD,
+    MYJOY_MODE_STYLUS,
+    MYJOY_MODE_CUSKEY,
+
+    MYJOY_MODE_LAST = MYJOY_MODE_CUSKEY
+} myjoy_t;
+
+#define MYJOY_SHOW_CNT      300
+#define MYJOY_MOVE_SPEED    4
+
 #if defined(UT)
-    #define DEF_FB_W                640
-    #define DEF_FB_H                480
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define MYJOY_SHOW_CNT          300
-    #define MYJOY_MODE_STYLUS       2
-    #define MYJOY_MODE_CUSKEY       3
-    #define MYJOY_MODE_KEYPAD       1
+#define SCREEN_W    640
+#define SCREEN_H    480
 #endif
 
 #if defined(RG28XX)
-    #define DEF_FB_W                640
-    #define DEF_FB_H                480
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define INIT_CPU_CORE           2
-    #define DEINIT_CPU_CORE         2
-    #define BAT_MAX_VAL             4080000
-    #define BAT_MIN_VAL             3400000
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define BAT_MAX_VAL     4080000
+#define BAT_MIN_VAL     3400000
+#define INIT_CPU_CORE   2
+#define QUIT_CPU_CORE   2
 #endif
 
 #if defined(FLIP)
-    #define DEF_FB_W                640
-    #define DEF_FB_H                480
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define MYJOY_MODE_DISABLE      0
-    #define MYJOY_MODE_KEYPAD       1
-    #define MYJOY_MODE_STYLUS       2
-    #define MYJOY_MODE_CUSKEY       3
-    #define MYJOY_MODE_LAST         3
-    #define MYJOY_SHOW_CNT          300
-    #define MYJOY_MOVE_SPEED        4
-    #define INIT_CPU_CORE           2
-    #define INIT_CPU_CLOCK          1200
-    #define DEINIT_CPU_CORE         2
-    #define DEINIT_CPU_CLOCK        648
-    #define DAC_BASE                0x1c22000
-    #define CCU_BASE                0x01c20000
-    #define BAT_CHK_CNT             300
-    #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/capacity"
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define DAC_BASE        0x1c22000
+#define CCU_BASE        0x01c20000
+#define BAT_CHK_CNT     300
+#define BAT_CUR_CMD     "cat /sys/class/power_supply/battery/capacity"
+#define INIT_CPU_CORE   2
+#define INIT_CPU_CLOCK  1200
+#define QUIT_CPU_CORE   2
+#define QUIT_CPU_CLOCK  648
 #endif
 
 #if defined(A30)
-    #define DEF_FB_W                640
-    #define DEF_FB_H                480
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define MYJOY_MODE_DISABLE      0
-    #define MYJOY_MODE_KEYPAD       1
-    #define MYJOY_MODE_STYLUS       2
-    #define MYJOY_MODE_CUSKEY       3
-    #define MYJOY_MODE_LAST         3
-    #define MYJOY_SHOW_CNT          300
-    #define MYJOY_MOVE_SPEED        4
-    #define INIT_CPU_CORE           2
-    #define INIT_CPU_CLOCK          1200
-    #define DEINIT_CPU_CORE         2
-    #define DEINIT_CPU_CLOCK        648
-    #define DAC_BASE                0x1c22000
-    #define CCU_BASE                0x01c20000
-    #define BAT_CHK_CNT             300
-    #define BAT_MAX_CMD             "cat /sys/class/power_supply/battery/voltage_max_design"
-    #define BAT_MIN_CMD             "cat /sys/class/power_supply/battery/voltage_min_design"
-    #define BAT_CUR_CMD             "cat /sys/class/power_supply/battery/voltage_now"
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define INIT_CPU_CLOCK  1200
+#define QUIT_CPU_CORE   2
+#define QUIT_CPU_CLOCK  648
+#define DAC_BASE        0x1c22000
+#define CCU_BASE        0x01c20000
+#define BAT_CHK_CNT     300
+#define BAT_MAX_CMD     "cat /sys/class/power_supply/battery/voltage_max_design"
+#define BAT_MIN_CMD     "cat /sys/class/power_supply/battery/voltage_min_design"
+#define BAT_CUR_CMD     "cat /sys/class/power_supply/battery/voltage_now"
 #endif
 
 #if defined(MINI)
-    #define DEF_FB_W                640
-    #define DEF_FB_H                480
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define MASK_SIZE               (NDS_Wx3 * NDS_Hx3 * 4)
-    #define BAT_CHK_CNT             90
-    #define BAT_MAX_VAL             630
-    #define BAT_MIN_VAL             420
-    #define PLL_SIZE                0x1000
-    #define BASE_REG_RIU_PA         0x1f000000
-    #define BASE_REG_MPLL_PA        (BASE_REG_RIU_PA + 0x103000 * 2)
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define BAT_CHK_CNT     90
+#define BAT_MAX_VAL     630
+#define BAT_MIN_VAL     420
+#define PLL_SIZE        0x1000
+#define REG_RIU_PA      0x1f000000
+#define REG_MPLL_PA     (REG_RIU_PA + 0x103000 * 2)
 #endif
 
 #if defined(TRIMUI)
-    #define DEF_FB_W                320
-    #define DEF_FB_H                240
-    #define ION_W                   NDS_Wx2
-    #define ION_H                   NDS_Hx2
-    #define IMG_W                   640
-    #define IMG_H                   480
+#define SCREEN_W        320
+#define SCREEN_H        240
+#define ION_W           NDS_Wx2
+#define ION_H           NDS_Hx2
 #endif
 
 #if defined(PANDORA)
-    #define DEF_FB_W                800
-    #define DEF_FB_H                480
-    #define IMG_W                   DEF_FB_W
-    #define IMG_H                   DEF_FB_H
+#define SCREEN_W        800
+#define SCREEN_H        480
 #endif
 
 #if defined(QX1000)
-    #define LCD_W                   1080
-    #define LCD_H                   2160
-    #define DEF_FB_W                (NDS_W * 2)
-    #define DEF_FB_H                NDS_H
-    #define IMG_W                   640
-    #define IMG_H                   480
+#define WL_WIN_W        1080
+#define WL_WIN_H        2160
+#define SCREEN_W        NDS_Wx2
+#define SCREEN_H        NDS_H
 #endif
 
 #if defined(XT897)
-    #define LCD_W                   540
-    #define LCD_H                   960
-    #define DEF_FB_W                (NDS_W * 2)
-    #define DEF_FB_H                NDS_H
-    #define IMG_W                   640
-    #define IMG_H                   480
+#define WL_WIN_W        540
+#define WL_WIN_H        960
+#define SCREEN_W        NDS_Wx2
+#define SCREEN_H        NDS_H
 #endif
 
 #if defined(BRICK)
-    #define DEF_FB_W                640
-    #define DEF_FB_H                480
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
+#define SCREEN_W        640
+#define SCREEN_H        480
 #endif
 
 #if defined(GKD2)
-    #define DEF_FB_W                640
-    #define DEF_FB_H                480
-    #define IMG_W                   640
-    #define IMG_H                   480
-    #define SCREEN_DMA_SIZE         (NDS_Wx2 * NDS_Hx2 * 4)
-    #define INIT_CPU_CORE           2
-    #define DEINIT_CPU_CORE         2
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define QUIT_CPU_CORE   2
 #endif
 
-#define NDS_STATE_SAVE             1
-#define NDS_STATE_LOAD             2
-#define NDS_STATE_FAST             4
+#define NDS_STATE_SAVE  1
+#define NDS_STATE_LOAD  2
+#define NDS_STATE_FAST  4
 
-#define NDS_DRASTIC_MENU_MAIN           1
-#define NDS_DRASTIC_MENU_OPTION         2
-#define NDS_DRASTIC_MENU_CONTROLLER     3
-#define NDS_DRASTIC_MENU_CONTROLLER2    4
-#define NDS_DRASTIC_MENU_FIRMWARE       5
-#define NDS_DRASTIC_MENU_CHEAT          6
-#define NDS_DRASTIC_MENU_ROM            7
+#define MENU_MAIN           1
+#define MENU_OPTION         2
+#define MENU_CONTROLLER     3
+#define MENU_CONTROLLER2    4
+#define MENU_FIRMWARE       5
+#define MENU_CHEAT          6
+#define MENU_ROM            7
 
-#define HOTKEY_BIND_MENU                0
-#define HOTKEY_BIND_SELECT              1
+#define HOTKEY_BIND_MENU    0
+#define HOTKEY_BIND_SELECT  1
 
-#define PEN_XV_MIN                      5000
-#define PEN_XV_DEC                      1000
-#define PEN_XV_INC                      1000
-#define PEN_XV_MAX                      500000
-#define PEN_YV_MIN                      5000
-#define PEN_YV_DEC                      1000
-#define PEN_YV_INC                      1000
-#define PEN_YV_MAX                      500000
-
-#define DEF_LANG_SLOT               0
-#define DEF_LANG_LANG               "english"
+#define DEF_LANG_SLOT       0
+#define DEF_LANG_LANG       "english"
 
 typedef enum {
 #if defined(MINI)

@@ -324,15 +324,15 @@ void update_wayland_res(int w, int h)
     myvideo.wl.info.h = myvideo.cur_h;
     myvideo.wl.info.size = myvideo.wl.info.w * myvideo.wl.info.h * 4;
 
-    c0 = ((float)LCD_H) / myvideo.wl.info.w;
-    c1 = ((float)LCD_W) / myvideo.wl.info.h;
+    c0 = ((float)WL_WIN_H) / myvideo.wl.info.w;
+    c1 = ((float)WL_WIN_W) / myvideo.wl.info.h;
     scale = c0 > c1 ? c1 : c0;
     if (scale <= 0) {
         scale = 1.0;
     }
 
-    y0 = ((float)(myvideo.wl.info.w * scale) / LCD_H);
-    x0 = ((float)(myvideo.wl.info.h * scale) / LCD_W);
+    y0 = ((float)(myvideo.wl.info.w * scale) / WL_WIN_H);
+    x0 = ((float)(myvideo.wl.info.h * scale) / WL_WIN_W);
 
     fg_vertices[0] = -x0;
     fg_vertices[1] = y0;
@@ -343,7 +343,7 @@ void update_wayland_res(int w, int h)
     fg_vertices[15] =  x0;
     fg_vertices[16] =  y0;
 
-    memset(myvideo.wl.data, 0, LCD_W * LCD_H * 4);
+    memset(myvideo.wl.data, 0, WL_WIN_W * WL_WIN_H * 4);
     debug("new wayland width=%d, height=%d, scale=%.2f\n", w, h, scale);
 }
 
@@ -444,9 +444,9 @@ void init_wl(void)
     wl_shell_surface_add_listener(myvideo.wl.shell_surface, &cb_shell_surf, NULL);
     
     myvideo.wl.region = wl_compositor_create_region(myvideo.wl.compositor);
-    wl_region_add(myvideo.wl.region, 0, 0, LCD_W, LCD_H);
+    wl_region_add(myvideo.wl.region, 0, 0, WL_WIN_W, WL_WIN_H);
     wl_surface_set_opaque_region(myvideo.wl.surface, myvideo.wl.region);
-    myvideo.wl.egl.window = wl_egl_window_create(myvideo.wl.surface, LCD_W, LCD_H);
+    myvideo.wl.egl.window = wl_egl_window_create(myvideo.wl.surface, WL_WIN_W, WL_WIN_H);
 }
 
 void init_egl(void)
@@ -488,7 +488,7 @@ void init_egl(void)
     glGenTextures(1, &myvideo.wl.egl.textureId);
     glBindTexture(GL_TEXTURE_2D, myvideo.wl.egl.textureId);
 
-    glViewport(0, 0, LCD_W, LCD_H);
+    glViewport(0, 0, WL_WIN_W, WL_WIN_H);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -718,25 +718,25 @@ static int get_current_menu_layer(void)
 
     for (cc=0; cc<myvideo.menu.drastic.item.cnt; cc++) {
         if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P0, strlen(P0))) {
-            return NDS_DRASTIC_MENU_MAIN;
+            return MENU_MAIN;
         }
         else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P1, strlen(P1))) {
-            return NDS_DRASTIC_MENU_OPTION;
+            return MENU_OPTION;
         }
         else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P2, strlen(P2))) {
-            return NDS_DRASTIC_MENU_CONTROLLER;
+            return MENU_CONTROLLER;
         }
         else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P3, strlen(P3))) {
-            return NDS_DRASTIC_MENU_CONTROLLER2;
+            return MENU_CONTROLLER2;
         }
         else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P4, strlen(P4))) {
-            return NDS_DRASTIC_MENU_FIRMWARE;
+            return MENU_FIRMWARE;
         }
         else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P5, strlen(P5))) {
-            return NDS_DRASTIC_MENU_CHEAT;
+            return MENU_CHEAT;
         }
         else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P6, strlen(P6))) {
-            return NDS_DRASTIC_MENU_ROM;
+            return MENU_ROM;
         }
     }
     return -1;
@@ -1562,7 +1562,7 @@ int handle_drastic_menu(void)
     debug("call %s()\n", __func__);
 
     layer = get_current_menu_layer();
-    if (layer == NDS_DRASTIC_MENU_MAIN) {
+    if (layer == MENU_MAIN) {
         SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
     }
     else {
@@ -1571,25 +1571,25 @@ int handle_drastic_menu(void)
 
     debug("cur layer=%d\n", layer);
     switch (layer) {
-    case NDS_DRASTIC_MENU_MAIN:
+    case MENU_MAIN:
         draw_drastic_menu_main();
         break;
-    case NDS_DRASTIC_MENU_OPTION:
+    case MENU_OPTION:
         draw_drastic_menu_option();
         break;
-    case NDS_DRASTIC_MENU_CONTROLLER:
+    case MENU_CONTROLLER:
         draw_drastic_menu_controller();
         break;
-    case NDS_DRASTIC_MENU_CONTROLLER2:
+    case MENU_CONTROLLER2:
         draw_drastic_menu_controller2();
         break;
-    case NDS_DRASTIC_MENU_FIRMWARE:
+    case MENU_FIRMWARE:
         draw_drastic_menu_firmware();
         break;
-    case NDS_DRASTIC_MENU_CHEAT:
+    case MENU_CHEAT:
         draw_drastic_menu_cheat();
         break;
-    case NDS_DRASTIC_MENU_ROM:
+    case MENU_ROM:
         draw_drastic_menu_rom();
         break;
     default:
@@ -1963,8 +1963,8 @@ static int process_screen(void)
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (rotate == ROTATE_180) {
-            drt.y = (DEF_FB_H - drt.y) - drt.h;
-            drt.x = (DEF_FB_W - drt.x) - drt.w;
+            drt.y = (SCREEN_H - drt.y) - drt.h;
+            drt.x = (SCREEN_W - drt.x) - drt.w;
         }
         else if (rotate == ROTATE_90) {
             drt.x = (drt.x == 0) ? 320 : 0;
@@ -2046,7 +2046,7 @@ static int process_screen(void)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 switch (myconfig.layout.alpha.pos) {
                 case 0:
-                    drt.x = DEF_FB_W - drt.w;
+                    drt.x = SCREEN_W - drt.w;
                     drt.y = 0;
                     break;
                 case 1:
@@ -2055,11 +2055,11 @@ static int process_screen(void)
                     break;
                 case 2:
                     drt.x = 0;
-                    drt.y = DEF_FB_H - drt.h;
+                    drt.y = SCREEN_H - drt.h;
                     break;
                 case 3:
-                    drt.x = DEF_FB_W - drt.w;
-                    drt.y = DEF_FB_H - drt.h;
+                    drt.x = SCREEN_W - drt.w;
+                    drt.y = SCREEN_H - drt.h;
                     break;
                 }
                 flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch, 1, rotate);
@@ -2075,7 +2075,7 @@ static int process_screen(void)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 switch (myconfig.layout.alpha.pos) {
                 case 0:
-                    drt.x = DEF_FB_W - drt.w;
+                    drt.x = SCREEN_W - drt.w;
                     drt.y = 0;
                     break;
                 case 1:
@@ -2084,11 +2084,11 @@ static int process_screen(void)
                     break;
                 case 2:
                     drt.x = 0;
-                    drt.y = DEF_FB_H - drt.h;
+                    drt.y = SCREEN_H - drt.h;
                     break;
                 case 3:
-                    drt.x = DEF_FB_W - drt.w;
-                    drt.y = DEF_FB_H - drt.h;
+                    drt.x = SCREEN_W - drt.w;
+                    drt.y = SCREEN_H - drt.h;
                     break;
                 }
                 flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch, 1, rotate);
@@ -2364,7 +2364,7 @@ static void *video_handler(void *threadid)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glViewport(0, 0, DEF_FB_W, DEF_FB_H);
+    glViewport(0, 0, SCREEN_W, SCREEN_H);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -2374,10 +2374,10 @@ static void *video_handler(void *threadid)
     glUniform1f(myvideo.alphaLoc, 0.0);
 
     myconfig.filter = 0;
-    myvideo.lcd.virt_addr[0][0] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
     debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
     debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
@@ -2435,7 +2435,7 @@ static void *video_handler(void *threadid)
 
     glGenTextures(TEXTURE_MAX, myvideo.texID);
 
-    glViewport(0, 0, DEF_FB_H, DEF_FB_W);
+    glViewport(0, 0, SCREEN_H, SCREEN_W);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -2445,10 +2445,10 @@ static void *video_handler(void *threadid)
     glUniform1f(myvideo.alphaLoc, 0.0);
 
     myconfig.filter = 0;
-    myvideo.lcd.virt_addr[0][0] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
     debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
     debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
@@ -2456,10 +2456,10 @@ static void *video_handler(void *threadid)
 #endif
 
 #if defined(GKD2) || defined(BRICK)
-    myvideo.lcd.virt_addr[0][0] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[0][1] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[1][0] = malloc(SCREEN_DMA_SIZE);
-    myvideo.lcd.virt_addr[1][1] = malloc(SCREEN_DMA_SIZE);
+    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
 
     debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
     debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
@@ -2986,8 +2986,8 @@ int quit_lcd(void)
 int init_lcd(void)
 {
     is_wl_thread_running = 1;
-    myvideo.wl.bg = SDL_malloc(LCD_W * LCD_H * 4);
-    memset(myvideo.wl.bg, 0, LCD_W * LCD_H * 2);
+    myvideo.wl.bg = SDL_malloc(WL_WIN_W * WL_WIN_H * 4);
+    memset(myvideo.wl.bg, 0, WL_WIN_W * WL_WIN_H * 2);
     pthread_create(&thread_id[0], NULL, wl_thread, NULL);
     pthread_create(&thread_id[1], NULL, draw_thread, NULL);
     while (myvideo.wl.init == 0) {
@@ -2996,10 +2996,10 @@ int init_lcd(void)
 
     myvideo.wl.flip = 0;
     myvideo.wl.ready = 0;
-    myvideo.wl.data = SDL_malloc(LCD_W * LCD_H * 4 * 2);
-    memset(myvideo.wl.data, 0, LCD_W * LCD_H * 4 * 2);
+    myvideo.wl.data = SDL_malloc(WL_WIN_W * WL_WIN_H * 4 * 2);
+    memset(myvideo.wl.data, 0, WL_WIN_W * WL_WIN_H * 4 * 2);
     myvideo.wl.pixels[0] = (uint16_t *)myvideo.wl.data;
-    myvideo.wl.pixels[1] = (uint16_t *)(myvideo.wl.data + (LCD_W * LCD_H * 4));
+    myvideo.wl.pixels[1] = (uint16_t *)(myvideo.wl.data + (WL_WIN_W * WL_WIN_H * 4));
     update_wayland_res(NDS_W * 2, NDS_H);
     myvideo.wl.ready = 1;
     return 0;
@@ -3128,8 +3128,8 @@ int init_lcd(void)
 
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
 
-    myvideo.gfx.disp.channel = DEF_FB_CH;
-    myvideo.gfx.disp.layer_id = DEF_FB_LAYER;
+    myvideo.gfx.disp.channel = SCREEN_CH;
+    myvideo.gfx.disp.layer_id = SCREEN_LAYER;
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_GET_CONFIG, args);
 
     myvideo.gfx.disp.enable = 0;
@@ -3175,8 +3175,8 @@ int quit_lcd(void)
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
     myvideo.gfx.disp.enable = 1;
-    myvideo.gfx.disp.channel = DEF_FB_CH;
-    myvideo.gfx.disp.layer_id = DEF_FB_LAYER;
+    myvideo.gfx.disp.channel = SCREEN_CH;
+    myvideo.gfx.disp.layer_id = SCREEN_LAYER;
     args[1] = (uintptr_t)&myvideo.gfx.disp;
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
@@ -3510,14 +3510,14 @@ int init_lcd(void)
     MI_SYS_MMA_Alloc(NULL, myvideo.cur_buf_size, &myvideo.tmp.phy_addr);
     MI_SYS_Mmap(myvideo.tmp.phy_addr, myvideo.cur_buf_size, &myvideo.tmp.virt_addr, TRUE);
 
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[0][0]);
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[0][1]);
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[1][0]);
-    MI_SYS_MMA_Alloc(NULL, SCREEN_DMA_SIZE, &myvideo.lcd.phy_addr[1][1]);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][0], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[0][0], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][1], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[0][1], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][0], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[1][0], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][1], SCREEN_DMA_SIZE, &myvideo.lcd.virt_addr[1][1], TRUE);
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][0]);
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][1]);
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][0]);
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][1]);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][0], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][1], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][0], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][1], TRUE);
     debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
     debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
     debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
@@ -3534,10 +3534,10 @@ int quit_lcd(void)
     MI_SYS_Munmap(myvideo.tmp.virt_addr, myvideo.cur_buf_size);
     MI_SYS_MMA_Free(myvideo.tmp.phy_addr);
 
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][0], SCREEN_DMA_SIZE);
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][1], SCREEN_DMA_SIZE);
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][0], SCREEN_DMA_SIZE);
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][1], SCREEN_DMA_SIZE);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4);
     MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][0]);
     MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][1]);
     MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][0]);
@@ -3562,10 +3562,10 @@ void clear_lcd(void)
 #if defined(MINI)
     MI_SYS_MemsetPa(myvideo.fb.phy_addr, 0, myvideo.cur_buf_size);
     MI_SYS_MemsetPa(myvideo.tmp.phy_addr, 0, myvideo.cur_buf_size);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][0], 0, SCREEN_DMA_SIZE);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][1], 0, SCREEN_DMA_SIZE);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][0], 0, SCREEN_DMA_SIZE);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][1], 0, SCREEN_DMA_SIZE);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][0], 0, NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][1], 0, NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][0], 0, NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][1], 0, NDS_Wx2 * NDS_Hx2 * 4);
 #endif
 }
 
@@ -4974,7 +4974,7 @@ void flip_lcd(void)
 #if defined(FLIP) 
     myvideo.drm.wait_for_flip = 1;
     myvideo.drm.bo = gbm_surface_lock_front_buffer(myvideo.drm.gs);
-    drmModeAddFB(myvideo.drm.fd, DEF_FB_W, DEF_FB_H, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
+    drmModeAddFB(myvideo.drm.fd, SCREEN_W, SCREEN_H, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
     drmModeSetCrtc(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, 0, 0, (uint32_t *)myvideo.drm.conn, 1, &myvideo.drm.crtc->mode);
     drmModePageFlip(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvideo.drm.wait_for_flip);
 
@@ -5305,7 +5305,7 @@ static int load_layout_bg(void)
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     char buf[MAX_PATH] = { 0 };
     SDL_Surface *t = NULL;
-    SDL_Rect srt = {0, 0, IMG_W, IMG_H};
+    SDL_Rect srt = {0, 0, LAYOUT_BG_W, LAYOUT_BG_H};
     SDL_Rect drt = {0, 0, myvideo.cur_w, myvideo.cur_h};
 
     if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode)) {
@@ -5436,7 +5436,7 @@ static int load_layout_bg(void)
             myvideo.layout.bg = NULL;
         }
 
-        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
         if (myvideo.layout.bg) {
             SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
 
@@ -5470,7 +5470,7 @@ static int load_layout_bg(void)
                     dst[(((myvideo.cur_w - 1) - x) * myvideo.cur_h) + y] = *src;
                     src+= 2;
                 }
-                src+= IMG_W;
+                src+= LAYOUT_BG_W;
             }
         }
         ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &z);
@@ -5489,7 +5489,7 @@ static int load_layout_bg(void)
             myvideo.layout.bg = NULL;
         }
 
-        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
         if (myvideo.layout.bg) {
             SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
 
@@ -5590,8 +5590,8 @@ static int init_device(void)
     debug("call %s()\n", __func__);
 
     myvideo.menu.line_h = 30;
-    myvideo.cur_w = DEF_FB_W;
-    myvideo.cur_h = DEF_FB_H;
+    myvideo.cur_w = SCREEN_W;
+    myvideo.cur_h = SCREEN_H;
     myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
 
     myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
@@ -5606,7 +5606,7 @@ static int init_device(void)
     myconfig.menu.max = get_menu_cnt();
 
 #if defined(QX1000) || defined(XT897)
-    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, IMG_W, IMG_H, 32, 0, 0, 0, 0);
+    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
 #else
     myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
 #endif

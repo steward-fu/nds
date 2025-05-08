@@ -847,44 +847,6 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_B, 0);
     }
 
-    if (hit_hotkey(KEY_BIT_X)) {
-#if defined(TRIMUI)
-        int w = FB_W;
-        int h = FB_H;
-        int pitch = FB_W * FB_BPP;
-        uint32_t *dst = NULL;
-        SDL_Surface *p = NULL;
-        time_t t = time(NULL);
-        struct tm tm = *localtime(&t);
-
-        // for MINI
-        // dst = (uint32_t *)gfx.fb.virAddr + (w * (gfx.vinfo.yoffset ? 0 : h));
-        dst = (uint32_t *)myvideo.gfx.ion.vadd + (w * h * (myvideo.fb.flip ? 0 : 1));
-
-        if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
-            w = NDS_H;
-            h = NDS_W;
-        }
-        else {
-            w = FB_H;
-            h = FB_W;
-        }
-        pitch = FB_H * FB_BPP;
-
-        if (dst) {
-            p = SDL_CreateRGBSurfaceFrom(dst, w, h, 32, pitch, 0, 0, 0, 0);
-            if (p) {
-                sprintf(buf, "%s/%02d%02d%02d.png", myconfig.shot.path, tm.tm_hour, tm.tm_min, tm.tm_sec);
-                IMG_SavePNG(p, buf);
-                SDL_FreeSurface(p);
-                debug("saved \'%s\'\n", buf);
-            }
-        }
-        myconfig.shot.take = 1;
-#endif
-        set_key_bit(KEY_BIT_X, 0);
-    }
-
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
