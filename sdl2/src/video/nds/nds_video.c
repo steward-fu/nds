@@ -2281,10 +2281,6 @@ static void strip_newline(char *p)
 
 static void *video_handler(void *threadid)
 {
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    int pre_filter = 0;
-#endif
-
 #if defined(FLIP)
     EGLint surf_cfg[] = {
         EGL_SURFACE_TYPE,
@@ -2471,26 +2467,34 @@ static void *video_handler(void *threadid)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myvideo.menu.sdl2.enable) {
             if (myvideo.menu.update) {
-                debug("update sdl2 menu\n");
+                int pre_mode = myconfig.layout.mode;
+                int pre_filter = myconfig.filter;
 
                 myvideo.menu.update = 0;
-                pre_filter = myconfig.filter;
+                debug("update sdl2 menu\n");
+
                 myconfig.filter = 0;
+                myconfig.layout.mode = 0;
                 flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, ROTATE_180);
                 flip_lcd();
                 myconfig.filter = pre_filter;
+                myconfig.layout.mode = pre_mode;
             }
         }
         else if (myvideo.menu.drastic.enable) {
             if (myvideo.menu.update) {
-                debug("update drastic menu\n");
+                int pre_mode = myconfig.layout.mode;
+                int pre_filter = myconfig.filter;
 
                 myvideo.menu.update = 0;
-                pre_filter = myconfig.filter;
+                debug("update drastic menu\n");
+
                 myconfig.filter = 0;
+                myconfig.layout.mode = 0;
                 flush_lcd(-1, myvideo.menu.drastic.frame->pixels, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->pitch, 0, 0);
                 flip_lcd();
                 myconfig.filter = pre_filter;
+                myconfig.layout.mode = pre_mode;
             }
         }
         else if (myvideo.lcd.update) {

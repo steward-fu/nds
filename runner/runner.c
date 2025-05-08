@@ -191,11 +191,11 @@ static void* runner_handler(void *param)
 
         switch (myrunner.shm.buf->cmd) {
         case SHM_CMD_FLUSH:
-            debug("recv SHM_CMD_FLUSH, tex_id=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d), pitch=%d, alpha=%d\n",
+            debug("recv SHM_CMD_FLUSH, tex=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d), pitch=%d, alpha=%d, rotate=%d\n",
                 myrunner.shm.buf->tex_id,
                 myrunner.shm.buf->srt.x, myrunner.shm.buf->srt.y, myrunner.shm.buf->srt.w, myrunner.shm.buf->srt.h,
                 myrunner.shm.buf->drt.x, myrunner.shm.buf->drt.y, myrunner.shm.buf->drt.w, myrunner.shm.buf->drt.h,
-                myrunner.shm.buf->pitch, myrunner.shm.buf->alpha
+                myrunner.shm.buf->pitch, myrunner.shm.buf->alpha, myrunner.shm.buf->rotate
             );
 
             if (myrunner.shm.buf->tex_id == TEXTURE_BG) {
