@@ -57,21 +57,21 @@ typedef enum {
     TEXTURE_PEN,
     TEXTURE_TMP,
     TEXTURE_MAX
-} TEXTURE_TYPE;
+} texture_type_t;
 
 typedef enum {
     SHM_CMD_FLUSH = 0,
     SHM_CMD_FLIP,
     SHM_CMD_QUIT
-} SHM_CMD;
+} shm_cmd_t;
 
 typedef struct {
     uint8_t valid;
     uint32_t cmd;
 
-    uint32_t tex_id;
-    uint32_t dis_mode;
-    uint32_t pixel_filter;
+    uint32_t tex;
+    uint32_t layout;
+    uint32_t filter;
 
     uint32_t len;
     SDL_Rect srt;

@@ -94,12 +94,12 @@ typedef enum {
     PEN_RT = 2,
     PEN_RB = 3,
     PEN_CP = 4
-} pen_t;
+} pen_type_t;
 
 typedef enum {
-    FILTER_PIXEL = 0,
-    FILTER_BLUR
-} nds_filter;
+    FILTER_BLUR = 0,
+    FILTER_PIXEL,
+} filter_type_t;
 
 typedef struct {
     struct {
@@ -116,7 +116,7 @@ typedef struct {
     int hotkey;
     int fast_forward;
     int check_battery;
-    nds_filter filter;
+    filter_type_t filter;
     char lang[MAX_LANG_NAME];
     char state_path[MAX_PATH];
 
@@ -151,7 +151,7 @@ typedef struct {
         int sel;
         int max;
         int speed;
-        pen_t type;
+        pen_type_t type;
     } pen;
 
 #if defined(A30) || defined(FLIP) || defined(UT)

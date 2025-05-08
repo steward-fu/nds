@@ -34,10 +34,6 @@ extern nds_hook myhook;
 extern nds_video myvideo;
 extern nds_config myconfig;
 
-extern int pixel_filter;
-extern int FB_W;
-extern int FB_H;
-
 const SDL_Scancode nds_key_code[] = {
     SDLK_UP,            // UP
     SDLK_DOWN,          // DOWN
@@ -841,9 +837,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_B)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         myconfig.filter = (myconfig.filter == FILTER_PIXEL) ? FILTER_BLUR : FILTER_PIXEL;
-#endif
         set_key_bit(KEY_BIT_B, 0);
     }
 

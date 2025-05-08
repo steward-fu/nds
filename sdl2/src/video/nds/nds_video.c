@@ -429,8 +429,6 @@ void quit_wl(void)
 
 void init_wl(void)
 {
-    myconfig.filter = 0;
-
     myvideo.wl.display = wl_display_connect(NULL);
     myvideo.wl.registry = wl_display_get_registry(myvideo.wl.display);
 
@@ -514,7 +512,7 @@ static void* draw_thread(void *pParam)
         if (myvideo.wl.ready) {
             if (pre_filter != myconfig.filter) {
                 pre_filter = myconfig.filter;
-                if (myconfig.filter) {
+                if (myconfig.filter == FILTER_PIXEL) {
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 }
@@ -1612,11 +1610,11 @@ int handle_drastic_menu(void)
 static int process_screen(void)
 {
     static int need_loadstate = 15;
-    static int show_info_cnt = 0;
-    static int cur_fb_w = 0;
-    static int cur_dis_mode = 0;
-    static int cur_bg_sel = 0;
-    static int cur_filter = 0;
+    static int show_info_cnt = -1;
+    static int cur_fb_w = -1;
+    static int cur_dis_mode = -1;
+    static int cur_bg_sel = -1;
+    static int cur_filter = -1;
     static int pre_dis_mode = NDS_DIS_MODE_VH_S0;
     static int pre_hres_mode = NDS_DIS_MODE_HRES0;
     static char show_info_buf[MAX_PATH << 1] = {0};
@@ -2013,7 +2011,7 @@ static int process_screen(void)
 
         glBindTexture(GL_TEXTURE_2D, myvideo.texID[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        if (myconfig.filter) {
+        if (myconfig.filter == FILTER_PIXEL) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
@@ -2369,7 +2367,6 @@ static void *video_handler(void *threadid)
     glUniform1i(myvideo.samLoc, 0);
     glUniform1f(myvideo.alphaLoc, 0.0);
 
-    myconfig.filter = 0;
     myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
@@ -2440,7 +2437,6 @@ static void *video_handler(void *threadid)
     glUniform1i(myvideo.samLoc, 0);
     glUniform1f(myvideo.alphaLoc, 0.0);
 
-    myconfig.filter = 0;
     myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
@@ -2473,7 +2469,7 @@ static void *video_handler(void *threadid)
                 myvideo.menu.update = 0;
                 debug("update sdl2 menu\n");
 
-                myconfig.filter = 0;
+                myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode = 0;
                 flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, ROTATE_180);
                 flip_lcd();
@@ -2489,7 +2485,7 @@ static void *video_handler(void *threadid)
                 myvideo.menu.update = 0;
                 debug("update drastic menu\n");
 
-                myconfig.filter = 0;
+                myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode = 0;
                 flush_lcd(-1, myvideo.menu.drastic.frame->pixels, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->pitch, 0, 0);
                 flip_lcd();
@@ -3747,13 +3743,13 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     memcpy(myvideo.shm.buf->buf, pixels, srcrect.h * pitch);
 
     myvideo.shm.buf->cmd = SHM_CMD_FLUSH;
-    myvideo.shm.buf->tex_id = tex;
+    myvideo.shm.buf->len = srcrect.h * pitch;
+    myvideo.shm.buf->tex = tex;
     myvideo.shm.buf->pitch = pitch;
     myvideo.shm.buf->alpha = alpha;
     myvideo.shm.buf->rotate = rotate;
-    myvideo.shm.buf->dis_mode = myconfig.layout.mode;
-    myvideo.shm.buf->len = srcrect.h * pitch;
-    myvideo.shm.buf->pixel_filter = myconfig.filter;
+    myvideo.shm.buf->layout = myconfig.layout.mode;
+    myvideo.shm.buf->filter = myconfig.filter;
     debug("send SHM_CMD_FLUSH, pitch=%d, alpha=%d, rotate=%d\n", pitch, alpha, rotate);
 
     myvideo.shm.buf->valid = 1;
@@ -3807,7 +3803,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     if (tex == TEXTURE_TMP) {
         glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        if (myconfig.filter) {
+        if (myconfig.filter == FILTER_PIXEL) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
@@ -4519,7 +4515,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         }
     }
 
-    if (copy_it && myconfig.filter) {
+    if (copy_it && (myconfig.filter == FILTER_PIXEL)) {
         do {
             if (*myhook.var.sdl.screen[0].hires_mode != 0) {
                 break;

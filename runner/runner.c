@@ -198,7 +198,7 @@ static void* runner_handler(void *param)
                 myrunner.shm.buf->pitch, myrunner.shm.buf->alpha, myrunner.shm.buf->rotate
             );
 
-            if (myrunner.shm.buf->tex_id == TEXTURE_BG) {
+            if (myrunner.shm.buf->tex == TEXTURE_BG) {
                 memcpy(myrunner.gles.bg_pixels, myrunner.shm.buf->buf, 640 * 480 * 4);
                 break;
             }
@@ -215,7 +215,7 @@ static void* runner_handler(void *param)
             rt.h = ((float)rt.h) * 1.6;
 #endif
 
-            if ((myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH1) || (myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH3)) {
+            if ((myrunner.shm.buf->layout == NDS_DIS_MODE_HH1) || (myrunner.shm.buf->layout == NDS_DIS_MODE_HH3)) {
                 fg_vertices[5] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[6] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
@@ -228,7 +228,7 @@ static void* runner_handler(void *param)
                 fg_vertices[0] = fg_vertices[15];
                 fg_vertices[1] = fg_vertices[6];
             }
-            else if ((myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH0) || (myrunner.shm.buf->dis_mode == NDS_DIS_MODE_HH2)) {
+            else if ((myrunner.shm.buf->layout == NDS_DIS_MODE_HH0) || (myrunner.shm.buf->layout == NDS_DIS_MODE_HH2)) {
                 fg_vertices[15] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[16] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
@@ -257,8 +257,8 @@ static void* runner_handler(void *param)
 
             glActiveTexture(GL_TEXTURE0);
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[myrunner.shm.buf->tex_id]);
-            if (myrunner.shm.buf->pixel_filter) {
+            glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[myrunner.shm.buf->tex]);
+            if (myrunner.shm.buf->filter == FILTER_PIXEL) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             }
