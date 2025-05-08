@@ -1862,17 +1862,16 @@ static int process_screen(void)
             drt.y = screen0 ? 48 : 48 + drt.h;
             break;
         case NDS_DIS_MODE_V1:
-            drt.w = 373;
-            drt.h = 280;
+            drt.w = 320;
+            drt.h = 240;
             drt.x = (myvideo.cur_w - drt.w) / 2;
-            drt.y = screen0 ? 0 : drt.h;
+            drt.y = screen0 ? 0 : (myvideo.cur_h - drt.h);
             break;
         case NDS_DIS_MODE_H0:
             drt.w = NDS_W;
             drt.h = NDS_H;
             drt.x = screen0 ? 64 : 64 + drt.w;
             drt.y = (myvideo.cur_h - drt.h) / 2;
-printf("screen %d, %d-%d-%d-%d\n", idx, drt.x, drt.y, drt.w, drt.h);
             break;
         case NDS_DIS_MODE_H1:
             drt.w = 320;
@@ -5328,52 +5327,52 @@ static int load_layout_bg(void)
             case NDS_DIS_MODE_VH_T1:
                 return 0;
             case NDS_DIS_MODE_S0:
-                strcat(buf, "/64-48-512-384.png");
+                strcat(buf, "/r0,64,48,512,384.png");
                 break;
             case NDS_DIS_MODE_S1:
                 return 0;
             case NDS_DIS_MODE_V0:
-                strcat(buf, "/192-48-256-192_192-240-256-192.png");
+                strcat(buf, "/r0,192,48,256,192,192,240,256,192.png");
                 break;
             case NDS_DIS_MODE_V1:
-                strcat(buf, "/133-0-373-280_133-280-373-280.png");
+                strcat(buf, "/r0,160,0,320,240,160,240,320,240.png");
                 break;
             case NDS_DIS_MODE_H0:
-                strcat(buf, "/64-144-256-192_320-144-256-192.png");
+                strcat(buf, "/r0,64,144,256,192,320,144,256,192.png");
                 break;
             case NDS_DIS_MODE_H1:
-                strcat(buf, "/bg_h1.png");
+                strcat(buf, "/r0,0,120,320,240,320,120,320,240.png");
                 break;
             case NDS_DIS_MODE_VH_S0:
-                strcat(buf, "/bg_vh_s0.png");
+                strcat(buf, "/r0,0,0,160,120,160,120,480,360.png");
                 break;
             case NDS_DIS_MODE_VH_S1:
-                strcat(buf, "/bg_vh_s1.png");
+                strcat(buf, "/r0,0,0,256,192,256,192,384,288.png");
                 break;
             case NDS_DIS_MODE_VH_S2:
-                strcat(buf, "/bg_vh_s2.png");
+                strcat(buf, "/r0,240,0,160,120,80,120,480,360.png");
                 break;
             case NDS_DIS_MODE_VH_S3:
-                strcat(buf, "/bg_vh_s3.png");
+                strcat(buf, "/r0,64,96,512,384,256,0,128,96.png");
                 break;
             case NDS_DIS_MODE_VH_S4:
-                strcat(buf, "/bg_vh_s4.png");
+                strcat(buf, "/r0,0,96,512,384,512,0,128,96.png");
                 break;
             case NDS_DIS_MODE_VH_S5:
-                strcat(buf, "/bg_vh_s5.png");
+                strcat(buf, "/r0,128,96,512,384,0,0,128,96.png");
                 break;
             case NDS_DIS_MODE_VH_C0:
-                strcat(buf, "/bg_vh_c0.png");
+                strcat(buf, "/r0,192,0,256,192,128,192,384,288.png");
                 break;
             case NDS_DIS_MODE_VH_C1:
-                strcat(buf, "/bg_vh_c1.png");
+                strcat(buf, "/r0,0,144,256,192,256,96,384,288.png");
                 break;
             case NDS_DIS_MODE_HH0:
             case NDS_DIS_MODE_HH1:
-                strcat(buf, "/bg_hh0.png");
+                strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
                 break;
             case NDS_DIS_MODE_HRES0:
-                strcat(buf, "/bg_hres0.png");
+                strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
                 break;
             case NDS_DIS_MODE_HRES1:
                 return 0;
