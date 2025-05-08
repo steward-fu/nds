@@ -634,7 +634,7 @@ TEST(detour, render_polygon_setup_perspective_steps)
 }
 #endif
 
-int patch_elf(uint64_t pos, uint64_t pfn)
+int patch_drastic64(uint64_t pos, uint64_t pfn)
 {
     #define LEN 16
 
@@ -691,9 +691,9 @@ int patch_elf(uint64_t pos, uint64_t pfn)
 }
 
 #if defined(UT)
-TEST(detour, patch_elf)
+TEST(detour, patch_drastic64)
 {
-    TEST_ASSERT_EQUAL_INT(-1, patch_elf(0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, patch_drastic64(0, 0));
 }
 #endif
 
