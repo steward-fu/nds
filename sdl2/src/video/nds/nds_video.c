@@ -5183,12 +5183,20 @@ int load_touch_pen(void)
 
 SDL_Surface* load_menu_img(const char *name)
 {
+    SDL_Surface *t0 = NULL;
+    SDL_Surface *t1 = NULL;
     char buf[MAX_PATH] = { 0 };
 
     debug("call %s(name=\"%s\")\n", __func__, name);
 
     snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, MENU_PATH, myconfig.menu.sel, name);
-    return IMG_Load(buf);
+    t0 = IMG_Load(buf);
+    if (t0) {
+        t1 = SDL_ConvertSurface(t0, myvideo.cvt->format, 0);
+        SDL_FreeSurface(t0);
+    }
+
+    return t1;
 }
 
 int free_menu_img(void)
@@ -5596,7 +5604,6 @@ static int init_device(void)
     myvideo.cur_w = SCREEN_W;
     myvideo.cur_h = SCREEN_H;
     myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
-
     myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
 
     myconfig.pen.sel = 0;
