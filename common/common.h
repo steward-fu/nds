@@ -15,10 +15,10 @@
 #define PEN_PATH    RES_PATH"/pen"
 #define LANG_PATH   RES_PATH"/lang"
 #define MENU_PATH   RES_PATH"/menu"
-#define CFG_PATH    RES_PATH"/nds.cfg"
+#define CFG_FILE    RES_PATH"/nds.cfg"
 #define FONT_FILE   RES_PATH"/font/font.ttf"
 
-#define BIOS_PATH                   "system"
+#define BIOS_PATH                   "system/"
 #define NDS_FIRMWARE_FILE           "nds_firmware.bin"
 #define NDS_BIOS_ARM7_FILE          "nds_bios_arm7.bin"
 #define NDS_BIOS_ARM9_FILE          "nds_bios_arm9.bin"
@@ -70,8 +70,11 @@
 #define MAX_LANG_LINE               256
 #define MAX_MENU_LINE               256
 
-#define DEBUG 0
-#define LOG_FILE_NAME "mynds.log"
+#define DEF_PEN_SPEED       10
+#define DEF_FAST_FORWARD    6
+
+#define DEBUG       0
+#define LOG_FILE    "mynds.log"
 
 #if DEBUG
 #define debug(...) printf("[DEBUG] "__VA_ARGS__)

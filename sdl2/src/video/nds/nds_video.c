@@ -5578,6 +5578,9 @@ VideoBootStrap NDS_bootstrap = {
 
 static int init_device(void)
 {
+    int r = 0;
+    char buf[MAX_PATH] = { 0 };
+
 #if defined(TRIMUI)
     int x = 0;
     int y = 0;
@@ -5682,7 +5685,14 @@ static int init_device(void)
     myvideo.thread.running = 1;
     pthread_create(&myvideo.thread.id, NULL, video_handler, (void *)NULL);
 
-    return 0;
+    strncpy(buf, myvideo.home, sizeof(buf));
+    strcat(buf, BIOS_PATH);
+    debug("drop bios files to \"%s\"\n", buf);
+    if (drop_bios_files(buf) < 0) {
+        r = -1;
+    }
+
+    return r;
 }
 
 int init_video(_THIS)
