@@ -5691,6 +5691,7 @@ static int init_device(void)
     init_event();
     init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
     add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
+
     add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
 #if !defined(PANDORA)
     add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);

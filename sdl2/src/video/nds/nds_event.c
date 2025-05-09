@@ -54,6 +54,7 @@ const SDL_Scancode nds_key_code[] = {
     SDLK_1,             // LOAD
     SDLK_2,             // FAST
     SDLK_3,             // EXIT
+    SDLK_4,             // SWAP
     SDLK_HOME,          // ONION
 };
 
@@ -1804,7 +1805,7 @@ static int send_key_event(int raw_event)
                 update_raw_input_statue(cc, pressed);
             }
             else {
-                debug("send code=0x%04x, pressed=%d\n", nds_key_code[cc], pressed);
+                debug("send code[%d]=0x%04x, pressed=%d\n", cc, nds_key_code[cc], pressed);
 #if !defined(UT)
                 SDL_SendKeyboardKey(pressed ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
 #endif

@@ -311,7 +311,7 @@
 #define NDS_KEY_BIT_SWAP        0x0400000
 #define NDS_KEY_BIT_SCREEN_V    0x0800000
 #define NDS_KEY_BIT_SCREEN_H    0x1000000
-#define NDS_KEY_BIT_MENU        0x2000000
+#define NDS_KEY_BIT_MENU        0x40000
 #define NDS_KEY_BIT_QUIT        0x4000000
 
 #if defined(TRIMUI)
