@@ -1959,7 +1959,9 @@ static int process_screen(void)
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if ((myconfig.layout.mode == NDS_DIS_MODE_HH0) ||
-            (myconfig.layout.mode == NDS_DIS_MODE_HH2))
+            (myconfig.layout.mode == NDS_DIS_MODE_HH1) ||
+            (myconfig.layout.mode == NDS_DIS_MODE_HH2) ||
+            (myconfig.layout.mode == NDS_DIS_MODE_HH3))
         {
             drt.x = (drt.x == 0) ? 320 : 0;
         }
