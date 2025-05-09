@@ -99,91 +99,79 @@ GLushort vert_indices[] = {
 
 #if defined(QX1000) || defined(XT897)
 const char *vert_shader_src =
-    "attribute vec4 vert_pos;                               \n"
-    "attribute vec2 vert_coord;                             \n"
-    "varying vec2 frag_coord;                               \n"
-    "void main()                                            \n"
-    "{                                                      \n"
-    "    gl_Position = vert_pos;                            \n"
-    "    frag_coord = vert_coord;                           \n"
-    "}                                                      \n";
+    "attribute vec4 vert_pos;                                   \n"
+    "attribute vec2 vert_coord;                                 \n"
+    "varying vec2 frag_coord;                                   \n"
+    "void main()                                                \n"
+    "{                                                          \n"
+    "    gl_Position = vert_pos;                                \n"
+    "    frag_coord = vert_coord;                               \n"
+    "}                                                          \n";
 
 const char *frag_shader_src =
-    "#ifdef GL_ES                                           \n"
-    "precision mediump float;                               \n"
-    "#endif                                                 \n"
-    "varying vec2 frag_coord;                               \n"
-    "uniform float frag_angle;                              \n"
-    "uniform float frag_aspect;                             \n"
-    "uniform sampler2D frag_sampler;                        \n"
-    "const vec2 HALF = vec2(0.5);                           \n"
-    "void main()                                            \n"
-    "{                                                      \n"
-    "    float aSin = sin(frag_angle);                      \n"
-    "    float aCos = cos(frag_angle);                      \n"
-    "    vec2 tc = frag_coord;                              \n"
-    "    mat2 rotMat = mat2(                                \n"
-    "        aCos, -aSin, aSin, aCos);                      \n"
-    "    mat2 scaleMat = mat2(                              \n"
-    "        frag_aspect, 0.0, 0.0, 1.0);                   \n"
-    "    mat2 scaleMatInv = mat2(                           \n"
-    "        1.0 / frag_aspect, 0.0, 0.0, 1.0);             \n"
-    "    tc -= HALF.xy;                                     \n"
-    "    tc = scaleMatInv * rotMat * scaleMat * tc;         \n"
-    "    tc += HALF.xy;                                     \n"
-    "    vec3 tex = texture2D(frag_sampler, tc).bgr;        \n"
-    "    gl_FragColor = vec4(tex, 1.0);                     \n"
-    "}                                                      \n";
+    "#ifdef GL_ES                                               \n"
+    "precision mediump float;                                   \n"
+    "#endif                                                     \n"
+    "varying vec2 frag_coord;                                   \n"
+    "uniform float frag_angle;                                  \n"
+    "uniform float frag_aspect;                                 \n"
+    "uniform sampler2D frag_sampler;                            \n"
+    "const vec2 HALF = vec2(0.5);                               \n"
+    "void main()                                                \n"
+    "{                                                          \n"
+    "    float aSin = sin(frag_angle);                          \n"
+    "    float aCos = cos(frag_angle);                          \n"
+    "    vec2 tc = frag_coord;                                  \n"
+    "    mat2 rotMat = mat2(                                    \n"
+    "        aCos, -aSin, aSin, aCos);                          \n"
+    "    mat2 scaleMat = mat2(                                  \n"
+    "        frag_aspect, 0.0, 0.0, 1.0);                       \n"
+    "    mat2 scaleMatInv = mat2(                               \n"
+    "        1.0 / frag_aspect, 0.0, 0.0, 1.0);                 \n"
+    "    tc -= HALF.xy;                                         \n"
+    "    tc = scaleMatInv * rotMat * scaleMat * tc;             \n"
+    "    tc += HALF.xy;                                         \n"
+    "    vec3 tex = texture2D(frag_sampler, tc).bgr;            \n"
+    "    gl_FragColor = vec4(tex, 1.0);                         \n"
+    "}                                                          \n";
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
 const char *vert_shader_src =
-    "attribute vec4 vert_pos;                               \n"
-    "attribute vec2 vert_coord;                             \n"
-    "attribute float vert_alpha;                            \n"
-    "varying vec2 frag_coord;                               \n"
-    "void main()                                            \n"
-    "{                                                      \n"
+    "attribute vec4 vert_pos;                                   \n"
+    "attribute vec2 vert_coord;                                 \n"
+    "attribute float vert_alpha;                                \n"
+    "varying vec2 frag_coord;                                   \n"
+    "void main()                                                \n"
+    "{                                                          \n"
 #if !defined(FLIP)
-    "    const float frag_angle = 0.0;                      \n"
-    "    frag_angle = 90.0 * (3.1415 * 2.0);                \n"
-    "    frag_angle = frag_angle / 360.0;                   \n"
-    "    mat4 rot = mat4(                                   \n"
-    "        cos(frag_angle), -sin(frag_angle), 0.0, 0.0,   \n"
-    "        sin(frag_angle),  cos(frag_angle), 0.0, 0.0,   \n"
-    "               0.0,         0.0, 1.0, 0.0,             \n"
-    "               0.0,         0.0, 0.0, 1.0              \n"
-    "    );                                                 \n"
-    "    gl_Position = vert_pos * rot;                      \n"
-    "    frag_coord = vert_coord;                           \n"
+    "    const float frag_angle = 0.0;                          \n"
+    "    frag_angle = 90.0 * (3.1415 * 2.0);                    \n"
+    "    frag_angle = frag_angle / 360.0;                       \n"
+    "    mat4 rot = mat4(                                       \n"
+    "        cos(frag_angle), -sin(frag_angle), 0.0, 0.0,       \n"
+    "        sin(frag_angle),  cos(frag_angle), 0.0, 0.0,       \n"
+    "               0.0,         0.0, 1.0, 0.0,                 \n"
+    "               0.0,         0.0, 0.0, 1.0                  \n"
+    "    );                                                     \n"
+    "    gl_Position = vert_pos * rot;                          \n"
+    "    frag_coord = vert_coord;                               \n"
 #else
-    "    gl_Position = vert_pos;                            \n"
-    "    frag_coord = vert_coord;                           \n"
+    "    gl_Position = vert_pos;                                \n"
+    "    frag_coord = vert_coord;                               \n"
 #endif
-    "}                                                      \n";
+    "}                                                          \n";
     
 const char *frag_shader_src =
-    "precision mediump float;                               \n"
-    "varying vec2 frag_coord;                               \n"
-    "uniform float s_alpha;                                 \n"
-    "uniform sampler2D frag_sampler;                        \n"
-    "void main()                                            \n"
-    "{                                                      \n"
-    "    if (s_alpha >= 2.0) {                              \n"
-    "        gl_FragColor = texture2D(                      \n"
-    "            frag_sampler, frag_coord);                 \n"
-    "    }                                                  \n"
-    "    else if (s_alpha > 0.0) {                          \n"
-    "        vec3 tex = texture2D(                          \n"
-    "            frag_sampler, frag_coord).bgr;             \n"
-    "        gl_FragColor = vec4(tex, s_alpha);             \n"
-    "    }                                                  \n"
-    "    else {                                             \n"
-    "        vec3 tex = texture2D(                          \n"
-    "            frag_sampler, frag_coord).bgr;             \n"
-    "        gl_FragColor = vec4(tex, 1.0);                 \n"
-    "    }                                                  \n"
-    "}                                                      \n";
+    "precision mediump float;                                   \n"
+    "varying vec2 frag_coord;                                   \n"
+    "uniform float s_alpha;                                     \n"
+    "uniform sampler2D frag_sampler;                            \n"
+    "void main()                                                \n"
+    "{                                                          \n"
+    "    vec3 tex = texture2D(frag_sampler, frag_coord).bgr;    \n"
+    "    gl_FragColor = vec4(tex, s_alpha);                     \n"
+    "}                                                          \n";
 
 #if defined(A30)
 static cpu_clk_t cpu_clk[] = {
@@ -1597,9 +1585,22 @@ int handle_drastic_menu(void)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
-    flush_lcd(-1, myvideo.menu.drastic.frame->pixels, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->pitch, 0, ROTATE_180);
+    flush_lcd(
+        -1,
+        myvideo.menu.drastic.frame->pixels,
+        myvideo.menu.drastic.frame->clip_rect,
+        myvideo.menu.drastic.frame->clip_rect,
+        myvideo.menu.drastic.frame->pitch
+    );
     flip_lcd();
-    flush_lcd(-1, myvideo.menu.drastic.frame->pixels, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->pitch, 0, ROTATE_180);
+
+    flush_lcd(
+        -1,
+        myvideo.menu.drastic.frame->pixels,
+        myvideo.menu.drastic.frame->clip_rect,
+        myvideo.menu.drastic.frame->clip_rect,
+        myvideo.menu.drastic.frame->pitch
+    );
     flip_lcd();
 #endif
 
@@ -1750,7 +1751,6 @@ static int process_screen(void)
         int screen1 = 0;
         int show_pen = 1;
         int need_update = 1;
-        int rotate = ROTATE_180;
         int pitch = 0;
         void *pixels = NULL;
         SDL_Rect srt = {0, 0, NDS_W, NDS_H};
@@ -1931,7 +1931,6 @@ static int process_screen(void)
             drt.y = 26;
             drt.w = 427;
             drt.h = 320;
-            rotate = (myconfig.layout.mode == NDS_DIS_MODE_HH0) ? ROTATE_90 : ROTATE_270;
             break;
         case NDS_DIS_MODE_HH2:
         case NDS_DIS_MODE_HH3:
@@ -1939,7 +1938,6 @@ static int process_screen(void)
             drt.y = 0;
             drt.w = 480;
             drt.h = 320;
-            rotate = (myconfig.layout.mode == NDS_DIS_MODE_HH2) ? ROTATE_90 : ROTATE_270;
             break;
         case NDS_DIS_MODE_HRES0:
             drt.w = NDS_Wx2;
@@ -1960,16 +1958,21 @@ static int process_screen(void)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (rotate == ROTATE_180) {
+        if ((myconfig.layout.mode == NDS_DIS_MODE_HH0) ||
+            (myconfig.layout.mode == NDS_DIS_MODE_HH2))
+        {
+            drt.x = (drt.x == 0) ? 320 : 0;
+        }
+        else {
             drt.y = (SCREEN_H - drt.y) - drt.h;
             drt.x = (SCREEN_W - drt.x) - drt.w;
         }
-        else if (rotate == ROTATE_90) {
-            drt.x = (drt.x == 0) ? 320 : 0;
-        }
 
 #if defined(A30) || defined(FLIP)
-        if (show_pen && ((myevent.mode == NDS_TOUCH_MODE) || (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_STYLUS)))) {
+        if (show_pen && 
+            ((myevent.mode == NDS_TOUCH_MODE) || 
+            (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_STYLUS))))
+        {
 #else
         if (show_pen && (myevent.mode == NDS_TOUCH_MODE)) {
 #endif
@@ -1986,7 +1989,7 @@ static int process_screen(void)
         }
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-        if ((idx == 0) && (myconfig.layout.alpha.border > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+        if ((idx == 0) && (myconfig.layout.swin.border > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
             int c0 = 0;
             uint32_t *p0 = NULL;
             uint32_t *p1 = NULL;
@@ -1995,15 +1998,15 @@ static int process_screen(void)
             p0 = (uint32_t *)myconfig.screen.pixels[idx];
             p1 = (uint32_t *)myconfig.screen.pixels[idx] + ((srt.h - 1) * srt.w);
             for (c0 = 0; c0 < srt.w; c0++) {
-                *p0++ = col[myconfig.layout.alpha.border];
-                *p1++ = col[myconfig.layout.alpha.border];
+                *p0++ = col[myconfig.layout.swin.border];
+                *p1++ = col[myconfig.layout.swin.border];
             }
 
             p0 = (uint32_t *)myconfig.screen.pixels[idx];
             p1 = (uint32_t *)myconfig.screen.pixels[idx] + (srt.w - 1);
             for (c0 = 0; c0 < srt.h; c0++) {
-                *p0 = col[myconfig.layout.alpha.border];
-                *p1 = col[myconfig.layout.alpha.border];
+                *p0 = col[myconfig.layout.swin.border];
+                *p1 = col[myconfig.layout.swin.border];
                 p0 += srt.w;
                 p1 += srt.w;
             }
@@ -2029,9 +2032,9 @@ static int process_screen(void)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-            flush_lcd(idx, pixels, srt, drt, pitch, 0, rotate);
+            flush_lcd(idx, pixels, srt, drt, pitch);
 #else
-            flush_lcd(-1, pixels, srt, drt, pitch, 0, rotate);
+            flush_lcd(-1, pixels, srt, drt, pitch);
 #endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
@@ -2042,7 +2045,7 @@ static int process_screen(void)
                 drt.w = 160;
                 drt.h = 120;
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                switch (myconfig.layout.alpha.pos) {
+                switch (myconfig.layout.swin.pos) {
                 case 0:
                     drt.x = SCREEN_W - drt.w;
                     drt.y = 0;
@@ -2060,9 +2063,9 @@ static int process_screen(void)
                     drt.y = SCREEN_H - drt.h;
                     break;
                 }
-                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch, 1, rotate);
+                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
 #else
-                flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch, 1, rotate);
+                flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
 #endif
                 break;
             case NDS_DIS_MODE_VH_T1:
@@ -2071,7 +2074,7 @@ static int process_screen(void)
                 drt.w = NDS_W;
                 drt.h = NDS_H;
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                switch (myconfig.layout.alpha.pos) {
+                switch (myconfig.layout.swin.pos) {
                 case 0:
                     drt.x = SCREEN_W - drt.w;
                     drt.y = 0;
@@ -2089,9 +2092,9 @@ static int process_screen(void)
                     drt.y = SCREEN_H - drt.h;
                     break;
                 }
-                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch, 1, rotate);
+                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
 #else 
-                flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch, 1, rotate);
+                flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
 #endif
                 break;
             }
@@ -2114,7 +2117,7 @@ static int process_screen(void)
         rt.y = 0;
         rt.w = myvideo.fps->w;
         rt.h = myvideo.fps->h;
-        flush_lcd(-1, myvideo.fps->pixels, myvideo.fps->clip_rect, rt, myvideo.fps->pitch, 0, ROTATE_180);
+        flush_lcd(-1, myvideo.fps->pixels, myvideo.fps->clip_rect, rt, myvideo.fps->pitch);
     }
 
 #if defined(TRIMUI)
@@ -2471,7 +2474,7 @@ static void *video_handler(void *threadid)
 
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode = 0;
-                flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, ROTATE_180);
+                flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
                 flip_lcd();
                 myconfig.filter = pre_filter;
                 myconfig.layout.mode = pre_mode;
@@ -2487,7 +2490,13 @@ static void *video_handler(void *threadid)
 
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode = 0;
-                flush_lcd(-1, myvideo.menu.drastic.frame->pixels, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->clip_rect, myvideo.menu.drastic.frame->pitch, 0, 0);
+                flush_lcd(
+                    -1,
+                    myvideo.menu.drastic.frame->pixels,
+                    myvideo.menu.drastic.frame->clip_rect,
+                    myvideo.menu.drastic.frame->clip_rect,
+                    myvideo.menu.drastic.frame->pitch
+                );
                 flip_lcd();
                 myconfig.filter = pre_filter;
                 myconfig.layout.mode = pre_mode;
@@ -3702,7 +3711,7 @@ static int draw_pen(void *pixels, int width, int pitch)
     return 0;
 }
 
-int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, int pitch, int alpha, int rotate)
+int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, uint32_t pitch)
 {
 #if defined(TRIMUI)
     int x = 0;
@@ -3727,7 +3736,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
-    debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d, rotate=%d)\n", __func__, id, pixels, pitch, alpha, rotate);
+    debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d)\n", __func__, id, pixels, pitch, alpha);
 
 #if defined(GKD2) || defined(BRICK)
     myvideo.shm.buf->srt.x = srcrect.x;
@@ -3746,11 +3755,16 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     myvideo.shm.buf->len = srcrect.h * pitch;
     myvideo.shm.buf->tex = tex;
     myvideo.shm.buf->pitch = pitch;
-    myvideo.shm.buf->alpha = alpha;
-    myvideo.shm.buf->rotate = rotate;
+    myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
     myvideo.shm.buf->layout = myconfig.layout.mode;
     myvideo.shm.buf->filter = myconfig.filter;
-    debug("send SHM_CMD_FLUSH, pitch=%d, alpha=%d, rotate=%d\n", pitch, alpha, rotate);
+    debug(
+        "send SHM_CMD_FLUSH, tex=%d, layout=%d, pitch=%d, alpha=%d\n",
+        tex,
+        myconfig.layout.mode,
+        pitch,
+        myconfig.layout.swin.alpha
+    );
 
     myvideo.shm.buf->valid = 1;
     __clear_cache((uint8_t *)myvideo.shm.buf, (uint8_t *)myvideo.shm.buf + sizeof(shm_buf_t));
@@ -3815,7 +3829,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     }
 
     if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
-        glUniform1f(myvideo.alphaLoc, 1.0 - ((float)myconfig.layout.alpha.val / 10.0));
+        glUniform1f(myvideo.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
@@ -4374,12 +4388,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
     }
 
     if (alpha != 0) {
-        if (myconfig.layout.alpha.val > NDS_ALPHA_MAX) {
-            myconfig.layout.alpha.val = 0;
+        if (myconfig.layout.swin.alpha > NDS_ALPHA_MAX) {
+            myconfig.layout.swin.alpha = 0;
         }
 
-        if (myconfig.layout.alpha.val > 0) {
-            float m0 = (float)myconfig.layout.alpha.val / 10;
+        if (myconfig.layout.swin.alpha > 0) {
+            float m0 = (float)myconfig.layout.swin.alpha / 10;
             float m1 = 1.0 - m0;
             uint32_t *d = myvideo.tmp.virt_addr;
             uint32_t r0 = 0, g0 = 0, b0 = 0;
@@ -4416,8 +4430,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
                 ax = 0;
                 for (x=0; x<sw; x++) {
                     asm ("PLD [%0, #128]"::"r" (s0));
-                    if ((myconfig.layout.alpha.border > 0) && ((y == 0) || (y == (sh - 1)) || (x == 0) || (x == (sw - 1)))) {
-                        *d++ = col[myconfig.layout.alpha.border];
+                    if ((myconfig.layout.swin.border > 0) && ((y == 0) || (y == (sh - 1)) || (x == 0) || (x == (sw - 1)))) {
+                        *d++ = col[myconfig.layout.swin.border];
                     }
                     else {
                         switch (myconfig.layout.mode) {
@@ -4441,7 +4455,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
                             b1 = (s1_888[((y + ay) * srcrect.w) + x + ax] & 0x0000ff) >> 0;
                         }
 
-                        switch (myconfig.layout.alpha.pos % 4) {
+                        switch (myconfig.layout.swin.pos % 4) {
                         case 0:
                             r0 = (s0[((sh - y + (myvideo.cur_h - sh) - 1) * myvideo.cur_w) + (sw - x - 1)] & 0xff0000) >> 16;
                             g0 = (s0[((sh - y + (myvideo.cur_h - sh) - 1) * myvideo.cur_w) + (sw - x - 1)] & 0x00ff00) >> 8;
@@ -4478,7 +4492,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         case NDS_DIS_MODE_VH_T0:
             dstrect.w = 170;
             dstrect.h = 128;
-            if (myconfig.layout.alpha.val > 0) {
+            if (myconfig.layout.swin.alpha > 0) {
                 srcrect.w = dstrect.w;
                 srcrect.h = dstrect.h;
                 pitch = srcrect.w * 4;
@@ -4487,7 +4501,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
         case NDS_DIS_MODE_VH_T1:
             dstrect.w = NDS_W;
             dstrect.h = NDS_H;
-            if (myconfig.layout.alpha.val > 0) {
+            if (myconfig.layout.swin.alpha > 0) {
                 srcrect.w = dstrect.w;
                 srcrect.h = dstrect.h;
                 pitch = srcrect.w * 4;
@@ -4495,7 +4509,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, in
             break;
         }
 
-        switch (myconfig.layout.alpha.pos % 4) {
+        switch (myconfig.layout.swin.pos % 4) {
         case 0:
             dstrect.x = 0;
             dstrect.y = myvideo.cur_h - dstrect.h;
@@ -5093,7 +5107,7 @@ static int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t 
                     rt.y = y;
                     rt.w = t2->w;
                     rt.h = t2->h;
-                    flush_lcd(-1, t2->pixels, t2->clip_rect, rt, t2->pitch, 0, ROTATE_180);
+                    flush_lcd(-1, t2->pixels, t2->clip_rect, rt, t2->pitch);
                     SDL_FreeSurface(t2);
                 }
                 SDL_FreeSurface(t1);
@@ -5396,9 +5410,9 @@ static int load_layout_bg(void)
                 SDL_FreeSurface(t);
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
 #if defined(GKD2) || defined(BRICK)
-                flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, 0);
+                flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #else
-                flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, ROTATE_180);
+                flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #endif
 #endif
             }
@@ -5408,9 +5422,9 @@ static int load_layout_bg(void)
         if (myvideo.layout.bg) {
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
 #if defined(GKD2) || defined(BRICK)
-            flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, 0);
+            flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #else
-            flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch, 0, ROTATE_180);
+            flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #endif
 #else
             glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
@@ -6015,7 +6029,6 @@ static const char *MENU_ITEM[] = {
 #else
     "CPU",
 #endif
-    "Overlay",
     "Display",
     "Alpha",
     "Border",
@@ -6153,22 +6166,22 @@ int handle_sdl2_menu(int key)
             break;
         case MENU_DIS_ALPHA:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.alpha.val > 0) {
-                    myconfig.layout.alpha.val-= 1;
+                if (myconfig.layout.swin.alpha > 0) {
+                    myconfig.layout.swin.alpha-= 1;
                 }
             }
             break;
         case MENU_DIS_BORDER:
-            if ((myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.alpha.border > 0) {
-                    myconfig.layout.alpha.border-= 1;
+            if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.swin.border > 0) {
+                    myconfig.layout.swin.border-= 1;
                 }
             }
             break;
         case MENU_DIS_POSITION:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.alpha.pos > 0) {
-                    myconfig.layout.alpha.pos-= 1;
+                if (myconfig.layout.swin.pos > 0) {
+                    myconfig.layout.swin.pos-= 1;
                 }
             }
             break;
@@ -6330,22 +6343,22 @@ int handle_sdl2_menu(int key)
             break;
         case MENU_DIS_ALPHA:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.alpha.val < NDS_ALPHA_MAX) {
-                    myconfig.layout.alpha.val+= 1;
+                if (myconfig.layout.swin.alpha < NDS_ALPHA_MAX) {
+                    myconfig.layout.swin.alpha+= 1;
                 }
             }
             break;
         case MENU_DIS_BORDER:
-            if ((myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.alpha.border < NDS_BORDER_MAX) {
-                    myconfig.layout.alpha.border+= 1;
+            if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if (myconfig.layout.swin.border < NDS_BORDER_MAX) {
+                    myconfig.layout.swin.border+= 1;
                 }
             }
             break;
         case MENU_DIS_POSITION:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.alpha.pos < 3) {
-                    myconfig.layout.alpha.pos+= 1;
+                if (myconfig.layout.swin.pos < 3) {
+                    myconfig.layout.swin.pos+= 1;
                 }
             }
             break;
@@ -6557,11 +6570,11 @@ int handle_sdl2_menu(int key)
             break;
         case MENU_DIS_BORDER:
             sx = 20;
-            if ((cur_sel == MENU_DIS_BORDER) && (myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_DIS_BORDER) && (myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 col1 = val_col;
             }
             else {
-                if ((myconfig.layout.alpha.val > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                     col1 = unsel_col;
                 }
                 else {
@@ -6707,13 +6720,13 @@ int handle_sdl2_menu(int key)
             }
 
             sx = 0;
-            sprintf(buf, "%d", myconfig.layout.alpha.val);
+            sprintf(buf, "%d", myconfig.layout.swin.alpha);
             break;
         case MENU_DIS_BORDER:
-            sprintf(buf, "%s", l10n(BORDER[myconfig.layout.alpha.border]));
+            sprintf(buf, "%s", l10n(BORDER[myconfig.layout.swin.border]));
             break;
         case MENU_DIS_POSITION:
-            sprintf(buf, "%s", l10n(POS[myconfig.layout.alpha.pos]));
+            sprintf(buf, "%s", l10n(POS[myconfig.layout.swin.pos]));
             break;
         case MENU_ALT:
             sprintf(buf, "[%d]   %s", myconfig.layout.alt, DIS_MODE0_640[myconfig.layout.alt]);
@@ -6799,7 +6812,7 @@ int handle_sdl2_menu(int key)
            
             rt.w = 34;
             rt.h = 26;
-            switch (myconfig.layout.alpha.pos) {
+            switch (myconfig.layout.swin.pos) {
             case 0:
                 rt.x = (sx + 128) - rt.w;
                 rt.y = sy;
@@ -6817,7 +6830,7 @@ int handle_sdl2_menu(int key)
                 rt.y = (sy + 96) - rt.h;
                 break;
             }
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.alpha.val)));
+            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
             break;
         case NDS_DIS_MODE_VH_T1:
             rt.x = sx;
@@ -6828,7 +6841,7 @@ int handle_sdl2_menu(int key)
            
             rt.w = 51;
             rt.h = 38;
-            switch (myconfig.layout.alpha.pos) {
+            switch (myconfig.layout.swin.pos) {
             case 0:
                 rt.x = (sx + 128) - rt.w;
                 rt.y = sy;
@@ -6846,7 +6859,7 @@ int handle_sdl2_menu(int key)
                 rt.y = (sy + 96) - rt.h;
                 break;
             }
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.alpha.val)));
+            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
             break;
         case NDS_DIS_MODE_S0:
             rt.x = sx;
@@ -7198,7 +7211,7 @@ int handle_sdl2_menu(int key)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
-    flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch, 0, ROTATE_180);
+    flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
     flip_lcd();
 #endif
     myvideo.layout.reload_bg = RELOAD_BG_COUNT;

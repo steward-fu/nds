@@ -67,18 +67,16 @@ typedef enum {
 
 typedef struct {
     uint8_t valid;
-    uint32_t cmd;
-
-    uint32_t tex;
-    uint32_t layout;
-    uint32_t filter;
+    uint8_t cmd;
+    uint8_t tex;
+    uint8_t layout;
+    uint8_t filter;
+    uint32_t pitch;
+    uint32_t alpha;
 
     uint32_t len;
     SDL_Rect srt;
     SDL_Rect drt;
-    uint8_t pitch;
-    uint8_t alpha;
-    uint8_t rotate;
     uint8_t buf[R_LCD_W * R_LCD_H * 4];
 
     char bg_path[MAX_PATH];
@@ -100,6 +98,7 @@ typedef struct {
         GLint frag_sampler;
         GLint frag_rotate;
         GLint frag_aspect;
+        GLint frag_alpha;
         GLuint tex_id[TEXTURE_MAX];
         void *bg_pixels;
     } gles;

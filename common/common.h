@@ -36,6 +36,9 @@
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
 
+#define LAYOUT_BG_W     640
+#define LAYOUT_BG_H     480
+
 #define NDS_DIS_MODE_VH_T0          0
 #define NDS_DIS_MODE_VH_T1          1
 #define NDS_DIS_MODE_S0             2
@@ -61,7 +64,7 @@
 #define NDS_DIS_MODE_HRES0          20
 #define NDS_DIS_MODE_HRES1          21
 
-#define NDS_ALPHA_MAX               7
+#define NDS_ALPHA_MAX               10
 #define NDS_BORDER_MAX              7
 
 #define MAX_PATH                    128
@@ -141,10 +144,10 @@ typedef struct {
         } bg;
 
         struct {
-            int val;
             int pos;
+            int alpha;
             int border;
-        } alpha;
+        } swin;
     } layout;
 
     struct {

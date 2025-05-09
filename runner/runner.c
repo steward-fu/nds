@@ -26,6 +26,7 @@
 const char *vert_shader_code =
     "attribute vec4 vert_pos;                                           \n"
     "attribute vec2 vert_coord;                                         \n"
+    "attribute float vert_alpha;                                        \n"
     "varying vec2 frag_coord;                                           \n"
     "void main()                                                        \n"
     "{                                                                  \n"
@@ -40,6 +41,7 @@ const char *frag_shader_code =
     "varying vec2 frag_coord;                                           \n"
     "uniform float frag_rotate;                                         \n"
     "uniform float frag_aspect;                                         \n"
+    "uniform float frag_alpha;                                          \n"
     "uniform sampler2D frag_sampler;                                    \n"
     "const vec2 HALF = vec2(0.5);                                       \n"
     "void main()                                                        \n"
@@ -54,7 +56,7 @@ const char *frag_shader_code =
     "    tc = scaleMatInv * rotMat * scaleMat * tc;                     \n"
     "    tc += HALF.xy;                                                 \n"
     "    vec3 tex = texture2D(frag_sampler, tc).bgr;                    \n"
-    "    gl_FragColor = vec4(tex, 1.0);                                 \n"
+    "    gl_FragColor = vec4(tex, frag_alpha);                          \n"
     "}                                                                  \n";
 
 static GLfloat bg_vertices[] = {
@@ -130,6 +132,7 @@ static int init_gles(void)
     myrunner.gles.frag_sampler = glGetUniformLocation(myrunner.gles.program, "frag_sampler");
     myrunner.gles.frag_rotate = glGetUniformLocation(myrunner.gles.program, "frag_rotate");
     myrunner.gles.frag_aspect = glGetUniformLocation(myrunner.gles.program, "frag_aspect");
+    myrunner.gles.frag_alpha = glGetUniformLocation(myrunner.gles.program, "frag_alpha");
 
     glUniform1f(myrunner.gles.frag_rotate, 0);
     glUniform1f(myrunner.gles.frag_aspect, (float)R_LCD_W / R_LCD_H);
@@ -191,15 +194,18 @@ static void* runner_handler(void *param)
 
         switch (myrunner.shm.buf->cmd) {
         case SHM_CMD_FLUSH:
-            debug("recv SHM_CMD_FLUSH, tex=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d), pitch=%d, alpha=%d, rotate=%d\n",
-                myrunner.shm.buf->tex_id,
-                myrunner.shm.buf->srt.x, myrunner.shm.buf->srt.y, myrunner.shm.buf->srt.w, myrunner.shm.buf->srt.h,
-                myrunner.shm.buf->drt.x, myrunner.shm.buf->drt.y, myrunner.shm.buf->drt.w, myrunner.shm.buf->drt.h,
-                myrunner.shm.buf->pitch, myrunner.shm.buf->alpha, myrunner.shm.buf->rotate
+            debug("recv SHM_CMD_FLUSH, tex=%d, pitch=%d, alpha=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d)\n",
+                myrunner.shm.buf->tex,
+                myrunner.shm.buf->pitch,
+                myrunner.shm.buf->alpha,
+                myrunner.shm.buf->srt.x, myrunner.shm.buf->srt.y,
+                myrunner.shm.buf->srt.w, myrunner.shm.buf->srt.h,
+                myrunner.shm.buf->drt.x, myrunner.shm.buf->drt.y,
+                myrunner.shm.buf->drt.w, myrunner.shm.buf->drt.h
             );
 
             if (myrunner.shm.buf->tex == TEXTURE_BG) {
-                memcpy(myrunner.gles.bg_pixels, myrunner.shm.buf->buf, 640 * 480 * 4);
+                memcpy(myrunner.gles.bg_pixels, myrunner.shm.buf->buf, LAYOUT_BG_W * LAYOUT_BG_H * 4);
                 break;
             }
 
@@ -255,6 +261,15 @@ static void* runner_handler(void *param)
                 fg_vertices[16] = fg_vertices[1];
             }
 
+            if (((myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T0) ||
+                (myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T1)) &&
+                (myrunner.shm.buf->tex == TEXTURE_LCD0))
+            {
+                glUniform1f(myrunner.gles.frag_alpha, 1.0 - ((float)myrunner.shm.buf->alpha / 10.0));
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glEnable(GL_BLEND);
+            }
+
             glActiveTexture(GL_TEXTURE0);
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[myrunner.shm.buf->tex]);
@@ -271,9 +286,17 @@ static void* runner_handler(void *param)
             glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
             glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+
+            if (((myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T0) ||
+                (myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T1)) &&
+                (myrunner.shm.buf->tex == TEXTURE_LCD0))
+            {
+                glUniform1f(myrunner.gles.frag_alpha, 0.0);
+                glDisable(GL_BLEND);
+            }
             break;
         case SHM_CMD_FLIP:
-            //debug("recv SHM_CMD_FLIP\n");
+            debug("recv SHM_CMD_FLIP\n");
             SDL_GL_SwapWindow(myrunner.sdl2.win);
 
             glActiveTexture(GL_TEXTURE0);
@@ -281,7 +304,7 @@ static void* runner_handler(void *param)
             glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[TEXTURE_BG]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 640, 480, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)myrunner.gles.bg_pixels);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LAYOUT_BG_W, LAYOUT_BG_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)myrunner.gles.bg_pixels);
             glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
             glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);

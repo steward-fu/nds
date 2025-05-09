@@ -74,9 +74,6 @@
 #define RELOAD_BG_COUNT 120
 #endif
 
-#define LAYOUT_BG_W     640
-#define LAYOUT_BG_H     480
-
 typedef enum {
     MYJOY_MODE_DISABLE = 0,
     MYJOY_MODE_KEYPAD,
@@ -478,7 +475,7 @@ typedef struct {
 
 void clear_lcd(void);
 void flip_lcd(void);
-int flush_lcd(int, const void *, SDL_Rect, SDL_Rect, int, int, int);
+int flush_lcd(uint32_t, const void *, SDL_Rect, SDL_Rect, uint32_t);
 
 void update_wayland_res(int, int);
 
