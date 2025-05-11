@@ -39,8 +39,8 @@ const SDL_Scancode nds_key_code[] = {
     SDLK_DOWN,          // DOWN
     SDLK_LEFT,          // LEFT
     SDLK_RIGHT,         // RIGHT
-    SDLK_SPACE,         // A
-    SDLK_LCTRL,         // B
+    SDLK_RETURN,        // A
+    SDLK_ESCAPE,        // B
     SDLK_LSHIFT,        // X
     SDLK_LALT,          // Y
     SDLK_e,             // L1
