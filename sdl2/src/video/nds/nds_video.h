@@ -472,9 +472,8 @@ typedef struct {
     } thread;
 } nds_video;
 
-void clear_lcd(void);
-void flip_lcd(void);
 int flush_lcd(uint32_t, const void *, SDL_Rect, SDL_Rect, uint32_t);
+void flip_lcd(void);
 
 void update_wayland_res(int, int);
 

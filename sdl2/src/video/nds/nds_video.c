@@ -2209,6 +2209,7 @@ void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint
 
                     if (myvideo.fps) {
                         SDL_FreeSurface(myvideo.fps);
+                        myvideo.fps = NULL;
                     }
                     myvideo.fps = SDL_ConvertSurface(t1, myvideo.cvt->format, 0);
                     SDL_FreeSurface(t1);
@@ -2460,6 +2461,10 @@ static void *video_handler(void *threadid)
     debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
     debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
     debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
+#endif
+
+#if !defined(UT)
+    myvideo.thread.running = 1;
 #endif
 
     while (myvideo.thread.running) {
@@ -2767,41 +2772,43 @@ static int set_cpuclock(uint32_t newclock)
 }
 #endif
 
-static int get_file_path_by_index(const char *path, int desire, char *buf, int add_path)
+static int get_file_path_by_index(const char *path, int idx, char *buf)
 {
     int r = -1;
     int count = 0;
     DIR *d = NULL;
     struct dirent *dir = NULL;
 
+    debug("call %s(path=\"%s\", idx=%d, buf=%p)\n", __func__, path, idx, buf);
+
     d = opendir(path);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (strcmp(dir->d_name, ".") == 0) {
-                continue;
-            }
-
-            if (strcmp(dir->d_name, "..") == 0) {
-                continue;
-            }
-
-            if (dir->d_type == DT_DIR) {
-                continue;
-            }
-
-            if (count == desire) {
-                if (add_path) {
-                    r = snprintf(buf, MAX_PATH, "%s/%s", path, dir->d_name) ? 0 : 1;
-                }
-                else {
-                    r = snprintf(buf, MAX_PATH, "%s", dir->d_name) ? 0 : 1;
-                }
-                break;
-            }
-            count+= 1;
-        }
-        closedir(d);
+    if (!d) {
+        error("failed to open dir \"%s\"\n", path);
+        return r;
     }
+
+    while ((dir = readdir(d)) != NULL) {
+        if (strcmp(dir->d_name, ".") == 0) {
+            continue;
+        }
+
+        if (strcmp(dir->d_name, "..") == 0) {
+            continue;
+        }
+
+        if (dir->d_type == DT_DIR) {
+            continue;
+        }
+
+        if (count == idx) {
+            r = 0;
+            snprintf(buf, MAX_PATH, "%s/%s", path, dir->d_name) ? 0 : 1;
+            break;
+        }
+        count+= 1;
+    }
+    closedir(d);
+
     return r;
 }
 
@@ -3565,18 +3572,6 @@ int quit_lcd(void)
     return 0;
 }
 #endif
-
-void clear_lcd(void)
-{
-#if defined(MINI)
-    MI_SYS_MemsetPa(myvideo.fb.phy_addr, 0, myvideo.cur_buf_size);
-    MI_SYS_MemsetPa(myvideo.tmp.phy_addr, 0, myvideo.cur_buf_size);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][0], 0, NDS_Wx2 * NDS_Hx2 * 4);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[0][1], 0, NDS_Wx2 * NDS_Hx2 * 4);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][0], 0, NDS_Wx2 * NDS_Hx2 * 4);
-    MI_SYS_MemsetPa(myvideo.lcd.phy_addr[1][1], 0, NDS_Wx2 * NDS_Hx2 * 4);
-#endif
-}
 
 static int draw_pen(void *pixels, int width, int pitch)
 {
@@ -5123,75 +5118,72 @@ static int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t 
     return 0;
 }
 
+static int free_touch_pen(void)
+{
+    debug("call %s()\n", __func__);
+
+    if (myvideo.touch.pen) {
+        SDL_FreeSurface(myvideo.touch.pen);
+        myvideo.touch.pen = NULL;
+    }
+
+    return 0;
+}
+
 int load_touch_pen(void)
 {
-    static int pre_sel = -1;
-
+    int r = -1;
+    SDL_Surface *t = NULL;
     char path[MAX_PATH] = { 0 };
     char buf[MAX_PATH + 8] = { 0 };
-    SDL_Surface *t = NULL;
 
     debug("call %s()\n", __func__);
 
-    if (pre_sel != myconfig.pen.sel) {
-        pre_sel = myconfig.pen.sel;
+    free_touch_pen();
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
 
-        if (myvideo.touch.pen) {
-            SDL_FreeSurface(myvideo.touch.pen);
-            myvideo.touch.pen = NULL;
-        }
-
-        myconfig.pen.type = PEN_LB;
-        snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
-        if (get_file_path_by_index(buf, myconfig.pen.sel, path, 1) == 0) {
-            debug("pen path=\"%s\"\n", path);
-            t = IMG_Load(path);
-            if (t) {
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-                int x = 0;
-                int y = 0;
-                uint32_t *p = malloc(t->pitch * t->h);
-                uint32_t *src = t->pixels;
-                uint32_t *dst = p;
-
-                for (y = 0; y < t->h; y++) {
-                    for (x = 0; x < t->w; x++) {
-                        *dst++ = *src++;
-                    }
-                }
-                glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, p);
-                free(p);
-#endif
-                myvideo.touch.pen = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
-                SDL_FreeSurface(t);
-
-                if (strstr(path, "left_top_")) {
-                    myconfig.pen.type = PEN_LT;
-                }
-                else if (strstr(path, "right_top_")) {
-                    myconfig.pen.type = PEN_RT;
-                }
-                else if (strstr(path, "right_bottom_")) {
-                    myconfig.pen.type = PEN_RB;
-                }
-                else if (strstr(path, "left_bottom_")) {
-                    myconfig.pen.type = PEN_LB;
-                }
-                else {
-                    myconfig.pen.type = PEN_CP;
-                }
-            }
-            else {
-                error("failed to load \"%s\"\n", path);
-            }
-        }
+    if (get_file_path_by_index(buf, myconfig.pen.sel, path) != 0) {
+        error("failed to get file path\n");
+        return r;
     }
+    debug("pen path=\"%s\"\n", path);
+
+    t = IMG_Load(path);
+    if (!t) {
+        error("failed to load touch pen (\"%s\")\n", path);
+        return r;
+    }
+
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
+    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
+#endif
+
+    myvideo.touch.pen = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
+
+    if (strstr(path, "left_top_")) {
+        myconfig.pen.type = PEN_LT;
+    }
+    else if (strstr(path, "right_top_")) {
+        myconfig.pen.type = PEN_RT;
+    }
+    else if (strstr(path, "right_bottom_")) {
+        myconfig.pen.type = PEN_RB;
+    }
+    else if (strstr(path, "left_bottom_")) {
+        myconfig.pen.type = PEN_LB;
+    }
+    else {
+        myconfig.pen.type = PEN_CP;
+    }
+
+    SDL_FreeSurface(t);
+
     return 0;
 }
 
@@ -5244,6 +5236,14 @@ int free_menu_img(void)
     if (myvideo.menu.drastic.no) {
         SDL_FreeSurface(myvideo.menu.drastic.no);
         myvideo.menu.drastic.no = NULL;
+    }
+    if (myvideo.menu.drastic.frame) {
+        SDL_FreeSurface(myvideo.menu.drastic.frame);
+        myvideo.menu.drastic.frame = NULL;
+    }
+    if (myvideo.menu.font) {
+        TTF_CloseFont(myvideo.menu.font);
+        myvideo.menu.font = NULL;
     }
 
     return 0;
@@ -5311,6 +5311,30 @@ int load_menu_res(void)
         SDL_FreeSurface(t);
     }
 
+#if defined(QX1000) || defined(XT897)
+    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
+#else
+    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
+#endif
+
+    if (myvideo.menu.drastic.frame) {
+        if (myvideo.menu.drastic.bg0) {
+            SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
+        }
+    }
+
+    myvideo.menu.font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
+
+    return 0;
+}
+
+static int free_layout_bg(void)
+{
+    if (myvideo.layout.bg) {
+        SDL_FreeSurface(myvideo.layout.bg);
+        myvideo.layout.bg = NULL;
+    }
+
     return 0;
 }
 
@@ -5334,10 +5358,7 @@ static int load_layout_bg(void)
         pre_mode = myconfig.layout.mode;
         pre_sel = myconfig.layout.bg.sel;
 
-        if (myvideo.layout.bg) {
-            SDL_FreeSurface(myvideo.layout.bg);
-            myvideo.layout.bg = NULL;
-        }
+        free_layout_bg();
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
         if (myvideo.layout.bg) {
@@ -5629,19 +5650,6 @@ static int init_device(void)
     myconfig.menu.sel = 0;
     myconfig.menu.max = get_menu_cnt();
 
-#if defined(QX1000) || defined(XT897)
-    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
-#else
-    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
-#endif
-    if (myvideo.menu.drastic.frame) {
-        if (myvideo.menu.drastic.bg0) {
-            SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
-        }
-    }
-
-    myvideo.menu.font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
-
 #if defined(TRIMUI)
     cc = 0;
     for (y = 0; y < NDS_H; y++) {
@@ -5669,8 +5677,8 @@ static int init_device(void)
     load_touch_pen();
 
 #if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(PANDORA)
-    //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
-    //set_half_vol(myconfig.half_vol);
+    set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
+    set_half_vol(myconfig.half_vol);
 #endif
 
 #if defined(TRIMUI)
@@ -5685,12 +5693,11 @@ static int init_device(void)
 #endif
 
     init_lcd();
-    
     init_event();
     init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
-    add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
 
     add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
+    add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
 #if !defined(PANDORA)
     add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
     add_prehook_cb(myhook.fun.savestate_post,   prehook_cb_savestate_post);
@@ -5704,11 +5711,12 @@ static int init_device(void)
     add_prehook_cb(myhook.fun.free,    prehook_cb_free);
 #endif
 
-    myvideo.thread.running = 1;
-    pthread_create(&myvideo.thread.id, NULL, video_handler, (void *)NULL);
+    pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 
     strncpy(buf, myvideo.home, sizeof(buf));
     strcat(buf, BIOS_PATH);
+
+printf("%s\n", buf);
     debug("drop bios files to \"%s\"\n", buf);
     if (drop_bios_files(buf) < 0) {
         r = -1;
@@ -5717,16 +5725,25 @@ static int init_device(void)
     return r;
 }
 
+#if defined(UT)
+TEST(sdl2_video, init_device)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_device());
+    quit_video(0);
+}
+#endif
+
 int init_video(_THIS)
 {
+#if !defined(UT)
     SDL_DisplayMode mode = { 0 };
     SDL_VideoDisplay display = { 0 };
+#endif
 
     debug("call %s()\n", __func__);
 
 #if !defined(UT)
     signal(SIGTERM, sigterm_handler);
-#endif
 
     SDL_zero(mode);
     mode.format = SDL_PIXELFORMAT_RGB565;
@@ -5785,9 +5802,11 @@ int init_video(_THIS)
     SDL_AddDisplayMode(&display, &mode);
 
     SDL_AddVideoDisplay(&display, SDL_FALSE);
+#endif
 
     TTF_Init();
     init_device();
+
     return 0;
 }
 
@@ -5813,36 +5832,17 @@ static int quit_device(void)
     }
     debug("completed\n");
 
-    clear_lcd();
     quit_hook();
     quit_lcd();
     quit_event();
     quit_lang();
+    free_menu_img();
+    free_touch_pen();
+    free_layout_bg();
 
     if (myvideo.fps) {
         SDL_FreeSurface(myvideo.fps);
         myvideo.fps = NULL;
-    }
-
-    if (myvideo.touch.pen) {
-        SDL_FreeSurface(myvideo.touch.pen);
-        myvideo.touch.pen = NULL;
-    }
-
-    if (myvideo.layout.bg) {
-        SDL_FreeSurface(myvideo.layout.bg);
-        myvideo.layout.bg = NULL;
-    }
-
-    free_menu_img();
-    if (myvideo.menu.drastic.frame) {
-        SDL_FreeSurface(myvideo.menu.drastic.frame);
-        myvideo.menu.drastic.frame = NULL;
-    }
-
-    if (myvideo.menu.font) {
-        TTF_CloseFont(myvideo.menu.font);
-        myvideo.menu.font = NULL;
     }
 
     if (myvideo.cvt) {
@@ -5916,32 +5916,64 @@ static const char *DIS_MODE1_640[] = {
 };
 
 static const char *POS[] = {
-    "Top-Right", "Top-Left", "Bottom-Left", "Bottom-Right"
+    "Top-Right",
+    "Top-Left",
+    "Bottom-Left",
+    "Bottom-Right"
 };
 
 static const char *BORDER[] = {
-    "None", "White", "Red", "Green", "Blue", "Black", "Yellow", "Cyan"
+    "None",
+    "White",
+    "Red",
+    "Green",
+    "Blue",
+    "Black",
+    "Yellow",
+    "Cyan"
 };
 
 static const char *DPAD[] = {
-    "0°", "90°", "270°"
+    "0°",
+    "90°",
+    "270°"
 };
 
 static const char *HOTKEY[] = {
-    "MENU", "SELECT"
+    "MENU",
+    "SELECT"
 };
 
 #if defined(A30) || defined(FLIP)
 static const char *JOY_MODE[] = {
-    "Disable", "D-Pad", "Stylus", "Customized Key"
+    "Disable",
+    "D-Pad",
+    "Stylus",
+    "Customized Key"
 };
 
 static const char *RJOY_MODE[] = {
-    "Disable", "4-Btn", "Stylus", "Customized Key"
+    "Disable",
+    "4-Btn",
+    "Stylus",
+    "Customized Key"
 };
 
 static const char *JOY_CUSKEY[] = {
-    "UP", "DOWN", "LEFT", "RIGHT", "A", "B", "X", "Y", "L1", "R1", "L2", "R2", "SELECT", "START"
+    "UP",
+    "DOWN",
+    "LEFT",
+    "RIGHT",
+    "A",
+    "B",
+    "X",
+    "Y",
+    "L1",
+    "R1",
+    "L2",
+    "R2",
+    "SELECT",
+    "START"
 };
 #endif
 
@@ -5949,7 +5981,9 @@ static int lang_next(void)
 {
     int cc = 0;
 
-    for (cc=1; cc<(MAX_LANG_FILE-1); cc++) {
+    debug("call %s()\n", __func__);
+
+    for (cc = 1; cc < (MAX_LANG_FILE - 1); cc++) {
         if (!strcmp(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc])) {
             if (strcmp(lang_file_name[cc + 1], "")) {
                 strcpy(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc + 1]);
@@ -5957,14 +5991,24 @@ static int lang_next(void)
             }
         }
     }
+
     return -1;
 }
+
+#if defined(UT)
+TEST(sdl2_video, lang_next)
+{
+    TEST_ASSERT_EQUAL_INT(0, lang_next());
+}
+#endif
 
 static int lang_prev(void)
 {
     int cc = 0;
 
-    for (cc=(MAX_LANG_FILE-1); cc>1; cc--) {
+    debug("call %s()\n", __func__);
+
+    for (cc = (MAX_LANG_FILE - 1); cc > 1; cc--) {
         if (!strcmp(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc])) {
             if (strcmp(lang_file_name[cc - 1], "")) {
                 strcpy(lang_file_name[DEF_LANG_SLOT], lang_file_name[cc - 1]);
@@ -5975,7 +6019,14 @@ static int lang_prev(void)
     return -1;
 }
 
-enum {
+#if defined(UT)
+TEST(sdl2_video, lang_prev)
+{
+    TEST_ASSERT_EQUAL_INT(0, lang_prev());
+}
+#endif
+
+typedef enum {
     MENU_LANG = 0,
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     MENU_CPU_CORE,
@@ -6018,7 +6069,7 @@ enum {
     MENU_CHK_BAT,
 #endif
     MENU_LAST,
-};
+} menu_list_t;
 
 static const char *MENU_ITEM[] = {
     "Language",
@@ -6063,20 +6114,22 @@ static const char *MENU_ITEM[] = {
 
 int handle_sdl2_menu(int key)
 {
-    static int pre_ff = 0;
+    static int pre_fast = 0;
     static int cur_sel = 0;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-    static uint32_t cur_cpucore = INIT_CPU_CORE;
-    static uint32_t pre_cpucore = INIT_CPU_CORE;
+    static char pre_lang[MAX_LANG_NAME] = { 0 };
+
 #if defined(A30)
     static uint32_t cur_cpuclock = INIT_CPU_CLOCK;
     static uint32_t pre_cpuclock = INIT_CPU_CLOCK;
 #endif
+
+#if defined(A30) || defined(RG28XX) || defined(FLIP)
+    static uint32_t cur_cpucore = INIT_CPU_CORE;
+    static uint32_t pre_cpucore = INIT_CPU_CORE;
 #else
     static uint32_t cur_cpuclock = 0;
     static uint32_t pre_cpuclock = 0;
 #endif
-    static char pre_lang[MAX_LANG_NAME] = {0};
 
     const int SX = 150;
     const int SY = 107;
@@ -6512,9 +6565,9 @@ int handle_sdl2_menu(int key)
             memset(pre_lang, 0, sizeof(pre_lang));
         }
 
-        if (pre_ff != myconfig.fast_forward) {
+        if (pre_fast != myconfig.fast_forward) {
             fast_forward(myconfig.fast_forward);
-            pre_ff = myconfig.fast_forward;
+            pre_fast = myconfig.fast_forward;
         }
         myvideo.menu.sdl2.enable = 0;
 #if defined(QX1000) || defined(XT897)
@@ -6531,7 +6584,10 @@ int handle_sdl2_menu(int key)
     if (cur_sel == MENU_ALT) {
         dis_mode = myconfig.layout.alt;
     }
-    SDL_SoftStretch(myvideo.menu.sdl2.bg, NULL, myvideo.cvt, NULL);
+
+    if (myvideo.menu.sdl2.bg && myvideo.cvt) {
+        SDL_SoftStretch(myvideo.menu.sdl2.bg, NULL, myvideo.cvt, NULL);
+    }
 
     if (cur_sel < 3) {
         s0 = 0;
@@ -7216,6 +7272,21 @@ int handle_sdl2_menu(int key)
     flip_lcd();
 #endif
     myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+
     return 0;
 }
 #endif
+
+#if defined(UT)
+TEST(sdl2_video, handle_sdl2_menu)
+{
+    uint8_t hires = 0;
+
+    TEST_ASSERT_EQUAL_INT(0, init_video(NULL));
+    myhook.var.sdl.screen[0].hires_mode = &hires;
+    myhook.var.sdl.screen[1].hires_mode = &hires;
+    TEST_ASSERT_EQUAL_INT(0, handle_sdl2_menu(0));
+    quit_video(0);
+}
+#endif
+

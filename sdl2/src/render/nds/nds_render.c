@@ -27,11 +27,6 @@ typedef struct {
 extern nds_video myvideo;
 extern nds_config myconfig;
 
-#if defined(TRIMUI)
-extern int need_restore;
-extern int pre_dismode;
-#endif
-
 static void destroy_texture(SDL_Renderer *r, SDL_Texture *t);
 
 #if defined(UT)
@@ -48,7 +43,7 @@ TEST_TEAR_DOWN(sdl2_render)
 
 static void window_event(SDL_Renderer *r, const SDL_WindowEvent *e)
 {
-    debug("call %s()\n", __func__);
+    debug("call %s(r=%p, e=%p)\n", __func__, r, e);
 }
 
 #if defined(UT)
@@ -63,7 +58,7 @@ static int create_texture(SDL_Renderer *r, SDL_Texture *t)
 {
     nds_texture *p = NULL;
 
-    debug("call %s(renderer=%p, texture=%p)\n", __func__, r, t);
+    debug("call %s(r=%p, t=%p)\n", __func__, r, t);
 
     if (!t) {
         error("invalid texture\n");

@@ -17,7 +17,9 @@ SOURCES  = main.c cases.c src/unity.c extras/memory/src/unity_memory.c extras/fi
 .PHONY: all
 all: gen_cases
 	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCES) $(LDFLAGS)
+	@mkdir -p system
 	LD_LIBRARY_PATH=. ./$(TARGET) -v
+	@rm -rf system
 
 .PHONY: gen_cases
 gen_cases:

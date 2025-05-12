@@ -1596,7 +1596,9 @@ int input_handler(void *data)
     }
 #endif
 
-#if !defined(UT)
+#if defined(UT)
+    myevent.thread.running = 0;
+#else
     myevent.thread.running = 1;
 
     myevent.sem = SDL_CreateSemaphore(1);
@@ -1759,11 +1761,15 @@ void quit_event(void)
     debug("call %s()\n", __func__);
 
     myevent.thread.running = 0;
+    debug("wait for input handler complete...\n");
+    if (myevent.thread.id) {
+        SDL_WaitThread(myevent.thread.id, NULL);
+    }
+    debug("completed\n");
 
-#if !defined(UT)
-    SDL_WaitThread(myevent.thread.id, NULL);
-    SDL_DestroySemaphore(myevent.sem);
-#endif
+    if (myevent.sem) {
+        SDL_DestroySemaphore(myevent.sem);
+    }
 
     if(myevent.fd > 0) {
         close(myevent.fd);
