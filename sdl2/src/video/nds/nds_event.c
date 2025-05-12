@@ -23,6 +23,7 @@
 #include "../../thread/SDL_systhread.h"
 #include "../../joystick/nds/nds_joy.h"
 
+#include "snd.h"
 #include "common.h"
 #include "nds_video.h"
 #include "nds_event.h"
@@ -75,7 +76,11 @@ static int set_rg28xx_vol(void)
 {
 #if !defined(UT)
     char buf[MAX_PATH] = { 0 };
+#endif
 
+    debug("call %s()\n", __func__);
+
+#if !defined(UT)
     sprintf(buf, "amixer set \'lineout volume\' %d", myevent.vol);
     system(buf);
 #endif
@@ -92,6 +97,8 @@ TEST(sdl2_event, set_rg28xx_vol)
 
 int inc_rg28xx_vol(void)
 {
+    debug("call %s()\n", __func__);
+
     if (myevent.vol < MAX_VOL) {
         myevent.vol += 2;
 
@@ -117,6 +124,8 @@ TEST(sdl2_event, inc_rg28xx_vol)
 
 int dec_rg28xx_vol(void)
 {
+    debug("call %s()\n", __func__);
+
     if (myevent.vol > 0) {
         myevent.vol -= 2;
 
@@ -144,6 +153,8 @@ TEST(sdl2_event, dec_rg28xx_vol)
 static int limit_touch_axis(void)
 {
     int r = 0;
+
+    debug("call %s()\n", __func__);
 
     if (myevent.touch.x < 0) {
         r = 1;
@@ -180,6 +191,8 @@ TEST(sdl2_event, limit_touch_axis)
 
 static int is_hh_mode(void)
 {
+    debug("call %s()\n", __func__);
+
     if ((myconfig.layout.mode == NDS_DIS_MODE_HH0) ||
         (myconfig.layout.mode == NDS_DIS_MODE_HH1) ||
         (myconfig.layout.mode == NDS_DIS_MODE_HH2) ||
@@ -205,6 +218,8 @@ static int inc_touch_axis(int type)
     float move = 0.0;
     float v = 100000.0 / ((float)myconfig.pen.speed / 10.0);
 
+    debug("call %s()\n", __func__);
+
     if (myevent.touch.slow_down) {
         v*= 2;
     }
@@ -226,6 +241,8 @@ TEST(sdl2_event, inc_touch_axis)
 static int release_keys(void)
 {
     int cc = 0;
+
+    debug("call %s()\n", __func__);
 
     for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
         if (myevent.keypad.cur_bits & 1) {
@@ -257,6 +274,8 @@ static int hit_hotkey(uint32_t bit)
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
     uint32_t mask = (1 << bit) | (1 << KEY_BIT_MENU);
 #endif
+
+    debug("call %s(bit=%d)\n", __func__, bit);
 
     return (myevent.keypad.cur_bits ^ mask) ? 0 : 1;
 }
@@ -462,7 +481,7 @@ static int trans_joy_to_touch(jval_t *j, int idx)
     int LEFT_TH = -1 * myconfig.joy.dzone;
     int RIGHT_TH = myconfig.joy.dzone;
 
-    debug("call %s(idx=%d)\n", __func__, idx);
+    debug("call %s(j=%p, idx=%d)\n", __func__, j, idx);
 
     if (idx) {
         UP_TH = -1 * myconfig.rjoy.dzone;
@@ -624,7 +643,7 @@ static int trans_joy_to_custkey(jval_t *j, int idx)
     int LEFT_TH = -1 * myconfig.joy.dzone;
     int RIGHT_TH = myconfig.joy.dzone;
 
-    debug("call %s(idx=%d)\n", __func__, idx);
+    debug("call %s(j=%p, idx=%d)\n", __func__, j, idx);
 
     if (idx) {
         UP_TH = -1 * myconfig.rjoy.dzone;
@@ -748,7 +767,7 @@ static int update_joy_state(void)
     else if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
         r |= trans_joy_to_touch(&myjoy.left.last, 0);
     }
-    else if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
+    else if (myconfig.joy.mode == MYJOY_MODE_CUSTKEY) {
         r |= trans_joy_to_custkey(&myjoy.left.last, 0);
     }
 
@@ -758,7 +777,7 @@ static int update_joy_state(void)
     else if (myconfig.rjoy.mode == MYJOY_MODE_STYLUS) {
         r |= trans_joy_to_touch(&myjoy.right.last, 1);
     }
-    else if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
+    else if (myconfig.rjoy.mode == MYJOY_MODE_CUSTKEY) {
         r |= trans_joy_to_custkey(&myjoy.right.last, 1);
     }
 
@@ -1047,14 +1066,14 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_MENU, v);
     }
 
-#if defined(QX1000) || defined(XT897) || defined(BRICK)
+#if defined(QX1000) || defined(XT897) || defined(BRICK) || defined(UT)
     if (c == myevent.keypad.save) {
         set_key_bit(KEY_BIT_SAVE, v);
     }
     if (c == myevent.keypad.load) {
         set_key_bit(KEY_BIT_LOAD, v);
     }
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000) || defined(XT897) || defined(UT)
     if (c == myevent.keypad.fast) {
         set_key_bit(KEY_BIT_FAST, v);
     }
@@ -1064,7 +1083,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
 #endif
 #endif
 
-#if defined(MINI)
+#if defined(MINI) || defined(UT)
     if (c == myevent.keypad.power) {
         set_key_bit(KEY_BIT_POWER, v);
     }
@@ -1072,37 +1091,37 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_VOLUP, v);
         if (myevent.stock) {
             if (v == 0) {
-                myevent.vol = 0;//inc_mini_vol();
+                myevent.vol = inc_mini_vol();
             }
         }
         else {
-            myconfig.defer_update_bg = 60;
+            myvideo.layout.reload_bg = RELOAD_BG_COUNT;
         }
     }
     if (c == myevent.keypad.vol_down) {
         set_key_bit(KEY_BIT_VOLDOWN, v);
         if (myevent.stock) {
             if (v == 0) {
-                myevent.vol = 0;//dec_mini_vol();
+                myevent.vol = dec_mini_vol();
             }
         }
         else {
-            myconfig.defer_update_bg = 60;
+            myvideo.layout.reload_bg = RELOAD_BG_COUNT;
         }
     }
 #endif
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30) || defined(RG28XX) || defined(UT)
     if (c == myevent.keypad.vol_up) {
         set_key_bit(KEY_BIT_VOLUP, v);
         if (v == 0) {
-            myevent.vol = 0;//inc_a30_vol();
+            myevent.vol = inc_a30_vol();
         }
     }
     if (c == myevent.keypad.vol_down) {
         set_key_bit(KEY_BIT_VOLDOWN, v);
         if (v == 0) {
-            myevent.vol = 0;//dec_a30_vol();
+            myevent.vol = dec_a30_vol();
         }
     }
 #endif
@@ -1153,11 +1172,16 @@ static int get_flip_key_code(struct input_event *e)
         /* 19 */ -1
     }; 
 
-    debug("call %s()\n", __func__);
+    debug("call %s(e=%p)\n", __func__, e);
 
     if (myevent.fd < 0) {
         error("invalid input handle\n");
         return r;
+    }
+
+    if (!e) {
+        error("e is null\n");
+        return -1;
     }
 
 #if !defined(UT)
@@ -1206,10 +1230,15 @@ static int get_rg28xx_key_code(struct input_event *e)
     int r = 0;
     char buf[DEV_KEY_BUF_MAX] = { 0 };
 
-    debug("call %s()\n", __func__);
+    debug("call %s(e=%p)\n", __func__, e);
 
     if (myevent.fd < 0) {
         error("invalid input handle\n");
+        return -1;
+    }
+
+    if (!e) {
+        error("e is null\n");
         return -1;
     }
 
@@ -1296,7 +1325,9 @@ TEST(sdl2_event, get_rg28xx_key_code)
 {
     struct input_event e = {{ 0 }};
 
+    e.code = 0x32;
     TEST_ASSERT_EQUAL_INT(0, get_rg28xx_key_code(&e));
+    TEST_ASSERT_EQUAL_INT(0x32, e.code);
 }
 #endif
 
@@ -1307,8 +1338,15 @@ static int get_brick_key_code(struct input_event *e)
     static uint32_t pre_up_down = 0;
     static uint32_t pre_left_right = 0;
 
+    debug("call %s(e=%p)\n", __func__, e);
+
     if (myevent.fd < 0) {
         error("invalid input handle\n");
+        return -1;
+    }
+
+    if (!e) {
+        error("e is null\n");
         return -1;
     }
 
@@ -1366,12 +1404,29 @@ static int get_brick_key_code(struct input_event *e)
 }
 #endif
 
+#if defined(UT)
+TEST(sdl2_event, get_brick_key_code)
+{
+    struct input_event e = { 0 };
+
+    e.code = 17;
+    e.value = 1;
+    TEST_ASSERT_EQUAL_INT(1, get_brick_key_code(&e));
+    TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_DOWN, e.code);
+}
+#endif
+
 static int get_input_key_code(struct input_event *e)
 {
-    debug("call %s()\n", __func__);
+    debug("call %s(e=%p)\n", __func__, e);
 
     if (myevent.fd < 0) {
         error("invalid input handle\n");
+        return -1;
+    }
+
+    if (!e) {
+        error("e is null\n");
         return -1;
     }
 
@@ -1464,32 +1519,64 @@ TEST(sdl2_event, update_latest_keypad_value)
     myevent.keypad.up = 0;
     TEST_ASSERT_EQUAL_INT(0, update_latest_keypad_value());
     TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_UP, myevent.keypad.up);
+
+    myconfig.swap_l1_l2 = 1;
+    TEST_ASSERT_EQUAL_INT(0, update_latest_keypad_value());
+    TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_L2, myevent.keypad.l1);
+
+    myconfig.keys_rotate = 1;
+    TEST_ASSERT_EQUAL_INT(0, update_latest_keypad_value());
+    TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_LEFT, myevent.keypad.up);
 }
 #endif
 
 #if defined(TRIMUI) || defined(UT)
 static int handle_trimui_special_key(void)
 {
-#if !defined(UT)
+    int r = 0;
+    static uint32_t pre_value = 0;
+
+    debug("call %s()\n", __func__);
+
     if (myevent.cust_key.gpio != NULL) {
-        static uint32_t pre_value = 0;
         uint32_t v = *myevent.cust_key.gpio & 0x800;
 
         if (v != pre_value) {
+            r = 1;
             pre_value = v;
             set_key_bit(KEY_BIT_R2, !v);
         }
     }
-#endif
 
-    return 0;
+    return r;
 }
 #endif
 
 #if defined(UT)
 TEST(sdl2_event, handle_trimui_special_key)
 {
+    uint32_t t = 0;
+
+    myevent.cust_key.gpio = NULL;
     TEST_ASSERT_EQUAL_INT(0, handle_trimui_special_key());
+
+    t = 0x800;
+    myevent.cust_key.gpio = &t;
+    myevent.keypad.cur_bits = 0;
+    TEST_ASSERT_EQUAL_INT(1, handle_trimui_special_key());
+    TEST_ASSERT_EQUAL_INT((0 << KEY_BIT_R2), myevent.keypad.cur_bits);
+
+    t = 0;
+    myevent.cust_key.gpio = &t;
+    myevent.keypad.cur_bits = 0;
+    TEST_ASSERT_EQUAL_INT(1, handle_trimui_special_key());
+    TEST_ASSERT_EQUAL_INT((1 << KEY_BIT_R2), myevent.keypad.cur_bits);
+
+    t = 0;
+    myevent.cust_key.gpio = &t;
+    myevent.keypad.cur_bits = 0;
+    TEST_ASSERT_EQUAL_INT(0, handle_trimui_special_key());
+    TEST_ASSERT_EQUAL_INT(0, myevent.keypad.cur_bits);
 }
 #endif
 
@@ -1498,6 +1585,8 @@ int input_handler(void *data)
     int rk = 0;
     int rj = 0;
     struct input_event ev = {{ 0 }};
+
+    debug("call %s()\n", __func__);
 
 #if !defined(UT)
     myevent.fd = open(INPUT_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
@@ -1566,7 +1655,7 @@ TEST(sdl2_event, input_handler)
 
 void init_event(void)
 {
-#if defined(MINI)
+#if defined(MINI) || defined(UT)
     DIR *dir = NULL;
 #endif
 
@@ -1603,16 +1692,16 @@ void init_event(void)
     myevent.keypad.vol_up = DEV_KEY_CODE_VOL_UP;
     myevent.keypad.vol_down = DEV_KEY_CODE_VOL_DOWN;
 
-#if defined(QX1000) || defined(XT897) || defined(BRICK)
+#if defined(QX1000) || defined(XT897) || defined(BRICK) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000) || defined(XT897) || defined(UT)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
 #endif
 #endif
 
-#if defined(TRIMUI)
+#if defined(TRIMUI) || defined(UT)
     myevent.cust_key.gpio = NULL;
     myevent.cust_key.fd = open("/dev/mem", O_RDWR);
     if (myevent.cust_key.fd > 0) {
@@ -1642,8 +1731,8 @@ void init_event(void)
         exit(-1);
     }
 
-#if defined(MINI)
-    dir = opendir("/mnt/SDCARD/.tmp_update");
+#if defined(MINI) || defined(UT)
+    dir = opendir(CHECK_ONION_FILE);
     if (dir) {
         closedir(dir);
     }
@@ -1659,6 +1748,9 @@ TEST(sdl2_event, init_event)
 {
     init_event();
     TEST_ASSERT_EQUAL_INT(NDS_KEY_MODE, myevent.mode);
+    TEST_ASSERT_NOT_NULL(myevent.thread.id);
+    TEST_ASSERT_EQUAL_INT(1, myevent.stock);
+    TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_SAVE, myevent.keypad.save);
 }
 #endif
 
@@ -1678,7 +1770,7 @@ void quit_event(void)
         myevent.fd = -1;
     }
 
-#if defined(TRIMUI)
+#if defined(TRIMUI) || defined(UT)
     if (myevent.cust_key.fd > 0) {
         uint32_t *p = (uint32_t *)(myevent.cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
 
@@ -1695,8 +1787,9 @@ void quit_event(void)
 #if defined(UT)
 TEST(sdl2_event, quit_event)
 {
+    myevent.thread.running = 1;
     quit_event();
-    TEST_PASS();
+    TEST_ASSERT_EQUAL_INT(0, myevent.thread.running);
 }
 #endif
 
@@ -1725,13 +1818,18 @@ static int send_key_to_menu(void)
 #if defined(UT)
 TEST(sdl2_event, send_key_to_menu)
 {
+    myevent.keypad.pre_bits = 0;
+    myevent.keypad.cur_bits = (1 << KEY_BIT_A);
     TEST_ASSERT_EQUAL_INT(0, send_key_to_menu());
+    TEST_ASSERT_EQUAL_INT(myevent.keypad.pre_bits, myevent.keypad.cur_bits);
 }
 #endif
 
 static int update_raw_input_statue(uint32_t kbit, int val)
 {
     uint32_t b = 0;
+
+    debug("call %s(kbit=%d, val=%d)\n", kbit, val);
 
     switch (kbit) {
     case KEY_BIT_UP:        b = NDS_KEY_BIT_UP;     break;
@@ -1781,7 +1879,7 @@ static int send_key_event(int raw_event)
     uint32_t bit = 0;
     uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
-    debug("call %s()\n", __func__);
+    debug("call %s(raw_event=%d)\n", __func__, raw_event);
 
     for (cc=0; cc<=KEY_BIT_LAST; cc++) {
         bit = 1 << cc;
@@ -1807,7 +1905,10 @@ static int send_key_event(int raw_event)
             else {
                 debug("send code[%d]=0x%04x, pressed=%d\n", cc, nds_key_code[cc], pressed);
 #if !defined(UT)
-                SDL_SendKeyboardKey(pressed ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
+                SDL_SendKeyboardKey(
+                    pressed ? SDL_PRESSED : SDL_RELEASED,
+                    SDL_GetScancodeFromKey(nds_key_code[cc])
+                );
 #endif
             }
         }
@@ -1923,21 +2024,42 @@ static int send_touch_key(void)
     uint32_t bit = 0;
     uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
+#if !defined(UT)
+    uint32_t pressed = 0;
+#endif
+
     debug("call %s()\n", __func__);
 
     if (changed & (1 << KEY_BIT_A)) {
 #if !defined(UT)
-        SDL_SendMouseButton(myvideo.win, 0, (myevent.keypad.cur_bits & (1 << KEY_BIT_A)) ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
+        pressed = myevent.keypad.cur_bits & (1 << KEY_BIT_A);
+
+        SDL_SendMouseButton(
+            myvideo.win,
+            0,
+            pressed ? SDL_PRESSED : SDL_RELEASED,
+            SDL_BUTTON_LEFT
+        );
 #endif
     }
 
     for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
         bit = 1 << cc;
 
-        if ((cc == KEY_BIT_FAST) || (cc == KEY_BIT_SAVE) || (cc == KEY_BIT_LOAD) || (cc == KEY_BIT_QUIT) || (cc == KEY_BIT_R2)) {
+        if ((cc == KEY_BIT_FAST) ||
+            (cc == KEY_BIT_SAVE) ||
+            (cc == KEY_BIT_LOAD) ||
+            (cc == KEY_BIT_QUIT) ||
+            (cc == KEY_BIT_R2))
+        {
             if (changed & bit) {
 #if !defined(UT)
-                SDL_SendKeyboardKey((myevent.keypad.cur_bits & bit) ? SDL_PRESSED : SDL_RELEASED, SDL_GetScancodeFromKey(nds_key_code[cc]));
+                pressed = myevent.keypad.cur_bits & bit;
+
+                SDL_SendKeyboardKey(
+                    pressed ? SDL_PRESSED : SDL_RELEASED,
+                    SDL_GetScancodeFromKey(nds_key_code[cc])
+                );
 #endif
             }
         }
@@ -2033,6 +2155,7 @@ static int send_touch_event(void)
 #if defined(UT)
 TEST(sdl2_event, send_touch_event)
 {
+    myevent.keypad.cur_bits = 0;
     myevent.keypad.pre_bits = (1 << KEY_BIT_QUIT);
     TEST_ASSERT_EQUAL_INT(0, send_touch_event());
     TEST_ASSERT_EQUAL_INT(0, myevent.keypad.pre_bits);
@@ -2079,9 +2202,9 @@ void prehook_cb_platform_get_input(uintptr_t p)
 {
     static uint32_t pre_bits = 0;
 
-    input_struct *input = (input_struct *)(((uint8_t *)p) + 0x80000);
+    input_struct *input = (input_struct *)(((uint8_t *)p) + NDS_INPUT_OFFSET);
 
-    debug("call %s(%p)\n", __func__, input);
+    debug("call %s(p=%p)\n", __func__, input);
 
     if (myvideo.menu.sdl2.enable) {
         send_key_to_menu();
@@ -2099,16 +2222,27 @@ void prehook_cb_platform_get_input(uintptr_t p)
 
     if (pre_bits != myevent.input.button_status) {
         pre_bits = myevent.input.button_status;
-        input->button_status = myevent.input.button_status;
-        debug("button_status=0x%x\n", input->button_status);
+        if (p) {
+            input->button_status = myevent.input.button_status;
+            debug("button_status=0x%x\n", input->button_status);
+        }
+        else {
+            error("p is null\n");
+        }
     }
 }
 
 #if defined(UT)
 TEST(sdl2_event, prehook_cb_platform_get_input)
 {
+    input_struct *in = malloc(sizeof(input_struct));
+
+    TEST_ASSERT_NOT_NULL(in);
     prehook_cb_platform_get_input(0);
-    TEST_PASS();
+    myevent.keypad.cur_bits = (1 << KEY_BIT_A);
+    prehook_cb_platform_get_input((uintptr_t)((uint8_t *)in - NDS_INPUT_OFFSET));
+    TEST_ASSERT_EQUAL_INT(in->button_status, NDS_KEY_BIT_A);
+    free(in);
 }
 #endif
 

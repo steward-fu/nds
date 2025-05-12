@@ -43,6 +43,10 @@ typedef struct {
 
 int set_half_vol(int);
 int set_auto_state(int, int);
+int inc_a30_vol(void);
+int dec_a30_vol(void);
+int inc_mini_vol(void);
+int dec_mini_vol(void);
 
 #endif
 

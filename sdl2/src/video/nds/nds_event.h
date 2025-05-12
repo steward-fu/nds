@@ -30,12 +30,9 @@
 #define INPUT_DEV   "/dev/input/event0"
 #endif
 
-#if defined(UT)
-#define MAX_VOL                 31
-#endif
+#define CHECK_ONION_FILE "/mnt/SDCARD/.tmp_update"
 
 #if defined(RG28XX)
-#define MAX_VOL                 31
 #define DEV_KEY_BUF_MAX         16
 
 #define DEV_KEY_CODE_UP         103
@@ -58,7 +55,7 @@
 #define DEV_KEY_CODE_VOL_DOWN   114
 #endif
 
-#if defined(FLIP) || defined(UT)
+#if defined(FLIP)
 #define DEV_KEY_BUF_MAX         32
 #define DEV_KEY_IDX_MAX         19
 
@@ -192,6 +189,35 @@
 #define DEV_KEY_CODE_EXIT       28
 #endif
 
+#if defined(UT)
+#define DEV_KEY_BUF_MAX         32
+#define DEV_KEY_IDX_MAX         19
+
+#define DEV_KEY_CODE_UP         1
+#define DEV_KEY_CODE_DOWN       2
+#define DEV_KEY_CODE_LEFT       3
+#define DEV_KEY_CODE_RIGHT      4
+#define DEV_KEY_CODE_A          5
+#define DEV_KEY_CODE_B          6
+#define DEV_KEY_CODE_X          7
+#define DEV_KEY_CODE_Y          8
+#define DEV_KEY_CODE_L1         9
+#define DEV_KEY_CODE_R1         10
+#define DEV_KEY_CODE_L2         11
+#define DEV_KEY_CODE_R2         12
+#define DEV_KEY_CODE_SELECT     13
+#define DEV_KEY_CODE_START      14
+#define DEV_KEY_CODE_MENU       15
+#define DEV_KEY_CODE_POWER      16
+#define DEV_KEY_CODE_VOL_UP     17
+#define DEV_KEY_CODE_VOL_DOWN   18
+
+#define DEV_KEY_CODE_SAVE       19
+#define DEV_KEY_CODE_LOAD       20
+#define DEV_KEY_CODE_FAST       21
+#define DEV_KEY_CODE_EXIT       22
+#endif
+
 #if defined(QX1000)
 #define DEV_KEY_CODE_UP         16
 #define DEV_KEY_CODE_DOWN       30
@@ -293,6 +319,7 @@
 #define NDS_KEY_MODE            0
 #define NDS_TOUCH_MODE          1
 
+#define NDS_INPUT_OFFSET        0x80000
 #define NDS_KEY_BIT_UP          (1 << 0)
 #define NDS_KEY_BIT_DOWN        (1 << 1)
 #define NDS_KEY_BIT_LEFT        (1 << 2)
@@ -314,7 +341,7 @@
 #define NDS_KEY_BIT_MENU        0x40000
 #define NDS_KEY_BIT_QUIT        0x4000000
 
-#if defined(TRIMUI)
+#if defined(TRIMUI) || defined(UT)
 typedef struct _cust_key_t {
     int fd;
     uint8_t *mem;
@@ -374,11 +401,11 @@ typedef struct {
         SDL_Thread *id;
     } thread;
 
-#if defined(MINI)
+#if defined(MINI) || defined(UT)
     int stock;
 #endif
 
-#if defined(TRIMUI)
+#if defined(TRIMUI) || defined(UT)
     cust_key_t cust_key;
 #endif
 } nds_event;
