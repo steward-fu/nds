@@ -1626,7 +1626,7 @@ static int process_screen(void)
     static int col_bg = 0x000000;
 
     int idx = 0;
-    int screen_cnt = 0;
+    int screen_cnt = 2;
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     int cur_sel = myvideo.lcd.cur_sel ^ 1;
@@ -1634,9 +1634,7 @@ static int process_screen(void)
 
     debug("call %s()\n", __func__);
 
-#if defined(MINI) || defined(PANDORA) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    screen_cnt = 2;
-#else
+#if defined(TRIMUI)
     screen_cnt = 1;
 #endif
 
@@ -2621,7 +2619,7 @@ static void enum_lang_file(void)
     int idx = 2;
     DIR *d = NULL;
     struct dirent *dir = NULL;
-    char buf[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 8] = { 0 };
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, LANG_PATH);
 
@@ -2859,7 +2857,7 @@ static int get_file_count(const char *path)
 
 static int get_layout_bg_cnt(void)
 {
-    char buf[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 8] = { 0 };
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, BG_PATH);
     return get_dir_count(buf);
@@ -2867,7 +2865,7 @@ static int get_layout_bg_cnt(void)
 
 static int get_menu_cnt(void)
 {
-    char buf[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 8] = { 0 };
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, MENU_PATH);
     return get_dir_count(buf);
@@ -2875,7 +2873,7 @@ static int get_menu_cnt(void)
 
 static int get_pen_cnt(void)
 {
-    char buf[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 8] = { 0 };
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
     return get_file_count(buf);
@@ -5129,8 +5127,8 @@ int load_touch_pen(void)
 {
     static int pre_sel = -1;
 
-    char buf[MAX_PATH] = { 0 };
     char path[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 8] = { 0 };
     SDL_Surface *t = NULL;
 
     debug("call %s()\n", __func__);
@@ -5201,7 +5199,7 @@ SDL_Surface* load_menu_img(const char *name)
 {
     SDL_Surface *t0 = NULL;
     SDL_Surface *t1 = NULL;
-    char buf[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 32] = { 0 };
 
     debug("call %s(name=\"%s\")\n", __func__, name);
 
@@ -5327,7 +5325,7 @@ static int load_layout_bg(void)
 #endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    char buf[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 8] = { 0 };
     SDL_Surface *t = NULL;
     SDL_Rect srt = {0, 0, LAYOUT_BG_W, LAYOUT_BG_H};
     SDL_Rect drt = {0, 0, myvideo.cur_w, myvideo.cur_h};

@@ -9,9 +9,7 @@
 #include <GLES2/gl2.h>
 #endif
 
-#if !defined(MAX_PATH)
-#define MAX_PATH        255
-#endif
+#include "common.h"
 
 #if defined(GKD2)
 #define R_LCD_W         640

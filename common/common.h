@@ -76,6 +76,10 @@
 #define DEF_PEN_SPEED       10
 #define DEF_FAST_FORWARD    6
 
+#if !defined(MAX_PATH)
+#define MAX_PATH        255
+#endif
+
 #define DEBUG       0
 #define LOG_FILE    "mynds.log"
 

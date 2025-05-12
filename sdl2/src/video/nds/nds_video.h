@@ -63,9 +63,9 @@
 #endif
 
 #if defined(TRIMUI)    
-#define FONT_SIZE   12
+#define FONT_SIZE 12
 #else
-#define FONT_SIZE   24
+#define FONT_SIZE 24
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897) || defined(BRICK)
@@ -78,17 +78,16 @@ typedef enum {
     MYJOY_MODE_DISABLE = 0,
     MYJOY_MODE_KEYPAD,
     MYJOY_MODE_STYLUS,
-    MYJOY_MODE_CUSKEY,
-
-    MYJOY_MODE_LAST = MYJOY_MODE_CUSKEY
+    MYJOY_MODE_CUSTKEY,
+    MYJOY_MODE_LAST = MYJOY_MODE_CUSTKEY
 } myjoy_t;
 
-#define MYJOY_SHOW_CNT      300
-#define MYJOY_MOVE_SPEED    4
+#define MYJOY_SHOW_CNT   300
+#define MYJOY_MOVE_SPEED 4
 
 #if defined(UT)
-#define SCREEN_W    640
-#define SCREEN_H    480
+#define SCREEN_W 640
+#define SCREEN_H 480
 #endif
 
 #if defined(RG28XX)
