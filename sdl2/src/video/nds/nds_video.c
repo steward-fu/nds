@@ -5070,7 +5070,7 @@ int load_touch_pen(void)
     return 0;
 }
 
-SDL_Surface* load_menu_img(const char *name)
+SDL_Surface* load_menu_img(const char *name, int raw_img)
 {
     SDL_Surface *t0 = NULL;
     SDL_Surface *t1 = NULL;
@@ -5080,6 +5080,10 @@ SDL_Surface* load_menu_img(const char *name)
 
     snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, MENU_PATH, myconfig.menu.sel, name);
     t0 = IMG_Load(buf);
+    if (raw_img) {
+        return t0;
+    }
+
     if (t0) {
         t1 = SDL_ConvertSurface(t0, myvideo.cvt->format, 0);
         SDL_FreeSurface(t0);
@@ -5136,21 +5140,59 @@ int load_menu_res(void)
 {
     SDL_Rect rt = { 0 };
     SDL_Surface *t = NULL;
+    char buf[MAX_PATH] = { 0 };
 
     debug("call %s()\n", __func__);
 
     free_menu_img();
 
-    myvideo.menu.font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
-    myvideo.menu.line_h = (float)get_font_height("X") * 1.3;
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, FONT_FILE);
+    myvideo.menu.font = TTF_OpenFont(buf, FONT_SIZE);
+    myvideo.menu.line_h = (float)get_font_height("X") * 1.25;
 
-    myvideo.menu.sdl2.bg = load_menu_img(SDL2_MENU_BG_FILE);
-    myvideo.menu.sdl2.cursor = load_menu_img(SDL2_MENU_CURSOR_FILE);
-    myvideo.menu.drastic.bg0 = load_menu_img(DRASTIC_MENU_BG0_FILE);
-    myvideo.menu.drastic.bg1 = load_menu_img(DRASTIC_MENU_BG1_FILE);
-    myvideo.menu.drastic.cursor = load_menu_img(DRASTIC_MENU_CURSOR_FILE);
+    myvideo.menu.sdl2.bg = load_menu_img(SDL2_MENU_BG_FILE, 0);
+    myvideo.menu.drastic.bg0 = load_menu_img(DRASTIC_MENU_BG0_FILE, 0);
+    myvideo.menu.drastic.bg1 = load_menu_img(DRASTIC_MENU_BG1_FILE, 0);
 
-    t = load_menu_img(DRASTIC_MENU_YES_FILE);
+    t = load_menu_img(SDL2_MENU_CURSOR_FILE, 1);
+    if (t) {
+        myvideo.menu.sdl2.cursor = SDL_CreateRGBSurface(
+            SDL_SWSURFACE,
+            t->w,
+            t->h,
+            32,
+            t->format->Rmask,
+            t->format->Gmask,
+            t->format->Bmask,
+            t->format->Amask
+        );
+
+        if (myvideo.menu.sdl2.cursor) {
+            SDL_BlitSurface(t, NULL, myvideo.menu.sdl2.cursor, NULL);
+        }
+        SDL_FreeSurface(t);
+    }
+
+    t = load_menu_img(DRASTIC_MENU_CURSOR_FILE, 1);
+    if (t) {
+        myvideo.menu.drastic.cursor = SDL_CreateRGBSurface(
+            SDL_SWSURFACE,
+            t->w,
+            t->h,
+            32,
+            t->format->Rmask,
+            t->format->Gmask,
+            t->format->Bmask,
+            t->format->Amask
+        );
+
+        if (myvideo.menu.drastic.cursor) {
+            SDL_BlitSurface(t, NULL, myvideo.menu.drastic.cursor, NULL);
+        }
+        SDL_FreeSurface(t);
+    }
+
+    t = load_menu_img(DRASTIC_MENU_YES_FILE, 1);
     if (t) {
         rt.w = myvideo.menu.line_h - 2;
         rt.h = myvideo.menu.line_h - 2;
@@ -5176,7 +5218,7 @@ int load_menu_res(void)
         SDL_FreeSurface(t);
     }
 
-    t = load_menu_img(DRASTIC_MENU_NO_FILE);
+    t = load_menu_img(DRASTIC_MENU_NO_FILE, 1);
     if (t) {
         rt.w = myvideo.menu.line_h - 2;
         rt.h = myvideo.menu.line_h - 2;
@@ -6722,6 +6764,8 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int h, i
 #endif
     }
     draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
+
+    return 0;
 }
 
 int handle_sdl2_menu(int key)
