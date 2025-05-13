@@ -25,9 +25,11 @@
 #define DRASTIC_BIOS_ARM7_FILE      "drastic_bios_arm7.bin"
 #define DRASTIC_BIOS_ARM9_FILE      "drastic_bios_arm9.bin"
 
-#define MENU_COLOR0                 0xffffff
-#define MENU_COLOR1                 0x000000
-#define MENU_COLOR2                 0x289a35
+#define MENU_COLOR_DIS              0x808080
+#define MENU_COLOR_SEL              0xffffff
+#define MENU_COLOR_UNSEL            0x000000
+#define MENU_COLOR_DRASTIC          0x289a35
+
 #define SDL2_MENU_BG_FILE           "bg.png"
 #define SDL2_MENU_CURSOR_FILE       "cursor.png"
 #define DRASTIC_MENU_BG0_FILE       "drastic_bg0.png"
