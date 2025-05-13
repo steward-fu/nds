@@ -65,7 +65,6 @@
 #define NDS_DIS_MODE_HRES1          21
 
 #define NDS_ALPHA_MAX               9
-#define NDS_BORDER_MAX              7
 
 #define MAX_PATH                    128
 #define MAX_LANG_NAME               16

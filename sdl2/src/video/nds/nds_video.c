@@ -5257,6 +5257,10 @@ int load_menu_res(void)
     debug("call %s()\n", __func__);
 
     free_menu_img();
+
+    myvideo.menu.font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
+    myvideo.menu.line_h = (float)get_font_height("X") * 1.3;
+
     myvideo.menu.sdl2.bg = load_menu_img(SDL2_MENU_BG_FILE);
     myvideo.menu.sdl2.cursor = load_menu_img(SDL2_MENU_CURSOR_FILE);
     myvideo.menu.drastic.bg0 = load_menu_img(DRASTIC_MENU_BG0_FILE);
@@ -5322,8 +5326,6 @@ int load_menu_res(void)
             SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
         }
     }
-
-    myvideo.menu.font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
 
     return 0;
 }
@@ -5635,7 +5637,6 @@ static int init_device(void)
 
     debug("call %s()\n", __func__);
 
-    myvideo.menu.line_h = 30;
     myvideo.cur_w = SCREEN_W;
     myvideo.cur_h = SCREEN_H;
     myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
@@ -5864,8 +5865,7 @@ void quit_video(_THIS)
     TTF_Quit();
 }
 
-#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK) || defined(XT897) || defined(TRIMUI)
-static const char *DIS_MODE0_640[] = {
+static const char *LAYOUT_MODE_STR0[] = {
     "640*480",
     "640*480",
     "512*384",
@@ -5877,11 +5877,9 @@ static const char *DIS_MODE0_640[] = {
     "480*360",
     "384*288",
     "384*288",
-
     "512x384",
     "512x384",
     "512x384",
-
     "384*288",
     "384*288",
     "427*320",
@@ -5890,7 +5888,7 @@ static const char *DIS_MODE0_640[] = {
     "480*320",
 };
 
-static const char *DIS_MODE1_640[] = {
+static const char *LAYOUT_MODE_STR1[] = {
     "170*128",
     "256*192",
     "",
@@ -5902,11 +5900,9 @@ static const char *DIS_MODE1_640[] = {
     "160*120",
     "256*192",
     "256*192",
-
     "128*96",
     "128*96",
     "128*96",
-
     "256*192",
     "256*192",
     "427*320",
@@ -5915,51 +5911,40 @@ static const char *DIS_MODE1_640[] = {
     "480*320",
 };
 
-static const char *POS[] = {
+static const char *SWIN_POS_STR[] = {
     "Top-Right",
     "Top-Left",
     "Bottom-Left",
     "Bottom-Right"
 };
 
-static const char *BORDER[] = {
-    "None",
-    "White",
-    "Red",
-    "Green",
-    "Blue",
-    "Black",
-    "Yellow",
-    "Cyan"
-};
-
-static const char *DPAD[] = {
+static const char *ROTATE_KEY_STR[] = {
     "0°",
     "90°",
     "270°"
 };
 
-static const char *HOTKEY[] = {
+static const char *BIND_HOTKEY_STR[] = {
     "MENU",
     "SELECT"
 };
 
 #if defined(A30) || defined(FLIP)
-static const char *JOY_MODE[] = {
+static const char *JOY_MODE_STR[] = {
     "Disable",
     "D-Pad",
     "Stylus",
     "Customized Key"
 };
 
-static const char *RJOY_MODE[] = {
+static const char *RJOY_MODE_STR[] = {
     "Disable",
     "4-Btn",
     "Stylus",
     "Customized Key"
 };
 
-static const char *JOY_CUSKEY[] = {
+static const char *JOY_CUST_KEY_STR[] = {
     "UP",
     "DOWN",
     "LEFT",
@@ -6030,23 +6015,21 @@ typedef enum {
     MENU_LANG = 0,
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     MENU_CPU_CORE,
-#if defined(A30)
+#endif
+#if defined(A30) || defined(MINI)
     MENU_CPU_CLOCK,
 #endif
-#else
-    MENU_CPU,
-#endif
-    MENU_DIS,
-    MENU_DIS_ALPHA,
-    MENU_DIS_BORDER,
-    MENU_DIS_POSITION,
-    MENU_ALT,
-    MENU_KEYS,
-    MENU_HOTKEY,
+    MENU_LAYOUT_MODE,
+    MENU_SWIN_ALPHA,
+    MENU_SWIN_BORDER,
+    MENU_SWIN_POS,
+    MENU_LAYOUT_ATL,
+    MENU_ROTATE_KEY,
+    MENU_BIND_HOTKEY,
     MENU_SWAP_L1L2,
     MENU_SWAP_R1R2,
     MENU_PEN_SPEED,
-    MENU_CURSOR,
+    MENU_SHOW_CURSOR,
     MENU_FAST_FORWARD,
 #if defined(A30) || defined(FLIP)
     MENU_JOY_MODE,
@@ -6064,34 +6047,31 @@ typedef enum {
     MENU_RJOY_CUSKEY3,
     MENU_RJOY_DZONE,
 #endif
-
 #if defined(MINI) || defined(A30) || defined(FLIP)
     MENU_CHK_BAT,
 #endif
     MENU_LAST,
 } menu_list_t;
 
-static const char *MENU_ITEM[] = {
+static const char *MENU_LIST_STR[] = {
     "Language",
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     "CPU Core",
-#if defined(A30)
+#endif
+#if defined(A30) || defined(MINI)
     "CPU Clock",
 #endif
-#else
-    "CPU",
-#endif
-    "Display",
-    "Alpha",
-    "Border",
-    "Position",
-    "Alt. Display",
-    "Keys",
-    "Hotkey",
+    "Layout Mode",
+    "  Alpha",
+    "  Border",
+    "  Position",
+    "Layout Alt.",
+    "Rotate Key",
+    "Bind Hotkey",
     "Swap L1-L2",
     "Swap R1-R2",
     "Pen Speed",
-    "Cursor",
+    "Show Cursor",
     "Fast Forward",
 #if defined(A30) || defined(FLIP)
     "L Joy Mode",
@@ -6109,7 +6089,9 @@ static const char *MENU_ITEM[] = {
     "  Joy Right",
     "R Joy Dead Zone",
 #endif
+#if defined(MINI) || defined(A30) || defined(FLIP)
     "Check Battery",
+#endif
 };
 
 int handle_sdl2_menu(int key)
@@ -6182,24 +6164,18 @@ int handle_sdl2_menu(int key)
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
         case MENU_CPU_CORE:
             if (cur_cpucore > myconfig.cpu.core.min) {
-                cur_cpucore-= 1;
+                cur_cpucore -= 1;
             }
             break;
-#if defined(A30)
+#endif
+#if defined(A30) || defined(MINI)
         case MENU_CPU_CLOCK:
             if (cur_cpuclock > myconfig.cpu.freq.min) {
-                cur_cpuclock-= 50;
+                cur_cpuclock -= 50;
             }
             break;
 #endif
-#else
-        case MENU_CPU:
-            if (cur_cpuclock > myconfig.cpu.freq.min) {
-                cur_cpuclock-= 50;
-            }
-            break;
-#endif
-        case MENU_HOTKEY:
+        case MENU_BIND_HOTKEY:
             myconfig.hotkey = HOTKEY_BIND_MENU;
             break;
         case MENU_SWAP_L1L2:
@@ -6208,7 +6184,7 @@ int handle_sdl2_menu(int key)
         case MENU_SWAP_R1R2:
             myconfig.swap_r1_r2 = 0;
             break;
-        case MENU_DIS:
+        case MENU_LAYOUT_MODE:
             if (*myhook.var.sdl.screen[0].hires_mode == 0) {
                 if (myconfig.layout.mode > 0) {
                     myconfig.layout.mode-= 1;
@@ -6218,33 +6194,31 @@ int handle_sdl2_menu(int key)
                 myconfig.layout.mode = NDS_DIS_MODE_HRES0;
             }
             break;
-        case MENU_DIS_ALPHA:
+        case MENU_SWIN_ALPHA:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 if (myconfig.layout.swin.alpha > 0) {
                     myconfig.layout.swin.alpha-= 1;
                 }
             }
             break;
-        case MENU_DIS_BORDER:
+        case MENU_SWIN_BORDER:
             if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.swin.border > 0) {
-                    myconfig.layout.swin.border-= 1;
-                }
+                myconfig.layout.swin.border = 0;
             }
             break;
-        case MENU_DIS_POSITION:
+        case MENU_SWIN_POS:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 if (myconfig.layout.swin.pos > 0) {
                     myconfig.layout.swin.pos-= 1;
                 }
             }
             break;
-        case MENU_ALT:
+        case MENU_LAYOUT_ATL:
             if ((*myhook.var.sdl.screen[0].hires_mode == 0) && (myconfig.layout.alt > 0)) {
                 myconfig.layout.alt-= 1;
             }
             break;
-        case MENU_KEYS:
+        case MENU_ROTATE_KEY:
             if (myconfig.keys_rotate > 0) {
                 myconfig.keys_rotate-= 1;
             }
@@ -6254,7 +6228,7 @@ int handle_sdl2_menu(int key)
                 myconfig.pen.speed -= 1;
             }
             break;
-        case MENU_CURSOR:
+        case MENU_SHOW_CURSOR:
             myconfig.menu.show_cursor = 0;
             break;
         case MENU_FAST_FORWARD:
@@ -6362,21 +6336,15 @@ int handle_sdl2_menu(int key)
                 cur_cpucore+= 1;
             }
             break;
-#if defined(A30)
+#endif
+#if defined(A30) || defined(MINI)
         case MENU_CPU_CLOCK:
             if (cur_cpuclock < myconfig.cpu.freq.max) {
                 cur_cpuclock+= 50;
             }
             break;
 #endif
-#else
-        case MENU_CPU:
-            if (cur_cpuclock < myconfig.cpu.freq.max) {
-                cur_cpuclock+= 50;
-            }
-            break;
-#endif
-        case MENU_HOTKEY:
+        case MENU_BIND_HOTKEY:
             myconfig.hotkey = HOTKEY_BIND_SELECT;
             break;
         case MENU_SWAP_L1L2:
@@ -6385,7 +6353,7 @@ int handle_sdl2_menu(int key)
         case MENU_SWAP_R1R2:
             myconfig.swap_r1_r2 = 1;
             break;
-        case MENU_DIS:
+        case MENU_LAYOUT_MODE:
             if (*myhook.var.sdl.screen[0].hires_mode == 0) {
                 if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
                     myconfig.layout.mode+= 1;
@@ -6395,33 +6363,31 @@ int handle_sdl2_menu(int key)
                 myconfig.layout.mode = NDS_DIS_MODE_HRES1;
             }
             break;
-        case MENU_DIS_ALPHA:
+        case MENU_SWIN_ALPHA:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 if (myconfig.layout.swin.alpha < NDS_ALPHA_MAX) {
                     myconfig.layout.swin.alpha+= 1;
                 }
             }
             break;
-        case MENU_DIS_BORDER:
+        case MENU_SWIN_BORDER:
             if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.swin.border < NDS_BORDER_MAX) {
-                    myconfig.layout.swin.border+= 1;
-                }
+                myconfig.layout.swin.border = 1;
             }
             break;
-        case MENU_DIS_POSITION:
+        case MENU_SWIN_POS:
             if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 if (myconfig.layout.swin.pos < 3) {
                     myconfig.layout.swin.pos+= 1;
                 }
             }
             break;
-        case MENU_ALT:
+        case MENU_LAYOUT_ATL:
             if ((*myhook.var.sdl.screen[0].hires_mode == 0) && (myconfig.layout.alt < NDS_DIS_MODE_LAST)) {
                 myconfig.layout.alt+= 1;
             }
             break;
-        case MENU_KEYS:
+        case MENU_ROTATE_KEY:
             if (myconfig.keys_rotate < 2) {
                 myconfig.keys_rotate+= 1;
             }
@@ -6431,7 +6397,7 @@ int handle_sdl2_menu(int key)
                 myconfig.pen.speed += 1;
             }
             break;
-        case MENU_CURSOR:
+        case MENU_SHOW_CURSOR:
             myconfig.menu.show_cursor = 1;
             break;
         case MENU_FAST_FORWARD:
@@ -6578,10 +6544,10 @@ int handle_sdl2_menu(int key)
         break;
     }
 
-    if (cur_sel == MENU_DIS) {
+    if (cur_sel == MENU_LAYOUT_MODE) {
         dis_mode = myconfig.layout.mode;
     }
-    if (cur_sel == MENU_ALT) {
+    if (cur_sel == MENU_LAYOUT_ATL) {
         dis_mode = myconfig.layout.alt;
     }
 
@@ -6602,7 +6568,7 @@ int handle_sdl2_menu(int key)
         s1 = cur_sel + 4;
     }
 
-    for (cc=0, idx=0; cc<MENU_LAST; cc++) {
+    for (cc = 0, idx = 0; cc < MENU_LAST; cc++) {
         if ((cc < s0) || (cc > s1)) {
             continue;
         }
@@ -6611,9 +6577,9 @@ int handle_sdl2_menu(int key)
         col0 = (cur_sel == cc) ? sel_col : unsel_col;
         col1 = (cur_sel == cc) ? val_col : unsel_col;
         switch (cc) {
-        case MENU_DIS_ALPHA:
+        case MENU_SWIN_ALPHA:
             sx = 20;
-            if ((cur_sel == MENU_DIS_ALPHA) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_SWIN_ALPHA) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 col1 = val_col;
             }
             else {
@@ -6625,9 +6591,9 @@ int handle_sdl2_menu(int key)
                 }
             }
             break;
-        case MENU_DIS_BORDER:
+        case MENU_SWIN_BORDER:
             sx = 20;
-            if ((cur_sel == MENU_DIS_BORDER) && (myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_SWIN_BORDER) && (myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 col1 = val_col;
             }
             else {
@@ -6639,9 +6605,9 @@ int handle_sdl2_menu(int key)
                 }
             }
             break;
-        case MENU_DIS_POSITION:
+        case MENU_SWIN_POS:
             sx = 20;
-            if ((cur_sel == MENU_DIS_POSITION) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_SWIN_POS) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
                 col1 = val_col;
             }
             else {
@@ -6653,7 +6619,7 @@ int handle_sdl2_menu(int key)
                 }
             }
             break;
-        case MENU_ALT:
+        case MENU_LAYOUT_ATL:
             if (*myhook.var.sdl.screen[0].hires_mode == 0) {
                 col1 = (cur_sel == cc) ? val_col : unsel_col;
             }
@@ -6703,7 +6669,7 @@ int handle_sdl2_menu(int key)
             rt.y = SY + (h * idx) - 2;
             rt.h = FONT_SIZE + 3;
 
-            if ((cc == MENU_DIS_ALPHA) || (cc == MENU_KEYS)) {
+            if ((cc == MENU_SWIN_ALPHA) || (cc == MENU_ROTATE_KEY)) {
                 rt.w -= 121;
             }
             if (col1 == dis_col) {
@@ -6722,7 +6688,7 @@ int handle_sdl2_menu(int key)
                 SDL_BlitSurface(myvideo.menu.sdl2.cursor, NULL, myvideo.cvt, &rt);
             }
 
-            if ((cc == MENU_DIS) || (cc == MENU_ALT)) {
+            if ((cc == MENU_LAYOUT_MODE) || (cc == MENU_LAYOUT_ATL)) {
                 rt.x = 440;
                 rt.y = SY + (h * (idx + 1)) - 7;
                 rt.w = 121;
@@ -6730,7 +6696,7 @@ int handle_sdl2_menu(int key)
                 SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
             }
         }
-        draw_info(myvideo.cvt, l10n(MENU_ITEM[cc]), SX + sx, SY + (h * idx), col0, 0);
+        draw_info(myvideo.cvt, l10n(MENU_LIST_STR[cc]), SX + sx, SY + (h * idx), col0, 0);
 
         sx = 0;
         switch (cc) {
@@ -6741,18 +6707,14 @@ int handle_sdl2_menu(int key)
         case MENU_CPU_CORE:
             sprintf(buf, "%d", cur_cpucore);
             break;
-#if defined(A30)
+#endif
+#if defined(A30) || defined(MINI)
         case MENU_CPU_CLOCK:
             sprintf(buf, "%dMHz", cur_cpuclock);
             break;
 #endif
-#else
-        case MENU_CPU:
-            sprintf(buf, "%dMHz", cur_cpuclock);
-            break;
-#endif
-        case MENU_HOTKEY:
-            sprintf(buf, "%s", l10n(HOTKEY[myconfig.hotkey]));
+        case MENU_BIND_HOTKEY:
+            sprintf(buf, "%s", l10n(BIND_HOTKEY_STR[myconfig.hotkey]));
             break;
         case MENU_SWAP_L1L2:
             sprintf(buf, "%s", l10n(myconfig.swap_l1_l2 ? "Yes" : "No"));
@@ -6760,47 +6722,47 @@ int handle_sdl2_menu(int key)
         case MENU_SWAP_R1R2:
             sprintf(buf, "%s", l10n(myconfig.swap_r1_r2 ? "Yes" : "No"));
             break;
-        case MENU_DIS:
+        case MENU_LAYOUT_MODE:
             if (*myhook.var.sdl.screen[0].hires_mode == 0) {
-                sprintf(buf, "[%d]   %s", myconfig.layout.mode, DIS_MODE0_640[myconfig.layout.mode]);
+                sprintf(buf, "[%d]   %s", myconfig.layout.mode, LAYOUT_MODE_STR0[myconfig.layout.mode]);
             }
             else {
                 sprintf(buf, "[%d]   %s", myconfig.layout.mode, myconfig.layout.mode == NDS_DIS_MODE_HRES0 ? "512*384" : "640*480");
             }
             break;
-        case MENU_DIS_ALPHA:
+        case MENU_SWIN_ALPHA:
             if (*myhook.var.sdl.screen[0].hires_mode == 0) {
                 sprintf(buf, "[%d]   ", myconfig.layout.mode);
                 sx = get_font_width(buf);
-                sprintf(buf, "%s", DIS_MODE1_640[myconfig.layout.mode]);
-                draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_DIS) ? MENU_COLOR0 : MENU_COLOR1, 0);
+                sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode]);
+                draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_LAYOUT_MODE) ? MENU_COLOR0 : MENU_COLOR1, 0);
             }
 
             sx = 0;
             sprintf(buf, "%d", myconfig.layout.swin.alpha);
             break;
-        case MENU_DIS_BORDER:
-            sprintf(buf, "%s", l10n(BORDER[myconfig.layout.swin.border]));
+        case MENU_SWIN_BORDER:
+            sprintf(buf, "%s", l10n(myconfig.layout.swin.border ? "Yes" : "No"));
             break;
-        case MENU_DIS_POSITION:
-            sprintf(buf, "%s", l10n(POS[myconfig.layout.swin.pos]));
+        case MENU_SWIN_POS:
+            sprintf(buf, "%s", l10n(SWIN_POS_STR[myconfig.layout.swin.pos]));
             break;
-        case MENU_ALT:
-            sprintf(buf, "[%d]   %s", myconfig.layout.alt, DIS_MODE0_640[myconfig.layout.alt]);
+        case MENU_LAYOUT_ATL:
+            sprintf(buf, "[%d]   %s", myconfig.layout.alt, LAYOUT_MODE_STR0[myconfig.layout.alt]);
             break;
-        case MENU_KEYS:
+        case MENU_ROTATE_KEY:
             sprintf(buf, "[%d]   ", myconfig.layout.alt);
             sx = get_font_width(buf);
-            sprintf(buf, "%s", DIS_MODE1_640[myconfig.layout.alt]);
-            draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (*myhook.var.sdl.screen[0].hires_mode == 0) && (cur_sel == MENU_ALT) ? val_col : unsel_col, 0);
+            sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.alt]);
+            draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (*myhook.var.sdl.screen[0].hires_mode == 0) && (cur_sel == MENU_LAYOUT_ATL) ? val_col : unsel_col, 0);
 
             sx = 0;
-            sprintf(buf, "%s", DPAD[myconfig.keys_rotate % 3]);
+            sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
             break;
         case MENU_PEN_SPEED:
             sprintf(buf, "%.1fx", ((float)myconfig.pen.speed) / 10);
             break;
-        case MENU_CURSOR:
+        case MENU_SHOW_CURSOR:
             sprintf(buf, "%s", l10n(myconfig.menu.show_cursor ? "Show" : "Hide"));
             break;
         case MENU_FAST_FORWARD:
@@ -6808,19 +6770,19 @@ int handle_sdl2_menu(int key)
             break;
 #if defined(A30) || defined(FLIP)
         case MENU_JOY_MODE:
-            sprintf(buf, "%s", l10n(JOY_MODE[myconfig.joy.mode]));
+            sprintf(buf, "%s", l10n(JOY_MODE_STR[myconfig.joy.mode]));
             break;
         case MENU_JOY_CUSKEY0:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.joy.cuskey[0]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[0]]));
             break;
         case MENU_JOY_CUSKEY1:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.joy.cuskey[1]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[1]]));
             break;
         case MENU_JOY_CUSKEY2:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.joy.cuskey[2]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[2]]));
             break;
         case MENU_JOY_CUSKEY3:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.joy.cuskey[3]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[3]]));
             break;
         case MENU_JOY_DZONE:
             sprintf(buf, "%d (15)", myconfig.joy.dzone);
@@ -6828,19 +6790,19 @@ int handle_sdl2_menu(int key)
 #endif
 #if defined(FLIP)
         case MENU_RJOY_MODE:
-            sprintf(buf, "%s", l10n(RJOY_MODE[myconfig.rjoy.mode]));
+            sprintf(buf, "%s", l10n(RJOY_MODE_STR[myconfig.rjoy.mode]));
             break;
         case MENU_RJOY_CUSKEY0:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.rjoy.cuskey[0]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[0]]));
             break;
         case MENU_RJOY_CUSKEY1:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.rjoy.cuskey[1]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[1]]));
             break;
         case MENU_RJOY_CUSKEY2:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.rjoy.cuskey[2]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[2]]));
             break;
         case MENU_RJOY_CUSKEY3:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUSKEY[myconfig.rjoy.cuskey[3]]));
+            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[3]]));
             break;
         case MENU_RJOY_DZONE:
             sprintf(buf, "%d (15)", myconfig.rjoy.dzone);
@@ -7275,7 +7237,6 @@ int handle_sdl2_menu(int key)
 
     return 0;
 }
-#endif
 
 #if defined(UT)
 TEST(sdl2_video, handle_sdl2_menu)
