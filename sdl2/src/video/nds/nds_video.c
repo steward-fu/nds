@@ -5502,10 +5502,12 @@ static int load_layout_bg(void)
 
 static void free_device(SDL_VideoDevice *d)
 {
+    debug("call %s(d=%p)\n", __func__, d);
+
     SDL_free(d);
 }
 
-int create_window(_THIS, SDL_Window *w)
+static int create_window(_THIS, SDL_Window *w)
 {
     debug("call %s(w=%d, h=%d)\n", __func__, w->w, w->h);
 
@@ -5515,20 +5517,36 @@ int create_window(_THIS, SDL_Window *w)
     return 0;
 }
 
-int create_window_from(_THIS, SDL_Window *w, const void *d)
+#if defined(UT)
+TEST(sdl2_video, create_window)
 {
-    return SDL_Unsupported();
+    TEST_ASSERT_EQUAL_INT(0, create_window(0, 0));
 }
+#endif
+
+static int create_window_from(_THIS, SDL_Window *w, const void *d)
+{
+    debug("call %s()\n", __func__);
+
+    return -1;
+}
+
+#if defined(UT)
+TEST(sdl2_video, create_window_from)
+{
+    TEST_ASSERT_EQUAL_INT(-1, create_window_from(0, 0, 0));
+}
+#endif
 
 static SDL_VideoDevice *create_device(int idx)
 {
     SDL_VideoDevice *d = NULL;
 
-    d = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
+    debug("call %s(idx=%d)\n", __func__, idx);
 
+    d = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
     if (!d) {
-        SDL_OutOfMemory();
-        return 0;
+        return NULL;
     }
 
     d->VideoInit = init_video;
@@ -5541,6 +5559,17 @@ static SDL_VideoDevice *create_device(int idx)
 
     return d;
 }
+
+#if defined(UT)
+TEST(sdl2_video, create_device)
+{
+    SDL_VideoDevice *d = NULL;
+
+    d = create_device(0);
+    TEST_ASSERT_NOT_NULL(d);
+    SDL_free(d);
+}
+#endif
 
 VideoBootStrap NDS_bootstrap = {
     "NDS",
@@ -5624,27 +5653,25 @@ static int init_device(void)
     init_event();
     init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
 
-    add_prehook_cb(myhook.fun.print_string,     prehook_cb_print_string);
+    add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
     add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
 #if !defined(PANDORA)
-    add_prehook_cb(myhook.fun.savestate_pre,    prehook_cb_savestate_pre);
-    add_prehook_cb(myhook.fun.savestate_post,   prehook_cb_savestate_post);
+    add_prehook_cb(myhook.fun.savestate_pre, prehook_cb_savestate_pre);
+    add_prehook_cb(myhook.fun.savestate_post, prehook_cb_savestate_post);
 #endif
     add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
-    add_prehook_cb(myhook.fun.update_screen,    prehook_cb_update_screen);
+    add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
-    add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
+    add_prehook_cb(myhook.fun.malloc, prehook_cb_malloc);
     add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
-    add_prehook_cb(myhook.fun.free,    prehook_cb_free);
+    add_prehook_cb(myhook.fun.free, prehook_cb_free);
 #endif
 
     pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 
     strncpy(buf, myvideo.home, sizeof(buf));
     strcat(buf, BIOS_PATH);
-
-printf("%s\n", buf);
     debug("drop bios files to \"%s\"\n", buf);
     if (drop_bios_files(buf) < 0) {
         r = -1;
@@ -5661,7 +5688,7 @@ TEST(sdl2_video, init_device)
 }
 #endif
 
-int init_video(_THIS)
+static int init_video(_THIS)
 {
 #if !defined(UT)
     SDL_DisplayMode mode = { 0 };
@@ -5738,10 +5765,26 @@ int init_video(_THIS)
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, init_video)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_video(0));
+    quit_video(0);
+}
+#endif
+
 static int set_disp_mode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
+    debug("call %s()\n", __func__);
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, set_disp_mode)
+{
+    TEST_ASSERT_EQUAL_INT(0, set_disp_mode(0, 0, 0));
+}
+#endif
 
 static int quit_device(void)
 {
@@ -5784,13 +5827,29 @@ static int quit_device(void)
     return 0;
 }
 
-void quit_video(_THIS)
+#if defined(UT)
+TEST(sdl2_video, quit_device)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_device());
+    TEST_ASSERT_EQUAL_INT(0, quit_device());
+}
+#endif
+
+static void quit_video(_THIS)
 {
     debug("call%s()\n" , __func__);
 
     quit_device();
     TTF_Quit();
 }
+
+#if defined(UT)
+TEST(sdl2_video, quit_video)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_video(0));
+    quit_video(0);
+}
+#endif
 
 static const char *LAYOUT_MODE_STR0[] = {
     "640*480",
@@ -6011,7 +6070,14 @@ static const char *MENU_LIST_STR[] = {
 
 static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
 {
-    SDL_Rect rt = {0};
+    SDL_Rect rt = { 0 };
+
+    debug("call %s(sx=%d, sy=%d, mode=%d)\n", __func__, sx, sy, mode);
+
+    if (!d) {
+        error("d is null\n");
+        return -1;
+    }
 
     switch (mode) {
     case NDS_DIS_MODE_VH_T0:
@@ -6421,6 +6487,13 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, draw_small_block_win)
+{
+    TEST_ASSERT_EQUAL_INT(-1, draw_small_block_win(0, 0, 0, 0));
+}
+#endif
+
 static int apply_sdl2_menu_setting(int cur_sel, int right_key)
 {
     debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
@@ -6654,15 +6727,34 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
     return 0;
 }
 
-static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int h, int col0, int col1)
+#if defined(UT)
+TEST(sdl2_video, apply_sdl2_menu_setting)
+{
+    myconfig.layout.alt = 0;
+    TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(MENU_LAYOUT_ATL, 1));
+    TEST_ASSERT_EQUAL_INT(1, myconfig.layout.alt);
+    TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(MENU_LAYOUT_ATL, 0));
+    TEST_ASSERT_EQUAL_INT(0, myconfig.layout.alt);
+}
+#endif
+
+static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0, int col1)
 {
     const int SX = 150;
     const int SY = 107;
     const int SSX = 385;
-
     char buf[MAX_PATH] = { 0 };
 
-    draw_info(myvideo.cvt, l10n(MENU_LIST_STR[cc]), SX + sx, SY + (h * idx), col0, 0);
+    debug("call %s(cur_sel=%d, cc=%d, idx=%d, sx=%d)\n", __func__, cur_sel, cc, idx, sx);
+
+    draw_info(
+        myvideo.cvt,
+        l10n(MENU_LIST_STR[cc]),
+        SX + sx,
+        SY + (myvideo.menu.line_h * idx),
+        col0,
+        0
+    );
 
     sx = 0;
     switch (cc) {
@@ -6685,7 +6777,14 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int h, i
         sprintf(buf, "[%d]   ", myconfig.layout.mode);
         sx = get_font_width(buf);
         sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode]);
-        draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_LAYOUT_MODE) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL, 0);
+        draw_info(
+            myvideo.cvt,
+            buf,
+            SSX + sx,
+            SY + (myvideo.menu.line_h * idx),
+            (cur_sel == MENU_LAYOUT_MODE) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL,
+            0
+        );
 
         sx = 0;
         sprintf(buf, "%d", myconfig.layout.swin.alpha);
@@ -6703,7 +6802,14 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int h, i
         sprintf(buf, "[%d]   ", myconfig.layout.alt);
         sx = get_font_width(buf);
         sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.alt]);
-        draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (*myhook.var.sdl.screen[0].hires_mode == 0) && (cur_sel == MENU_LAYOUT_ATL) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL, 0);
+        draw_info(
+            myvideo.cvt,
+            buf,
+            SSX + sx,
+            SY + (myvideo.menu.line_h * idx),
+            (cur_sel == MENU_LAYOUT_ATL) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL,
+            0
+        );
 
         sx = 0;
         sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
@@ -6763,30 +6869,35 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int h, i
         break;
 #endif
     }
-    draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
+    draw_info(myvideo.cvt, buf, SSX + sx, SY + (myvideo.menu.line_h * idx), col1, 0);
 
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, draw_sdl2_menu_setting)
+{
+    TEST_ASSERT_EQUAL_INT(0, draw_sdl2_menu_setting(0, 0, 0, 0, 0, 0));
+}
+#endif
+
 int handle_sdl2_menu(int key)
 {
-    static int pre_fast = 0;
     static int cur_sel = 0;
+    static int pre_fast = 0;
     static char pre_lang[MAX_LANG_NAME] = { 0 };
-
-    const int SX = 150;
-    const int SY = 107;
 
     int cc = 0;
     int sx = 0;
     int s0 = 0;
     int s1 = 0;
     int idx = 0;
-    int layout_mode = -1;
-    int h = myvideo.menu.line_h;
-    SDL_Rect rt = { 0 };
+    int mode = -1;
     uint32_t col0 = 0;
     uint32_t col1 = 0;
+    SDL_Rect rt = { 0 };
+
+    debug("call %s(key=%d)\n", __func__, key);
 
     if (pre_lang[0] == 0) {
         strcpy(pre_lang, lang_file_name[DEF_LANG_SLOT]);
@@ -6832,10 +6943,10 @@ int handle_sdl2_menu(int key)
     }
 
     if (cur_sel == MENU_LAYOUT_MODE) {
-        layout_mode = myconfig.layout.mode;
+        mode = myconfig.layout.mode;
     }
-    if (cur_sel == MENU_LAYOUT_ATL) {
-        layout_mode = myconfig.layout.alt;
+    else if (cur_sel == MENU_LAYOUT_ATL) {
+        mode = myconfig.layout.alt;
     }
 
     if (myvideo.menu.sdl2.bg && myvideo.cvt) {
@@ -6865,11 +6976,16 @@ int handle_sdl2_menu(int key)
         switch (cc) {
         case MENU_SWIN_ALPHA:
             sx = 20;
-            if ((cur_sel == MENU_SWIN_ALPHA) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_SWIN_ALPHA) &&
+                ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+                (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+            {
                 col1 = MENU_COLOR_SEL;
             }
             else {
-                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) {
+                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+                    (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))
+                {
                     col1 = MENU_COLOR_UNSEL;
                 }
                 else {
@@ -6879,11 +6995,18 @@ int handle_sdl2_menu(int key)
             break;
         case MENU_SWIN_BORDER:
             sx = 20;
-            if ((cur_sel == MENU_SWIN_BORDER) && (myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_SWIN_BORDER) &&
+                (myconfig.layout.swin.alpha > 0) &&
+                ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+                (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+            {
                 col1 = MENU_COLOR_SEL;
             }
             else {
-                if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+                if ((myconfig.layout.swin.alpha > 0) &&
+                    ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+                    (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+                {
                     col1 = MENU_COLOR_UNSEL;
                 }
                 else {
@@ -6893,11 +7016,16 @@ int handle_sdl2_menu(int key)
             break;
         case MENU_SWIN_POS:
             sx = 20;
-            if ((cur_sel == MENU_SWIN_POS) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+            if ((cur_sel == MENU_SWIN_POS) &&
+                ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+                (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+            {
                 col1 = MENU_COLOR_SEL;
             }
             else {
-                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) {
+                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+                    (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))
+                {
                     col1 = MENU_COLOR_UNSEL;
                 }
                 else {
@@ -6944,6 +7072,9 @@ int handle_sdl2_menu(int key)
         }
 
         if (col0 == MENU_COLOR_SEL) {
+            const int SX = 150;
+            const int SY = 107;
+
             if (myconfig.menu.show_cursor) {
                 rt.x = SX - 10;
                 rt.w = 461 - 40;
@@ -6952,7 +7083,7 @@ int handle_sdl2_menu(int key)
                 rt.x = SX - 50;
                 rt.w = 461 + 0;
             }
-            rt.y = SY + (h * idx) - 2;
+            rt.y = SY + (myvideo.menu.line_h * idx) - 2;
             rt.h = FONT_SIZE + 3;
 
             if ((cc == MENU_SWIN_ALPHA) || (cc == MENU_ROTATE_KEY)) {
@@ -6963,7 +7094,15 @@ int handle_sdl2_menu(int key)
                 SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 0x80, 0x80, 0x80));
             }
             else {
-                SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (MENU_COLOR_DRASTIC >> 16) & 0xff, (MENU_COLOR_DRASTIC >> 8) & 0xff, MENU_COLOR_DRASTIC & 0xff));
+                SDL_FillRect(
+                    myvideo.cvt,
+                    &rt,
+                    SDL_MapRGB(myvideo.menu.drastic.frame->format,
+                        (MENU_COLOR_DRASTIC >> 16) & 0xff,
+                        (MENU_COLOR_DRASTIC >> 8) & 0xff,
+                        MENU_COLOR_DRASTIC & 0xff
+                    )
+                );
             }
 
             if (myconfig.menu.show_cursor && myvideo.menu.sdl2.cursor) {
@@ -6976,18 +7115,26 @@ int handle_sdl2_menu(int key)
 
             if ((cc == MENU_LAYOUT_MODE) || (cc == MENU_LAYOUT_ATL)) {
                 rt.x = 440;
-                rt.y = SY + (h * (idx + 1)) - 7;
+                rt.y = SY + (myvideo.menu.line_h * (idx + 1)) - 7;
                 rt.w = 121;
                 rt.h = FONT_SIZE + 8;
-                SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (MENU_COLOR_DRASTIC >> 16) & 0xff, (MENU_COLOR_DRASTIC >> 8) & 0xff, MENU_COLOR_DRASTIC & 0xff));
+                SDL_FillRect(
+                    myvideo.cvt,
+                    &rt,
+                    SDL_MapRGB(myvideo.menu.drastic.frame->format,
+                        (MENU_COLOR_DRASTIC >> 16) & 0xff,
+                        (MENU_COLOR_DRASTIC >> 8) & 0xff,
+                        MENU_COLOR_DRASTIC & 0xff
+                    )
+                );
             }
         }
 
-        draw_sdl2_menu_setting(cur_sel, cc, idx, sx, h, col0, col1);
+        draw_sdl2_menu_setting(cur_sel, cc, idx, sx, col0, col1);
         idx+= 1;
     }
 
-    draw_small_block_win(450, 360, layout_mode, myvideo.cvt);
+    draw_small_block_win(450, 360, mode, myvideo.cvt);
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
