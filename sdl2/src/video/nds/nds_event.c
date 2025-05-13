@@ -761,23 +761,23 @@ static int update_joy_state(void)
 
     debug("call %s()\n", __func__);
 
-    if (myconfig.joy.mode == MYJOY_MODE_KEYPAD) {
+    if (myconfig.joy.mode == MYJOY_MODE_KEY) {
         r |= trans_joy_to_keypad(&myjoy.left.last, 0);
     }
-    else if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
+    else if (myconfig.joy.mode == MYJOY_MODE_TOUCH) {
         r |= trans_joy_to_touch(&myjoy.left.last, 0);
     }
-    else if (myconfig.joy.mode == MYJOY_MODE_CUSTKEY) {
+    else if (myconfig.joy.mode == MYJOY_MODE_CUST_KEY) {
         r |= trans_joy_to_custkey(&myjoy.left.last, 0);
     }
 
-    if (myconfig.rjoy.mode == MYJOY_MODE_KEYPAD) {
+    if (myconfig.rjoy.mode == MYJOY_MODE_KEY) {
         r |= trans_joy_to_keypad(&myjoy.right.last, 1);
     }
-    else if (myconfig.rjoy.mode == MYJOY_MODE_STYLUS) {
+    else if (myconfig.rjoy.mode == MYJOY_MODE_TOUCH) {
         r |= trans_joy_to_touch(&myjoy.right.last, 1);
     }
-    else if (myconfig.rjoy.mode == MYJOY_MODE_CUSTKEY) {
+    else if (myconfig.rjoy.mode == MYJOY_MODE_CUST_KEY) {
         r |= trans_joy_to_custkey(&myjoy.right.last, 1);
     }
 

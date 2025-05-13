@@ -1971,7 +1971,7 @@ static int process_screen(void)
 #if defined(A30) || defined(FLIP)
         if (show_pen && 
             ((myevent.mode == NDS_TOUCH_MODE) || 
-            (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_STYLUS))))
+            (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_TOUCH))))
         {
 #else
         if (show_pen && (myevent.mode == NDS_TOUCH_MODE)) {
@@ -1982,7 +1982,7 @@ static int process_screen(void)
             draw_pen(pixels, srt.w, pitch);
 
 #if defined(A30) || defined(FLIP)
-            if (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_STYLUS)) {
+            if (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_TOUCH)) {
                 myconfig.joy.show_cnt -= 1;
             }
 #endif
@@ -2654,123 +2654,6 @@ static void enum_lang_file(void)
         closedir(d);
     }
 }
-
-#if defined(MINI)
-static int get_cpuclock(void)
-{
-    static const uint64_t divsrc = 432000000llu * 524288;
-
-    int fd_mem = -1;
-    void *pll_map = NULL;
-    uint32_t rate = 0;
-    uint32_t lpf_value = 0;
-    uint32_t post_div = 0;
-
-    fd_mem = open("/dev/mem", O_RDWR);
-    if (fd_mem < 0) {
-        return 0;
-    }
-
-    pll_map = mmap(0, PLL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_mem, BASE_REG_MPLL_PA);
-    if (pll_map) {
-        volatile uint8_t* p8 = (uint8_t*)pll_map;
-        volatile uint16_t* p16 = (uint16_t*)pll_map;
-
-        lpf_value = p16[0x2a4] + (p16[0x2a6] << 16);
-        post_div = p16[0x232] + 1;
-        if (lpf_value == 0) {
-            lpf_value = (p8[0x2c2 << 1] << 16) + (p8[0x2c1 << 1] << 8) + p8[0x2c0 << 1];
-        }
-
-        if (lpf_value && post_div) {
-            rate = (divsrc / lpf_value * 2 / post_div * 16);
-        }
-        debug("Current cpuclock=%u (lpf=%u, post_div=%u)\n", rate, lpf_value, post_div);
-        munmap(pll_map, PLL_SIZE);
-    }
-    close(fd_mem);
-    return rate / 1000000;
-}
-
-static int set_cpuclock(uint32_t newclock)
-{
-    int fd_mem = -1;
-    void *pll_map = NULL;
-    uint32_t post_div = 0;
-    char clockstr[16] = {0};
-    const char fn_governor[] = "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor";
-    const char fn_setspeed[] = "/sys/devices/system/cpu/cpufreq/policy0/scaling_setspeed";
-
-    if ((newclock < myconfig.cpu.freq.min) || (newclock > myconfig.cpu.freq.max)) {
-        return -1;
-    }
-
-    fd_mem = open("/dev/mem", O_RDWR);
-    if (fd_mem < 0) {
-        return -1;
-    }
-
-    pll_map = mmap(0, PLL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_mem, BASE_REG_MPLL_PA);
-    if (pll_map) {
-        debug("Set CPU %dMHz\n", newclock);
-
-        newclock*= 1000;
-        sprintf(clockstr, "%d", newclock);
-        write_file(fn_governor, "userspace", strlen("userspace"));
-        write_file(fn_setspeed, clockstr, strlen(clockstr));
-
-        if (newclock >= 800000) {
-            post_div = 2;
-        }
-        else if (newclock >= 400000) {
-            post_div = 4;
-        }
-        else if (newclock >= 200000) {
-            post_div = 8;
-        }
-        else {
-            post_div = 16;
-        }
-
-        if (1) {
-            static const uint64_t divsrc = 432000000llu * 524288;
-            uint32_t rate = (newclock * 1000) / 16 * post_div / 2;
-            uint32_t lpf = (uint32_t)(divsrc / rate);
-            volatile uint16_t* p16 = (uint16_t*)pll_map;
-            uint32_t cur_post_div = (p16[0x232] & 0x0f) + 1;
-            uint32_t tmp_post_div = cur_post_div;
-
-            if (post_div > cur_post_div) {
-                while (tmp_post_div != post_div) {
-                    tmp_post_div <<= 1;
-                    p16[0x232] = (p16[0x232] & 0xf0) | ((tmp_post_div - 1) & 0x0f);
-                }
-            }
-
-            p16[0x2A8] = 0x0000;        // reg_lpf_enable = 0
-            p16[0x2AE] = 0x000f;        // reg_lpf_update_cnt = 32
-            p16[0x2A4] = lpf & 0xffff;  // set target freq to LPF high
-            p16[0x2A6] = lpf >> 16;     // set target freq to LPF high
-            p16[0x2B0] = 0x0001;        // switch to LPF control
-            p16[0x2B2]|= 0x1000;        // from low to high
-            p16[0x2A8] = 0x0001;        // reg_lpf_enable = 1
-            while(!(p16[0x2ba] & 1));   // polling done
-            p16[0x2A0] = lpf & 0xffff;  // store freq to LPF low
-            p16[0x2A2] = lpf >> 16;     // store freq to LPF low
-
-            if (post_div < cur_post_div) {
-                while (tmp_post_div != post_div) {
-                    tmp_post_div >>= 1;
-                    p16[0x232] = (p16[0x232] & 0xf0) | ((tmp_post_div - 1) & 0x0f);
-                }
-            }
-        }
-        munmap(pll_map, PLL_SIZE);
-    }
-    close(fd_mem);
-    return 0;
-}
-#endif
 
 static int get_file_path_by_index(const char *path, int idx, char *buf)
 {
@@ -5287,7 +5170,9 @@ int load_menu_res(void)
             t->format->Amask
         );
 
-        SDL_SoftStretch(t, NULL, myvideo.menu.drastic.yes, NULL);
+        if (myvideo.menu.drastic.yes) {
+            SDL_SoftStretch(t, NULL, myvideo.menu.drastic.yes, NULL);
+        }
         SDL_FreeSurface(t);
     }
 
@@ -5311,7 +5196,9 @@ int load_menu_res(void)
             t->format->Amask
         );
 
-        SDL_SoftStretch(t, NULL, myvideo.menu.drastic.no, NULL);
+        if (myvideo.menu.drastic.no) {
+            SDL_SoftStretch(t, NULL, myvideo.menu.drastic.no, NULL);
+        }
         SDL_FreeSurface(t);
     }
 
@@ -5321,10 +5208,8 @@ int load_menu_res(void)
     myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
 #endif
 
-    if (myvideo.menu.drastic.frame) {
-        if (myvideo.menu.drastic.bg0) {
-            SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
-        }
+    if (myvideo.menu.drastic.frame && myvideo.menu.drastic.bg0) {
+        SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
     }
 
     return 0;
@@ -6013,12 +5898,6 @@ TEST(sdl2_video, lang_prev)
 
 typedef enum {
     MENU_LANG = 0,
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-    MENU_CPU_CORE,
-#endif
-#if defined(A30) || defined(MINI)
-    MENU_CPU_CLOCK,
-#endif
     MENU_LAYOUT_MODE,
     MENU_SWIN_ALPHA,
     MENU_SWIN_BORDER,
@@ -6033,18 +5912,18 @@ typedef enum {
     MENU_FAST_FORWARD,
 #if defined(A30) || defined(FLIP)
     MENU_JOY_MODE,
-    MENU_JOY_CUSKEY0,
-    MENU_JOY_CUSKEY1,
-    MENU_JOY_CUSKEY2,
-    MENU_JOY_CUSKEY3,
+    MENU_JOY_CUST_KEY0,
+    MENU_JOY_CUST_KEY1,
+    MENU_JOY_CUST_KEY2,
+    MENU_JOY_CUST_KEY3,
     MENU_JOY_DZONE,
 #endif
 #if defined(FLIP)
     MENU_RJOY_MODE,
-    MENU_RJOY_CUSKEY0,
-    MENU_RJOY_CUSKEY1,
-    MENU_RJOY_CUSKEY2,
-    MENU_RJOY_CUSKEY3,
+    MENU_RJOY_CUST_KEY0,
+    MENU_RJOY_CUST_KEY1,
+    MENU_RJOY_CUST_KEY2,
+    MENU_RJOY_CUST_KEY3,
     MENU_RJOY_DZONE,
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
@@ -6055,12 +5934,6 @@ typedef enum {
 
 static const char *MENU_LIST_STR[] = {
     "Language",
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-    "CPU Core",
-#endif
-#if defined(A30) || defined(MINI)
-    "CPU Clock",
-#endif
     "Layout Mode",
     "  Alpha",
     "  Border",
@@ -6094,56 +5967,791 @@ static const char *MENU_LIST_STR[] = {
 #endif
 };
 
+static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
+{
+    SDL_Rect rt = {0};
+
+    switch (mode) {
+    case NDS_DIS_MODE_VH_T0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+       
+        rt.w = 34;
+        rt.h = 26;
+        switch (myconfig.layout.swin.pos) {
+        case 0:
+            rt.x = (sx + 128) - rt.w;
+            rt.y = sy;
+            break;
+        case 1:
+            rt.x = sx;
+            rt.y = sy;
+            break;
+        case 2:
+            rt.x = sx;
+            rt.y = (sy + 96) - rt.h;
+            break;
+        case 3:
+            rt.x = (sx + 128) - rt.w;
+            rt.y = (sy + 96) - rt.h;
+            break;
+        }
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
+        break;
+    case NDS_DIS_MODE_VH_T1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+       
+        rt.w = 51;
+        rt.h = 38;
+        switch (myconfig.layout.swin.pos) {
+        case 0:
+            rt.x = (sx + 128) - rt.w;
+            rt.y = sy;
+            break;
+        case 1:
+            rt.x = sx;
+            rt.y = sy;
+            break;
+        case 2:
+            rt.x = sx;
+            rt.y = (sy + 96) - rt.h;
+            break;
+        case 3:
+            rt.x = (sx + 128) - rt.w;
+            rt.y = (sy + 96) - rt.h;
+            break;
+        }
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
+        break;
+    case NDS_DIS_MODE_S0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 102;
+        rt.h = 76;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        break;
+    case NDS_DIS_MODE_S1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        break;
+    case NDS_DIS_MODE_V0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 51;
+        rt.h = 38;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + ((96 - (rt.h * 2)) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 51;
+        rt.h = 38;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_V1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 64;
+        rt.h = 48;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + ((96 - (rt.h * 2)) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 64;
+        rt.h = 48;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_H0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 51;
+        rt.h = 38;
+        rt.x = sx + ((128 - (rt.w * 2)) / 2);
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 51;
+        rt.h = 38;
+        rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_H1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 64;
+        rt.h = 48;
+        rt.x = sx + ((128 - (rt.w * 2)) / 2);
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 64;
+        rt.h = 48;
+        rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_S0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 96;
+        rt.h = 72;
+        rt.x = sx;
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 32;
+        rt.h = 24;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy + (96 - rt.h);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_S1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 77;
+        rt.h = 58;
+        rt.x = sx;
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 51;
+        rt.h = 38;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy + (96 - rt.h);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_S2:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 96;
+        rt.h = 72;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 32;
+        rt.h = 24;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + (96 - rt.h);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_S3:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 102;
+        rt.h = 77;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 26;
+        rt.h = 19;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + (96 - rt.h);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_S4:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 102;
+        rt.h = 77;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 26;
+        rt.h = 19;
+        rt.x = sx;
+        rt.y = sy + (96 - rt.h);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_S5:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 102;
+        rt.h = 77;
+        rt.x = sx;
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 26;
+        rt.h = 19;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy + (96 - rt.h);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_C0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 77;
+        rt.h = 58;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 51;
+        rt.h = 38;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + (96 - rt.h);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_VH_C1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 77;
+        rt.h = 58;
+        rt.x = sx;
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 51;
+        rt.h = 38;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_HH0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 64;
+        rt.h = 85;
+        rt.x = sx;
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        
+        rt.w = 64;
+        rt.h = 85;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_HH1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+
+        rt.w = 64;
+        rt.h = 85;
+        rt.x = sx;
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+
+        rt.w = 64;
+        rt.h = 85;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        break;
+    case NDS_DIS_MODE_HH2:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+
+        rt.w = 64;
+        rt.h = 96;
+        rt.x = sx;
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+
+        rt.w = 64;
+        rt.h = 96;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        break;
+    case NDS_DIS_MODE_HH3:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+
+        rt.w = 64;
+        rt.h = 96;
+        rt.x = sx;
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+
+        rt.w = 64;
+        rt.h = 96;
+        rt.x = sx + (128 - rt.w);
+        rt.y = sy;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        break;
+    case NDS_DIS_MODE_HRES0:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        
+        rt.w = 102;
+        rt.h = 76;
+        rt.x = sx + ((128 - rt.w) / 2);
+        rt.y = sy + ((96 - rt.h) / 2);
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        break;
+    case NDS_DIS_MODE_HRES1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
+        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        break;
+    }
+    
+    return 0;
+}
+
+static int apply_sdl2_menu_setting(int cur_sel, int right_key)
+{
+    debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
+
+    switch(cur_sel) {
+    case MENU_LANG:
+        if (right_key) {
+            lang_next();
+        }
+        else {
+            lang_prev();
+        }
+        break;
+    case MENU_BIND_HOTKEY:
+        myconfig.hotkey = right_key ? HOTKEY_BIND_SELECT : HOTKEY_BIND_MENU;
+        break;
+    case MENU_SWAP_L1L2:
+        myconfig.swap_l1_l2 = right_key;
+        break;
+    case MENU_SWAP_R1R2:
+        myconfig.swap_r1_r2 = right_key;
+        break;
+    case MENU_LAYOUT_MODE:
+        if (right_key) {
+            if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
+                myconfig.layout.mode += 1;
+            }
+        }
+        else {
+            if (myconfig.layout.mode > 0) {
+                myconfig.layout.mode -= 1;
+            }
+        }
+        break;
+    case MENU_SWIN_ALPHA:
+        if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || 
+            (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+        {
+            if (right_key) {
+                if (myconfig.layout.swin.alpha < NDS_ALPHA_MAX) {
+                    myconfig.layout.swin.alpha += 1;
+                }
+            }
+            else {
+                if (myconfig.layout.swin.alpha > 0) {
+                    myconfig.layout.swin.alpha -= 1;
+                }
+            }
+        }
+        break;
+    case MENU_SWIN_BORDER:
+        if ((myconfig.layout.swin.alpha > 0) &&
+            ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+            (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+        {
+            myconfig.layout.swin.border = right_key;
+        }
+        break;
+    case MENU_SWIN_POS:
+        if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
+            (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+        {
+            if (right_key) {
+                if (myconfig.layout.swin.pos < 3) {
+                    myconfig.layout.swin.pos += 1;
+                }
+            }
+            else {
+                if (myconfig.layout.swin.pos > 0) {
+                    myconfig.layout.swin.pos -= 1;
+                }
+            }
+        }
+        break;
+    case MENU_LAYOUT_ATL:
+        if (right_key) {
+            if (myconfig.layout.alt < NDS_DIS_MODE_LAST) {
+                myconfig.layout.alt += 1;
+            }
+        }
+        else {
+            if (myconfig.layout.alt > 0) {
+                myconfig.layout.alt -= 1;
+            }
+        }
+        break;
+    case MENU_ROTATE_KEY:
+        if (right_key) {
+            if (myconfig.keys_rotate < 2) {
+                myconfig.keys_rotate += 1;
+            }
+        }
+        else {
+            if (myconfig.keys_rotate > 0) {
+                myconfig.keys_rotate -= 1;
+            }
+        }
+        break;
+    case MENU_PEN_SPEED:
+        if (right_key) {
+            if (myconfig.pen.speed < 30) {
+                myconfig.pen.speed += 1;
+            }
+        }
+        else {
+            if (myconfig.pen.speed > 1) {
+                myconfig.pen.speed -= 1;
+            }
+        }
+        break;
+    case MENU_SHOW_CURSOR:
+        myconfig.menu.show_cursor = right_key;
+        break;
+    case MENU_FAST_FORWARD:
+        if (right_key) {
+            if (myconfig.fast_forward < 32) {
+                myconfig.fast_forward += 1;
+            }
+        }
+        else {
+            if (myconfig.fast_forward > 1) {
+                myconfig.fast_forward -= 1;
+            }
+        }
+        break;
+#if defined(A30) || defined(FLIP)
+    case MENU_JOY_MODE:
+        if (right_key) {
+            if (myconfig.joy.mode < MYJOY_MODE_LAST) {
+                myconfig.joy.mode += 1;
+            }
+        }
+        else {
+            if (myconfig.joy.mode > 0) {
+                myconfig.joy.mode -= 1;
+            }
+        }
+
+        if (myconfig.joy.mode == MYJOY_MODE_TOUCH) {
+            if (myevent.mode == NDS_TOUCH_MODE) {
+                myevent.mode = NDS_KEY_MODE;
+            }
+        }
+        break;
+    case MENU_JOY_CUST_KEY0:
+    case MENU_JOY_CUST_KEY1:
+    case MENU_JOY_CUST_KEY2:
+    case MENU_JOY_CUST_KEY3:
+        if (myconfig.joy.mode == MYJOY_MODE_CUST_KEY) {
+            if (right_key) {
+                if (myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] < 13) {
+                    myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] += 1;
+                }
+            }
+            else {
+                if (myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] > 0) {
+                    myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] -= 1;
+                }
+            }
+        }
+        break;
+    case MENU_JOY_DZONE:
+        if (myconfig.joy.dzone > 0) {
+            myconfig.joy.dzone -= 1;
+        }
+        break;
+#endif
+#if defined(FLIP)
+    case MENU_RJOY_MODE:
+        if (right_key) {
+            if (myconfig.rjoy.mode < MYJOY_MODE_LAST) {
+                myconfig.rjoy.mode += 1;
+            }
+        }
+        else {
+            if (myconfig.rjoy.mode > 0) {
+                myconfig.rjoy.mode -= 1;
+            }
+        }
+        if (myconfig.rjoy.mode == MYJOY_MODE_TOUCH) {
+            if (myevent.mode == NDS_TOUCH_MODE) {
+                myevent.mode = NDS_KEY_MODE;
+            }
+        }
+        break;
+    case MENU_RJOY_CUST_KEY0:
+    case MENU_RJOY_CUST_KEY1:
+    case MENU_RJOY_CUST_KEY2:
+    case MENU_RJOY_CUST_KEY3:
+        if (myconfig.rjoy.mode == MYJOY_MODE_CUST_KEY) {
+            if (right_key) {
+                if (myconfig.rjoy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] < 13) {
+                    myconfig.rjoy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] += 1;
+                }
+            }
+            else {
+                if (myconfig.rjoy.cuskey[cur_sel - MENU_RJOY_CUST_KEY0] > 0) {
+                    myconfig.rjoy.cuskey[cur_sel - MENU_RJOY_CUST_KEY0] -= 1;
+                }
+            }
+
+            if (myconfig.rjoy.mode == MYJOY_MODE_TOUCH) {
+                if (myevent.mode == NDS_TOUCH_MODE) {
+                    myevent.mode = NDS_KEY_MODE;
+                }
+            }
+        }
+        break;
+    case MENU_RJOY_DZONE:
+        if (right_key) {
+            if (myconfig.rjoy.dzone < 255) {
+                myconfig.rjoy.dzone += 1;
+            }
+        }
+        else {
+            if (myconfig.rjoy.dzone > 0) {
+                myconfig.rjoy.dzone -= 1;
+            }
+        }
+        break;
+#endif
+#if defined(MINI) || defined(A30) || defined(FLIP)
+    case MENU_CHK_BAT:
+        myconfig.chk_bat = right_key;
+        break;
+#endif
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int h, int col0, int col1, int val_col, int unsel_col)
+{
+    const int SX = 150;
+    const int SY = 107;
+    const int SSX = 385;
+
+    char buf[MAX_PATH] = { 0 };
+
+    draw_info(myvideo.cvt, l10n(MENU_LIST_STR[cc]), SX + sx, SY + (h * idx), col0, 0);
+
+    sx = 0;
+    switch (cc) {
+    case MENU_LANG:
+        sprintf(buf, "%s", lang_file_name[DEF_LANG_SLOT]);
+        break;
+    case MENU_BIND_HOTKEY:
+        sprintf(buf, "%s", l10n(BIND_HOTKEY_STR[myconfig.hotkey]));
+        break;
+    case MENU_SWAP_L1L2:
+        sprintf(buf, "%s", l10n(myconfig.swap_l1_l2 ? "Yes" : "No"));
+        break;
+    case MENU_SWAP_R1R2:
+        sprintf(buf, "%s", l10n(myconfig.swap_r1_r2 ? "Yes" : "No"));
+        break;
+    case MENU_LAYOUT_MODE:
+        sprintf(buf, "[%d]   %s", myconfig.layout.mode, LAYOUT_MODE_STR0[myconfig.layout.mode]);
+        break;
+    case MENU_SWIN_ALPHA:
+        sprintf(buf, "[%d]   ", myconfig.layout.mode);
+        sx = get_font_width(buf);
+        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode]);
+        draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_LAYOUT_MODE) ? MENU_COLOR0 : MENU_COLOR1, 0);
+
+        sx = 0;
+        sprintf(buf, "%d", myconfig.layout.swin.alpha);
+        break;
+    case MENU_SWIN_BORDER:
+        sprintf(buf, "%s", l10n(myconfig.layout.swin.border ? "Yes" : "No"));
+        break;
+    case MENU_SWIN_POS:
+        sprintf(buf, "%s", l10n(SWIN_POS_STR[myconfig.layout.swin.pos]));
+        break;
+    case MENU_LAYOUT_ATL:
+        sprintf(buf, "[%d]   %s", myconfig.layout.alt, LAYOUT_MODE_STR0[myconfig.layout.alt]);
+        break;
+    case MENU_ROTATE_KEY:
+        sprintf(buf, "[%d]   ", myconfig.layout.alt);
+        sx = get_font_width(buf);
+        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.alt]);
+        draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (*myhook.var.sdl.screen[0].hires_mode == 0) && (cur_sel == MENU_LAYOUT_ATL) ? val_col : unsel_col, 0);
+
+        sx = 0;
+        sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
+        break;
+    case MENU_PEN_SPEED:
+        sprintf(buf, "%.1fx", ((float)myconfig.pen.speed) / 10);
+        break;
+    case MENU_SHOW_CURSOR:
+        sprintf(buf, "%s", l10n(myconfig.menu.show_cursor ? "Show" : "Hide"));
+        break;
+    case MENU_FAST_FORWARD:
+        sprintf(buf, "%d (6)", myconfig.fast_forward);
+        break;
+#if defined(A30) || defined(FLIP)
+    case MENU_JOY_MODE:
+        sprintf(buf, "%s", l10n(JOY_MODE_STR[myconfig.joy.mode]));
+        break;
+    case MENU_JOY_CUST_KEY0:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[0]]));
+        break;
+    case MENU_JOY_CUST_KEY1:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[1]]));
+        break;
+    case MENU_JOY_CUST_KEY2:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[2]]));
+        break;
+    case MENU_JOY_CUST_KEY3:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[3]]));
+        break;
+    case MENU_JOY_DZONE:
+        sprintf(buf, "%d (15)", myconfig.joy.dzone);
+        break;
+#endif
+#if defined(FLIP)
+    case MENU_RJOY_MODE:
+        sprintf(buf, "%s", l10n(RJOY_MODE_STR[myconfig.rjoy.mode]));
+        break;
+    case MENU_RJOY_CUST_KEY0:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[0]]));
+        break;
+    case MENU_RJOY_CUST_KEY1:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[1]]));
+        break;
+    case MENU_RJOY_CUST_KEY2:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[2]]));
+        break;
+    case MENU_RJOY_CUST_KEY3:
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[3]]));
+        break;
+    case MENU_RJOY_DZONE:
+        sprintf(buf, "%d (15)", myconfig.rjoy.dzone);
+        break;
+#endif
+#if defined(MINI) || defined(A30) || defined(FLIP)
+    case MENU_CHK_BAT:
+        sprintf(buf, "%s", l10n(myconfig.chk_bat ? "Yes" : "No"));
+        break;
+#endif
+    }
+    draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
+}
+
 int handle_sdl2_menu(int key)
 {
     static int pre_fast = 0;
     static int cur_sel = 0;
     static char pre_lang[MAX_LANG_NAME] = { 0 };
 
-#if defined(A30)
-    static uint32_t cur_cpuclock = INIT_CPU_CLOCK;
-    static uint32_t pre_cpuclock = INIT_CPU_CLOCK;
-#endif
-
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-    static uint32_t cur_cpucore = INIT_CPU_CORE;
-    static uint32_t pre_cpucore = INIT_CPU_CORE;
-#else
-    static uint32_t cur_cpuclock = 0;
-    static uint32_t pre_cpuclock = 0;
-#endif
-
     const int SX = 150;
     const int SY = 107;
-    const int SSX = 385;
 
     int cc = 0;
     int sx = 0;
-    int sy = 0;
     int s0 = 0;
     int s1 = 0;
     int idx = 0;
+    int layout_mode = -1;
     int h = myvideo.menu.line_h;
-    int dis_mode = -1;
-    SDL_Rect rt = {0};
-    char buf[MAX_PATH] = {0};
+    SDL_Rect rt = { 0 };
+    char buf[MAX_PATH] = { 0 };
     uint32_t sel_col = MENU_COLOR0;
     uint32_t unsel_col = MENU_COLOR1;
     uint32_t dis_col = 0x808080;
     uint32_t val_col = MENU_COLOR0;
-    uint32_t col0 = 0, col1 = 0;
+    uint32_t col0 = 0;
+    uint32_t col1 = 0;
 
     if (pre_lang[0] == 0) {
         strcpy(pre_lang, lang_file_name[DEF_LANG_SLOT]);
     }
-
-#if !defined(RG28XX) && !defined(FLIP)
-    if (pre_cpuclock == 0) {
-#if defined(MINI)
-        cur_cpuclock = pre_cpuclock = get_cpuclock();
-#endif
-    }
-#endif
 
     switch (key) {
     case KEY_BIT_UP:
@@ -6157,374 +6765,12 @@ int handle_sdl2_menu(int key)
         }
         break;
     case KEY_BIT_LEFT:
-        switch(cur_sel) {
-        case MENU_LANG:
-            lang_prev();
-            break;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-        case MENU_CPU_CORE:
-            if (cur_cpucore > myconfig.cpu.core.min) {
-                cur_cpucore -= 1;
-            }
-            break;
-#endif
-#if defined(A30) || defined(MINI)
-        case MENU_CPU_CLOCK:
-            if (cur_cpuclock > myconfig.cpu.freq.min) {
-                cur_cpuclock -= 50;
-            }
-            break;
-#endif
-        case MENU_BIND_HOTKEY:
-            myconfig.hotkey = HOTKEY_BIND_MENU;
-            break;
-        case MENU_SWAP_L1L2:
-            myconfig.swap_l1_l2 = 0;
-            break;
-        case MENU_SWAP_R1R2:
-            myconfig.swap_r1_r2 = 0;
-            break;
-        case MENU_LAYOUT_MODE:
-            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
-                if (myconfig.layout.mode > 0) {
-                    myconfig.layout.mode-= 1;
-                }
-            }
-            else {
-                myconfig.layout.mode = NDS_DIS_MODE_HRES0;
-            }
-            break;
-        case MENU_SWIN_ALPHA:
-            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.swin.alpha > 0) {
-                    myconfig.layout.swin.alpha-= 1;
-                }
-            }
-            break;
-        case MENU_SWIN_BORDER:
-            if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                myconfig.layout.swin.border = 0;
-            }
-            break;
-        case MENU_SWIN_POS:
-            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.swin.pos > 0) {
-                    myconfig.layout.swin.pos-= 1;
-                }
-            }
-            break;
-        case MENU_LAYOUT_ATL:
-            if ((*myhook.var.sdl.screen[0].hires_mode == 0) && (myconfig.layout.alt > 0)) {
-                myconfig.layout.alt-= 1;
-            }
-            break;
-        case MENU_ROTATE_KEY:
-            if (myconfig.keys_rotate > 0) {
-                myconfig.keys_rotate-= 1;
-            }
-            break;
-        case MENU_PEN_SPEED:
-            if (myconfig.pen.speed > 1) {
-                myconfig.pen.speed -= 1;
-            }
-            break;
-        case MENU_SHOW_CURSOR:
-            myconfig.menu.show_cursor = 0;
-            break;
-        case MENU_FAST_FORWARD:
-            if (myconfig.fast_forward > 1) {
-                myconfig.fast_forward -= 1;
-            }
-            break;
-#if defined(A30) || defined(FLIP)
-        case MENU_JOY_MODE:
-            if (myconfig.joy.mode > 0) {
-                myconfig.joy.mode -= 1;
-            }
-            break;
-        case MENU_JOY_CUSKEY0:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[0] > 0) {
-                    myconfig.joy.cuskey[0] -= 1;
-                }
-            }
-            break;
-        case MENU_JOY_CUSKEY1:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[1] > 0) {
-                    myconfig.joy.cuskey[1] -= 1;
-                }
-            }
-            break;
-        case MENU_JOY_CUSKEY2:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[2] > 0) {
-                    myconfig.joy.cuskey[2] -= 1;
-                }
-            }
-            break;
-        case MENU_JOY_CUSKEY3:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[3] > 0) {
-                    myconfig.joy.cuskey[3] -= 1;
-                }
-            }
-            break;
-        case MENU_JOY_DZONE:
-            if (myconfig.joy.dzone > 0) {
-                myconfig.joy.dzone -= 1;
-            }
-            break;
-#endif
-#if defined(FLIP)
-        case MENU_RJOY_MODE:
-            if (myconfig.rjoy.mode > 0) {
-                myconfig.rjoy.mode -= 1;
-            }
-            break;
-        case MENU_RJOY_CUSKEY0:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[0] > 0) {
-                    myconfig.rjoy.cuskey[0] -= 1;
-                }
-            }
-            break;
-        case MENU_RJOY_CUSKEY1:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[1] > 0) {
-                    myconfig.rjoy.cuskey[1] -= 1;
-                }
-            }
-            break;
-        case MENU_RJOY_CUSKEY2:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[2] > 0) {
-                    myconfig.rjoy.cuskey[2] -= 1;
-                }
-            }
-            break;
-        case MENU_RJOY_CUSKEY3:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[3] > 0) {
-                    myconfig.rjoy.cuskey[3] -= 1;
-                }
-            }
-            break;
-        case MENU_RJOY_DZONE:
-            if (myconfig.rjoy.dzone > 0) {
-                myconfig.rjoy.dzone -= 1;
-            }
-            break;
-#endif
-#if defined(MINI) || defined(A30) || defined(FLIP)
-        case MENU_CHK_BAT:
-            myconfig.chk_bat = 0;
-            break;
-#endif
-        default:
-            break;
-        }
+        apply_sdl2_menu_setting(cur_sel, 0);
         break;
     case KEY_BIT_RIGHT:
-        switch(cur_sel) {
-        case MENU_LANG:
-            lang_next();
-            break;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-        case MENU_CPU_CORE:
-            if (cur_cpucore < myconfig.cpu.core.max) {
-                cur_cpucore+= 1;
-            }
-            break;
-#endif
-#if defined(A30) || defined(MINI)
-        case MENU_CPU_CLOCK:
-            if (cur_cpuclock < myconfig.cpu.freq.max) {
-                cur_cpuclock+= 50;
-            }
-            break;
-#endif
-        case MENU_BIND_HOTKEY:
-            myconfig.hotkey = HOTKEY_BIND_SELECT;
-            break;
-        case MENU_SWAP_L1L2:
-            myconfig.swap_l1_l2 = 1;
-            break;
-        case MENU_SWAP_R1R2:
-            myconfig.swap_r1_r2 = 1;
-            break;
-        case MENU_LAYOUT_MODE:
-            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
-                if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
-                    myconfig.layout.mode+= 1;
-                }
-            }
-            else {
-                myconfig.layout.mode = NDS_DIS_MODE_HRES1;
-            }
-            break;
-        case MENU_SWIN_ALPHA:
-            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.swin.alpha < NDS_ALPHA_MAX) {
-                    myconfig.layout.swin.alpha+= 1;
-                }
-            }
-            break;
-        case MENU_SWIN_BORDER:
-            if ((myconfig.layout.swin.alpha > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                myconfig.layout.swin.border = 1;
-            }
-            break;
-        case MENU_SWIN_POS:
-            if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
-                if (myconfig.layout.swin.pos < 3) {
-                    myconfig.layout.swin.pos+= 1;
-                }
-            }
-            break;
-        case MENU_LAYOUT_ATL:
-            if ((*myhook.var.sdl.screen[0].hires_mode == 0) && (myconfig.layout.alt < NDS_DIS_MODE_LAST)) {
-                myconfig.layout.alt+= 1;
-            }
-            break;
-        case MENU_ROTATE_KEY:
-            if (myconfig.keys_rotate < 2) {
-                myconfig.keys_rotate+= 1;
-            }
-            break;
-        case MENU_PEN_SPEED:
-            if (myconfig.pen.speed < 30) {
-                myconfig.pen.speed += 1;
-            }
-            break;
-        case MENU_SHOW_CURSOR:
-            myconfig.menu.show_cursor = 1;
-            break;
-        case MENU_FAST_FORWARD:
-            if (myconfig.fast_forward < 255) {
-                myconfig.fast_forward += 1;
-            }
-            break;
-#if defined(A30) || defined(FLIP)
-        case MENU_JOY_MODE:
-            if (myconfig.joy.mode < MYJOY_MODE_LAST) {
-                myconfig.joy.mode += 1;
-            }
-            if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
-                if (myevent.mode == NDS_TOUCH_MODE) {
-                    myevent.mode = NDS_KEY_MODE;
-                }
-            }
-            break;
-        case MENU_JOY_CUSKEY0:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[0] < 13) {
-                    myconfig.joy.cuskey[0] += 1;
-                }
-            }
-            break;
-        case MENU_JOY_CUSKEY1:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[1] < 13) {
-                    myconfig.joy.cuskey[1] += 1;
-                }
-            }
-            break;
-        case MENU_JOY_CUSKEY2:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[2] < 13) {
-                    myconfig.joy.cuskey[2] += 1;
-                }
-            }
-            break;
-        case MENU_JOY_CUSKEY3:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.joy.cuskey[3] < 13) {
-                    myconfig.joy.cuskey[3] += 1;
-                }
-            }
-            break;
-        case MENU_JOY_DZONE:
-            if (myconfig.joy.dzone < 255) {
-                myconfig.joy.dzone += 1;
-            }
-            break;
-#endif
-#if defined(FLIP)
-        case MENU_RJOY_MODE:
-            if (myconfig.rjoy.mode < MYJOY_MODE_LAST) {
-                myconfig.rjoy.mode += 1;
-            }
-            if (myconfig.rjoy.mode == MYJOY_MODE_STYLUS) {
-                if (myevent.mode == NDS_TOUCH_MODE) {
-                    myevent.mode = NDS_KEY_MODE;
-                }
-            }
-            break;
-        case MENU_RJOY_CUSKEY0:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[0] < 13) {
-                    myconfig.rjoy.cuskey[0] += 1;
-                }
-            }
-            break;
-        case MENU_RJOY_CUSKEY1:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[1] < 13) {
-                    myconfig.rjoy.cuskey[1] += 1;
-                }
-            }
-            break;
-        case MENU_RJOY_CUSKEY2:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[2] < 13) {
-                    myconfig.rjoy.cuskey[2] += 1;
-                }
-            }
-            break;
-        case MENU_RJOY_CUSKEY3:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
-                if (myconfig.rjoy.cuskey[3] < 13) {
-                    myconfig.rjoy.cuskey[3] += 1;
-                }
-            }
-            break;
-        case MENU_RJOY_DZONE:
-            if (myconfig.rjoy.dzone < 255) {
-                myconfig.rjoy.dzone += 1;
-            }
-            break;
-#endif
-#if defined(MINI) || defined(A30) || defined(FLIP)
-        case MENU_CHK_BAT:
-            myconfig.chk_bat = 1;
-            break;
-#endif
-        default:
-            break;
-        }
+        apply_sdl2_menu_setting(cur_sel, 1);
         break;
     case KEY_BIT_B:
-#if !defined(RG28XX) && !defined(FLIP)
-        if (cur_cpuclock != pre_cpuclock) {
-#if defined(MINI)
-            set_cpuclock(cur_cpuclock);
-#endif
-
-#if defined(A30)
-            set_best_match_cpu_clock(cur_cpuclock);
-#endif
-            pre_cpuclock = cur_cpuclock;
-        }
-#endif
-
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-        if (cur_cpucore != pre_cpucore) {
-            set_core(cur_cpucore);
-            pre_cpucore = cur_cpucore;
-        }
-#endif
-
         if (strcmp(pre_lang, lang_file_name[DEF_LANG_SLOT])) {
             quit_lang();
             load_lang_file(lang_file_name[DEF_LANG_SLOT]);
@@ -6535,20 +6781,22 @@ int handle_sdl2_menu(int key)
             fast_forward(myconfig.fast_forward);
             pre_fast = myconfig.fast_forward;
         }
+
         myvideo.menu.sdl2.enable = 0;
-#if defined(QX1000) || defined(XT897)
+
+    #if defined(QX1000) || defined(XT897)
         update_wayland_res(NDS_W * 2, NDS_H);
-#endif
+    #endif
         return 0;
     default:
         break;
     }
 
     if (cur_sel == MENU_LAYOUT_MODE) {
-        dis_mode = myconfig.layout.mode;
+        layout_mode = myconfig.layout.mode;
     }
     if (cur_sel == MENU_LAYOUT_ATL) {
-        dis_mode = myconfig.layout.alt;
+        layout_mode = myconfig.layout.alt;
     }
 
     if (myvideo.menu.sdl2.bg && myvideo.cvt) {
@@ -6628,11 +6876,11 @@ int handle_sdl2_menu(int key)
             }
             break;
 #if defined(A30) || defined(FLIP)
-        case MENU_JOY_CUSKEY0:
-        case MENU_JOY_CUSKEY1:
-        case MENU_JOY_CUSKEY2:
-        case MENU_JOY_CUSKEY3:
-            if (myconfig.joy.mode == MYJOY_MODE_CUSKEY) {
+        case MENU_JOY_CUST_KEY0:
+        case MENU_JOY_CUST_KEY1:
+        case MENU_JOY_CUST_KEY2:
+        case MENU_JOY_CUST_KEY3:
+            if (myconfig.joy.mode == MYJOY_MODE_CUST_KEY) {
                 col1 = (cur_sel == cc) ? val_col : unsel_col;
             }
             else {
@@ -6641,11 +6889,11 @@ int handle_sdl2_menu(int key)
             break;
 #endif
 #if defined(FLIP)
-        case MENU_RJOY_CUSKEY0:
-        case MENU_RJOY_CUSKEY1:
-        case MENU_RJOY_CUSKEY2:
-        case MENU_RJOY_CUSKEY3:
-            if (myconfig.rjoy.mode == MYJOY_MODE_CUSKEY) {
+        case MENU_RJOY_CUST_KEY0:
+        case MENU_RJOY_CUST_KEY1:
+        case MENU_RJOY_CUST_KEY2:
+        case MENU_RJOY_CUST_KEY3:
+            if (myconfig.rjoy.mode == MYJOY_MODE_CUST_KEY) {
                 col1 = (cur_sel == cc) ? val_col : unsel_col;
             }
             else {
@@ -6696,536 +6944,12 @@ int handle_sdl2_menu(int key)
                 SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, (MENU_COLOR2 >> 16) & 0xff, (MENU_COLOR2 >> 8) & 0xff, MENU_COLOR2 & 0xff));
             }
         }
-        draw_info(myvideo.cvt, l10n(MENU_LIST_STR[cc]), SX + sx, SY + (h * idx), col0, 0);
 
-        sx = 0;
-        switch (cc) {
-        case MENU_LANG:
-            sprintf(buf, "%s", lang_file_name[DEF_LANG_SLOT]);
-            break;
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
-        case MENU_CPU_CORE:
-            sprintf(buf, "%d", cur_cpucore);
-            break;
-#endif
-#if defined(A30) || defined(MINI)
-        case MENU_CPU_CLOCK:
-            sprintf(buf, "%dMHz", cur_cpuclock);
-            break;
-#endif
-        case MENU_BIND_HOTKEY:
-            sprintf(buf, "%s", l10n(BIND_HOTKEY_STR[myconfig.hotkey]));
-            break;
-        case MENU_SWAP_L1L2:
-            sprintf(buf, "%s", l10n(myconfig.swap_l1_l2 ? "Yes" : "No"));
-            break;
-        case MENU_SWAP_R1R2:
-            sprintf(buf, "%s", l10n(myconfig.swap_r1_r2 ? "Yes" : "No"));
-            break;
-        case MENU_LAYOUT_MODE:
-            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
-                sprintf(buf, "[%d]   %s", myconfig.layout.mode, LAYOUT_MODE_STR0[myconfig.layout.mode]);
-            }
-            else {
-                sprintf(buf, "[%d]   %s", myconfig.layout.mode, myconfig.layout.mode == NDS_DIS_MODE_HRES0 ? "512*384" : "640*480");
-            }
-            break;
-        case MENU_SWIN_ALPHA:
-            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
-                sprintf(buf, "[%d]   ", myconfig.layout.mode);
-                sx = get_font_width(buf);
-                sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode]);
-                draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (cur_sel == MENU_LAYOUT_MODE) ? MENU_COLOR0 : MENU_COLOR1, 0);
-            }
-
-            sx = 0;
-            sprintf(buf, "%d", myconfig.layout.swin.alpha);
-            break;
-        case MENU_SWIN_BORDER:
-            sprintf(buf, "%s", l10n(myconfig.layout.swin.border ? "Yes" : "No"));
-            break;
-        case MENU_SWIN_POS:
-            sprintf(buf, "%s", l10n(SWIN_POS_STR[myconfig.layout.swin.pos]));
-            break;
-        case MENU_LAYOUT_ATL:
-            sprintf(buf, "[%d]   %s", myconfig.layout.alt, LAYOUT_MODE_STR0[myconfig.layout.alt]);
-            break;
-        case MENU_ROTATE_KEY:
-            sprintf(buf, "[%d]   ", myconfig.layout.alt);
-            sx = get_font_width(buf);
-            sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.alt]);
-            draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), (*myhook.var.sdl.screen[0].hires_mode == 0) && (cur_sel == MENU_LAYOUT_ATL) ? val_col : unsel_col, 0);
-
-            sx = 0;
-            sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
-            break;
-        case MENU_PEN_SPEED:
-            sprintf(buf, "%.1fx", ((float)myconfig.pen.speed) / 10);
-            break;
-        case MENU_SHOW_CURSOR:
-            sprintf(buf, "%s", l10n(myconfig.menu.show_cursor ? "Show" : "Hide"));
-            break;
-        case MENU_FAST_FORWARD:
-            sprintf(buf, "%d (6)", myconfig.fast_forward);
-            break;
-#if defined(A30) || defined(FLIP)
-        case MENU_JOY_MODE:
-            sprintf(buf, "%s", l10n(JOY_MODE_STR[myconfig.joy.mode]));
-            break;
-        case MENU_JOY_CUSKEY0:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[0]]));
-            break;
-        case MENU_JOY_CUSKEY1:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[1]]));
-            break;
-        case MENU_JOY_CUSKEY2:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[2]]));
-            break;
-        case MENU_JOY_CUSKEY3:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[3]]));
-            break;
-        case MENU_JOY_DZONE:
-            sprintf(buf, "%d (15)", myconfig.joy.dzone);
-            break;
-#endif
-#if defined(FLIP)
-        case MENU_RJOY_MODE:
-            sprintf(buf, "%s", l10n(RJOY_MODE_STR[myconfig.rjoy.mode]));
-            break;
-        case MENU_RJOY_CUSKEY0:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[0]]));
-            break;
-        case MENU_RJOY_CUSKEY1:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[1]]));
-            break;
-        case MENU_RJOY_CUSKEY2:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[2]]));
-            break;
-        case MENU_RJOY_CUSKEY3:
-            sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[3]]));
-            break;
-        case MENU_RJOY_DZONE:
-            sprintf(buf, "%d (15)", myconfig.rjoy.dzone);
-            break;
-#endif
-#if defined(MINI) || defined(A30) || defined(FLIP)
-        case MENU_CHK_BAT:
-            sprintf(buf, "%s", l10n(myconfig.chk_bat ? "Yes" : "No"));
-            break;
-#endif
-        }
-        draw_info(myvideo.cvt, buf, SSX + sx, SY + (h * idx), col1, 0);
+        draw_sdl2_menu_setting(cur_sel, cc, idx, sx, h, col0, col1, val_col, unsel_col);
         idx+= 1;
     }
 
-    sx = 450;
-    sy = 360;
-    if(dis_mode >= 0) {
-        switch (dis_mode) {
-        case NDS_DIS_MODE_VH_T0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-           
-            rt.w = 34;
-            rt.h = 26;
-            switch (myconfig.layout.swin.pos) {
-            case 0:
-                rt.x = (sx + 128) - rt.w;
-                rt.y = sy;
-                break;
-            case 1:
-                rt.x = sx;
-                rt.y = sy;
-                break;
-            case 2:
-                rt.x = sx;
-                rt.y = (sy + 96) - rt.h;
-                break;
-            case 3:
-                rt.x = (sx + 128) - rt.w;
-                rt.y = (sy + 96) - rt.h;
-                break;
-            }
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
-            break;
-        case NDS_DIS_MODE_VH_T1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-           
-            rt.w = 51;
-            rt.h = 38;
-            switch (myconfig.layout.swin.pos) {
-            case 0:
-                rt.x = (sx + 128) - rt.w;
-                rt.y = sy;
-                break;
-            case 1:
-                rt.x = sx;
-                rt.y = sy;
-                break;
-            case 2:
-                rt.x = sx;
-                rt.y = (sy + 96) - rt.h;
-                break;
-            case 3:
-                rt.x = (sx + 128) - rt.w;
-                rt.y = (sy + 96) - rt.h;
-                break;
-            }
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
-            break;
-        case NDS_DIS_MODE_S0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 102;
-            rt.h = 76;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            break;
-        case NDS_DIS_MODE_S1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            break;
-        case NDS_DIS_MODE_V0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 51;
-            rt.h = 38;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - (rt.h * 2)) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 51;
-            rt.h = 38;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_V1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 64;
-            rt.h = 48;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - (rt.h * 2)) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 64;
-            rt.h = 48;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_H0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 51;
-            rt.h = 38;
-            rt.x = sx + ((128 - (rt.w * 2)) / 2);
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 51;
-            rt.h = 38;
-            rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_H1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 64;
-            rt.h = 48;
-            rt.x = sx + ((128 - (rt.w * 2)) / 2);
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 64;
-            rt.h = 48;
-            rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_S0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 96;
-            rt.h = 72;
-            rt.x = sx;
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 32;
-            rt.h = 24;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy + (96 - rt.h);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_S1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 77;
-            rt.h = 58;
-            rt.x = sx;
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 51;
-            rt.h = 38;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy + (96 - rt.h);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_S2:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 96;
-            rt.h = 72;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 32;
-            rt.h = 24;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + (96 - rt.h);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_S3:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 102;
-            rt.h = 77;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 26;
-            rt.h = 19;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + (96 - rt.h);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_S4:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 102;
-            rt.h = 77;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 26;
-            rt.h = 19;
-            rt.x = sx;
-            rt.y = sy + (96 - rt.h);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_S5:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 102;
-            rt.h = 77;
-            rt.x = sx;
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 26;
-            rt.h = 19;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy + (96 - rt.h);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_C0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 77;
-            rt.h = 58;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 51;
-            rt.h = 38;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + (96 - rt.h);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_VH_C1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 77;
-            rt.h = 58;
-            rt.x = sx;
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 51;
-            rt.h = 38;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_HH0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 64;
-            rt.h = 85;
-            rt.x = sx;
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            
-            rt.w = 64;
-            rt.h = 85;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_HH1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-
-            rt.w = 64;
-            rt.h = 85;
-            rt.x = sx;
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-
-            rt.w = 64;
-            rt.h = 85;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            break;
-        case NDS_DIS_MODE_HH2:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-
-            rt.w = 64;
-            rt.h = 96;
-            rt.x = sx;
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-
-            rt.w = 64;
-            rt.h = 96;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-            break;
-        case NDS_DIS_MODE_HH3:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-
-            rt.w = 64;
-            rt.h = 96;
-            rt.x = sx;
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x00, 0x80));
-
-            rt.w = 64;
-            rt.h = 96;
-            rt.x = sx + (128 - rt.w);
-            rt.y = sy;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            break;
-        case NDS_DIS_MODE_HRES0:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x00, 0x80, 0x00));
-            
-            rt.w = 102;
-            rt.h = 76;
-            rt.x = sx + ((128 - rt.w) / 2);
-            rt.y = sy + ((96 - rt.h) / 2);
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            break;
-        case NDS_DIS_MODE_HRES1:
-            rt.x = sx;
-            rt.y = sy;
-            rt.w = 128;
-            rt.h = 96;
-            SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.cvt->format, 0x80, 0x00, 0x00));
-            break;
-        }
-    }
+    draw_small_block_win(450, 360, layout_mode, myvideo.cvt);
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
