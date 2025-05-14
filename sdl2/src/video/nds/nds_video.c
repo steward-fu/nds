@@ -3071,15 +3071,11 @@ int init_lcd(void)
 
     myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
     ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
-
-    system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
     return 0;
 }
 
 int quit_lcd(void)
 {
-    system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-
     if (myvideo.fb.virt_addr) {
         munmap(myvideo.fb.virt_addr, myvideo.cur_buf_size);
         myvideo.fb.virt_addr = NULL;
@@ -3175,8 +3171,6 @@ int init_lcd(void)
 
 int quit_lcd(void)
 {
-    system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-
     if (myvideo.fb.virt_addr) {
         munmap(myvideo.fb.virt_addr, myvideo.cur_buf_size);
         myvideo.fb.virt_addr = NULL;

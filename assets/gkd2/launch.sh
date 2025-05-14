@@ -15,6 +15,7 @@ cd $MYDIR
 
 sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 kill_runner
 ./runner&
@@ -26,3 +27,4 @@ sync
 kill_runner
 
 echo $sv > /proc/sys/vm/swappiness
+echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor

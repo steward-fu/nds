@@ -25,6 +25,7 @@ fi
 
 sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 cd $MYDIR
 
@@ -36,6 +37,7 @@ fi
 sync
 
 echo $sv > /proc/sys/vm/swappiness
+echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 if [  -d "/customer/app/skin_large" ]; then
     USE_752x560_RES=0

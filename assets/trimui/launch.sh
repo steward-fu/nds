@@ -18,3 +18,4 @@ sync
 
 echo $sv > /proc/sys/vm/swappiness
 echo $com > /sys/module/gpio_keys_polled/parameters/l2r2combokey
+echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
