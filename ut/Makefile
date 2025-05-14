@@ -55,4 +55,4 @@ gen_cases:
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET) cases.c res/nds.cfg
+	rm -rf $(TARGET) cases.c res/nds.cfg system

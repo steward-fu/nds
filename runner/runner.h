@@ -76,8 +76,6 @@ typedef struct {
     SDL_Rect srt;
     SDL_Rect drt;
     uint8_t buf[R_LCD_W * R_LCD_H * 4];
-
-    char bg_path[MAX_PATH];
 } shm_buf_t;
  
 typedef struct {

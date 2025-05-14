@@ -884,7 +884,7 @@ static int handle_hotkey(void)
             }
         }
         else {
-            myconfig.menu.sel+= 1;
+            myconfig.menu.sel += 1;
             if (myconfig.menu.sel >= myconfig.menu.max) {
                 myconfig.menu.sel = 0;
             }

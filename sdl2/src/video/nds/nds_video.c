@@ -2750,6 +2750,8 @@ static int get_layout_bg_cnt(void)
     char buf[MAX_PATH + 8] = { 0 };
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, BG_PATH);
+    debug("bg folder=\"%s\"\n", buf);
+
     return get_dir_count(buf);
 }
 
@@ -2758,6 +2760,8 @@ static int get_menu_cnt(void)
     char buf[MAX_PATH + 8] = { 0 };
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, MENU_PATH);
+    debug("menu folder=\"%s\"\n", buf);
+
     return get_dir_count(buf);
 }
 
@@ -2766,6 +2770,8 @@ static int get_pen_cnt(void)
     char buf[MAX_PATH + 8] = { 0 };
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
+    debug("pen folder=\"%s\"\n", buf);
+
     return get_file_count(buf);
 }
 
@@ -2778,6 +2784,10 @@ int init_lcd(void)
 int quit_lcd(void)
 {
     return 0;
+}
+
+void disp_resize(void)
+{
 }
 #endif
 
@@ -5084,7 +5094,7 @@ SDL_Surface* load_menu_img(const char *name, int raw_img)
         return t0;
     }
 
-    if (t0) {
+    if (t0 && myvideo.cvt) {
         t1 = SDL_ConvertSurface(t0, myvideo.cvt->format, 0);
         SDL_FreeSurface(t0);
     }
@@ -5092,7 +5102,7 @@ SDL_Surface* load_menu_img(const char *name, int raw_img)
     return t1;
 }
 
-int free_menu_img(void)
+static int free_menu_res(void)
 {
     debug("call %s()\n", __func__);
 
@@ -5144,7 +5154,7 @@ int load_menu_res(void)
 
     debug("call %s()\n", __func__);
 
-    free_menu_img();
+    free_menu_res();
 
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, FONT_FILE);
     myvideo.menu.font = TTF_OpenFont(buf, FONT_SIZE);
@@ -5153,96 +5163,10 @@ int load_menu_res(void)
     myvideo.menu.sdl2.bg = load_menu_img(SDL2_MENU_BG_FILE, 0);
     myvideo.menu.drastic.bg0 = load_menu_img(DRASTIC_MENU_BG0_FILE, 0);
     myvideo.menu.drastic.bg1 = load_menu_img(DRASTIC_MENU_BG1_FILE, 0);
-
-    t = load_menu_img(SDL2_MENU_CURSOR_FILE, 1);
-    if (t) {
-        myvideo.menu.sdl2.cursor = SDL_CreateRGBSurface(
-            SDL_SWSURFACE,
-            t->w,
-            t->h,
-            32,
-            t->format->Rmask,
-            t->format->Gmask,
-            t->format->Bmask,
-            t->format->Amask
-        );
-
-        if (myvideo.menu.sdl2.cursor) {
-            SDL_BlitSurface(t, NULL, myvideo.menu.sdl2.cursor, NULL);
-        }
-        SDL_FreeSurface(t);
-    }
-
-    t = load_menu_img(DRASTIC_MENU_CURSOR_FILE, 1);
-    if (t) {
-        myvideo.menu.drastic.cursor = SDL_CreateRGBSurface(
-            SDL_SWSURFACE,
-            t->w,
-            t->h,
-            32,
-            t->format->Rmask,
-            t->format->Gmask,
-            t->format->Bmask,
-            t->format->Amask
-        );
-
-        if (myvideo.menu.drastic.cursor) {
-            SDL_BlitSurface(t, NULL, myvideo.menu.drastic.cursor, NULL);
-        }
-        SDL_FreeSurface(t);
-    }
-
-    t = load_menu_img(DRASTIC_MENU_YES_FILE, 1);
-    if (t) {
-        rt.w = myvideo.menu.line_h - 2;
-        rt.h = myvideo.menu.line_h - 2;
-
-#if defined(TRIMUI) || defined(PANDORA)
-        rt.w = t->w >> 1;
-        rt.h = t->h >> 1;
-#endif
-        myvideo.menu.drastic.yes = SDL_CreateRGBSurface(
-            SDL_SWSURFACE,
-            rt.w,
-            rt.h,
-            32,
-            t->format->Rmask,
-            t->format->Gmask,
-            t->format->Bmask,
-            t->format->Amask
-        );
-
-        if (myvideo.menu.drastic.yes) {
-            SDL_SoftStretch(t, NULL, myvideo.menu.drastic.yes, NULL);
-        }
-        SDL_FreeSurface(t);
-    }
-
-    t = load_menu_img(DRASTIC_MENU_NO_FILE, 1);
-    if (t) {
-        rt.w = myvideo.menu.line_h - 2;
-        rt.h = myvideo.menu.line_h - 2;
-
-#if defined(TRIMUI) || defined(PANDORA)
-        rt.w = t->w >> 1;
-        rt.h = t->h >> 1;
-#endif
-        myvideo.menu.drastic.no = SDL_CreateRGBSurface(
-            SDL_SWSURFACE,
-            rt.w,
-            rt.h,
-            32,
-            t->format->Rmask,
-            t->format->Gmask,
-            t->format->Bmask,
-            t->format->Amask
-        );
-
-        if (myvideo.menu.drastic.no) {
-            SDL_SoftStretch(t, NULL, myvideo.menu.drastic.no, NULL);
-        }
-        SDL_FreeSurface(t);
-    }
+    myvideo.menu.sdl2.cursor = load_menu_img(SDL2_MENU_CURSOR_FILE, 1);
+    myvideo.menu.drastic.cursor = load_menu_img(DRASTIC_MENU_CURSOR_FILE, 1);
+    myvideo.menu.drastic.yes = load_menu_img(DRASTIC_MENU_YES_FILE, 1);
+    myvideo.menu.drastic.no = load_menu_img(DRASTIC_MENU_NO_FILE, 1);
 
 #if defined(QX1000) || defined(XT897)
     myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
@@ -5257,8 +5181,18 @@ int load_menu_res(void)
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, load_menu_res)
+{
+    TEST_ASSERT_EQUAL_INT(0, load_menu_res());
+    TEST_ASSERT_EQUAL_INT(0, free_menu_res());
+}
+#endif
+
 static int free_layout_bg(void)
 {
+    debug("call %s()\n", __func__);
+
     if (myvideo.layout.bg) {
         SDL_FreeSurface(myvideo.layout.bg);
         myvideo.layout.bg = NULL;
@@ -5267,22 +5201,30 @@ static int free_layout_bg(void)
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, free_layout_bg)
+{
+    myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, 128, 128, 32, 0, 0, 0, 0);
+    TEST_ASSERT_EQUAL_INT(0, free_layout_bg());
+    TEST_ASSERT_NULL(myvideo.layout.bg);
+}
+#endif
+
 static int load_layout_bg(void)
 {
-#if !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_sel = -1;
-#endif
-
-#if !defined(QX1000) && !defined(XT897) && !defined(UT)
     static int pre_mode = -1;
+    SDL_Surface *t = NULL;
+    char buf[MAX_PATH + 32] = { 0 };
+
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
+    SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
+    SDL_Rect drt = { 0, 0, myvideo.cur_w, myvideo.cur_h };
 #endif
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    char buf[MAX_PATH + 8] = { 0 };
-    SDL_Surface *t = NULL;
-    SDL_Rect srt = {0, 0, LAYOUT_BG_W, LAYOUT_BG_H};
-    SDL_Rect drt = {0, 0, myvideo.cur_w, myvideo.cur_h};
+    debug("call %s()\n", __func__);
 
+#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
     if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode)) {
         pre_mode = myconfig.layout.mode;
         pre_sel = myconfig.layout.bg.sel;
@@ -5290,107 +5232,104 @@ static int load_layout_bg(void)
         free_layout_bg();
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
-        if (myvideo.layout.bg) {
-            SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
+        if (!myvideo.layout.bg) {
+            error("failed to create surface for bg\n");
+            return -1;
+        }
+        SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
 
-            snprintf(buf, sizeof(buf), "%s%s/%d", myvideo.home, BG_PATH, myconfig.layout.bg.sel);
-            switch (myconfig.layout.mode) {
-            case NDS_DIS_MODE_VH_T0:
-            case NDS_DIS_MODE_VH_T1:
-                return 0;
-            case NDS_DIS_MODE_S0:
-                strcat(buf, "/r0,64,48,512,384.png");
-                break;
-            case NDS_DIS_MODE_S1:
-                return 0;
-            case NDS_DIS_MODE_V0:
-                strcat(buf, "/r0,192,48,256,192,192,240,256,192.png");
-                break;
-            case NDS_DIS_MODE_V1:
-                strcat(buf, "/r0,160,0,320,240,160,240,320,240.png");
-                break;
-            case NDS_DIS_MODE_H0:
-                strcat(buf, "/r0,64,144,256,192,320,144,256,192.png");
-                break;
-            case NDS_DIS_MODE_H1:
-                strcat(buf, "/r0,0,120,320,240,320,120,320,240.png");
-                break;
-            case NDS_DIS_MODE_VH_S0:
-                strcat(buf, "/r0,0,0,160,120,160,120,480,360.png");
-                break;
-            case NDS_DIS_MODE_VH_S1:
-                strcat(buf, "/r0,0,0,256,192,256,192,384,288.png");
-                break;
-            case NDS_DIS_MODE_VH_S2:
-                strcat(buf, "/r0,240,0,160,120,80,120,480,360.png");
-                break;
-            case NDS_DIS_MODE_VH_S3:
-                strcat(buf, "/r0,64,96,512,384,256,0,128,96.png");
-                break;
-            case NDS_DIS_MODE_VH_S4:
-                strcat(buf, "/r0,0,96,512,384,512,0,128,96.png");
-                break;
-            case NDS_DIS_MODE_VH_S5:
-                strcat(buf, "/r0,128,96,512,384,0,0,128,96.png");
-                break;
-            case NDS_DIS_MODE_VH_C0:
-                strcat(buf, "/r0,192,0,256,192,128,192,384,288.png");
-                break;
-            case NDS_DIS_MODE_VH_C1:
-                strcat(buf, "/r0,0,144,256,192,256,96,384,288.png");
-                break;
-            case NDS_DIS_MODE_HH0:
-            case NDS_DIS_MODE_HH1:
-                strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
-                break;
-            case NDS_DIS_MODE_HRES0:
-                strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
-                break;
-            case NDS_DIS_MODE_HRES1:
-                return 0;
-            }
-            
-            t = IMG_Load(buf);
-            if (t) {
-#if defined(GKD2) || defined(BRICK)
-                strcpy(myvideo.shm.buf->bg_path, buf);
-#endif
+        snprintf(buf, sizeof(buf), "%s%s/%d", myvideo.home, BG_PATH, myconfig.layout.bg.sel);
+        switch (myconfig.layout.mode) {
+        case NDS_DIS_MODE_VH_T0:
+        case NDS_DIS_MODE_VH_T1:
+            return 0;
+        case NDS_DIS_MODE_S0:
+            strcat(buf, "/r0,64,48,512,384.png");
+            break;
+        case NDS_DIS_MODE_S1:
+            return 0;
+        case NDS_DIS_MODE_V0:
+            strcat(buf, "/r0,192,48,256,192,192,240,256,192.png");
+            break;
+        case NDS_DIS_MODE_V1:
+            strcat(buf, "/r0,160,0,320,240,160,240,320,240.png");
+            break;
+        case NDS_DIS_MODE_H0:
+            strcat(buf, "/r0,64,144,256,192,320,144,256,192.png");
+            break;
+        case NDS_DIS_MODE_H1:
+            strcat(buf, "/r0,0,120,320,240,320,120,320,240.png");
+            break;
+        case NDS_DIS_MODE_VH_S0:
+            strcat(buf, "/r0,0,0,160,120,160,120,480,360.png");
+            break;
+        case NDS_DIS_MODE_VH_S1:
+            strcat(buf, "/r0,0,0,256,192,256,192,384,288.png");
+            break;
+        case NDS_DIS_MODE_VH_S2:
+            strcat(buf, "/r0,240,0,160,120,80,120,480,360.png");
+            break;
+        case NDS_DIS_MODE_VH_S3:
+            strcat(buf, "/r0,64,96,512,384,256,0,128,96.png");
+            break;
+        case NDS_DIS_MODE_VH_S4:
+            strcat(buf, "/r0,0,96,512,384,512,0,128,96.png");
+            break;
+        case NDS_DIS_MODE_VH_S5:
+            strcat(buf, "/r0,128,96,512,384,0,0,128,96.png");
+            break;
+        case NDS_DIS_MODE_VH_C0:
+            strcat(buf, "/r0,192,0,256,192,128,192,384,288.png");
+            break;
+        case NDS_DIS_MODE_VH_C1:
+            strcat(buf, "/r0,0,144,256,192,256,96,384,288.png");
+            break;
+        case NDS_DIS_MODE_HH0:
+        case NDS_DIS_MODE_HH1:
+            strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
+            break;
+        case NDS_DIS_MODE_HRES0:
+            strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
+            break;
+        case NDS_DIS_MODE_HRES1:
+            return 0;
+        }
+        
+        t = IMG_Load(buf);
+        if (!t) {
+            error("failed to load bg from \"%s\"\n", buf);
+            return -1;
+        }
 
-                SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
-                SDL_FreeSurface(t);
+        SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
+        SDL_FreeSurface(t);
+
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
 #if defined(GKD2) || defined(BRICK)
-                flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
+        flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #else
-                flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
+        flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #endif
 #endif
-            }
-        }
     }
-    else {
-        if (myvideo.layout.bg) {
+    else if (myvideo.layout.bg) {
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
 #if defined(GKD2) || defined(BRICK)
-            flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
+        flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #else
-            flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
+        flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #endif
 #else
-            glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, myvideo.layout.bg->w, myvideo.layout.bg->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, myvideo.layout.bg->pixels);
+        glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, myvideo.layout.bg->w, myvideo.layout.bg->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, myvideo.layout.bg->pixels);
 #endif
-        }
     }
 #endif
 
-#if defined(TRIMUI)
-    char buf[MAX_PATH] = {0};
-    SDL_Surface *t = NULL;
-
+#if defined(TRIMUI) || defined(UT)
     if (myconfig.layout.mode == NDS_DIS_MODE_S1) {
         return 0;
     }
@@ -5409,23 +5348,24 @@ static int load_layout_bg(void)
         }
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
-        if (myvideo.layout.bg) {
-            SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
-
-            if (get_dir_path(myconfig.layout.path, myconfig.layout.bg.sel, buf) == 0) {
-                strcat(buf, "/bg_s0.png");
-                t = IMG_Load(buf);
-                if (t) {
-                    SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
-                    SDL_FreeSurface(t);
-                }
-                else {
-                    printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
-                }
-            }
+        if (!myvideo.layout.bg) {
+            error("failed to create surface for bg\n");
+            return -1;
         }
+
+        SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
+
+        snprintf(buf, sizeof(buf), "%s%s/%d/r0,0,0,160,120,160,120,480,360.png", myvideo.home, BG_PATH, myconfig.layout.bg.sel);
+        t = IMG_Load(buf);
+        if (!t) {
+            error("failed to load bg from \"%s\"\n", buf);
+            return -1;
+        }
+        SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
+        SDL_FreeSurface(t);
     }
-    
+
+#if !defined(UT)
     if (myvideo.layout.bg) {
         int x = 0;
         int y = 0;
@@ -5434,26 +5374,26 @@ static int load_layout_bg(void)
         uint32_t *src = NULL;
 
         ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &z);
-        for (z=0; z<2; z++) {
+        for (z = 0; z < 2; z++) {
             src = (uint32_t *)myvideo.layout.bg->pixels;
             dst = (uint32_t *)myvideo.gfx.ion.vadd + (myvideo.cur_w * myvideo.cur_h * z);
             for (y = 0; y < myvideo.cur_h; y++) {
                 for (x = 0; x < myvideo.cur_w; x++) {
                     dst[(((myvideo.cur_w - 1) - x) * myvideo.cur_h) + y] = *src;
-                    src+= 2;
+                    src += 2;
                 }
-                src+= LAYOUT_BG_W;
+                src += LAYOUT_BG_W;
             }
         }
         ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &z);
     }
 #endif
+#endif
 
-#if defined(PANDORA)
-    SDL_Surface *t = NULL;
-    char buf[MAX_PATH] = {0};
-
+#if defined(PANDORA) || defined(UT)
     if (pre_sel != myconfig.layout.bg.sel) {
+        SDL_Rect r0 = { 0 };
+
         pre_sel = myconfig.layout.bg.sel;
 
         if (myvideo.layout.bg) {
@@ -5462,43 +5402,56 @@ static int load_layout_bg(void)
         }
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
-        if (myvideo.layout.bg) {
-            SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
-
-            if (get_dir_path(myconfig.layout.path, myconfig.layout.bg.sel, buf) == 0) {
-                strcat(buf, "/bg.png");
-                t = IMG_Load(buf);
-                if (t) {
-                    SDL_Rect r0 = {0};
-
-                    SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
-                    SDL_FreeSurface(t);
-
-                    r0.x = 16 - 1;
-                    r0.y = 48 - 1;
-                    r0.w = NDS_Wx2 + 2;
-                    r0.h = NDS_Hx2 + 2;
-                    SDL_FillRect(myvideo.layout.bg, &r0, SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0));
-
-                    r0.x = (NDS_Wx2 + 16) - 0;
-                    r0.y = ((myvideo.cur_h - NDS_H) >> 1) - 1;
-                    r0.w = NDS_W + 2;
-                    r0.h = NDS_H + 2;
-                    SDL_FillRect(myvideo.layout.bg, &r0, SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0));
-                }
-                else {
-                    printf(PREFIX"Failed to load wallpaper (%s)\n", buf);
-                }
-            }
+        if (!myvideo.layout.bg) {
+            error("failed to create surface for bg\n");
+            return -1;
         }
+
+        SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
+
+        snprintf(buf, sizeof(buf), "%s%s/%d/r0,0,0,160,120,160,120,480,360.png", myvideo.home, BG_PATH, myconfig.layout.bg.sel);
+        t = IMG_Load(buf);
+        if (!t) {
+            error("failed to load bg from \"%s\"\b", buf);
+            return -1;
+        }
+
+        SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
+        SDL_FreeSurface(t);
+
+        r0.x = 16 - 1;
+        r0.y = 48 - 1;
+        r0.w = NDS_Wx2 + 2;
+        r0.h = NDS_Hx2 + 2;
+        SDL_FillRect(myvideo.layout.bg, &r0, SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0));
+
+        r0.x = (NDS_Wx2 + 16) - 0;
+        r0.y = ((myvideo.cur_h - NDS_H) >> 1) - 1;
+        r0.w = NDS_W + 2;
+        r0.h = NDS_H + 2;
+        SDL_FillRect(myvideo.layout.bg, &r0, SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0));
     }
 
     if (myvideo.layout.bg) {
-        neon_memcpy(myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1], myvideo.layout.bg->pixels, myvideo.cur_w * myvideo.cur_h * 4);
+#if !defined(UT)
+        neon_memcpy(
+            myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1],
+            myvideo.layout.bg->pixels,
+            myvideo.cur_w * myvideo.cur_h * 4
+        );
+#endif
     }
 #endif
+
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, load_layout_bg)
+{
+    TEST_ASSERT_EQUAL_INT(0, load_layout_bg());
+}
+#endif
 
 static void free_device(SDL_VideoDevice *d)
 {
@@ -5506,6 +5459,14 @@ static void free_device(SDL_VideoDevice *d)
 
     SDL_free(d);
 }
+
+#if defined(UT)
+TEST(sdl2_video, free_device)
+{
+    free_device(0);
+    TEST_PASS();
+}
+#endif
 
 static int create_window(_THIS, SDL_Window *w)
 {
@@ -5593,6 +5554,10 @@ static int init_device(void)
 
     debug("call %s()\n", __func__);
 
+    getcwd(myvideo.home, sizeof(myvideo.home));
+    strcat(myvideo.home, "/");
+    debug("home=\"%s\"\n", myvideo.home);
+
     myvideo.cur_w = SCREEN_W;
     myvideo.cur_h = SCREEN_H;
     myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
@@ -5600,12 +5565,15 @@ static int init_device(void)
 
     myconfig.pen.sel = 0;
     myconfig.pen.max = get_pen_cnt();
+    debug("total pen images=%d\n", myconfig.pen.max);
 
     myconfig.layout.bg.sel = 0;
     myconfig.layout.bg.max = get_layout_bg_cnt();
+    debug("total bg images=%d\n", myconfig.layout.bg.max);
 
     myconfig.menu.sel = 0;
     myconfig.menu.max = get_menu_cnt();
+    debug("total menu images=%d\n", myconfig.menu.max);
 
 #if defined(TRIMUI)
     cc = 0;
@@ -5622,10 +5590,6 @@ static int init_device(void)
         }
     }
 #endif
-
-    getcwd(myvideo.home, sizeof(myvideo.home));
-    strcat(myvideo.home, "/");
-    debug("home=\"%s\"\n", myvideo.home);
 
     load_config(myvideo.home);
     enum_lang_file();
@@ -5807,7 +5771,7 @@ static int quit_device(void)
     quit_lcd();
     quit_event();
     quit_lang();
-    free_menu_img();
+    free_menu_res();
     free_touch_pen();
     free_layout_bg();
 
