@@ -64,7 +64,8 @@ static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = { 0 };
 static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = { 0 };
 #endif
 
-static void quit_video(_THIS);
+static int quit_device(void);
+static int init_device(void);
 static int init_video(_THIS);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 static int draw_pen(void *, int, int);
@@ -72,6 +73,9 @@ static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
 static int load_layout_bg(void);
+static int free_menu_res(void);
+static int flip_lcd(void);
+static void quit_video(_THIS);
 
 #if defined(TRIMUI)
 static void disp_resize(void);
@@ -3599,15 +3603,15 @@ static int draw_pen(void *pixels, int width, int pitch)
     return 0;
 }
 
-int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrect, uint32_t pitch)
+int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srt, SDL_Rect drt, uint32_t pitch)
 {
 #if defined(TRIMUI)
     int x = 0;
     int y = 0;
     int ox = 0;
     int oy = 0;
-    int sw = srcrect.w;
-    int sh = srcrect.h;
+    int sw = srt.w;
+    int sh = srt.h;
     uint32_t *dst = NULL;
     uint32_t *src = (uint32_t *)pixels;
 #endif
@@ -3616,31 +3620,38 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
     int cc = 0;
     int copy_it = 1;
     int dma_found = 0;
-    MI_U16 u16Fence = 0;
-    int is_rgb565 = (pitch / srcrect.w) == 2 ? 1 : 0;
+    MI_U16 fence = 0;
+    int is_rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
+#if defined(QX1000) || defined(XT897)
+    int x = 0;
+    int y = 0;
+    const uint32_t *src = pixels;
+    uint32_t *dst = (uint32_t *)myvideo.wl.pixels[myvideo.wl.flip];
+#endif
+
     debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d)\n", __func__, id, pixels, pitch, alpha);
 
 #if defined(GKD2) || defined(BRICK)
-    myvideo.shm.buf->srt.x = srcrect.x;
-    myvideo.shm.buf->srt.y = srcrect.y;
-    myvideo.shm.buf->srt.w = srcrect.w;
-    myvideo.shm.buf->srt.h = srcrect.h;
+    myvideo.shm.buf->srt.x = srt.x;
+    myvideo.shm.buf->srt.y = srt.y;
+    myvideo.shm.buf->srt.w = srt.w;
+    myvideo.shm.buf->srt.h = srt.h;
 
-    myvideo.shm.buf->drt.x = dstrect.x;
-    myvideo.shm.buf->drt.y = dstrect.y;
-    myvideo.shm.buf->drt.w = dstrect.w;
-    myvideo.shm.buf->drt.h = dstrect.h;
+    myvideo.shm.buf->drt.x = drt.x;
+    myvideo.shm.buf->drt.y = drt.y;
+    myvideo.shm.buf->drt.w = drt.w;
+    myvideo.shm.buf->drt.h = drt.h;
 
-    memcpy(myvideo.shm.buf->buf, pixels, srcrect.h * pitch);
+    memcpy(myvideo.shm.buf->buf, pixels, srt.h * pitch);
 
     myvideo.shm.buf->cmd = SHM_CMD_FLUSH;
-    myvideo.shm.buf->len = srcrect.h * pitch;
+    myvideo.shm.buf->len = srt.h * pitch;
     myvideo.shm.buf->tex = tex;
     myvideo.shm.buf->pitch = pitch;
     myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
@@ -3663,39 +3674,39 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     if ((id != -1) && ((myconfig.layout.mode == NDS_DIS_MODE_HH1) || (myconfig.layout.mode == NDS_DIS_MODE_HH3))) {
-        fg_vertices[5] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        fg_vertices[6] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[5] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
+        fg_vertices[6] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
 
         fg_vertices[10] = fg_vertices[5];
-        fg_vertices[11] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[11] = (((float)(drt.y + drt.w) / SCREEN_H) - 0.5) * -2.0;
 
-        fg_vertices[15] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[15] = (((float)(drt.x + drt.h) / SCREEN_W) - 0.5) * 2.0;
         fg_vertices[16] = fg_vertices[11];
 
         fg_vertices[0] = fg_vertices[15];
         fg_vertices[1] = fg_vertices[6];
     }
     else if ((id != -1) && ((myconfig.layout.mode == NDS_DIS_MODE_HH0) || (myconfig.layout.mode == NDS_DIS_MODE_HH2))) {
-        fg_vertices[15] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        fg_vertices[16] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[15] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
+        fg_vertices[16] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
 
         fg_vertices[0] = fg_vertices[15];
-        fg_vertices[1] = ((((float)(dstrect.y + dstrect.w)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[1] = (((float)(drt.y + drt.w) / SCREEN_H) - 0.5) * -2.0;
 
-        fg_vertices[5] = ((((float)(dstrect.x + dstrect.h)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[5] = (((float)(drt.x + drt.h) / SCREEN_W) - 0.5) * 2.0;
         fg_vertices[6] = fg_vertices[1];
 
         fg_vertices[10] = fg_vertices[5];
         fg_vertices[11] = fg_vertices[16];
     }
     else {
-        fg_vertices[0] = ((((float)dstrect.x) / 640.0) - 0.5) * 2.0;
-        fg_vertices[1] = ((((float)dstrect.y) / 480.0) - 0.5) * -2.0;
+        fg_vertices[0] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
+        fg_vertices[1] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
 
         fg_vertices[5] = fg_vertices[0];
-        fg_vertices[6] = ((((float)(dstrect.y + dstrect.h)) / 480.0) - 0.5) * -2.0;
+        fg_vertices[6] = (((float)(drt.y + drt.h) / SCREEN_H) - 0.5) * -2.0;
 
-        fg_vertices[10] = ((((float)(dstrect.x + dstrect.w)) / 640.0) - 0.5) * 2.0;
+        fg_vertices[10] = (((float)(drt.x + drt.w) / SCREEN_W) - 0.5) * 2.0;
         fg_vertices[11] = fg_vertices[6];
 
         fg_vertices[15] = fg_vertices[10];
@@ -3713,7 +3724,7 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srcrect.w, srcrect.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
     if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
@@ -3734,14 +3745,8 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
 #endif
 
 #if defined(QX1000) || defined(XT897)
-{
-    int x = 0;
-    int y = 0;
-    const uint32_t *src = pixels;
-    uint32_t *dst = (uint32_t *)myvideo.wl.pixels[myvideo.wl.flip];
-
-    if (srcrect.w == NDS_W) {
-        dst += (dstrect.y ? 0 : NDS_W);
+    if (srt.w == NDS_W) {
+        dst += (drt.y ? 0 : NDS_W);
         asm volatile (
             "0:  vldmia %0!, {q0-q7}    ;"
             "    vldmia %0!, {q8-q15}   ;"
@@ -3763,26 +3768,25 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
             "    subs %3, #1            ;"
             "    bne 0b                 ;"
             :
-            : "r"(pixels), "r"(dst), "r"((myvideo.cur_w - srcrect.w) * 4), "r"(NDS_H)
+            : "r"(pixels), "r"(dst), "r"((myvideo.cur_w - srt.w) * 4), "r"(NDS_H)
             : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
         );
     }
     else {
-        for (y = 0; y < srcrect.h; y++) {
-            for (x = 0; x < srcrect.w; x++) {
+        for (y = 0; y < srt.h; y++) {
+            for (x = 0; x < srt.w; x++) {
                 *dst++ = *src++;
             }
-            dst+= (myvideo.cur_w - srcrect.w);
+            dst+= (myvideo.cur_w - srt.w);
         }
     }
-}
 #endif
 
 #if defined(PANDORA)
-    if ((pitch == 1024) && (srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
+    if ((pitch == 1024) && (srt.w == NDS_W) && (srt.h == NDS_H)) {
         uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
-        if (dstrect.y == 0) {
+        if (drt.y == 0) {
             dst += 16;
             dst += (((myvideo.cur_h - NDS_Hx2) >> 1) * myvideo.cur_w);
             asm volatile (
@@ -4135,11 +4139,11 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
         const uint32_t *src = pixels;
         uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
-        for (y = 0; y < srcrect.h; y++) {
-            for (x = 0; x < srcrect.w; x++) {
+        for (y = 0; y < srt.h; y++) {
+            for (x = 0; x < srt.w; x++) {
                 *dst++ = *src++;
             }
-            dst+= (myvideo.cur_w - srcrect.w);
+            dst+= (myvideo.cur_w - srt.w);
         }
     }
 #endif
@@ -4149,8 +4153,8 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
         return -1;
     }
 
-    if ((pitch / srcrect.w) != 4) {
-        printf(PREFIX"Only support 32bits (%dx%dx%d)\n", srcrect.w, srcrect.h, (pitch / srcrect.w));
+    if ((pitch / srt.w) != 4) {
+        printf(PREFIX"Only support 32bits (%dx%dx%d)\n", srt.w, srt.h, (pitch / srt.w));
         return -1;
     }
 
@@ -4159,7 +4163,7 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
         oy = 24;
     }
 
-    if((srcrect.w == NDS_W) && (srcrect.h == NDS_H)) {
+    if((srt.w == NDS_W) && (srt.h == NDS_H)) {
         if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
             dst = myvideo.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
         }
@@ -4241,7 +4245,7 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
         );
     }
     else {
-        if ((srcrect.w >= 320) || (srcrect.h >= 240)) {
+        if ((srt.w >= 320) || (srt.h >= 240)) {
             ox = 0;
             oy = 0;
             sw = myvideo.cur_w;
@@ -4300,8 +4304,8 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
                 sh = 128;
                 break;
             case NDS_DIS_MODE_VH_T1:
-                sw = srcrect.w;
-                sh = srcrect.h;
+                sw = srt.w;
+                sh = srt.h;
                 break;
             }
 
@@ -4332,15 +4336,15 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
 
                         if (is_rgb565) {
                             asm ("PLD [%0, #128]"::"r" (s1_565));
-                            r1 = (s1_565[((y + ay) * srcrect.w) + x + ax] & 0xf800) >> 8;
-                            g1 = (s1_565[((y + ay) * srcrect.w) + x + ax] & 0x07e0) >> 3;
-                            b1 = (s1_565[((y + ay) * srcrect.w) + x + ax] & 0x001f) << 3;
+                            r1 = (s1_565[((y + ay) * srt.w) + x + ax] & 0xf800) >> 8;
+                            g1 = (s1_565[((y + ay) * srt.w) + x + ax] & 0x07e0) >> 3;
+                            b1 = (s1_565[((y + ay) * srt.w) + x + ax] & 0x001f) << 3;
                         }
                         else {
                             asm ("PLD [%0, #128]"::"r" (s1_888));
-                            r1 = (s1_888[((y + ay) * srcrect.w) + x + ax] & 0xff0000) >> 16;
-                            g1 = (s1_888[((y + ay) * srcrect.w) + x + ax] & 0x00ff00) >> 8;
-                            b1 = (s1_888[((y + ay) * srcrect.w) + x + ax] & 0x0000ff) >> 0;
+                            r1 = (s1_888[((y + ay) * srt.w) + x + ax] & 0xff0000) >> 16;
+                            g1 = (s1_888[((y + ay) * srt.w) + x + ax] & 0x00ff00) >> 8;
+                            b1 = (s1_888[((y + ay) * srt.w) + x + ax] & 0x0000ff) >> 0;
                         }
 
                         switch (myconfig.layout.swin.pos % 4) {
@@ -4378,41 +4382,41 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
 
         switch (myconfig.layout.mode) {
         case NDS_DIS_MODE_VH_T0:
-            dstrect.w = 170;
-            dstrect.h = 128;
+            drt.w = 170;
+            drt.h = 128;
             if (myconfig.layout.swin.alpha > 0) {
-                srcrect.w = dstrect.w;
-                srcrect.h = dstrect.h;
-                pitch = srcrect.w * 4;
+                srt.w = drt.w;
+                srt.h = drt.h;
+                pitch = srt.w * 4;
             }
             break;
         case NDS_DIS_MODE_VH_T1:
-            dstrect.w = NDS_W;
-            dstrect.h = NDS_H;
+            drt.w = NDS_W;
+            drt.h = NDS_H;
             if (myconfig.layout.swin.alpha > 0) {
-                srcrect.w = dstrect.w;
-                srcrect.h = dstrect.h;
-                pitch = srcrect.w * 4;
+                srt.w = drt.w;
+                srt.h = drt.h;
+                pitch = srt.w * 4;
             }
             break;
         }
 
         switch (myconfig.layout.swin.pos % 4) {
         case 0:
-            dstrect.x = 0;
-            dstrect.y = myvideo.cur_h - dstrect.h;
+            drt.x = 0;
+            drt.y = myvideo.cur_h - drt.h;
             break;
         case 1:
-            dstrect.x = myvideo.cur_w - dstrect.w;
-            dstrect.y = myvideo.cur_h - dstrect.h;
+            drt.x = myvideo.cur_w - drt.w;
+            drt.y = myvideo.cur_h - drt.h;
             break;
         case 2:
-            dstrect.x = myvideo.cur_w - dstrect.w;
-            dstrect.y = 0;
+            drt.x = myvideo.cur_w - drt.w;
+            drt.y = 0;
             break;
         case 3:
-            dstrect.x = 0;
-            dstrect.y = 0;
+            drt.x = 0;
+            drt.y = 0;
             break;
         }
     }
@@ -4423,7 +4427,7 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
                 break;
             }
 
-            if ((srcrect.w != NDS_W) || (srcrect.h != NDS_H)) {
+            if ((srt.w != NDS_W) || (srt.h != NDS_H)) {
                 break;
             }
 
@@ -4743,11 +4747,11 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
                 );
 
                 copy_it = 0;
-                srcrect.x = 0;
-                srcrect.y = 0;
-                srcrect.w = NDS_Wx2;
-                srcrect.h = NDS_Hx2;
-                pitch = srcrect.w * 4;
+                srt.x = 0;
+                srt.y = 0;
+                srt.w = NDS_Wx2;
+                srt.h = NDS_Hx2;
+                pitch = srt.w * 4;
             }
             else {
                 int x = 0, y = 0;
@@ -4755,9 +4759,9 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
                 uint16_t *s1 = (uint16_t*)pixels;
                 uint16_t *d = (uint16_t*)myvideo.tmp.virt_addr;
 
-                for (y=0; y<srcrect.h; y++) {
+                for (y=0; y<srt.h; y++) {
                     s0 = d;
-                    for (x=0; x<srcrect.w; x++) {
+                    for (x=0; x<srt.w; x++) {
                         *d++ = *s1;
                         *d++ = *s1++;
                     }
@@ -4766,25 +4770,25 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
                 }
 
                 copy_it = 0;
-                srcrect.x = 0;
-                srcrect.y = 0;
-                srcrect.w = NDS_Wx2;
-                srcrect.h = NDS_Hx2;
-                pitch = srcrect.w * 2;
+                srt.x = 0;
+                srt.y = 0;
+                srt.w = NDS_Wx2;
+                srt.h = NDS_Hx2;
+                pitch = srt.w * 2;
             }
         } while(0);
     }
 
     if (copy_it) {
         if (dma_found == 0) {
-            neon_memcpy(myvideo.tmp.virt_addr, pixels, srcrect.h * pitch);
+            neon_memcpy(myvideo.tmp.virt_addr, pixels, srt.h * pitch);
             myvideo.gfx.src.surf.phyAddr = myvideo.tmp.phy_addr;
-            MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srcrect.h);
+            MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srt.h);
         }
     }
     else {
         myvideo.gfx.src.surf.phyAddr = myvideo.tmp.phy_addr;
-        MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srcrect.h);
+        MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srt.h);
     }
 
     myvideo.gfx.opt.u32GlobalSrcConstColor = 0;
@@ -4793,54 +4797,60 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srcrect, SDL_Rect dstrec
     myvideo.gfx.opt.eDstDfbBldOp = 0;
     myvideo.gfx.opt.eDFBBlendFlag = 0;
 
-    myvideo.gfx.src.rt.s32Xpos = srcrect.x;
-    myvideo.gfx.src.rt.s32Ypos = srcrect.y;
-    myvideo.gfx.src.rt.u32Width = srcrect.w;
-    myvideo.gfx.src.rt.u32Height = srcrect.h;
-    myvideo.gfx.src.surf.u32Width = srcrect.w;
-    myvideo.gfx.src.surf.u32Height = srcrect.h;
+    myvideo.gfx.src.rt.s32Xpos = srt.x;
+    myvideo.gfx.src.rt.s32Ypos = srt.y;
+    myvideo.gfx.src.rt.u32Width = srt.w;
+    myvideo.gfx.src.rt.u32Height = srt.h;
+    myvideo.gfx.src.surf.u32Width = srt.w;
+    myvideo.gfx.src.surf.u32Height = srt.h;
     myvideo.gfx.src.surf.u32Stride = pitch;
     myvideo.gfx.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
 
-    myvideo.gfx.dst.rt.s32Xpos = dstrect.x;
-    myvideo.gfx.dst.rt.s32Ypos = dstrect.y;
-    myvideo.gfx.dst.rt.u32Width = dstrect.w;
-    myvideo.gfx.dst.rt.u32Height = dstrect.h;
+    myvideo.gfx.dst.rt.s32Xpos = drt.x;
+    myvideo.gfx.dst.rt.s32Ypos = drt.y;
+    myvideo.gfx.dst.rt.u32Width = drt.w;
+    myvideo.gfx.dst.rt.u32Height = drt.h;
     myvideo.gfx.dst.surf.u32Width = myvideo.cur_w;
     myvideo.gfx.dst.surf.u32Height = myvideo.cur_h;
     myvideo.gfx.dst.surf.u32Stride = myvideo.cur_w * 4;
     myvideo.gfx.dst.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
     myvideo.gfx.dst.surf.phyAddr = myvideo.fb.phy_addr + (myvideo.cur_w * myvideo.fb.var_info.yoffset * 4);
 
-    MI_GFX_BitBlit(&myvideo.gfx.src.surf, &myvideo.gfx.src.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &u16Fence);
-    MI_GFX_WaitAllDone(FALSE, u16Fence);
+    MI_GFX_BitBlit(&myvideo.gfx.src.surf, &myvideo.gfx.src.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &fence);
+    MI_GFX_WaitAllDone(FALSE, fence);
 #endif
 
     return 0;
 }
 
-#if defined(FLIP)
+#if defined(FLIP) || defined(UT)
 static void drm_flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void *data)
 {
     debug("call %s()\n", __func__);
 
     *((int *)data) = 0;
 }
- 
+
+TEST(sdl2_video, drm_flip_handler)
+{
+    int r = 1;
+
+    drm_flip_handler(0, 0, 0, 0, &r);
+    TEST_ASSERT_EQUAL_INT(0, r);
+}
+#endif
+
+#if defined(FLIP)
 drmEventContext drm_evctx = {
     .version = DRM_EVENT_CONTEXT_VERSION,
     .page_flip_handler = drm_flip_handler,
 };
 #endif
 
-void flip_lcd(void)
+static int flip_lcd(void)
 {
-#if defined(TRIMUI)
+#if defined(TRIMUI) || defined(PANDORA) || defined(FLIP)
     int r = 0;
-#endif
-
-#if defined(PANDORA)
-    int arg = 0;
 #endif
 
 #if defined(GKD2) || defined(BRICK)
@@ -4854,10 +4864,6 @@ void flip_lcd(void)
     }
 #endif
 
-#if defined(FLIP)
-    int wait_cnt = 0;
-#endif
-
     debug("call %s()\n", __func__);
 
 #if defined(QX1000) || defined(XT897)
@@ -4866,7 +4872,7 @@ void flip_lcd(void)
 
 #if defined(PANDORA)
     ioctl(myvideo.fb.fd[1], FBIOPAN_DISPLAY, &myvideo.fb.var_info);
-    ioctl(myvideo.fb.fd[1], FBIO_WAITFORVSYNC, &arg);
+    ioctl(myvideo.fb.fd[1], FBIO_WAITFORVSYNC, &r);
     myvideo.fb.var_info.yoffset ^= myvideo.cur_h;
 #endif
 
@@ -4880,8 +4886,8 @@ void flip_lcd(void)
     drmModeSetCrtc(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, 0, 0, (uint32_t *)myvideo.drm.conn, 1, &myvideo.drm.crtc->mode);
     drmModePageFlip(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvideo.drm.wait_for_flip);
 
-    //wait_cnt = 10;
-    //while (wait_cnt-- && myvideo.drm.wait_for_flip) {
+    //r = 10;
+    //while (r-- && myvideo.drm.wait_for_flip) {
         //usleep(10);
         //drmHandleEvent(myvideo.drm.fd, &drm_evctx);
     //}
@@ -4910,33 +4916,66 @@ void flip_lcd(void)
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
     myvideo.fb.flip^= 1;
 #endif
+
+    return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, flip_lcd)
+{
+    TEST_ASSERT_EQUAL_INT(0, flip_lcd());
+}
+#endif
 
 static int get_font_width(const char *info)
 {
-    int w = 0, h = 0;
+    int w = 0;
+    int h = 0;
+
+    debug("call %s(info=%p)\n", __func__, info);
 
     if (myvideo.menu.font && info) {
         TTF_SizeUTF8(myvideo.menu.font, info, &w, &h);
     }
+
     return w;
 }
 
+#if defined(UT)
+TEST(sdl2_video, get_font_width)
+{
+    TEST_ASSERT_EQUAL_INT(0, get_font_width(0));
+}
+#endif
+
 static int get_font_height(const char *info)
 {
-    int w = 0, h = 0;
+    int w = 0;
+    int h = 0;
+
+    debug("call %s(info=%p)\n", __func__, info);
 
     if (myvideo.menu.font && info) {
         TTF_SizeUTF8(myvideo.menu.font, info, &w, &h);
     }
+
     return h;
 }
 
+#if defined(UT)
+TEST(sdl2_video, get_font_height)
+{
+    TEST_ASSERT_EQUAL_INT(0, get_font_height(0));
+}
+#endif
+
 const char *l10n(const char *p)
 {
-    const char *info = p;
-    char buf[MAX_PATH] = {0};
-    int cc = 0, r = 0, len = 0;
+    int cc = 0;
+    int len = 0;
+    char buf[MAX_PATH] = { 0 };
+
+    debug("call %s(p=%p)\n", __func__, p);
     
     if (!strcmp(lang_file_name[DEF_LANG_SLOT], DEF_LANG_LANG) || (p == NULL)) {
         return p;
@@ -4946,34 +4985,45 @@ const char *l10n(const char *p)
     strcat(buf, "=");
     len = strlen(buf);
     if ((len == 0) || (len >= MAX_PATH)) {
-        return 0;
+        return p;
     }
 
     for (cc=0; myvideo.lang.trans[cc]; cc++) {
         if (memcmp(buf, myvideo.lang.trans[cc], len) == 0) {
-            r = 1;
-            info = &myvideo.lang.trans[cc][len];
-            break;
+            return &myvideo.lang.trans[cc][len];
         }
     }
 
-    if (r == 0) {
-        info = p;
-    }
-    return info;
+    return p;
 }
+
+#if defined(UT)
+TEST(sdl2_video, l10n)
+{
+    TEST_ASSERT_EQUAL_INT(0, l10n(0));
+}
+#endif
 
 static int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor)
 {
-    int w = 0, h = 0;
-    SDL_Color fg = {0};
-    SDL_Rect rt = {0, 0, 0, 0};
+    int w = 0;
+    int h = 0;
+    int len = 0;
+    SDL_Color fg = { 0 };
     SDL_Surface *t0 = NULL;
     SDL_Surface *t1 = NULL;
     SDL_Surface *t2 = NULL;
+    SDL_Rect rt = { 0, 0, 0, 0 };
 
-    h = strlen(info);
-    if ((myvideo.menu.font == NULL) || (h == 0) || (h >= MAX_PATH)) {
+    debug("call %s(info=\"%s\", x=%d, y=%d)\n", __func__, info, x, y);
+
+    if (!info) {
+        return 0;
+    }
+
+    len = strlen(info);
+    if ((myvideo.menu.font == NULL) || (len == 0) || (len >= MAX_PATH)) {
+        error("invalid parameters\n");
         return -1;
     }
 
@@ -4981,35 +5031,47 @@ static int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t 
     fg.g = (fgcolor >> 8) & 0xff;
     fg.b = (fgcolor >> 0) & 0xff;
     TTF_SizeUTF8(myvideo.menu.font, info, &w, &h);
-    t0 = TTF_RenderUTF8_Solid(myvideo.menu.font, info, fg);
-    if (t0) {
-        if (dst == NULL) {
-            t1 = SDL_CreateRGBSurface(SDL_SWSURFACE, t0->w, t0->h, 32, 0, 0, 0, 0);
-            if (t1) {
-                SDL_FillRect(t1, &t1->clip_rect, bgcolor);
-                SDL_BlitSurface(t0, NULL, t1, NULL);
 
-                t2 = SDL_ConvertSurface(t1, myvideo.cvt->format, 0);
-                if (t2) {
-                    rt.x = x;
-                    rt.y = y;
-                    rt.w = t2->w;
-                    rt.h = t2->h;
-                    flush_lcd(-1, t2->pixels, t2->clip_rect, rt, t2->pitch);
-                    SDL_FreeSurface(t2);
-                }
-                SDL_FreeSurface(t1);
-            }
-        }
-        else {
-            rt.x = x;
-            rt.y = y;
-            SDL_BlitSurface(t0, NULL, dst, &rt);
-        }
-        SDL_FreeSurface(t0);
+    t0 = TTF_RenderUTF8_Solid(myvideo.menu.font, info, fg);
+    if (!t0) {
+        error("failed to render utf8\n");
+        return -1;
     }
+
+    if (dst == NULL) {
+        t1 = SDL_CreateRGBSurface(SDL_SWSURFACE, t0->w, t0->h, 32, 0, 0, 0, 0);
+        if (t1) {
+            SDL_FillRect(t1, &t1->clip_rect, bgcolor);
+            SDL_BlitSurface(t0, NULL, t1, NULL);
+
+            t2 = SDL_ConvertSurface(t1, myvideo.cvt->format, 0);
+            if (t2) {
+                rt.x = x;
+                rt.y = y;
+                rt.w = t2->w;
+                rt.h = t2->h;
+                flush_lcd(-1, t2->pixels, t2->clip_rect, rt, t2->pitch);
+                SDL_FreeSurface(t2);
+            }
+            SDL_FreeSurface(t1);
+        }
+    }
+    else {
+        rt.x = x;
+        rt.y = y;
+        SDL_BlitSurface(t0, NULL, dst, &rt);
+    }
+    SDL_FreeSurface(t0);
+
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, draw_info)
+{
+    TEST_ASSERT_EQUAL_INT(0, draw_info(0, 0, 0, 0, 0, 0));
+}
+#endif
 
 static int free_touch_pen(void)
 {
@@ -5022,6 +5084,15 @@ static int free_touch_pen(void)
 
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, free_touch_pen)
+{
+    myvideo.touch.pen = SDL_CreateRGBSurface(SDL_SWSURFACE, 128, 128, 32, 0, 0, 0, 0);
+    TEST_ASSERT_EQUAL_INT(0, free_touch_pen());
+    TEST_ASSERT_NULL(myvideo.touch.pen);
+}
+#endif
 
 int load_touch_pen(void)
 {
@@ -5080,7 +5151,19 @@ int load_touch_pen(void)
     return 0;
 }
 
-SDL_Surface* load_menu_img(const char *name, int raw_img)
+#if defined(UT)
+TEST(sdl2_video, load_touch_pen)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_device());
+    myconfig.pen.sel = 0;
+    TEST_ASSERT_EQUAL_INT(0, load_touch_pen());
+    TEST_ASSERT_NOT_NULL(myvideo.touch.pen);
+    TEST_ASSERT_EQUAL_INT(0, free_touch_pen());
+    TEST_ASSERT_EQUAL_INT(0, quit_device());
+}
+#endif
+
+static SDL_Surface* load_menu_img(const char *name, int raw_img)
 {
     SDL_Surface *t0 = NULL;
     SDL_Surface *t1 = NULL;
@@ -5090,17 +5173,35 @@ SDL_Surface* load_menu_img(const char *name, int raw_img)
 
     snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, MENU_PATH, myconfig.menu.sel, name);
     t0 = IMG_Load(buf);
+    if (!t0) {
+        error("failed to load image from \"%s\"\n", buf);
+        return NULL;
+    }
+
     if (raw_img) {
         return t0;
     }
 
-    if (t0 && myvideo.cvt) {
+    if (myvideo.cvt) {
         t1 = SDL_ConvertSurface(t0, myvideo.cvt->format, 0);
         SDL_FreeSurface(t0);
     }
 
     return t1;
 }
+
+#if defined(UT)
+TEST(sdl2_video, load_menu_img)
+{
+    SDL_Surface *r = NULL;
+
+    TEST_ASSERT_EQUAL_INT(0, init_device());
+    r = load_menu_img(SDL2_MENU_BG_FILE, 0);
+    TEST_ASSERT_NOT_NULL(r);
+    SDL_FreeSurface(r);
+    TEST_ASSERT_EQUAL_INT(0, quit_device());
+}
+#endif
 
 static int free_menu_res(void)
 {
@@ -5146,29 +5247,39 @@ static int free_menu_res(void)
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, free_menu_res)
+{
+    TEST_ASSERT_EQUAL_INT(0, free_menu_res());
+}
+#endif
+
 int load_menu_res(void)
 {
-    SDL_Rect rt = { 0 };
-    SDL_Surface *t = NULL;
+#if !defined(UT)
     char buf[MAX_PATH + 32] = { 0 };
+#endif
 
     debug("call %s()\n", __func__);
 
     free_menu_res();
 
+#if !defined(UT)
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, FONT_FILE);
     myvideo.menu.font = TTF_OpenFont(buf, FONT_SIZE);
     myvideo.menu.line_h = (float)get_font_height("X") * 1.25;
+#endif
 
     myvideo.menu.sdl2.bg = load_menu_img(SDL2_MENU_BG_FILE, 0);
+    myvideo.menu.sdl2.cursor = load_menu_img(SDL2_MENU_CURSOR_FILE, 1);
+
     myvideo.menu.drastic.bg0 = load_menu_img(DRASTIC_MENU_BG0_FILE, 0);
     myvideo.menu.drastic.bg1 = load_menu_img(DRASTIC_MENU_BG1_FILE, 0);
-    myvideo.menu.sdl2.cursor = load_menu_img(SDL2_MENU_CURSOR_FILE, 1);
-    myvideo.menu.drastic.cursor = load_menu_img(DRASTIC_MENU_CURSOR_FILE, 1);
     myvideo.menu.drastic.yes = load_menu_img(DRASTIC_MENU_YES_FILE, 1);
     myvideo.menu.drastic.no = load_menu_img(DRASTIC_MENU_NO_FILE, 1);
+    myvideo.menu.drastic.cursor = load_menu_img(DRASTIC_MENU_CURSOR_FILE, 1);
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000) || defined(XT897) || defined(UT)
     myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
 #else
     myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
@@ -5184,8 +5295,11 @@ int load_menu_res(void)
 #if defined(UT)
 TEST(sdl2_video, load_menu_res)
 {
+    TEST_ASSERT_EQUAL_INT(0, init_device());
     TEST_ASSERT_EQUAL_INT(0, load_menu_res());
+    TEST_ASSERT_NOT_NULL(myvideo.menu.sdl2.bg);
     TEST_ASSERT_EQUAL_INT(0, free_menu_res());
+    TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
 #endif
 
