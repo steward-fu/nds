@@ -176,79 +176,6 @@ const char *frag_shader_src =
     "    vec3 tex = texture2D(frag_sampler, frag_coord).bgr;    \n"
     "    gl_FragColor = vec4(tex, s_alpha);                     \n"
     "}                                                          \n";
-
-#if defined(A30)
-static cpu_clk_t cpu_clk[] = {
-    {  96, 0x80000110 },
-    { 144, 0x80000120 },
-    { 192, 0x80000130 },
-    { 216, 0x80000220 },
-    { 240, 0x80000410 },
-    { 288, 0x80000230 },
-    { 336, 0x80000610 },
-    { 360, 0x80000420 },
-    { 384, 0x80000330 },
-    { 432, 0x80000520 },
-    { 480, 0x80000430 },
-    { 504, 0x80000620 },
-    { 528, 0x80000a10 },
-    { 576, 0x80000530 },
-    { 624, 0x80000c10 },
-    { 648, 0x80000820 },
-    { 672, 0x80000630 },
-    { 720, 0x80000920 },
-    { 768, 0x80000730 },
-    { 792, 0x80000a20 },
-    { 816, 0x80001010 },
-    { 864, 0x80000830 },
-    { 864, 0x80001110 },
-    { 912, 0x80001210 },
-    { 936, 0x80000c20 },
-    { 960, 0x80000930 },
-    { 1008, 0x80000d20 },
-    { 1056, 0x80000a30 },
-    { 1080, 0x80000e20 },
-    { 1104, 0x80001610 },
-    { 1152, 0x80000b30 },
-    { 1200, 0x80001810 },
-    { 1224, 0x80001020 },
-    { 1248, 0x80000c30 },
-    { 1296, 0x80001120 },
-    { 1344, 0x80000d30 },
-    { 1368, 0x80001220 },
-    { 1392, 0x80001c10 },
-    { 1440, 0x80000e30 },
-    { 1488, 0x80001e10 },
-    { 1512, 0x80001420 },
-    { 1536, 0x80000f30 },
-    { 1584, 0x80001520 },
-    { 1632, 0x80001030 },
-    { 1656, 0x80001620 },
-    { 1728, 0x80001130 },
-    { 1800, 0x80001820 },
-    { 1824, 0x80001230 },
-    { 1872, 0x80001920 },
-    { 1920, 0x80001330 },
-    { 1944, 0x80001a20 },
-    { 2016, 0x80001430 },
-    { 2088, 0x80001c20 },
-    { 2112, 0x80001530 },
-    { 2160, 0x80001d20 },
-    { 2208, 0x80001630 },
-    { 2232, 0x80001e20 },
-    { 2304, 0x80001730 },
-    { 2400, 0x80001830 },
-    { 2496, 0x80001930 },
-    { 2592, 0x80001a30 },
-    { 2688, 0x80001b30 },
-    { 2784, 0x80001c30 },
-    { 2880, 0x80001d30 },
-    { 2976, 0x80001e30 },
-    { 3072, 0x80001f30 },
-};
-
-static int max_cpu_item = sizeof(cpu_clk) / sizeof(cpu_clk_t);
-#endif
 #endif
 
 #if defined(QX1000) || defined(XT897)
@@ -856,7 +783,7 @@ static int draw_drastic_menu_main(void)
 #endif
 
 #if defined(A30) || defined(FLIP)
-    if (myconfig.chk_bat) {
+    if (myconfig.check_battery) {
         sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
     }
     else {
@@ -865,7 +792,7 @@ static int draw_drastic_menu_main(void)
 #endif
 
 #if defined(MINI)
-    if (myconfig.chk_bat) {
+    if (myconfig.check_battery) {
         sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
     }
     else {
@@ -1999,15 +1926,15 @@ static int process_screen(void)
             uint32_t *p1 = NULL;
             uint32_t col[] = { 0, 0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0x000000, 0xffff00, 0x00ffff };
 
-            p0 = (uint32_t *)myconfig.screen.pixels[idx];
-            p1 = (uint32_t *)myconfig.screen.pixels[idx] + ((srt.h - 1) * srt.w);
+            p0 = (uint32_t *)pixels;
+            p1 = (uint32_t *)pixels + ((srt.h - 1) * srt.w);
             for (c0 = 0; c0 < srt.w; c0++) {
                 *p0++ = col[myconfig.layout.swin.border];
                 *p1++ = col[myconfig.layout.swin.border];
             }
 
-            p0 = (uint32_t *)myconfig.screen.pixels[idx];
-            p1 = (uint32_t *)myconfig.screen.pixels[idx] + (srt.w - 1);
+            p0 = (uint32_t *)pixels;
+            p1 = (uint32_t *)pixels + (srt.w - 1);
             for (c0 = 0; c0 < srt.h; c0++) {
                 *p0 = col[myconfig.layout.swin.border];
                 *p1 = col[myconfig.layout.swin.border];
@@ -2016,7 +1943,7 @@ static int process_screen(void)
             }
         }
 
-        glBindTexture(GL_TEXTURE_2D, myvideo.texID[idx]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (myconfig.filter == FILTER_PIXEL) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2027,7 +1954,7 @@ static int process_screen(void)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, myconfig.screen.pixels[idx]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 #endif
 
         if (need_update) {
@@ -2329,40 +2256,40 @@ static void *video_handler(void *threadid)
     );
 
     myvideo.drm.pfn = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
-    myvideo.eglDisplay = myvideo.drm.pfn(EGL_PLATFORM_GBM_KHR, myvideo.drm.gbm, NULL);
-    eglInitialize(myvideo.eglDisplay, &major, &minor);
+    myvideo.egl.display = myvideo.drm.pfn(EGL_PLATFORM_GBM_KHR, myvideo.drm.gbm, NULL);
+    eglInitialize(myvideo.egl.display, &major, &minor);
     eglBindAPI(EGL_OPENGL_ES_API);
-    eglGetConfigs(myvideo.eglDisplay, NULL, 0, &cnt);
-    eglChooseConfig(myvideo.eglDisplay, surf_cfg, &cfg, 1, &cnt);
+    eglGetConfigs(myvideo.egl.display, NULL, 0, &cnt);
+    eglChooseConfig(myvideo.egl.display, surf_cfg, &cfg, 1, &cnt);
 
-    myvideo.eglSurface = eglCreateWindowSurface(myvideo.eglDisplay, cfg, (EGLNativeWindowType)myvideo.drm.gs, NULL);
-    myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, cfg, EGL_NO_CONTEXT, ctx_cfg);
-    eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
+    myvideo.egl.surface = eglCreateWindowSurface(myvideo.egl.display, cfg, (EGLNativeWindowType)myvideo.drm.gs, NULL);
+    myvideo.egl.context = eglCreateContext(myvideo.egl.display, cfg, EGL_NO_CONTEXT, ctx_cfg);
+    eglMakeCurrent(myvideo.egl.display, myvideo.egl.surface, myvideo.egl.surface, myvideo.egl.context);
 
-    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(myvideo.vShader);
+    myvideo.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.egl.vShader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.egl.vShader);
 
-    myvideo.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(myvideo.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(myvideo.fShader);
+    myvideo.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.egl.fShader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.egl.fShader);
     
-    myvideo.pObject = glCreateProgram();
-    glAttachShader(myvideo.pObject, myvideo.vShader);
-    glAttachShader(myvideo.pObject, myvideo.fShader);
-    glLinkProgram(myvideo.pObject);
-    glUseProgram(myvideo.pObject);
+    myvideo.egl.pObject = glCreateProgram();
+    glAttachShader(myvideo.egl.pObject, myvideo.egl.vShader);
+    glAttachShader(myvideo.egl.pObject, myvideo.egl.fShader);
+    glLinkProgram(myvideo.egl.pObject);
+    glUseProgram(myvideo.egl.pObject);
 
-    myvideo.posLoc = glGetAttribLocation(myvideo.pObject, "vert_pos");
-    myvideo.texLoc = glGetAttribLocation(myvideo.pObject, "vert_coord");
-    myvideo.samLoc = glGetUniformLocation(myvideo.pObject, "frag_sampler");
-    myvideo.alphaLoc = glGetUniformLocation(myvideo.pObject, "s_alpha");
+    myvideo.egl.posLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_pos");
+    myvideo.egl.texLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_coord");
+    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_sampler");
+    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "s_alpha");
 
-    glUniform1i(myvideo.samLoc, 0);
-    glUniform1f(myvideo.alphaLoc, 0.0);
+    glUniform1i(myvideo.egl.samLoc, 0);
+    glUniform1f(myvideo.egl.alphaLoc, 0.0);
 
-    glGenTextures(TEXTURE_MAX, myvideo.texID);
-    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_LCD0]);
+    glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -2370,10 +2297,10 @@ static void *video_handler(void *threadid)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(myvideo.posLoc);
-    glEnableVertexAttribArray(myvideo.texLoc);
-    glUniform1i(myvideo.samLoc, 0);
-    glUniform1f(myvideo.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.egl.posLoc);
+    glEnableVertexAttribArray(myvideo.egl.texLoc);
+    glUniform1i(myvideo.egl.samLoc, 0);
+    glUniform1f(myvideo.egl.alphaLoc, 0.0);
 
     myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
@@ -2407,43 +2334,43 @@ static void *video_handler(void *threadid)
         EGL_NONE,
     };
   
-    myvideo.eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    eglInitialize(myvideo.eglDisplay, &egl_major, &egl_minor);
-    eglChooseConfig(myvideo.eglDisplay, config_attribs, &myvideo.eglConfig, 1, &num_configs);
-    myvideo.eglSurface = eglCreateWindowSurface(myvideo.eglDisplay, myvideo.eglConfig, 0, window_attributes);
-    myvideo.eglContext = eglCreateContext(myvideo.eglDisplay, myvideo.eglConfig, EGL_NO_CONTEXT, context_attributes);
-    eglMakeCurrent(myvideo.eglDisplay, myvideo.eglSurface, myvideo.eglSurface, myvideo.eglContext);
+    myvideo.egl.display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    eglInitialize(myvideo.egl.display, &egl_major, &egl_minor);
+    eglChooseConfig(myvideo.egl.display, config_attribs, &myvideo.eglConfig, 1, &num_configs);
+    myvideo.egl.surface = eglCreateWindowSurface(myvideo.egl.display, myvideo.eglConfig, 0, window_attributes);
+    myvideo.egl.context = eglCreateContext(myvideo.egl.display, myvideo.eglConfig, EGL_NO_CONTEXT, context_attributes);
+    eglMakeCurrent(myvideo.egl.display, myvideo.egl.surface, myvideo.egl.surface, myvideo.egl.context);
   
-    myvideo.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(myvideo.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(myvideo.vShader);
+    myvideo.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.egl.vShader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.egl.vShader);
   
-    myvideo.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(myvideo.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(myvideo.fShader);
+    myvideo.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.egl.fShader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.egl.fShader);
    
-    myvideo.pObject = glCreateProgram();
-    glAttachShader(myvideo.pObject, myvideo.vShader);
-    glAttachShader(myvideo.pObject, myvideo.fShader);
-    glLinkProgram(myvideo.pObject);
-    glUseProgram(myvideo.pObject);
+    myvideo.egl.pObject = glCreateProgram();
+    glAttachShader(myvideo.egl.pObject, myvideo.egl.vShader);
+    glAttachShader(myvideo.egl.pObject, myvideo.egl.fShader);
+    glLinkProgram(myvideo.egl.pObject);
+    glUseProgram(myvideo.egl.pObject);
 
-    eglSwapInterval(myvideo.eglDisplay, 1);
-    myvideo.posLoc = glGetAttribLocation(myvideo.pObject, "vert_pos");
-    myvideo.texLoc = glGetAttribLocation(myvideo.pObject, "vert_coord");
-    myvideo.samLoc = glGetUniformLocation(myvideo.pObject, "frag_sampler");
-    myvideo.alphaLoc = glGetUniformLocation(myvideo.pObject, "s_alpha");
+    eglSwapInterval(myvideo.egl.display, 1);
+    myvideo.egl.posLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_pos");
+    myvideo.egl.texLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_coord");
+    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_sampler");
+    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "s_alpha");
 
-    glGenTextures(TEXTURE_MAX, myvideo.texID);
+    glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
 
     glViewport(0, 0, SCREEN_H, SCREEN_W);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(myvideo.posLoc);
-    glEnableVertexAttribArray(myvideo.texLoc);
-    glUniform1i(myvideo.samLoc, 0);
-    glUniform1f(myvideo.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.egl.posLoc);
+    glEnableVertexAttribArray(myvideo.egl.texLoc);
+    glUniform1i(myvideo.egl.samLoc, 0);
+    glUniform1f(myvideo.egl.alphaLoc, 0.0);
 
     myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
@@ -2525,15 +2452,15 @@ static void *video_handler(void *threadid)
     }
 
 #if defined(FLIP)
-    glDeleteTextures(TEXTURE_MAX, myvideo.texID);
-    eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
-    eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
+    glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
+    eglMakeCurrent(myvideo.egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroySurface(myvideo.egl.display, myvideo.egl.surface);
+    eglDestroyContext(myvideo.egl.display, myvideo.egl.context);
 
-    eglTerminate(myvideo.eglDisplay);
-    glDeleteShader(myvideo.vShader);
-    glDeleteShader(myvideo.fShader);
-    glDeleteProgram(myvideo.pObject);
+    eglTerminate(myvideo.egl.display);
+    glDeleteShader(myvideo.egl.vShader);
+    glDeleteShader(myvideo.egl.fShader);
+    glDeleteProgram(myvideo.egl.pObject);
 
     drmModeRmFB(myvideo.drm.fd, myvideo.drm.fb); 
     drmModeFreeCrtc(myvideo.drm.crtc);
@@ -2544,11 +2471,11 @@ static void *video_handler(void *threadid)
 #endif
 
 #if defined(A30) || defined(RG28XX)
-    glDeleteTextures(TEXTURE_MAX, myvideo.texID);
-    eglMakeCurrent(myvideo.eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(myvideo.eglDisplay, myvideo.eglContext);
-    eglDestroySurface(myvideo.eglDisplay, myvideo.eglSurface);
-    eglTerminate(myvideo.eglDisplay);
+    glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
+    eglMakeCurrent(myvideo.egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(myvideo.egl.display, myvideo.egl.context);
+    eglDestroySurface(myvideo.egl.display, myvideo.egl.surface);
+    eglTerminate(myvideo.egl.display);
 
     free(myvideo.lcd.virt_addr[0][0]);
     free(myvideo.lcd.virt_addr[0][1]);
@@ -2850,47 +2777,13 @@ static void check_before_set(int num, int v)
     }       
 }   
 
-static void set_core(int n)
-{           
-    if (n <= 1) {
-        printf(PREFIX"New CPU Core: 1\n");
-        check_before_set(0, 1);
-        check_before_set(1, 0);
-        check_before_set(2, 0);
-        check_before_set(3, 0);
-    }       
-    else if (n == 2) {
-        printf(PREFIX"New CPU Core: 2\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 0);
-        check_before_set(3, 0);
-    }       
-    else if (n == 3) {
-        printf(PREFIX"New CPU Core: 3\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 1);
-        check_before_set(3, 0);
-    }
-    else {
-        printf(PREFIX"New CPU Core: 4\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 1);
-        check_before_set(3, 1);
-    }
-}
-
 int init_lcd(void)
 {
-   set_core(INIT_CPU_CORE); 
    return 0;
 }
 
 int quit_lcd(void)
 {
-   set_core(DEINIT_CPU_CORE); 
    return 0;
 }
 #endif
@@ -3153,38 +3046,6 @@ static void check_before_set(int num, int v)
     }
 }
 
-static void set_core(int n)
-{
-    if (n <= 1) {
-        debug("new CPU Core: 1\n");
-        check_before_set(0, 1);
-        check_before_set(1, 0);
-        check_before_set(2, 0);
-        check_before_set(3, 0);
-    }
-    else if (n == 2) {
-        debug("new CPU Core: 2\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 0);
-        check_before_set(3, 0);
-    }
-    else if (n == 3) {
-        debug("new CPU Core: 3\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 1);
-        check_before_set(3, 0);
-    }
-    else {
-        debug("new CPU Core: 4\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 1);
-        check_before_set(3, 1);
-    }
-}
-
 int init_lcd(void)
 {
     myvideo.fb.fd = open("/dev/fb0", O_RDWR, 0);
@@ -3211,14 +3072,12 @@ int init_lcd(void)
     myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
     ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
 
-    set_core(INIT_CPU_CORE);
     system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
     return 0;
 }
 
 int quit_lcd(void)
 {
-    set_core(DEINIT_CPU_CORE);
     system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
 
     if (myvideo.fb.virt_addr) {
@@ -3264,53 +3123,6 @@ static void check_before_set(int num, int v)
         system(buf);
     }       
 }   
-
-static void set_core(int n)
-{           
-    if (n <= 1) {
-        debug("cpu core=1\n");
-        check_before_set(0, 1);
-        check_before_set(1, 0);
-        check_before_set(2, 0);
-        check_before_set(3, 0);
-    }       
-    else if (n == 2) {
-        debug("cpu core=2\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 0);
-        check_before_set(3, 0);
-    }       
-    else if (n == 3) {
-        debug("cpu core=3\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 1);
-        check_before_set(3, 0);
-    }
-    else {
-        debug("cpu core=4\n");
-        check_before_set(0, 1);
-        check_before_set(1, 1);
-        check_before_set(2, 1);
-        check_before_set(3, 1);
-    }
-}
-
-static int set_best_match_cpu_clock(int clk)
-{
-    int cc = 0;
-
-    system("echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-    for (cc = 0; cc < max_cpu_item; cc++) {
-        if (cpu_clk[cc].clk >= clk) {
-            debug("set cpu %dMHz (0x%08x)\n", cpu_clk[cc].clk, cpu_clk[cc].reg);
-            *myvideo.cpu_ptr = cpu_clk[cc].reg;
-            return cc;
-        }
-    }
-    return -1;
-}
 
 int init_lcd(void)
 {
@@ -3358,16 +3170,11 @@ int init_lcd(void)
     }    
     debug("dac mem=%p\n", myvideo.dac_mem);
     myvideo.vol_ptr = (uint32_t *)(&myvideo.dac_mem[0xc00 + 0x258]);
-
-    set_best_match_cpu_clock(INIT_CPU_CLOCK);
-    set_core(INIT_CPU_CORE);
     return 0;
 }
 
 int quit_lcd(void)
 {
-    set_best_match_cpu_clock(DEINIT_CPU_CLOCK);
-    set_core(DEINIT_CPU_CORE);
     system("echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
 
     if (myvideo.fb.virt_addr) {
@@ -3541,16 +3348,16 @@ static int draw_pen(void *pixels, int width, int pitch)
     fg_vertices[15] = fg_vertices[10];
     fg_vertices[16] = fg_vertices[1];
 
-    glUniform1f(myvideo.alphaLoc, 1.0);
+    glUniform1f(myvideo.egl.alphaLoc, 1.0);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
-    glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_PEN]);
+    glVertexAttribPointer(myvideo.egl.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     glDisable(GL_BLEND);
-    glUniform1f(myvideo.alphaLoc, 0.0);
+    glUniform1f(myvideo.egl.alphaLoc, 0.0);
 #endif
 
 #if !defined(UT)
@@ -3714,7 +3521,7 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srt, SDL_Rect drt, uint3
     }
 
     if (tex == TEXTURE_TMP) {
-        glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (myconfig.filter == FILTER_PIXEL) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -3728,18 +3535,18 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srt, SDL_Rect drt, uint3
     }
 
     if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
-        glUniform1f(myvideo.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
+        glUniform1f(myvideo.egl.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, myvideo.texID[tex]);
-    glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
+    glVertexAttribPointer(myvideo.egl.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
     if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
-        glUniform1f(myvideo.alphaLoc, 0.0);
+        glUniform1f(myvideo.egl.alphaLoc, 0.0);
         glDisable(GL_BLEND);
     }
 #endif
@@ -4823,30 +4630,6 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srt, SDL_Rect drt, uint3
     return 0;
 }
 
-#if defined(FLIP) || defined(UT)
-static void drm_flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void *data)
-{
-    debug("call %s()\n", __func__);
-
-    *((int *)data) = 0;
-}
-
-TEST(sdl2_video, drm_flip_handler)
-{
-    int r = 1;
-
-    drm_flip_handler(0, 0, 0, 0, &r);
-    TEST_ASSERT_EQUAL_INT(0, r);
-}
-#endif
-
-#if defined(FLIP)
-drmEventContext drm_evctx = {
-    .version = DRM_EVENT_CONTEXT_VERSION,
-    .page_flip_handler = drm_flip_handler,
-};
-#endif
-
 static int flip_lcd(void)
 {
 #if defined(TRIMUI) || defined(PANDORA) || defined(FLIP)
@@ -4877,29 +4660,25 @@ static int flip_lcd(void)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-    eglSwapBuffers(myvideo.eglDisplay, myvideo.eglSurface);
+    eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
 
 #if defined(FLIP) 
-    myvideo.drm.wait_for_flip = 1;
     myvideo.drm.bo = gbm_surface_lock_front_buffer(myvideo.drm.gs);
     drmModeAddFB(myvideo.drm.fd, SCREEN_W, SCREEN_H, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
     drmModeSetCrtc(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, 0, 0, (uint32_t *)myvideo.drm.conn, 1, &myvideo.drm.crtc->mode);
-    drmModePageFlip(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, DRM_MODE_PAGE_FLIP_EVENT, (void *)&myvideo.drm.wait_for_flip);
-
-    //r = 10;
-    //while (r-- && myvideo.drm.wait_for_flip) {
-        //usleep(10);
-        //drmHandleEvent(myvideo.drm.fd, &drm_evctx);
-    //}
-
-    gbm_surface_release_buffer(myvideo.drm.gs, myvideo.drm.bo);
+    if (myvideo.drm.pre_bo) {
+        drmModeRmFB(myvideo.drm.fd, myvideo.drm.pre_fb);
+        gbm_surface_release_buffer(myvideo.drm.gs, myvideo.drm.pre_bo);
+    }
+    myvideo.drm.pre_bo = myvideo.drm.bo;
+    myvideo.drm.pre_fb = myvideo.drm.fb;
 #endif
 
     if (myvideo.layout.bg) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
-        glVertexAttribPointer(myvideo.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
-        glVertexAttribPointer(myvideo.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
+        glVertexAttribPointer(myvideo.egl.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+        glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     }
 
@@ -5119,7 +4898,7 @@ int load_touch_pen(void)
     }
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-    glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_PEN]);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_PEN]);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -5419,7 +5198,7 @@ static int load_layout_bg(void)
         SDL_FreeSurface(t);
 
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(BRICK) || defined(UT)
         flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #else
         flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
@@ -5428,13 +5207,13 @@ static int load_layout_bg(void)
     }
     else if (myvideo.layout.bg) {
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(BRICK) || defined(UT)
         flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #else
         flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #endif
 #else
-        glBindTexture(GL_TEXTURE_2D, myvideo.texID[TEXTURE_BG]);
+        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -6722,13 +6501,13 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
     case MENU_JOY_CUST_KEY3:
         if (myconfig.joy.mode == MYJOY_MODE_CUST_KEY) {
             if (right_key) {
-                if (myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] < 13) {
-                    myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] += 1;
+                if (myconfig.joy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] < 13) {
+                    myconfig.joy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] += 1;
                 }
             }
             else {
-                if (myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] > 0) {
-                    myconfig.joy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] -= 1;
+                if (myconfig.joy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] > 0) {
+                    myconfig.joy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] -= 1;
                 }
             }
         }
@@ -6763,13 +6542,13 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
     case MENU_RJOY_CUST_KEY3:
         if (myconfig.rjoy.mode == MYJOY_MODE_CUST_KEY) {
             if (right_key) {
-                if (myconfig.rjoy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] < 13) {
-                    myconfig.rjoy.cuskey[cur_sel - MENU_JOY_CUST_KEY0] += 1;
+                if (myconfig.rjoy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] < 13) {
+                    myconfig.rjoy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] += 1;
                 }
             }
             else {
-                if (myconfig.rjoy.cuskey[cur_sel - MENU_RJOY_CUST_KEY0] > 0) {
-                    myconfig.rjoy.cuskey[cur_sel - MENU_RJOY_CUST_KEY0] -= 1;
+                if (myconfig.rjoy.cust_key[cur_sel - MENU_RJOY_CUST_KEY0] > 0) {
+                    myconfig.rjoy.cust_key[cur_sel - MENU_RJOY_CUST_KEY0] -= 1;
                 }
             }
 
@@ -6795,7 +6574,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
     case MENU_CHK_BAT:
-        myconfig.chk_bat = right_key;
+        myconfig.check_battery = right_key;
         break;
 #endif
     default:
@@ -6906,16 +6685,16 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "%s", l10n(JOY_MODE_STR[myconfig.joy.mode]));
         break;
     case MENU_JOY_CUST_KEY0:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[0]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[0]]));
         break;
     case MENU_JOY_CUST_KEY1:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[1]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[1]]));
         break;
     case MENU_JOY_CUST_KEY2:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[2]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[2]]));
         break;
     case MENU_JOY_CUST_KEY3:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cuskey[3]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[3]]));
         break;
     case MENU_JOY_DZONE:
         sprintf(buf, "%d (15)", myconfig.joy.dzone);
@@ -6926,16 +6705,16 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "%s", l10n(RJOY_MODE_STR[myconfig.rjoy.mode]));
         break;
     case MENU_RJOY_CUST_KEY0:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[0]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[0]]));
         break;
     case MENU_RJOY_CUST_KEY1:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[1]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[1]]));
         break;
     case MENU_RJOY_CUST_KEY2:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[2]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[2]]));
         break;
     case MENU_RJOY_CUST_KEY3:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cuskey[3]]));
+        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[3]]));
         break;
     case MENU_RJOY_DZONE:
         sprintf(buf, "%d (15)", myconfig.rjoy.dzone);
@@ -6943,7 +6722,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
     case MENU_CHK_BAT:
-        sprintf(buf, "%s", l10n(myconfig.chk_bat ? "Yes" : "No"));
+        sprintf(buf, "%s", l10n(myconfig.check_battery ? "Yes" : "No"));
         break;
 #endif
     }

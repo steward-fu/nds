@@ -110,13 +110,6 @@ typedef enum {
 } filter_type_t;
 
 typedef struct {
-    struct {
-        struct {
-            int min;
-            int max;
-        } core, freq;
-    } cpu;
-
     int swap_l1_l2;
     int swap_r1_r2;
     int keys_rotate;

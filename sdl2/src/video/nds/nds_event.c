@@ -983,7 +983,7 @@ static int handle_hotkey(void)
     }
     else if (myevent.keypad.cur_bits & (1 << KEY_BIT_L2)) {
 #if defined(A30) || defined(FLIP)
-        if (myconfig.joy.mode != MYJOY_MODE_STYLUS) {
+        if (myconfig.joy.mode != MYJOY_MODE_TOUCH) {
 #endif
             if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0)) {
                 myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
@@ -1046,7 +1046,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
     }
     if (c == myevent.keypad.r2) {
 #if defined(A30) || defined(FLIP)
-        if (myconfig.joy.mode == MYJOY_MODE_STYLUS) {
+        if (myconfig.joy.mode == MYJOY_MODE_TOUCH) {
             myconfig.joy.show_cnt = MYJOY_SHOW_CNT;
             SDL_SendMouseButton(myvideo.win, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
         }

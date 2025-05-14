@@ -242,13 +242,6 @@ typedef struct _CUST_MENU {
     cust_menu_sub_t idx[MAX_MENU_LINE];
 } cust_menu_t ;
 
-#if defined(A30)
-typedef struct {
-    int clk;
-    uint32_t reg;
-} cpu_clk_t;
-#endif
-
 typedef struct {
     SDL_Window *win;
     int cur_w;
@@ -313,14 +306,14 @@ typedef struct {
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
     struct {
-        EGLConfig eglConfig;
-        EGLDisplay eglDisplay;
-        EGLContext eglContext;
-        EGLSurface eglSurface;
+        EGLConfig config;
+        EGLDisplay display;
+        EGLContext context;
+        EGLSurface surface;
         GLuint vShader;
         GLuint fShader;
         GLuint pObject;
-        GLuint texID[TEXTURE_MAX];
+        GLuint texture[TEXTURE_MAX];
         GLint posLoc;
         GLint texLoc;
         GLint samLoc;
@@ -338,6 +331,7 @@ typedef struct {
     struct {
         int fd;
         int fb;
+        int pre_fb;
         volatile int wait_for_flip;
 
         drmModeRes *res;
@@ -347,6 +341,7 @@ typedef struct {
         PFNEGLGETPLATFORMDISPLAYEXTPROC pfn;
 
         struct gbm_bo *bo;
+        struct gbm_bo *pre_bo;
         struct gbm_device *gbm;
         struct gbm_surface *gs;
     } drm;
