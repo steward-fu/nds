@@ -74,9 +74,11 @@
 #define MAX_LANG_LINE               256
 #define MAX_MENU_LINE               256
 
-#define DEF_LANG            "en_us"
+#define DEF_LANG            "en_US"
 #define DEF_PEN_SPEED       10
 #define DEF_FAST_FORWARD    6
+#define DEF_SWIN_ALPHA      6
+#define DEF_LAYOUT_MODE     1
 
 #if !defined(MAX_PATH)
 #define MAX_PATH        255
@@ -115,11 +117,11 @@ typedef struct {
     int swap_r1_r2;
     int keys_rotate;
 
+    int lang;
     int hotkey;
     int fast_forward;
     int check_battery;
     filter_type_t filter;
-    char lang[MAX_LANG_NAME];
     char state_path[MAX_PATH];
 
     struct {
