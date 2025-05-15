@@ -74,6 +74,7 @@
 #define MAX_LANG_LINE               256
 #define MAX_MENU_LINE               256
 
+#define DEF_LANG            "en_us"
 #define DEF_PEN_SPEED       10
 #define DEF_FAST_FORWARD    6
 
@@ -185,6 +186,9 @@ void render_scanline_tiled_4bpp(void);
 void* neon_memcpy(void *, const void *, size_t);
 
 int drop_bios_files(const char *);
+int get_dir_cnt(const char *);
+int get_file_cnt(const char *);
+int get_path_by_idx(const char *, int, char *);
 
 #endif
 

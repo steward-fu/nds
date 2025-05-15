@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -298,6 +299,136 @@ TEST(common, drop_bios_files)
     unlink(VALID_PATH BIOS_PATH "/" NDS_BIOS_ARM9_FILE);
     unlink(VALID_PATH BIOS_PATH "/" NDS_FIRMWARE_FILE);
     rmdir(VALID_PATH BIOS_PATH);
+}
+#endif
+
+int get_path_by_idx(const char *path, int idx, char *buf)
+{
+    int r = -1;
+    int count = 0;
+    DIR *d = NULL;
+    struct dirent *dir = NULL;
+
+    debug("call %s(path=%p, idx=%d, buf=%p)\n", __func__, path, idx, buf);
+
+    if (!path) {
+        error("path is null\n");
+        return r;
+    }
+
+    d = opendir(path);
+    if (!d) {
+        error("failed to open dir \"%s\"\n", path);
+        return r;
+    }
+
+    while ((dir = readdir(d)) != NULL) {
+        if (strcmp(dir->d_name, ".") == 0) {
+            continue;
+        }
+
+        if (strcmp(dir->d_name, "..") == 0) {
+            continue;
+        }
+
+        if (dir->d_type == DT_DIR) {
+            continue;
+        }
+
+        if (count == idx) {
+            r = 0;
+            snprintf(buf, MAX_PATH, "%s/%s", path, dir->d_name) ? 0 : 1;
+            break;
+        }
+        count+= 1;
+    }
+    closedir(d);
+
+    return r;
+}
+
+#if defined(UT)
+TEST(common, get_path_by_idx)
+{
+    char buf[MAX_PATH] = { 0 };
+
+    TEST_ASSERT_EQUAL_INT(-1, get_path_by_idx(NULL, 0, 0));
+    TEST_ASSERT_EQUAL_INT(0, get_path_by_idx(".", 0, buf));
+    TEST_ASSERT_EQUAL_INT(1, !!buf[0]);
+}
+#endif
+
+int get_dir_cnt(const char *path)
+{
+    DIR *d = NULL;
+    int count = 0;
+    struct dirent *dir = NULL;
+
+    debug("call %s(path=\"%s\")\n", __func__, path);
+
+    d = opendir(path);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (dir->d_type != DT_DIR) {
+                continue;
+            }
+            if (strcmp(dir->d_name, ".") == 0) {
+                continue;
+            }
+            if (strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+            count += 1;
+        }
+        closedir(d);
+    }
+    debug("file count=%d\n", count);
+
+    return count;
+}
+
+#if defined(UT)
+TEST(common, get_dir_cnt)
+{
+    TEST_ASSERT_EQUAL_INT(0, get_dir_cnt("/XXX"));
+    TEST_ASSERT_EQUAL_INT(4, get_dir_cnt("."));
+}
+#endif
+
+int get_file_cnt(const char *path)
+{
+    DIR *d = NULL;
+    int count = 0;
+    struct dirent *dir = NULL;
+
+    debug("call %s(path=\"%s\")\n", __func__, path);
+
+    d = opendir(path);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (dir->d_type == DT_DIR) {
+                continue;
+            }
+            if (strcmp(dir->d_name, ".") == 0) {
+                continue;
+            }
+            if (strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+            count += 1;
+        }
+        closedir(d);
+    }
+    debug("file count=%d\n", count);
+
+    return count;
+}
+
+#if defined(UT)
+TEST(common, get_file_cnt)
+{
+    TEST_ASSERT_EQUAL_INT(0, get_file_cnt("/XXX"));
+    TEST_ASSERT_EQUAL_INT(4, get_file_cnt("src"));
 }
 #endif
 

@@ -11,6 +11,11 @@
 
 #include "common.h"
 
+#if defined(UT)
+#define R_LCD_W         640
+#define R_LCD_H         480
+#endif
+
 #if defined(GKD2)
 #define R_LCD_W         640
 #define R_LCD_H         480

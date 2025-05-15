@@ -58,7 +58,7 @@
 #include "trimui.h"
 #endif
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(BRICK) || defined(UT)
 #include "runner.h"
 #endif
 
@@ -190,9 +190,6 @@ typedef enum {
 
 #define HOTKEY_BIND_MENU    0
 #define HOTKEY_BIND_SELECT  1
-
-#define DEF_LANG_SLOT       0
-#define DEF_LANG_LANG       "english"
 
 typedef enum {
 #if defined(MINI)
@@ -360,7 +357,6 @@ typedef struct {
 
     struct {
         int update;
-        int load_bg;
         bool show_fps;
         uint32_t status;
 
@@ -467,13 +463,14 @@ typedef struct {
     } thread;
 } nds_video;
 
+void update_wayland_res(int, int);
+const char *l10n(const char *);
+
 int flush_lcd(uint32_t, const void *, SDL_Rect, SDL_Rect, uint32_t);
 
-void update_wayland_res(int, int);
-
-const char *l10n(const char *);
 int handle_sdl2_menu(int);
 int handle_drastic_menu(void);
+
 int load_touch_pen(void);
 int load_menu_res(void);
 

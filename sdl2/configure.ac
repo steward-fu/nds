@@ -2510,6 +2510,7 @@ CheckNDSVideo()
 
     if test x$MOD = xut; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DUT"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/src"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/extras/fixture/src"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../ut/extras/memory/src"
