@@ -75,7 +75,7 @@ static int get_font_height(const char *);
 static int load_layout_bg(void);
 static int free_menu_res(void);
 static int flip_lcd(void);
-static int load_lang_file(const char *);
+static int load_lang_file(void);
 static void quit_video(_THIS);
 
 #if defined(TRIMUI)
@@ -1480,20 +1480,19 @@ int handle_drastic_menu(void)
 
 static int process_screen(void)
 {
+    int idx = 0;
     static int autostate = 15;
     static int show_info = -1;
     static int cur_filter = -1;
     static int cur_layout_bg = -1;
     static int cur_layout_mode = -1;
+    static int col_fg = 0xe0e000;
+    static int col_bg = 0x000000;
+    static char buf[MAX_PATH] = { 0 };
 
 #if defined(MINI) || defined(A30) || defined(FLIP)
     static int bat_chk_cnt = BAT_CHK_CNT;
 #endif
-
-    int idx = 0;
-    int col_fg = 0xe0e000;
-    int col_bg = 0x000000;
-    char buf[MAX_PATH] = { 0 };
 
     debug("call %s()\n", __func__);
 
@@ -2268,6 +2267,7 @@ static void* video_handler(void *param)
     myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+
     debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
     debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
     debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
@@ -2374,7 +2374,13 @@ static void* video_handler(void *param)
 
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode = 0;
-                flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
+                flush_lcd(
+                    -1,
+                    myvideo.cvt->pixels,
+                    myvideo.cvt->clip_rect,
+                    myvideo.cvt->clip_rect,
+                    myvideo.cvt->pitch
+                );
                 flip_lcd();
                 myconfig.filter = pre_filter;
                 myconfig.layout.mode = pre_mode;
@@ -2490,33 +2496,29 @@ static int free_lang_res(void)
 #if defined(UT)
 TEST(sdl2_video, free_lang_res)
 {
-    TEST_ASSERT_EQUAL_INT(0, load_lang_file(DEF_LANG));
+    myconfig.lang = 0;
+    TEST_ASSERT_EQUAL_INT(0, load_lang_file());
     TEST_ASSERT_EQUAL_INT(0, free_lang_res());
     TEST_ASSERT_NULL(myvideo.lang.trans[0]);
 }
 #endif
 
-static int load_lang_file(const char *lang)
+static int load_lang_file(void)
 {
     int cc = 0;
     int len = 0;
     FILE *f = NULL;
     char buf[MAX_PATH + 32] = { 0 };
 
-    debug("call %s(lang=%p)\n", __func__, lang);
+    debug("call %s(lang=%d)\n", __func__, myconfig.lang);
 
-    if (!lang) {
-        error("lang is null\n");
-        return -1;
-    }
-
-    if (!strcmp(DEF_LANG, lang)) {
+    if (myconfig.lang == 0) {
         return 0;
     }
 
     free_lang_res();
 
-    sprintf(buf, "%s%s/%s", myvideo.home, LANG_PATH, lang);
+    sprintf(buf, "%s%s/%s", myvideo.home, LANG_PATH, lang_file_name[myconfig.lang]);
     f = fopen(buf, "r");
     if (!f) {
         error("failed to open lang file \"%s\"\n", buf);
@@ -2566,6 +2568,7 @@ static int enum_lang_file(void)
     snprintf(buf, sizeof(buf), "%s%s", myvideo.home, LANG_PATH);
     debug("lang folder=\"%s\"\n", buf);
 
+    memset(lang_file_name, 0, sizeof(lang_file_name));
     strcpy(lang_file_name[cnt], DEF_LANG);
     cnt += 1;
 
@@ -2586,7 +2589,7 @@ static int enum_lang_file(void)
             continue;
         }
 
-        debug("lang[%d]=\"%s\"\n", cnt, dir->d_name);
+        printf("lang[%d]=\"%s\"\n", cnt, dir->d_name);
         strcpy(lang_file_name[cnt], dir->d_name);
 
         cnt += 1;
@@ -3425,7 +3428,7 @@ TEST(sdl2_video, draw_touch_pen)
 }
 #endif
 
-int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srt, SDL_Rect drt, uint32_t pitch)
+int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 {
 #if defined(TRIMUI)
     int x = 0;
@@ -4654,7 +4657,7 @@ TEST(sdl2_video, flush_lcd)
 
 static int flip_lcd(void)
 {
-#if defined(TRIMUI) || defined(PANDORA) || defined(FLIP)
+#if defined(TRIMUI) || defined(PANDORA)
     int r = 0;
 #endif
 
@@ -4782,7 +4785,7 @@ const char* l10n(const char *p)
         return p;
     }
 
-    if (!strcmp(myconfig.lang, DEF_LANG)) {
+    if (myconfig.lang == 0) {
         return p;
     }
 
@@ -4823,12 +4826,18 @@ static int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t 
     debug("call %s(info=\"%s\", x=%d, y=%d)\n", __func__, info, x, y);
 
     if (!info) {
+        error("info is null\n");
         return 0;
     }
 
+    if (!myvideo.menu.font) {
+        error("font is null\n");
+        return -1;
+    }
+
     len = strlen(info);
-    if ((myvideo.menu.font == NULL) || (len == 0) || (len >= MAX_PATH)) {
-        error("invalid parameters\n");
+    if ((len == 0) || (len >= MAX_PATH)) {
+        error("invalid len(%d)\n", len);
         return -1;
     }
 
@@ -5138,6 +5147,8 @@ static int load_layout_bg(void)
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
     SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
+#endif
+#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
     SDL_Rect drt = { 0, 0, myvideo.cur_w, myvideo.cur_h };
 #endif
 
@@ -5480,7 +5491,7 @@ static int init_device(void)
     myvideo.cur_w = SCREEN_W;
     myvideo.cur_h = SCREEN_H;
     myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
-    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, myvideo.cur_w, myvideo.cur_h, 32, 0, 0, 0, 0);
+    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
 
     myconfig.pen.sel = 0;
     myconfig.pen.max = get_pen_cnt();
@@ -5512,7 +5523,7 @@ static int init_device(void)
 
     load_config(myvideo.home);
     enum_lang_file();
-    load_lang_file(myconfig.lang);
+    load_lang_file();
     load_menu_res();
     load_touch_pen();
 
@@ -5829,9 +5840,9 @@ static int lang_next(void)
 
     debug("call %s()\n", __func__);
 
-    for (cc = 1; cc < (MAX_LANG_FILE - 1); cc++) {
+    for (cc = myconfig.lang + 1; cc < MAX_LANG_FILE; cc++) {
         if (lang_file_name[cc][0]) {
-            strncpy(myconfig.lang, lang_file_name[cc], sizeof(myconfig.lang));
+            myconfig.lang = cc;
             return 0;
         }
     }
@@ -5852,12 +5863,13 @@ static int lang_prev(void)
 
     debug("call %s()\n", __func__);
 
-    for (cc = (MAX_LANG_FILE - 1); cc > 1; cc--) {
+    for (cc = myconfig.lang - 1; cc >= 0; cc--) {
         if (lang_file_name[cc][0]) {
-            strncpy(myconfig.lang, lang_file_name[cc], sizeof(myconfig.lang));
+            myconfig.lang = cc;
             return 0;
         }
     }
+
     return -1;
 }
 
@@ -6556,8 +6568,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
     case MENU_RJOY_CUST_KEY3:
         if (myconfig.rjoy.mode == MYJOY_MODE_CUST_KEY) {
             if (right_key) {
-                if (myconfig.rjoy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] < 13) {
-                    myconfig.rjoy.cust_key[cur_sel - MENU_JOY_CUST_KEY0] += 1;
+                if (myconfig.rjoy.cust_key[cur_sel - MENU_RJOY_CUST_KEY0] < 13) {
+                    myconfig.rjoy.cust_key[cur_sel - MENU_RJOY_CUST_KEY0] += 1;
                 }
             }
             else {
@@ -6630,7 +6642,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     sx = 0;
     switch (cc) {
     case MENU_LANG:
-        sprintf(buf, "%s", myconfig.lang);
+        sprintf(buf, "%s", lang_file_name[myconfig.lang]);
         break;
     case MENU_BIND_HOTKEY:
         sprintf(buf, "%s", l10n(BIND_HOTKEY_STR[myconfig.hotkey]));
@@ -6756,7 +6768,7 @@ int handle_sdl2_menu(int key)
 {
     static int cur_sel = 0;
     static int pre_fast = 0;
-    static char pre_lang[MAX_LANG_NAME] = { 0 };
+    static int pre_lang = 0;
 
     int cc = 0;
     int sx = 0;
@@ -6769,10 +6781,6 @@ int handle_sdl2_menu(int key)
     SDL_Rect rt = { 0 };
 
     debug("call %s(key=%d)\n", __func__, key);
-
-    if (pre_lang[0] == 0) {
-        strcpy(pre_lang, DEF_LANG);
-    }
 
     switch (key) {
     case KEY_BIT_UP:
@@ -6792,9 +6800,9 @@ int handle_sdl2_menu(int key)
         apply_sdl2_menu_setting(cur_sel, 1);
         break;
     case KEY_BIT_B:
-        if (strcmp(pre_lang, myconfig.lang)) {
-            load_lang_file(myconfig.lang);
-            strcpy(pre_lang, myconfig.lang);
+        if (pre_lang != myconfig.lang) {
+            load_lang_file();
+            pre_lang = myconfig.lang;
         }
 
         if (pre_fast != myconfig.fast_forward) {

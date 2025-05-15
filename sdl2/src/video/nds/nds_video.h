@@ -466,7 +466,7 @@ typedef struct {
 void update_wayland_res(int, int);
 const char *l10n(const char *);
 
-int flush_lcd(uint32_t, const void *, SDL_Rect, SDL_Rect, uint32_t);
+int flush_lcd(int, const void *, SDL_Rect, SDL_Rect, int);
 
 int handle_sdl2_menu(int);
 int handle_drastic_menu(void);
