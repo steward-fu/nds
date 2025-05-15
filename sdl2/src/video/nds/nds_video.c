@@ -3436,7 +3436,8 @@ int flush_lcd(uint32_t id, const void *pixels, SDL_Rect srt, SDL_Rect drt, uint3
     uint32_t *dst = (uint32_t *)myvideo.wl.pixels[myvideo.wl.flip];
 #endif
 
-    debug("call %s(tex=%d, pixels=%p, pitch=%d, alpha=%d)\n", __func__, id, pixels, pitch, alpha);
+    debug("call %s(tex=%d, pixels=%p, pitch=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d))\n",
+        __func__, id, pixels, pitch, srt.x, srt.y, srt.w, srt.h, drt.x, drt.y, drt.w, drt.h);
 
 #if defined(GKD2) || defined(BRICK)
     myvideo.shm.buf->srt.x = srt.x;
