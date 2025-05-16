@@ -44,8 +44,8 @@ const SDL_Scancode nds_key_code[] = {
     SDLK_ESCAPE,        // B
     SDLK_LSHIFT,        // X
     SDLK_LALT,          // Y
-    SDLK_e,             // L1
-    SDLK_t,             // R1
+    SDLK_PAGEUP,        // L1
+    SDLK_PAGEDOWN,      // R1
     SDLK_TAB,           // L2
     SDLK_BACKSPACE,     // R2
     SDLK_RCTRL,         // SELECT
