@@ -429,7 +429,7 @@ static SDL_Renderer *create_renderer(SDL_Window *w, Uint32 flags)
     r->driverdata = NULL;
     r->window = w;
 
-#if defined(BRICK) || defined(GKD2) || defined(FLIP)
+#if defined(BRICK) || defined(FLIP)
     *myhook.var.system.config.hires_3d = 1;
 #endif
 
