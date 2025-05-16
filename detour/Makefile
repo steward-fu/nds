@@ -6,6 +6,7 @@ LDFLAGS += -fpic
 LDFLAGS += -shared
 LDFLAGS += -L../common
 LDFLAGS += -lcommon
+LDFLAGS += -lpthread
 SOURCES  = hook.c
 
 ifneq ($(MOD),ut)

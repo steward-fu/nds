@@ -167,6 +167,8 @@ typedef struct {
     void *spu_adpcm_decode_block;
     void *render_scanline_tiled_4bpp;
     void *render_polygon_setup_perspective_steps;
+    void *puts;
+    void *printf_chk;
 } fun_t;
 
 typedef struct {
@@ -254,6 +256,8 @@ typedef int32_t (*nds_load_state_index)(void *, uint32_t, uint16_t *, uint16_t *
 typedef int32_t (*nds_save_state_index)(void *, uint32_t, uint16_t *, uint16_t *);
 typedef int32_t (*nds_load_state)(void *, const char *, uint16_t *, uint16_t *, uint32_t);
 typedef int32_t (*nds_save_state)(void *, const char *, char *, uint16_t *, uint16_t *);
+typedef int (*nds_printf_chk)(int, const char *);
+typedef int (*nds_puts)(const char *);
 
 int init_hook(size_t, const char *);
 int quit_hook(void);

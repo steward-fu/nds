@@ -7,8 +7,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <string.h>
+#include <pthread.h>
 #include <sys/mman.h>
 
 #if defined(UT)
@@ -554,6 +556,8 @@ static int init_table(void)
     myhook.fun.spu_adpcm_decode_block = (void *)0x0808d268;
     myhook.fun.render_scanline_tiled_4bpp = (void *)0x080bcf74;
     myhook.fun.render_polygon_setup_perspective_steps = (void *)0x080c1cd4;
+    myhook.fun.printf_chk = (void *)0x08004a04;
+    myhook.fun.puts = (void *)0x0800405c;
 #endif
 
     return 0;
@@ -565,6 +569,68 @@ TEST(detour, init_table)
     TEST_ASSERT_EQUAL_INT(0, init_table());
     TEST_ASSERT_EQUAL_INT(0x08006ad0, myhook.var.fast_forward);
     TEST_ASSERT_EQUAL_INT(0x080a0a18, myhook.fun.menu);
+}
+#endif
+
+static int prehook_cb_puts(const char *s)
+{
+    debug(s);
+}
+
+static void* kill_handler(void *param)
+{
+    char buf[32] = { 0 };
+
+    debug("call %s()\n", __func__);
+
+    sleep(3);
+    sprintf(buf, "kill -9 %d", (int)param);
+    printf(buf);
+    system(buf);
+
+    return NULL;
+}
+
+static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
+{
+#if 0
+    va_list args = { 0 };
+
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+#endif
+
+    // Renaming savestate file to
+    if ((fmt[0] && (fmt[0] == 'R')) &&
+        (fmt[1] && (fmt[1] == 'e')) &&
+        (fmt[2] && (fmt[2] == 'n')) &&
+        (fmt[3] && (fmt[3] == 'a')) &&
+        (fmt[4] && (fmt[4] == 'm')) &&
+        (fmt[5] && (fmt[5] == 'i')) &&
+        (fmt[6] && (fmt[6] == 'n')) &&
+        (fmt[7] && (fmt[7] == 'g')) &&
+        (fmt[8] && (fmt[8] == ' ')) &&
+        (fmt[9] && (fmt[9] == 's')) &&
+        (fmt[10] && (fmt[10] == 'a')) &&
+        (fmt[11] && (fmt[11] == 'v')) &&
+        (fmt[12] && (fmt[12] == 'e')) &&
+        (fmt[13] && (fmt[13] == 's')) &&
+        (fmt[14] && (fmt[14] == 't')) &&
+        (fmt[15] && (fmt[15] == 'a')) &&
+        (fmt[16] && (fmt[16] == 't')) &&
+        (fmt[17] && (fmt[17] == 'e')))
+    {
+        pthread_t id = 0;
+        pthread_create(&id, NULL, kill_handler, (void *)getpid());
+    }
+    return 0;
+}
+
+#if defined(UT)
+TEST(detour, prehook_cb_printf_chk)
+{
+    TEST_ASSERT_EQUAL_INT(0, prehook_cb_printf_chk());
 }
 #endif
 
@@ -587,6 +653,8 @@ int init_hook(size_t page, const char *path)
         add_prehook_cb((void *)myhook.fun.initialize_backup, (void *)prehook_cb_initialize_backup);
     }
 
+    add_prehook_cb(myhook.fun.puts, prehook_cb_puts);
+    add_prehook_cb(myhook.fun.printf_chk, prehook_cb_printf_chk);
     add_prehook_cb(
         (void *)myhook.fun.render_polygon_setup_perspective_steps,
         render_polygon_setup_perspective_steps
