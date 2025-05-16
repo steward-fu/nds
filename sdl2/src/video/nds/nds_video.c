@@ -629,12 +629,8 @@ static int draw_drastic_menu_main(void)
         p = &myvideo.menu.drastic.item.idx[cc];
         if (p->y == 201) {
             draw = 1;
-#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-            sprintf(buf, "NDS %s", &p->msg[8]);
-#else
-            sprintf(buf, "%s", &p->msg[8]);
-#endif
-            x = myvideo.cur_w - get_font_width(buf) - 10;
+            sprintf(buf, "DraStic %s", &p->msg[8]);
+            x = 10;
             y = 10 / div;
         }
         else if (p->y == 280) {
@@ -713,45 +709,9 @@ static int draw_drastic_menu_main(void)
     }
 
     y = 10;
-#if defined(RG28XX) || defined(GKD2)
-    sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
-#endif
-
-#if defined(BRICK)
-    sprintf(buf, "Rel "NDS_VER", Res %s", "1024*768");
-#endif
-
-#if defined(A30) || defined(FLIP)
-    if (myconfig.check_battery) {
-        sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
-    }
-    else {
-        sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
-    }
-#endif
-
-#if defined(MINI)
-    if (myconfig.check_battery) {
-        sprintf(buf, "Rel "NDS_VER", Res %s, BAT %d%%", "640*480", get_bat_val());
-    }
-    else {
-        sprintf(buf, "Rel "NDS_VER", Res %s", "640*480");
-    }
-#endif
-
-#if defined(TRIMUI)
-    sprintf(buf, "Rel "NDS_VER", Res %s", "320*240");
-#endif
-
-#if defined(PANDORA)
-    sprintf(buf, "Rel "NDS_VER", Res %s", "800*480");
-#endif
-
-#if defined(QX1000) || defined(XT897)
-    sprintf(buf, "Rel "NDS_VER);
-#endif
-
-    draw_info(myvideo.menu.drastic.frame, buf, 10, y / div, MENU_COLOR_UNSEL, 0);
+    sprintf(buf, "%s", __DATE__);
+    x = myvideo.cur_w - get_font_width(buf) - 10;
+    draw_info(myvideo.menu.drastic.frame, buf, x, y / div, MENU_COLOR_UNSEL, 0);
 
     if (draw_shot) {
         const uint32_t len = NDS_W * NDS_H * 2;
@@ -1491,7 +1451,7 @@ static int process_screen(void)
     static char buf[MAX_PATH] = { 0 };
 
 #if defined(MINI) || defined(A30) || defined(FLIP)
-    static int bat_chk_cnt = BAT_CHK_CNT;
+    static int chk_bat = BAT_CHK_CNT;
 #endif
 
     debug("call %s()\n", __func__);
@@ -1506,13 +1466,13 @@ static int process_screen(void)
     }
 
     if (myvideo.menu.sdl2.enable) {
-        myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
         return 0;
     }
 
     if (myvideo.menu.drastic.enable) {
         myvideo.menu.drastic.enable = 0;
-        myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
 
 #if defined(QX1000) || defined(XT897)
         update_wayland_res(NDS_Wx2, NDS_H);
@@ -1526,45 +1486,60 @@ static int process_screen(void)
     {
         if (myvideo.lcd.status & NDS_STATE_SAVE) {
             show_info = 50;
-            sprintf(buf, " %s ", l10n("Quick Save"));
+            sprintf(buf, " %s ", l10n("QUICK SAVE"));
             myvideo.lcd.status &= ~NDS_STATE_SAVE;
         }
         else if (myvideo.lcd.status & NDS_STATE_LOAD) {
             show_info = 50;
-            sprintf(buf, " %s ", l10n("Quick Load"));
+            sprintf(buf, " %s ", l10n("QUICK LOAD"));
             myvideo.lcd.status &= ~NDS_STATE_LOAD;
         }
         else if (myvideo.lcd.status & NDS_STATE_FAST) {
             show_info = 50;
-            sprintf(buf, " %s ", l10n("Fast Forward"));
+            sprintf(buf, " %s ", l10n("FAST FORWARD"));
             myvideo.lcd.status &= ~NDS_STATE_FAST;
+        }
+        else if (cur_layout_mode != myconfig.layout.mode.sel) {
+            show_info = 50;
+            sprintf(buf, " %s: T%d", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
         }
         else if (cur_layout_bg != myconfig.layout.bg.sel) {
             show_info = 50;
-            sprintf(buf, " %s %d ", l10n("Background"), myconfig.layout.bg.sel);
+            if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel]) {
+                sprintf(
+                    buf,
+                    " %s: %d/%s ",
+                    l10n("LAYOUT BG"),
+                    myconfig.layout.bg.sel,
+                    myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel]
+                );
+            }
+            else {
+                sprintf(buf, " %s: %s ", l10n("LAYOUT BG"), l10n("NONE"));
+            }
         }
         else if (cur_filter != myconfig.filter) {
             show_info = 50;
-            sprintf(buf, " %s ", l10n((myconfig.filter == FILTER_PIXEL) ? "Pixel" : "Blur"));
+            sprintf(buf, " %s ", l10n((myconfig.filter == FILTER_PIXEL) ? "PIXEL" : "BLUR"));
         }
 
         cur_filter = myconfig.filter;
         cur_layout_bg = myconfig.layout.bg.sel;
         cur_layout_mode = myconfig.layout.mode.sel;
-        myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
     }
 
     if (show_info == 0) {
         show_info = -1;
         col_fg = 0xe0e000;
         col_bg = 0x000000;
-        myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
     }
         
-    if (myconfig.check_battery) {
+    if (myconfig.show_low_battery) {
 #if defined(MINI) || defined(A30) || defined(FLIP)
-        bat_chk_cnt -= 1;
-        if (bat_chk_cnt <= 0) {
+        chk_bat -= 1;
+        if (chk_bat <= 0) {
             int v = get_bat_val();
 
             if (v <= 10) {
@@ -1574,186 +1549,52 @@ static int process_screen(void)
                 sprintf(buf, " %s %d%% ", l10n("BAT"), v);
             }
 
-            bat_chk_cnt = BAT_CHK_CNT;
+            chk_bat = BAT_CHK_CNT;
             if (v <= 5) {
-                bat_chk_cnt >>= 1;
+                chk_bat >>= 1;
             }
         }
 #endif
     }
 
-    if (myvideo.layout.reload_bg) {
+    if (myvideo.layout.redraw_bg) {
         load_layout_bg();
-        myvideo.layout.reload_bg -= 1;
+        myvideo.layout.redraw_bg -= 1;
     }
 
     for (idx = 0; idx < 2; idx++) {
-        int screen0 = 0;
-        int screen1 = 0;
+        int pitch = 0;
         int show_pen = 1;
         int need_update = 1;
-        int pitch = 0;
         void *pixels = NULL;
-        SDL_Rect srt = {0, 0, NDS_W, NDS_H};
-        SDL_Rect drt = {0, 0, 160, 120};
+        SDL_Rect srt = { 0, 0, NDS_W, NDS_H };
+        SDL_Rect drt = { 0, idx * 120, 160, 120 };
 
-        pitch = *myhook.var.sdl.bytes_per_pixel * srt.w;
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
-#else
-        pixels = (void *)(*((uintptr_t *)myhook.var.sdl.screen[idx].pixels));
-#endif
-        debug("pixels=%p\n", pixels);
-
-        srt.w = NDS_W;
-        srt.h = NDS_H;
-
-        drt.y = idx * 120;
-        screen0 = (idx == 0);
-        screen1 = (idx != 0);
         show_pen = *myhook.var.sdl.swap_screens ^ 1;
-        debug("layout mode=%d\n", myconfig.layout.mode.sel);
+        pitch = *myhook.var.sdl.bytes_per_pixel * srt.w;
+        pixels = (void *)(*((uintptr_t *)myhook.var.sdl.screen[idx].pixels));
+        drt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].x;
+        drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].y;
+        drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].w;
+        drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].h;
 
 #if defined(QX1000)
 #elif defined(XT897)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
 #elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+        pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
+
         switch (myconfig.layout.mode.sel) {
         case LAYOUT_MODE_T0:
-            if (screen1) {
-                drt.x = 0;
-                drt.y = 0;
-                drt.w = myvideo.cur_w;
-                drt.h = myvideo.cur_h;
-            }
-            else {
-                need_update = 0;
-            }
-            break;
         case LAYOUT_MODE_T1:
-            if (screen1) {
-                drt.x = 0;
-                drt.y = 0;
-                drt.w = myvideo.cur_w;
-                drt.h = myvideo.cur_h;
-            }
-            else {
-                need_update = 0;
-            }
-            break;
         case LAYOUT_MODE_T2:
-            if (screen1) {
-                drt.w = NDS_W * 2;
-                drt.h = NDS_H * 2;
-                drt.x = (myvideo.cur_w - drt.w) / 2;
-                drt.y = (myvideo.cur_h - drt.h) / 2;
-            }
-            else {
-                need_update = 0;
-            }
-            break;
         case LAYOUT_MODE_T3:
-            if (screen1) {
-                drt.x = 0;
-                drt.y = 0;
-                drt.w = myvideo.cur_w;
-                drt.h = myvideo.cur_h;
-            }
-            else {
-                need_update = 0;
-            }
-            break;
-        case LAYOUT_MODE_T4:
-            drt.w = NDS_W;
-            drt.h = NDS_H;
-            drt.x = (myvideo.cur_w - drt.w) / 2;
-            drt.y = screen0 ? 48 : 48 + drt.h;
-            break;
-        case LAYOUT_MODE_T5:
-            drt.w = 320;
-            drt.h = 240;
-            drt.x = (myvideo.cur_w - drt.w) / 2;
-            drt.y = screen0 ? 0 : (myvideo.cur_h - drt.h);
-            break;
-        case LAYOUT_MODE_T6:
-            drt.w = NDS_W;
-            drt.h = NDS_H;
-            drt.x = screen0 ? 64 : 64 + drt.w;
-            drt.y = (myvideo.cur_h - drt.h) / 2;
-            break;
-        case LAYOUT_MODE_T7:
-            drt.w = 320;
-            drt.h = 240;
-            drt.x = screen0 ? 0 : drt.w;
-            drt.y = (myvideo.cur_h - drt.h) / 2;
-            break;
-        case LAYOUT_MODE_T8:
-            drt.x = screen1 ? 160 : 0;
-            drt.y = screen1 ? 120 : 0;
-            drt.w = screen1 ? (myvideo.cur_w - 160) : 160;
-            drt.h = screen1 ? (myvideo.cur_h - 120) : 120;
-            break;
-        case LAYOUT_MODE_T9:
-            drt.x = screen1 ? NDS_W : 0;
-            drt.y = screen1 ? NDS_H : 0;
-            drt.w = screen1 ? (myvideo.cur_w - NDS_W) : NDS_W;
-            drt.h = screen1 ? (myvideo.cur_h - NDS_H) : NDS_H;
-            break;
-        case LAYOUT_MODE_T10:
-            drt.w = screen1 ? (myvideo.cur_w - 160) : 160;
-            drt.h = screen1 ? (myvideo.cur_h - 120) : 120;
-            drt.x = screen1 ? ((myvideo.cur_w - drt.w) / 2) : ((myvideo.cur_w - drt.w) / 2);
-            drt.y = screen1 ? 120 : 0;
-            break;
-        case LAYOUT_MODE_T11:
-            drt.w = screen1 ? (myvideo.cur_w - 512) : 512;
-            drt.h = screen1 ? (myvideo.cur_h - 384) : 384;
-            drt.x = screen1 ? ((myvideo.cur_w - drt.w) / 2) : ((myvideo.cur_w - drt.w) / 2);
-            drt.y = screen1 ? 0 : myvideo.cur_h - 384;
-            break;
-        case LAYOUT_MODE_T12:
-            drt.w = screen1 ? (myvideo.cur_w - 512) : 512;
-            drt.h = screen1 ? (myvideo.cur_h - 384) : 384;
-            drt.x = screen1 ? (myvideo.cur_w - drt.w) : 0;
-            drt.y = screen1 ? 0 : myvideo.cur_h - 384;
-            break;
-        case LAYOUT_MODE_T13:
-            drt.w = screen1 ? (myvideo.cur_w - 512) : 512;
-            drt.h = screen1 ? (myvideo.cur_h - 384) : 384;
-            drt.x = screen1 ? 0 : (myvideo.cur_w - drt.w);
-            drt.y = screen1 ? 0 : myvideo.cur_h - 384;
-            break;
-        case LAYOUT_MODE_T14:
-            drt.w = screen0 ? NDS_W : (myvideo.cur_w - NDS_W);
-            drt.h = screen0 ? NDS_H : (myvideo.cur_h - NDS_H);
-            drt.x = screen0 ? ((myvideo.cur_w - drt.w) / 2) : ((myvideo.cur_w - drt.w) / 2);
-            drt.y = screen0 ? 0 : NDS_H;
-            break;
-        case LAYOUT_MODE_T15:
-            drt.w = screen0 ? NDS_W : (myvideo.cur_w - NDS_W);
-            drt.h = screen0 ? NDS_H : (myvideo.cur_h - NDS_H);
-            drt.x = screen0 ? 0 : NDS_W;
-            drt.y = screen0 ? ((myvideo.cur_h - drt.h) / 2) : ((myvideo.cur_h - drt.h) / 2);
-            break;
-        case LAYOUT_MODE_T16:
-        case LAYOUT_MODE_T17:
-            drt.x = screen0 ? 0 : 320;
-            drt.y = 26;
-            drt.w = 427;
-            drt.h = 320;
-            break;
-        case LAYOUT_MODE_T18:
-        case LAYOUT_MODE_T19:
-            drt.x = screen0 ? 0 : 320;
-            drt.y = 0;
-            drt.w = 480;
-            drt.h = 320;
+            need_update = idx;
             break;
         }
 #else
-        debug("unsupported platform\n");
-        return 0;
+        exit(-1);
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
@@ -1772,7 +1613,8 @@ static int process_screen(void)
 #if defined(A30) || defined(FLIP)
         if (show_pen && 
             ((myevent.mode == NDS_TOUCH_MODE) || 
-            (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_TOUCH))))
+            (myconfig.joy.show_cnt &&
+            (myconfig.joy.mode == MYJOY_MODE_TOUCH))))
         {
 #else
         if (show_pen && (myevent.mode == NDS_TOUCH_MODE)) {
@@ -1791,27 +1633,26 @@ static int process_screen(void)
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
         if ((idx == 0) &&
-            (myconfig.layout.swin.border > 0) &&
+            myconfig.layout.swin.border &&
             ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
         {
             int c0 = 0;
             uint32_t *p0 = NULL;
             uint32_t *p1 = NULL;
-            uint32_t col[] = { 0, 0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0x000000, 0xffff00, 0x00ffff };
 
             p0 = (uint32_t *)pixels;
             p1 = (uint32_t *)pixels + ((srt.h - 1) * srt.w);
             for (c0 = 0; c0 < srt.w; c0++) {
-                *p0++ = col[myconfig.layout.swin.border];
-                *p1++ = col[myconfig.layout.swin.border];
+                *p0++ = 0;
+                *p1++ = 0;
             }
 
             p0 = (uint32_t *)pixels;
             p1 = (uint32_t *)pixels + (srt.w - 1);
             for (c0 = 0; c0 < srt.h; c0++) {
-                *p0 = col[myconfig.layout.swin.border];
-                *p1 = col[myconfig.layout.swin.border];
+                *p0 = 0;
+                *p1 = 0;
                 p0 += srt.w;
                 p1 += srt.w;
             }
@@ -1845,10 +1686,11 @@ static int process_screen(void)
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
             switch (myconfig.layout.mode.sel) {
             case LAYOUT_MODE_T0:
-                drt.x = 0;
-                drt.y = 0;
-                drt.w = 160;
-                drt.h = 120;
+            case LAYOUT_MODE_T1:
+                drt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].x;
+                drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].y;
+                drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].w;
+                drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].h;
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
@@ -1873,35 +1715,6 @@ static int process_screen(void)
                 flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
 #endif
                 break;
-            case LAYOUT_MODE_T1:
-                drt.x = 0;
-                drt.y = 0;
-                drt.w = NDS_W;
-                drt.h = NDS_H;
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-                switch (myconfig.layout.swin.pos) {
-                case 0:
-                    drt.x = SCREEN_W - drt.w;
-                    drt.y = 0;
-                    break;
-                case 1:
-                    drt.x = 0;
-                    drt.y = 0;
-                    break;
-                case 2:
-                    drt.x = 0;
-                    drt.y = SCREEN_H - drt.h;
-                    break;
-                case 3:
-                    drt.x = SCREEN_W - drt.w;
-                    drt.y = SCREEN_H - drt.h;
-                    break;
-                }
-                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
-#else 
-                flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
-#endif
-                break;
             }
 #endif
         }
@@ -1912,11 +1725,30 @@ static int process_screen(void)
     }
 
     if (show_info > 0) {
-        draw_info(NULL, buf, myvideo.cur_w - get_font_width(buf), 0, col_fg, col_bg);
+        switch (myconfig.layout.mode.sel) {
+        case LAYOUT_MODE_T16:
+        case LAYOUT_MODE_T18:
+            draw_info(NULL, buf, 0, 0, col_fg, col_bg);
+            break;
+        case LAYOUT_MODE_T17:
+        case LAYOUT_MODE_T19:
+            draw_info(
+                NULL,
+                buf,
+                myvideo.cur_w - get_font_height(buf),
+                myvideo.cur_h - get_font_width(buf),
+                col_fg,
+                col_bg
+            );
+            break;
+        default:
+            draw_info(NULL, buf, myvideo.cur_w - get_font_width(buf), 0, col_fg, col_bg);
+            break;
+        }
         show_info -= 1;
     }
     else if (myvideo.lcd.show_fps && myvideo.fps) {
-        SDL_Rect rt = {0};
+        SDL_Rect rt = { 0 };
 
         rt.x = myvideo.cur_w - myvideo.fps->w;
         rt.y = 0;
@@ -5143,10 +4975,6 @@ static int load_layout_bg(void)
         pre_mode = myconfig.layout.mode.sel;
         pre_sel = myconfig.layout.bg.sel;
 
-        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel] == NULL) {
-            return 0;
-        }
-
         free_layout_bg();
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
@@ -5154,6 +4982,10 @@ static int load_layout_bg(void)
             return -1;
         }
         SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
+
+        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel] == NULL) {
+            return 0;
+        }
 
         snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, BG_PATH, myconfig.layout.bg.sel, myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel]);
         t = IMG_Load(buf);
@@ -5567,7 +5399,6 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 26;
         myvideo.layout.mode[mode].screen[1].w = 427;
         myvideo.layout.mode[mode].screen[1].h = 320;
-        myvideo.layout.mode[mode].rotate = 180;
         break;
     case 17:
         myvideo.layout.mode[mode].screen[0].x = 0;
@@ -5578,7 +5409,6 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 26;
         myvideo.layout.mode[mode].screen[1].w = 427;
         myvideo.layout.mode[mode].screen[1].h = 320;
-        myvideo.layout.mode[mode].rotate = 270;
         break;
     case 18:
         myvideo.layout.mode[mode].screen[0].x = 0;
@@ -5589,7 +5419,6 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 320;
-        myvideo.layout.mode[mode].rotate = 180;
         break;
     case 19:
         myvideo.layout.mode[mode].screen[0].x = 0;
@@ -5600,7 +5429,6 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 320;
-        myvideo.layout.mode[mode].rotate = 270;
         break;
     }
 
@@ -5615,7 +5443,7 @@ static int add_layout_mode(int mode, const char *fname)
 
     idx = myvideo.layout.mode[mode].max_bg;
     printf(
-        "layout.mode[%d].bg[%d]=(%d,%d,%d,%d)(%d,%d,%d,%d)(r%d)(\"%s\")\n",
+        "layout.mode[%d].bg[%d]=(%d,%d,%d,%d)(%d,%d,%d,%d)(\"%s\")\n",
         mode,
         idx > 0 ? idx - 1 : 0,
         myvideo.layout.mode[mode].screen[0].x,
@@ -5626,7 +5454,6 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].y,
         myvideo.layout.mode[mode].screen[1].w,
         myvideo.layout.mode[mode].screen[1].h,
-        myvideo.layout.mode[mode].rotate,
         fname
     );
 
@@ -5675,6 +5502,26 @@ TEST(sdl2_video, free_layout_mode)
 }
 #endif
 
+static int add_layout_black_bg(void)
+{
+    int cc = 0;
+
+    debug("call %s()\n", __func__);
+
+    for (cc = 0; cc < myvideo.layout.max_mode; cc++) {
+        add_layout_mode(cc, NULL);
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, add_layout_black_bg)
+{
+    TEST_ASSERT_EQAUAL_INT(0, add_layout_black_bg());
+}
+#endif
+
 static int enum_layout_bg_file(void)
 {
     int cc = 0;
@@ -5720,6 +5567,8 @@ static int enum_layout_bg_file(void)
         }
         closedir(d);
     }
+
+    add_layout_black_bg();
 
     return myvideo.layout.max_mode;
 }
@@ -6841,7 +6690,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
     case MENU_CHK_BAT:
-        myconfig.check_battery = right_key;
+        myconfig.show_low_battery = right_key;
         break;
 #endif
     default:
@@ -6989,7 +6838,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
     case MENU_CHK_BAT:
-        sprintf(buf, "%s", l10n(myconfig.check_battery ? "Yes" : "No"));
+        sprintf(buf, "%s", l10n(myconfig.show_low_battery ? "Yes" : "No"));
         break;
 #endif
     }
@@ -7261,7 +7110,7 @@ int handle_sdl2_menu(int key)
     flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
     flip_lcd();
 #endif
-    myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+    myvideo.layout.redraw_bg = REDRAW_BG_CNT;
 
     return 0;
 }

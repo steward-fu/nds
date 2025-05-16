@@ -69,9 +69,9 @@
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897) || defined(BRICK)
-#define RELOAD_BG_COUNT 1
+#define REDRAW_BG_CNT 1
 #else
-#define RELOAD_BG_COUNT 120
+#define REDRAW_BG_CNT 120
 #endif
 
 typedef enum {
@@ -222,7 +222,6 @@ typedef struct {
         int w;
         int h;
     } screen[2];
-    int rotate;
     int max_bg;
     char *bg[MAX_LAYOUT_BG_FILE];
 } layout_mode_t;
@@ -452,7 +451,7 @@ typedef struct {
     } menu;
 
     struct {
-        int reload_bg;
+        int redraw_bg;
         SDL_Surface *bg;
 
         int max_mode;

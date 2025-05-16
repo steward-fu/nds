@@ -4,7 +4,6 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#define NDS_VER     "v1.9"
 #define NDS_W       256
 #define NDS_H       192
 #define NDS_Wx2     (NDS_W << 1)
@@ -111,7 +110,7 @@ typedef struct {
     int lang;
     int hotkey;
     int fast_forward;
-    int check_battery;
+    int show_low_battery;
     filter_type_t filter;
     char state_path[MAX_PATH];
 
