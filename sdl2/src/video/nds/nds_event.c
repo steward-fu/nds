@@ -1854,6 +1854,9 @@ static int update_raw_input_statue(uint32_t kbit, int val)
     case KEY_BIT_MENU:      b = NDS_KEY_BIT_MENU;   break;
     case KEY_BIT_ONION:     b = NDS_KEY_BIT_MENU;   break;
     case KEY_BIT_QUIT:      b = NDS_KEY_BIT_QUIT;   break;
+    case KEY_BIT_SAVE:      b = NDS_KEY_BIT_SAVE;   break;
+    case KEY_BIT_LOAD:      b = NDS_KEY_BIT_LOAD;   break;
+    case KEY_BIT_FAST:      b = NDS_KEY_BIT_FAST;   break;
     }
 
     if (val) {
