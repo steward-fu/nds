@@ -7175,7 +7175,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     sx = 0;
     switch (cc) {
     case MENU_LANG:
-        sprintf(buf, "%s", lang_file_name[myconfig.lang]);
+        sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
     case MENU_BIND_HOTKEY:
         sprintf(buf, "%s", l10n(BIND_HOTKEY_STR[myconfig.hotkey]));
@@ -7256,7 +7256,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[3]]));
         break;
     case MENU_JOY_DZONE:
-        sprintf(buf, "%d (15)", myconfig.joy.dzone);
+        sprintf(buf, "%d", myconfig.joy.dzone);
         break;
 #endif
 #if defined(FLIP)
@@ -7276,7 +7276,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[3]]));
         break;
     case MENU_RJOY_DZONE:
-        sprintf(buf, "%d (15)", myconfig.rjoy.dzone);
+        sprintf(buf, "%d", myconfig.rjoy.dzone);
         break;
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
