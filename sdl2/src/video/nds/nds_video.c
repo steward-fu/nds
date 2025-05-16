@@ -1781,6 +1781,68 @@ TEST(sdl2_video, process_screen)
 }
 #endif
 
+static void* prehook_cb_malloc(size_t size)
+{
+    static int idx = 0;
+
+    void *r = NULL;
+    uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
+
+    debug("call %s(size=%d)\n", __func__, size);
+
+    if ((size == (NDS_W * NDS_H * bpp)) ||
+        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
+    {
+        r = myvideo.lcd.virt_addr[0][idx];
+        idx += 1;
+        idx %= 2;
+    }
+    else {
+        r = malloc(size);
+    }
+    return r;
+}
+
+static void prehook_cb_free(void *ptr)
+{
+    int c0 = 0;
+    int c1 = 0;
+    int found = 0;
+
+    debug("call %s(ptr=%p)\n", __func__, ptr);
+
+    for (c0 = 0; c0 < 2; c0++) {
+        for (c1 = 0; c1 < 2; c1++) {
+            if (ptr == myvideo.lcd.virt_addr[c0][c1]) {
+                found = 1;
+                break;
+            }
+        }
+    }
+
+    if (found == 0) {
+        free(ptr);
+    }
+}
+
+static void* prehook_cb_realloc(void *ptr, size_t size)
+{
+    void *r = NULL;
+    uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
+
+    debug("call %s(ptr=%p, size=%d)\n", __func__, ptr, size);
+
+    if ((size == (NDS_W * NDS_H * bpp)) ||
+        (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
+    {
+        r = prehook_cb_malloc(size);
+    }
+    else {
+        r = realloc(ptr, size);
+    }
+    return r;
+}
+
 void prehook_cb_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
     debug("call %s()\n", __func__);
@@ -5656,6 +5718,9 @@ static int init_device(void)
     init_event();
     init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
 
+    add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
+    add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
+    add_prehook_cb(myhook.fun.free,    prehook_cb_free);
     add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
     add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
     add_prehook_cb(myhook.fun.savestate_pre, prehook_cb_savestate_pre);
