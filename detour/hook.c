@@ -558,6 +558,7 @@ static int init_table(void)
     myhook.fun.render_polygon_setup_perspective_steps = (void *)0x080c1cd4;
     myhook.fun.printf_chk = (void *)0x08004a04;
     myhook.fun.puts = (void *)0x0800405c;
+    myhook.fun.select_quit = (void *)0x0809b134;
 #endif
 
     return 0;
@@ -572,11 +573,6 @@ TEST(detour, init_table)
 }
 #endif
 
-static int prehook_cb_puts(const char *s)
-{
-    printf(s);
-}
-
 static void* kill_handler(void *param)
 {
     char buf[32] = { 0 };
@@ -585,10 +581,24 @@ static void* kill_handler(void *param)
 
     sleep(3);
     sprintf(buf, "kill -9 %d", (int)param);
-    printf(buf);
     system(buf);
 
     return NULL;
+}
+
+static void prehook_cb_select_quit(void *menu_state, void *menu_option)
+{
+    pthread_t id = 0;
+
+    debug("call %s()\n", __func__);
+
+    pthread_create(&id, NULL, kill_handler, (void *)getpid());
+    quit_drastic();
+}
+
+static int prehook_cb_puts(const char *s)
+{
+    printf(s);
 }
 
 static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
@@ -655,6 +665,7 @@ int init_hook(size_t page, const char *path)
 
     //add_prehook_cb(myhook.fun.puts, prehook_cb_puts);
     //add_prehook_cb(myhook.fun.printf_chk, prehook_cb_printf_chk);
+    add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
     add_prehook_cb(
         (void *)myhook.fun.render_polygon_setup_perspective_steps,
         render_polygon_setup_perspective_steps
