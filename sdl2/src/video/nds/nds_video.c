@@ -1927,7 +1927,7 @@ static int process_screen(void)
         SDL_Rect srt = { 0, 0, NDS_W, NDS_H };
         SDL_Rect drt = { 0, idx * 120, 160, 120 };
 
-        show_pen = *myhook.var.sdl.swap_screens;
+        show_pen = *myhook.var.sdl.swap_screens == idx ? 0 : 1;
         pitch = *myhook.var.sdl.bytes_per_pixel * srt.w;
         pixels = (void *)(*((uintptr_t *)myhook.var.sdl.screen[idx].pixels));
         drt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].x;
@@ -5179,7 +5179,7 @@ int load_touch_pen(void)
         error("failed to get file path\n");
         return r;
     }
-    debug("pen path=\"%s\"\n", path);
+    debug("touch pen=\"%s\"\n", path);
 
     t = IMG_Load(path);
     if (!t) {
@@ -5198,6 +5198,7 @@ int load_touch_pen(void)
 #endif
 
     myvideo.touch.pen = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
+    SDL_FreeSurface(t);
 
     if (strstr(path, "left_top_")) {
         myconfig.pen.type = PEN_LT;
@@ -5214,8 +5215,6 @@ int load_touch_pen(void)
     else {
         myconfig.pen.type = PEN_CP;
     }
-
-    SDL_FreeSurface(t);
 
     return 0;
 }
@@ -7233,7 +7232,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "%s", l10n(myconfig.menu.show_cursor ? "Show" : "Hide"));
         break;
     case MENU_FAST_FORWARD:
-        sprintf(buf, "%d (6)", myconfig.fast_forward);
+        sprintf(buf, "%d", myconfig.fast_forward);
         break;
 #if defined(A30) || defined(FLIP)
     case MENU_JOY_MODE:

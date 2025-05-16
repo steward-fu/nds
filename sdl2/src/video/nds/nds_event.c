@@ -224,7 +224,7 @@ static int inc_touch_axis(int type)
         v*= 2;
     }
 
-    move = 500000.0 / v;
+    move = 250000.0 / v;
     if (move <= 0.0) {
         move = 1.0;
     }
@@ -2023,7 +2023,7 @@ TEST(sdl2_event, update_touch_axis)
 }
 #endif
 
-static int send_touch_key(void)
+static int send_touch_key(int raw_event)
 {
     uint32_t cc = 0;
     uint32_t bit = 0;
@@ -2033,18 +2033,24 @@ static int send_touch_key(void)
     uint32_t pressed = 0;
 #endif
 
-    debug("call %s()\n", __func__);
+    debug("call %s(changed=0x%x)\n", __func__, changed);
 
     if (changed & (1 << KEY_BIT_A)) {
 #if !defined(UT)
-        pressed = myevent.keypad.cur_bits & (1 << KEY_BIT_A);
+        pressed = !!(myevent.keypad.cur_bits & (1 << KEY_BIT_A));
+        debug("send touch key (pressed=%d)\n", pressed);
 
-        SDL_SendMouseButton(
-            myvideo.win,
-            0,
-            pressed ? SDL_PRESSED : SDL_RELEASED,
-            SDL_BUTTON_LEFT
-        );
+        if (raw_event) {
+            myevent.input.touch_status = pressed;
+        }
+        else {
+            SDL_SendMouseButton(
+                myvideo.win,
+                0,
+                pressed ? SDL_PRESSED : SDL_RELEASED,
+                SDL_BUTTON_LEFT
+            );
+        }
 #endif
     }
 
@@ -2116,14 +2122,14 @@ TEST(sdl2_event, send_touch_axis)
 }
 #endif
 
-static int send_touch_event(void)
+static int send_touch_event(int raw_event)
 {
     int r = 0;
 
     debug("call %s()\n", __func__);
 
     if (myevent.keypad.pre_bits != myevent.keypad.cur_bits) {
-        send_touch_key();
+        send_touch_key(raw_event);
     }
 
     r |= update_touch_axis();
@@ -2186,7 +2192,7 @@ void pump_event(_THIS)
             }
         }
         else if (myevent.mode == NDS_TOUCH_MODE) {
-            send_touch_event();
+            send_touch_event(0);
         }
     }
 
@@ -2205,7 +2211,8 @@ TEST(sdl2_event, pump_event)
 
 void prehook_cb_platform_get_input(uintptr_t p)
 {
-    static uint32_t pre_bits = 0;
+    static uint32_t pre_tp_bits = 0;
+    static uint32_t pre_key_bits = 0;
 
     input_struct *input = (input_struct *)(((uint8_t *)p) + NDS_INPUT_OFFSET);
 
@@ -2221,15 +2228,33 @@ void prehook_cb_platform_get_input(uintptr_t p)
             }
         }
         else if (myevent.mode == NDS_TOUCH_MODE) {
-            send_touch_event();
+            send_touch_event(1);
         }
     }
 
-    if (pre_bits != myevent.input.button_status) {
-        pre_bits = myevent.input.button_status;
+    if (pre_key_bits != myevent.input.button_status) {
+        pre_key_bits = myevent.input.button_status;
         if (p) {
             input->button_status = myevent.input.button_status;
             debug("button_status=0x%x\n", input->button_status);
+        }
+        else {
+            error("p is null\n");
+        }
+    }
+
+    if (pre_tp_bits != myevent.input.touch_status) {
+        pre_tp_bits = myevent.input.touch_status;
+        if (p) {
+            input->touch_x = myevent.touch.x;
+            input->touch_y = myevent.touch.y;
+            input->touch_status = myevent.input.touch_status;
+            debug(
+                "x=%d, y=%d, pressed%d\n",
+                input->touch_x,
+                input->touch_y,
+                !!input->touch_status
+            );
         }
         else {
             error("p is null\n");
