@@ -64,19 +64,19 @@ static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = { 0 };
 static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = { 0 };
 #endif
 
+static void quit_video(_THIS);
+static int flip_lcd(void);
 static int init_device(void);
 static int quit_device(void);
 static int init_video(_THIS);
-static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
-static int draw_touch_pen(void *, int, int);
-static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
+static int free_menu_res(void);
+static int load_lang_file(void);
+static int load_layout_bg(void);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
-static int load_layout_bg(void);
-static int free_menu_res(void);
-static int flip_lcd(void);
-static int load_lang_file(void);
-static void quit_video(_THIS);
+static int draw_touch_pen(void *, int, int);
+static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
+static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 
 #if defined(TRIMUI)
 static void disp_resize(void);
@@ -227,7 +227,7 @@ TEST_TEAR_DOWN(sdl2_video)
 }
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000) || defined(XT897) || defined(UT)
 void update_wayland_res(int w, int h)
 {
     float c0 = 0;
@@ -267,7 +267,14 @@ void update_wayland_res(int w, int h)
     debug("new wayland width=%d, height=%d, scale=%.2f\n", w, h, scale);
 }
 
-static void* wl_handler(void* pParam)
+#if defined(UT)
+TEST(sdl2_video, update_wayland_res)
+{
+    TEST_ASSERT_EQUAL_INT(0, update_wayland_res());
+}
+#endif
+
+static void* wl_disp_handler(void* pParam)
 {
     while (is_wl_thread_running) {
         if (myvideo.wl.init && myvideo.wl.ready) {
@@ -281,18 +288,50 @@ static void* wl_handler(void* pParam)
     return NULL;
 }
 
+#if defined(UT)
+TEST(sdl2_video, wl_disp_handler)
+{
+    TEST_ASSERT_EQUAL_INT(0, wl_disp_handler());
+}
+#endif
+
 static void cb_ping(void *dat, struct wl_shell_surface *shell_surf, uint32_t serial)
 {
+    debug("call %s()\n", __func__);
+
     wl_shell_surface_pong(shell_surf, serial);
 }
 
+#if defined(UT)
+TEST(sdl2_video, cb_ping)
+{
+    TEST_ASSERT_EQUAL_INT(0, cb_ping());
+}
+#endif
+
 static void cb_config(void *dat, struct wl_shell_surface *shell_surf, uint32_t edges, int32_t w, int32_t h)
 {
+    debug("call %s()\n", __func__);
 }
+
+#if defined(UT)
+TEST(sdl2_video, cb_config)
+{
+    TEST_ASSERT_EQUAL_INT(0, cb_config());
+}
+#endif
 
 static void cb_popup_done(void *dat, struct wl_shell_surface *shell_surf)
 {
+    debug("call %s()\n", __func__);
 }
+
+#if defined(UT)
+TEST(sdl2_video, cb_popup_done)
+{
+    TEST_ASSERT_EQUAL_INT(0, cb_popup_done());
+}
+#endif
 
 static const struct wl_shell_surface_listener cb_shell_surf = {
     cb_ping,
@@ -302,6 +341,8 @@ static const struct wl_shell_surface_listener cb_shell_surf = {
 
 static void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
 {
+    debug("call %s()\n", __func__);
+
     if (strcmp(intf, "wl_compositor") == 0) {
         myvideo.wl.compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
     }
@@ -310,12 +351,29 @@ static void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const cha
     }
 }
 
+#if defined(UT)
+TEST(sdl2_video, cb_handle)
+{
+    TEST_ASSERT_EQUAL_INT(0, cb_handle());
+}
+#endif
+
 static void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 {
+    debug("call %s()\n", __func__);
 }
 
-void quit_egl(void)
+#if defined(UT)
+TEST(sdl2_video, cb_remove)
 {
+    TEST_ASSERT_EQUAL_INT(0, cb_remove());
+}
+#endif
+
+static int quit_egl(void)
+{
+    debug("call %s()\n", __func__);
+
     myvideo.wl.init = 0;
     myvideo.wl.ready = 0;
 
@@ -326,10 +384,21 @@ void quit_egl(void)
     glDeleteShader(myvideo.wl.egl.vShader);
     glDeleteShader(myvideo.wl.egl.fShader);
     glDeleteProgram(myvideo.wl.egl.pObject);
+
+    return 0;
 }
 
-void quit_wl(void)
+#if defined(UT)
+TEST(sdl2_video, quit_egl)
 {
+    TEST_ASSERT_EQUAL_INT(0, quit_egl());
+}
+#endif
+
+static int quit_wl(void)
+{
+    debug("call %s()\n", __func__);
+
     myvideo.wl.init = 0;
     myvideo.wl.ready = 0;
 
@@ -345,10 +414,21 @@ void quit_wl(void)
 
     SDL_free(myvideo.wl.data);
     myvideo.wl.data = NULL;
+
+    return 0;
 }
 
-void init_wl(void)
+#if defined(UT)
+TEST(sdl2_video, quit_wl)
 {
+    TEST_ASSERT_EQUAL_INT(0, quit_wl());
+}
+#endif
+
+static int init_wl(void)
+{
+    debug("call %s()\n", __func__);
+
     myvideo.wl.display = wl_display_connect(NULL);
     myvideo.wl.registry = wl_display_get_registry(myvideo.wl.display);
 
@@ -365,14 +445,25 @@ void init_wl(void)
     wl_region_add(myvideo.wl.region, 0, 0, WL_WIN_W, WL_WIN_H);
     wl_surface_set_opaque_region(myvideo.wl.surface, myvideo.wl.region);
     myvideo.wl.egl.window = wl_egl_window_create(myvideo.wl.surface, WL_WIN_W, WL_WIN_H);
+
+    return 0;
 }
 
-void init_egl(void)
+#if defined(UT)
+TEST(sdl2_video, init_wl)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_wl());
+}
+#endif
+
+static int init_egl(void)
 {
     EGLint cnt = 0;
     EGLint major = 0;
     EGLint minor = 0;
     EGLConfig cfg = 0;
+
+    debug("call %s()\n", __func__);
 
     myvideo.wl.egl.display = eglGetDisplay((EGLNativeDisplayType)myvideo.wl.display);
     eglInitialize(myvideo.wl.egl.display, &major, &minor);
@@ -416,33 +507,40 @@ void init_egl(void)
     glEnableVertexAttribArray(myvideo.wl.egl.texCoordLoc);
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(myvideo.wl.egl.samplerLoc, 0);
+
+    return 0;
 }
 
-static void* draw_handler(void *pParam)
+#if defined(UT)
+TEST(sdl2_video, init_egl)
 {
-    int pre_filter = -1;
+    TEST_ASSERT_EQUAL_INT(0, init_egl());
+}
+#endif
 
+static void* wl_draw_handler(void *param)
+{
     init_wl();
     init_egl();
 
     debug("call %s()\n", __func__);
 
+#if !defined(UT)
     myvideo.wl.init = 1;
+#endif
+
     while (is_wl_thread_running) {
         if (myvideo.wl.ready) {
-            if (pre_filter != myconfig.filter) {
-                pre_filter = myconfig.filter;
-                if (myconfig.filter == FILTER_PIXEL) {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                }
-                else {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                }
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            if (myconfig.filter == FILTER_PIXEL) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             }
+            else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
             glVertexAttribPointer(myvideo.wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
             glVertexAttribPointer(myvideo.wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
@@ -463,6 +561,13 @@ static void* draw_handler(void *pParam)
     }
     return NULL;
 }
+
+#if defined(UT)
+TEST(sdl2_video, wl_draw_handler)
+{
+    TEST_ASSERT_EQUAL_INT(0, wl_draw_handler());
+}
+#endif
 #endif
 
 #if defined(MINI)
@@ -2920,8 +3025,8 @@ static int init_lcd(void)
     is_wl_thread_running = 1;
     myvideo.wl.bg = SDL_malloc(WL_WIN_W * WL_WIN_H * 4);
     memset(myvideo.wl.bg, 0, WL_WIN_W * WL_WIN_H * 2);
-    pthread_create(&thread_id[0], NULL, wl_handler, NULL);
-    pthread_create(&thread_id[1], NULL, draw_handler, NULL);
+    pthread_create(&thread_id[0], NULL, wl_disp_handler, NULL);
+    pthread_create(&thread_id[1], NULL, wl_draw_handler, NULL);
     while (myvideo.wl.init == 0) {
         usleep(100000);
     }
@@ -4132,7 +4237,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(TRIMUI)
     if ((pitch / srt.w) != 4) {
-        printf(PREFIX"Only support 32bits (%dx%dx%d)\n", srt.w, srt.h, (pitch / srt.w));
         return -1;
     }
 
@@ -5568,8 +5672,6 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, const char *fname)
 {
-    int idx = 0;
-
     debug("call %s(mode=%d, bg=%d, fname=%p)\n", mode, gb, fname);
 
     switch (mode) {
@@ -5776,11 +5878,10 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.max_mode = mode;
     }
 
-    idx = myvideo.layout.mode[mode].max_bg;
-    printf(
+    debug(
         "layout.mode[%d].bg[%d]=(%d,%d,%d,%d)(%d,%d,%d,%d)(\"%s\")\n",
         mode,
-        idx > 0 ? idx - 1 : 0,
+        myvideo.layout.mode[mode].max_bg ? myvideo.layout.mode[mode].max_bg - 1 : 0,
         myvideo.layout.mode[mode].screen[0].x,
         myvideo.layout.mode[mode].screen[0].y,
         myvideo.layout.mode[mode].screen[0].w,
@@ -5866,14 +5967,14 @@ static int enum_layout_bg_file(void)
     struct dirent *dir = NULL;
     char buf[MAX_PATH + 32] = { 0 };
 
-    printf("call %s()\n", __func__);
+    debug("call %s()\n", __func__);
 
     free_layout_mode();
 
     total = get_bg_cnt();
     for (cc = 0; cc < total; cc++) {
         snprintf(buf, sizeof(buf), "%s%s/%d", myvideo.home, BG_PATH, cc);
-        printf("enum folder=\"%s\"\n", buf);
+        debug("enum folder=\"%s\"\n", buf);
 
         d = opendir(buf);
         if (!d) {
