@@ -12,46 +12,21 @@
 #include "common.h"
 
 #if defined(UT)
-#define R_LCD_W         640
-#define R_LCD_H         480
+#define R_LCD_W 640
+#define R_LCD_H 480
 #endif
 
 #if defined(GKD2)
-#define R_LCD_W         640
-#define R_LCD_H         480
+#define R_LCD_W 640
+#define R_LCD_H 480
 #endif
 
 #if defined(BRICK)
-#define R_LCD_W         1024
-#define R_LCD_H         768
+#define R_LCD_W 1024
+#define R_LCD_H 768
 #endif
 
-#define SHM_NAME        "NDS_SHM"
-
-#define NDS_DIS_MODE_VH_T0          0
-#define NDS_DIS_MODE_VH_T1          1
-#define NDS_DIS_MODE_S0             2
-#define NDS_DIS_MODE_S1             3
-#define NDS_DIS_MODE_V0             4
-#define NDS_DIS_MODE_V1             5
-#define NDS_DIS_MODE_H0             6
-#define NDS_DIS_MODE_H1             7
-#define NDS_DIS_MODE_VH_S0          8
-#define NDS_DIS_MODE_VH_S1          9
-#define NDS_DIS_MODE_VH_S2          10
-#define NDS_DIS_MODE_VH_S3          11
-#define NDS_DIS_MODE_VH_S4          12
-#define NDS_DIS_MODE_VH_S5          13
-#define NDS_DIS_MODE_VH_C0          14
-#define NDS_DIS_MODE_VH_C1          15
-#define NDS_DIS_MODE_HH0            16
-#define NDS_DIS_MODE_HH1            17
-#define NDS_DIS_MODE_HH2            18
-#define NDS_DIS_MODE_HH3            19
-#define NDS_DIS_MODE_LAST           19
-
-#define NDS_DIS_MODE_HRES0          20
-#define NDS_DIS_MODE_HRES1          21
+#define SHM_NAME "NDS_SHM"
 
 typedef enum {
     TEXTURE_LCD0 = 0,

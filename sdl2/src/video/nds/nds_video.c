@@ -1521,7 +1521,7 @@ static int process_screen(void)
 
     if ((cur_filter != myconfig.filter) ||
         (cur_layout_bg != myconfig.layout.bg.sel) ||
-        (cur_layout_mode != myconfig.layout.mode) ||
+        (cur_layout_mode != myconfig.layout.mode.sel) ||
         myvideo.lcd.status)
     {
         if (myvideo.lcd.status & NDS_STATE_SAVE) {
@@ -1550,7 +1550,7 @@ static int process_screen(void)
 
         cur_filter = myconfig.filter;
         cur_layout_bg = myconfig.layout.bg.sel;
-        cur_layout_mode = myconfig.layout.mode;
+        cur_layout_mode = myconfig.layout.mode.sel;
         myvideo.layout.reload_bg = RELOAD_BG_COUNT;
     }
 
@@ -1571,12 +1571,12 @@ static int process_screen(void)
                 show_info = 50;
                 col_fg = 0xffffff;
                 col_bg = 0xff0000;
-                sprintf(buf, " %s %d%% ", l10n("Battery"), v);
+                sprintf(buf, " %s %d%% ", l10n("BAT"), v);
             }
 
             bat_chk_cnt = BAT_CHK_CNT;
             if (v <= 5) {
-                bat_chk_cnt /= 2;
+                bat_chk_cnt >>= 1;
             }
         }
 #endif
@@ -1611,164 +1611,144 @@ static int process_screen(void)
         drt.y = idx * 120;
         screen0 = (idx == 0);
         screen1 = (idx != 0);
-        show_pen = *myhook.var.sdl.swap_screens ? screen1 : screen0;
-        debug("layout mode=%d\n", myconfig.layout.mode);
+        show_pen = *myhook.var.sdl.swap_screens ^ 1;
+        debug("layout mode=%d\n", myconfig.layout.mode.sel);
 
 #if defined(QX1000)
 #elif defined(XT897)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
 #elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        switch (myconfig.layout.mode) {
-        case NDS_DIS_MODE_VH_T0:
+        switch (myconfig.layout.mode.sel) {
+        case LAYOUT_MODE_T0:
             if (screen1) {
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = myvideo.cur_w;
                 drt.h = myvideo.cur_h;
-                show_pen = 1;
             }
             else {
-                show_pen = 0;
                 need_update = 0;
             }
             break;
-        case NDS_DIS_MODE_VH_T1:
+        case LAYOUT_MODE_T1:
             if (screen1) {
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = myvideo.cur_w;
                 drt.h = myvideo.cur_h;
-                show_pen = 1;
             }
             else {
-                show_pen = 0;
                 need_update = 0;
             }
             break;
-        case NDS_DIS_MODE_S0:
+        case LAYOUT_MODE_T2:
             if (screen1) {
                 drt.w = NDS_W * 2;
                 drt.h = NDS_H * 2;
                 drt.x = (myvideo.cur_w - drt.w) / 2;
                 drt.y = (myvideo.cur_h - drt.h) / 2;
-                show_pen = 1;
             }
             else {
-                show_pen = 0;
                 need_update = 0;
             }
             break;
-        case NDS_DIS_MODE_S1:
+        case LAYOUT_MODE_T3:
             if (screen1) {
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = myvideo.cur_w;
                 drt.h = myvideo.cur_h;
-                show_pen = 1;
             }
             else {
-                show_pen = 0;
                 need_update = 0;
             }
             break;
-        case NDS_DIS_MODE_V0:
+        case LAYOUT_MODE_T4:
             drt.w = NDS_W;
             drt.h = NDS_H;
             drt.x = (myvideo.cur_w - drt.w) / 2;
             drt.y = screen0 ? 48 : 48 + drt.h;
             break;
-        case NDS_DIS_MODE_V1:
+        case LAYOUT_MODE_T5:
             drt.w = 320;
             drt.h = 240;
             drt.x = (myvideo.cur_w - drt.w) / 2;
             drt.y = screen0 ? 0 : (myvideo.cur_h - drt.h);
             break;
-        case NDS_DIS_MODE_H0:
+        case LAYOUT_MODE_T6:
             drt.w = NDS_W;
             drt.h = NDS_H;
             drt.x = screen0 ? 64 : 64 + drt.w;
             drt.y = (myvideo.cur_h - drt.h) / 2;
             break;
-        case NDS_DIS_MODE_H1:
+        case LAYOUT_MODE_T7:
             drt.w = 320;
             drt.h = 240;
             drt.x = screen0 ? 0 : drt.w;
             drt.y = (myvideo.cur_h - drt.h) / 2;
             break;
-        case NDS_DIS_MODE_VH_S0:
+        case LAYOUT_MODE_T8:
             drt.x = screen1 ? 160 : 0;
             drt.y = screen1 ? 120 : 0;
             drt.w = screen1 ? (myvideo.cur_w - 160) : 160;
             drt.h = screen1 ? (myvideo.cur_h - 120) : 120;
             break;
-        case NDS_DIS_MODE_VH_S1:
+        case LAYOUT_MODE_T9:
             drt.x = screen1 ? NDS_W : 0;
             drt.y = screen1 ? NDS_H : 0;
             drt.w = screen1 ? (myvideo.cur_w - NDS_W) : NDS_W;
             drt.h = screen1 ? (myvideo.cur_h - NDS_H) : NDS_H;
             break;
-        case NDS_DIS_MODE_VH_S2:
+        case LAYOUT_MODE_T10:
             drt.w = screen1 ? (myvideo.cur_w - 160) : 160;
             drt.h = screen1 ? (myvideo.cur_h - 120) : 120;
             drt.x = screen1 ? ((myvideo.cur_w - drt.w) / 2) : ((myvideo.cur_w - drt.w) / 2);
             drt.y = screen1 ? 120 : 0;
             break;
-        case NDS_DIS_MODE_VH_S3:
+        case LAYOUT_MODE_T11:
             drt.w = screen1 ? (myvideo.cur_w - 512) : 512;
             drt.h = screen1 ? (myvideo.cur_h - 384) : 384;
             drt.x = screen1 ? ((myvideo.cur_w - drt.w) / 2) : ((myvideo.cur_w - drt.w) / 2);
             drt.y = screen1 ? 0 : myvideo.cur_h - 384;
             break;
-        case NDS_DIS_MODE_VH_S4:
+        case LAYOUT_MODE_T12:
             drt.w = screen1 ? (myvideo.cur_w - 512) : 512;
             drt.h = screen1 ? (myvideo.cur_h - 384) : 384;
             drt.x = screen1 ? (myvideo.cur_w - drt.w) : 0;
             drt.y = screen1 ? 0 : myvideo.cur_h - 384;
             break;
-        case NDS_DIS_MODE_VH_S5:
+        case LAYOUT_MODE_T13:
             drt.w = screen1 ? (myvideo.cur_w - 512) : 512;
             drt.h = screen1 ? (myvideo.cur_h - 384) : 384;
             drt.x = screen1 ? 0 : (myvideo.cur_w - drt.w);
             drt.y = screen1 ? 0 : myvideo.cur_h - 384;
             break;
-        case NDS_DIS_MODE_VH_C0:
+        case LAYOUT_MODE_T14:
             drt.w = screen0 ? NDS_W : (myvideo.cur_w - NDS_W);
             drt.h = screen0 ? NDS_H : (myvideo.cur_h - NDS_H);
             drt.x = screen0 ? ((myvideo.cur_w - drt.w) / 2) : ((myvideo.cur_w - drt.w) / 2);
             drt.y = screen0 ? 0 : NDS_H;
             break;
-        case NDS_DIS_MODE_VH_C1:
+        case LAYOUT_MODE_T15:
             drt.w = screen0 ? NDS_W : (myvideo.cur_w - NDS_W);
             drt.h = screen0 ? NDS_H : (myvideo.cur_h - NDS_H);
             drt.x = screen0 ? 0 : NDS_W;
             drt.y = screen0 ? ((myvideo.cur_h - drt.h) / 2) : ((myvideo.cur_h - drt.h) / 2);
             break;
-        case NDS_DIS_MODE_HH0:
-        case NDS_DIS_MODE_HH1:
+        case LAYOUT_MODE_T16:
+        case LAYOUT_MODE_T17:
             drt.x = screen0 ? 0 : 320;
             drt.y = 26;
             drt.w = 427;
             drt.h = 320;
             break;
-        case NDS_DIS_MODE_HH2:
-        case NDS_DIS_MODE_HH3:
+        case LAYOUT_MODE_T18:
+        case LAYOUT_MODE_T19:
             drt.x = screen0 ? 0 : 320;
             drt.y = 0;
             drt.w = 480;
             drt.h = 320;
-            break;
-        case NDS_DIS_MODE_HRES0:
-            drt.w = NDS_Wx2;
-            drt.h = NDS_Hx2;
-            drt.x = (myvideo.cur_w - drt.w) / 2;
-            drt.y = (myvideo.cur_h - drt.h) / 2;
-            break;
-        case NDS_DIS_MODE_HRES1:
-            drt.x = 0;
-            drt.y = 0;
-            drt.w = myvideo.cur_w;
-            drt.h = myvideo.cur_h;
             break;
         }
 #else
@@ -1777,10 +1757,10 @@ static int process_screen(void)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if ((myconfig.layout.mode == NDS_DIS_MODE_HH0) ||
-            (myconfig.layout.mode == NDS_DIS_MODE_HH1) ||
-            (myconfig.layout.mode == NDS_DIS_MODE_HH2) ||
-            (myconfig.layout.mode == NDS_DIS_MODE_HH3))
+        if ((myconfig.layout.mode.sel == LAYOUT_MODE_T16) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_T17) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_T18) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_T19))
         {
             drt.x = (drt.x == 0) ? 320 : 0;
         }
@@ -1810,7 +1790,11 @@ static int process_screen(void)
         }
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-        if ((idx == 0) && (myconfig.layout.swin.border > 0) && ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))) {
+        if ((idx == 0) &&
+            (myconfig.layout.swin.border > 0) &&
+            ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+        {
             int c0 = 0;
             uint32_t *p0 = NULL;
             uint32_t *p1 = NULL;
@@ -1859,8 +1843,8 @@ static int process_screen(void)
 #endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-            switch (myconfig.layout.mode) {
-            case NDS_DIS_MODE_VH_T0:
+            switch (myconfig.layout.mode.sel) {
+            case LAYOUT_MODE_T0:
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = 160;
@@ -1889,7 +1873,7 @@ static int process_screen(void)
                 flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
 #endif
                 break;
-            case NDS_DIS_MODE_VH_T1:
+            case LAYOUT_MODE_T1:
                 drt.x = 0;
                 drt.y = 0;
                 drt.w = NDS_W;
@@ -1944,7 +1928,7 @@ static int process_screen(void)
 #if defined(TRIMUI)
     if (need_restore) {
         need_restore = 0;
-        myconfig.layout.mode = pre_dismode;
+        myconfig.layout.mode.sel = pre_dismode;
         disp_resize();
     }
 #endif
@@ -2146,7 +2130,7 @@ static int strip_newline_char(char *p)
     int cc = 0;
     int len = 0;
 
-    debug("call %s(p=%p)\n", __func_, p);
+    debug("call %s(p=%p)\n", __func__, p);
 
     if (!p) {
         error("p is null\n");
@@ -2366,14 +2350,14 @@ static void* video_handler(void *param)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myvideo.menu.sdl2.enable) {
             if (myvideo.menu.update) {
-                int pre_mode = myconfig.layout.mode;
+                int pre_mode = myconfig.layout.mode.sel;
                 int pre_filter = myconfig.filter;
 
                 myvideo.menu.update = 0;
                 debug("update sdl2 menu\n");
 
                 myconfig.filter = FILTER_BLUR;
-                myconfig.layout.mode = 0;
+                myconfig.layout.mode.sel = 0;
                 flush_lcd(
                     -1,
                     myvideo.cvt->pixels,
@@ -2383,19 +2367,19 @@ static void* video_handler(void *param)
                 );
                 flip_lcd();
                 myconfig.filter = pre_filter;
-                myconfig.layout.mode = pre_mode;
+                myconfig.layout.mode.sel = pre_mode;
             }
         }
         else if (myvideo.menu.drastic.enable) {
             if (myvideo.menu.update) {
-                int pre_mode = myconfig.layout.mode;
+                int pre_mode = myconfig.layout.mode.sel;
                 int pre_filter = myconfig.filter;
 
                 myvideo.menu.update = 0;
                 debug("update drastic menu\n");
 
                 myconfig.filter = FILTER_BLUR;
-                myconfig.layout.mode = 0;
+                myconfig.layout.mode.sel = 0;
                 flush_lcd(
                     -1,
                     myvideo.menu.drastic.frame->pixels,
@@ -2405,7 +2389,7 @@ static void* video_handler(void *param)
                 );
                 flip_lcd();
                 myconfig.filter = pre_filter;
-                myconfig.layout.mode = pre_mode;
+                myconfig.layout.mode.sel = pre_mode;
             }
         }
         else if (myvideo.lcd.update) {
@@ -2589,7 +2573,7 @@ static int enum_lang_file(void)
             continue;
         }
 
-        printf("lang[%d]=\"%s\"\n", cnt, dir->d_name);
+        debug("lang[%d]=\"%s\"\n", cnt, dir->d_name);
         strcpy(lang_file_name[cnt], dir->d_name);
 
         cnt += 1;
@@ -3043,7 +3027,7 @@ static int disp_resize(void)
     debug("call %s()\n", __func__);
 
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
-    if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T2) {
         myvideo.gfx.buf.info.fb.crop.width  = ((uint64_t)myvideo.cur_h) << 32;
         myvideo.gfx.buf.info.fb.crop.height = ((uint64_t)myvideo.cur_w) << 32;
     }
@@ -3486,12 +3470,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.shm.buf->tex = tex;
     myvideo.shm.buf->pitch = pitch;
     myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
-    myvideo.shm.buf->layout = myconfig.layout.mode;
+    myvideo.shm.buf->layout = myconfig.layout.mode.sel;
     myvideo.shm.buf->filter = myconfig.filter;
     debug(
         "send SHM_CMD_FLUSH, tex=%d, layout=%d, pitch=%d, alpha=%d\n",
         tex,
-        myconfig.layout.mode,
+        myconfig.layout.mode.sel,
         pitch,
         myconfig.layout.swin.alpha
     );
@@ -3504,7 +3488,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-    if ((id != -1) && ((myconfig.layout.mode == NDS_DIS_MODE_HH1) || (myconfig.layout.mode == NDS_DIS_MODE_HH3))) {
+    if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T17) || (myconfig.layout.mode.sel == LAYOUT_MODE_T19))) {
         fg_vertices[5] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
         fg_vertices[6] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
 
@@ -3517,7 +3501,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         fg_vertices[0] = fg_vertices[15];
         fg_vertices[1] = fg_vertices[6];
     }
-    else if ((id != -1) && ((myconfig.layout.mode == NDS_DIS_MODE_HH0) || (myconfig.layout.mode == NDS_DIS_MODE_HH2))) {
+    else if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T16) || (myconfig.layout.mode.sel == LAYOUT_MODE_T18))) {
         fg_vertices[15] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
         fg_vertices[16] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
 
@@ -3558,7 +3542,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
-    if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
+    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) || (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) && (tex == TEXTURE_LCD0)) {
         glUniform1f(myvideo.egl.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
@@ -3569,7 +3553,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)) && (tex == TEXTURE_LCD0)) {
+    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) || (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) && (tex == TEXTURE_LCD0)) {
         glUniform1f(myvideo.egl.alphaLoc, 0.0);
         glDisable(GL_BLEND);
     }
@@ -3985,13 +3969,13 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         return -1;
     }
 
-    if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T2) {
         ox = 32;
         oy = 24;
     }
 
     if((srt.w == NDS_W) && (srt.h == NDS_H)) {
-        if (myconfig.layout.mode == NDS_DIS_MODE_S0) {
+        if (myconfig.layout.mode.sel == LAYOUT_MODE_T2) {
             dst = myvideo.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
         }
         else {
@@ -4121,12 +4105,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                 0x000000, 0xa0a0a0, 0x400000, 0x004000, 0x000040, 0x000000, 0xa0a000, 0x00a0a0
             };
 
-            switch (myconfig.layout.mode) {
-            case NDS_DIS_MODE_VH_T0:
+            switch (myconfig.layout.mode.sel) {
+            case LAYOUT_MODE_T0:
                 sw = 170;
                 sh = 128;
                 break;
-            case NDS_DIS_MODE_VH_T1:
+            case LAYOUT_MODE_T1:
                 sw = srt.w;
                 sh = srt.h;
                 break;
@@ -4134,8 +4118,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
             ay = 0;
             for (y=0; y<sh; y++) {
-                switch (myconfig.layout.mode) {
-                case NDS_DIS_MODE_VH_T0:
+                switch (myconfig.layout.mode.sel) {
+                case LAYOUT_MODE_T0:
                     if (y && ((y % 2) == 0)) {
                         ay+= 1;
                     }
@@ -4149,8 +4133,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                         *d++ = col[myconfig.layout.swin.border];
                     }
                     else {
-                        switch (myconfig.layout.mode) {
-                        case NDS_DIS_MODE_VH_T0:
+                        switch (myconfig.layout.mode.sel) {
+                        case LAYOUT_MODE_T0:
                             if (x && ((x % 2) == 0)) {
                                 ax+= 1;
                             }
@@ -4203,8 +4187,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             copy_it = 0;
         }
 
-        switch (myconfig.layout.mode) {
-        case NDS_DIS_MODE_VH_T0:
+        switch (myconfig.layout.mode.sel) {
+        case LAYOUT_MODE_T0:
             drt.w = 170;
             drt.h = 128;
             if (myconfig.layout.swin.alpha > 0) {
@@ -4213,7 +4197,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                 pitch = srt.w * 4;
             }
             break;
-        case NDS_DIS_MODE_VH_T1:
+        case LAYOUT_MODE_T1:
             drt.w = NDS_W;
             drt.h = NDS_H;
             if (myconfig.layout.swin.alpha > 0) {
@@ -5155,12 +5139,15 @@ static int load_layout_bg(void)
     debug("call %s()\n", __func__);
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
-    if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode)) {
-        pre_mode = myconfig.layout.mode;
+    if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode.sel)) {
+        pre_mode = myconfig.layout.mode.sel;
         pre_sel = myconfig.layout.bg.sel;
 
-        free_layout_bg();
+        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel] == NULL) {
+            return 0;
+        }
 
+        free_layout_bg();
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
             error("failed to create surface for bg\n");
@@ -5168,63 +5155,7 @@ static int load_layout_bg(void)
         }
         SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
 
-        snprintf(buf, sizeof(buf), "%s%s/%d", myvideo.home, BG_PATH, myconfig.layout.bg.sel);
-        switch (myconfig.layout.mode) {
-        case NDS_DIS_MODE_VH_T0:
-        case NDS_DIS_MODE_VH_T1:
-            return 0;
-        case NDS_DIS_MODE_S0:
-            strcat(buf, "/r0,64,48,512,384.png");
-            break;
-        case NDS_DIS_MODE_S1:
-            return 0;
-        case NDS_DIS_MODE_V0:
-            strcat(buf, "/r0,192,48,256,192,192,240,256,192.png");
-            break;
-        case NDS_DIS_MODE_V1:
-            strcat(buf, "/r0,160,0,320,240,160,240,320,240.png");
-            break;
-        case NDS_DIS_MODE_H0:
-            strcat(buf, "/r0,64,144,256,192,320,144,256,192.png");
-            break;
-        case NDS_DIS_MODE_H1:
-            strcat(buf, "/r0,0,120,320,240,320,120,320,240.png");
-            break;
-        case NDS_DIS_MODE_VH_S0:
-            strcat(buf, "/r0,0,0,160,120,160,120,480,360.png");
-            break;
-        case NDS_DIS_MODE_VH_S1:
-            strcat(buf, "/r0,0,0,256,192,256,192,384,288.png");
-            break;
-        case NDS_DIS_MODE_VH_S2:
-            strcat(buf, "/r0,240,0,160,120,80,120,480,360.png");
-            break;
-        case NDS_DIS_MODE_VH_S3:
-            strcat(buf, "/r0,64,96,512,384,256,0,128,96.png");
-            break;
-        case NDS_DIS_MODE_VH_S4:
-            strcat(buf, "/r0,0,96,512,384,512,0,128,96.png");
-            break;
-        case NDS_DIS_MODE_VH_S5:
-            strcat(buf, "/r0,128,96,512,384,0,0,128,96.png");
-            break;
-        case NDS_DIS_MODE_VH_C0:
-            strcat(buf, "/r0,192,0,256,192,128,192,384,288.png");
-            break;
-        case NDS_DIS_MODE_VH_C1:
-            strcat(buf, "/r0,0,144,256,192,256,96,384,288.png");
-            break;
-        case NDS_DIS_MODE_HH0:
-        case NDS_DIS_MODE_HH1:
-            strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
-            break;
-        case NDS_DIS_MODE_HRES0:
-            strcat(buf, "/r180,0,26,427,320,320,26,427,320.png");
-            break;
-        case NDS_DIS_MODE_HRES1:
-            return 0;
-        }
-        
+        snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, BG_PATH, myconfig.layout.bg.sel, myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel]);
         t = IMG_Load(buf);
         if (!t) {
             error("failed to load bg from \"%s\"\n", buf);
@@ -5260,12 +5191,12 @@ static int load_layout_bg(void)
 #endif
 
 #if defined(TRIMUI) || defined(UT)
-    if (myconfig.layout.mode == NDS_DIS_MODE_S1) {
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T3) {
         return 0;
     }
 
-    if (pre_mode != myconfig.layout.mode) {
-        pre_mode = myconfig.layout.mode;
+    if (pre_mode != myconfig.layout.mode.sel) {
+        pre_mode = myconfig.layout.mode.sel;
         disp_resize();
     }
 
@@ -5468,6 +5399,338 @@ VideoBootStrap NDS_bootstrap = {
     create_device
 };
 
+static int add_layout_mode(int mode, const char *fname)
+{
+    int idx = 0;
+
+    debug("call %s(mode=%d, bg=%d, fname=%p)\n", mode, gb, fname);
+
+    switch (mode) {
+    case 0:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 160;
+        myvideo.layout.mode[mode].screen[0].h = 120;
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 640;
+        myvideo.layout.mode[mode].screen[1].h = 480;
+        break;
+    case 1:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 256;
+        myvideo.layout.mode[mode].screen[0].h = 192;
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 640;
+        myvideo.layout.mode[mode].screen[1].h = 480;
+        break;
+    case 2:
+        myvideo.layout.mode[mode].screen[1].x = 64;
+        myvideo.layout.mode[mode].screen[1].y = 48;
+        myvideo.layout.mode[mode].screen[1].w = 512;
+        myvideo.layout.mode[mode].screen[1].h = 384;
+        break;
+    case 3:
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 640;
+        myvideo.layout.mode[mode].screen[1].h = 480;
+        break;
+    case 4:
+        myvideo.layout.mode[mode].screen[0].x = 192;
+        myvideo.layout.mode[mode].screen[0].y = 48;
+        myvideo.layout.mode[mode].screen[0].w = 256;
+        myvideo.layout.mode[mode].screen[0].h = 192;
+        myvideo.layout.mode[mode].screen[1].x = 192;
+        myvideo.layout.mode[mode].screen[1].y = 240;
+        myvideo.layout.mode[mode].screen[1].w = 256;
+        myvideo.layout.mode[mode].screen[1].h = 192;
+        break;
+    case 5:
+        myvideo.layout.mode[mode].screen[0].x = 160;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 320;
+        myvideo.layout.mode[mode].screen[0].h = 240;
+        myvideo.layout.mode[mode].screen[1].x = 160;
+        myvideo.layout.mode[mode].screen[1].y = 240;
+        myvideo.layout.mode[mode].screen[1].w = 320;
+        myvideo.layout.mode[mode].screen[1].h = 240;
+        break;
+    case 6:
+        myvideo.layout.mode[mode].screen[0].x = 64;
+        myvideo.layout.mode[mode].screen[0].y = 144;
+        myvideo.layout.mode[mode].screen[0].w = 256;
+        myvideo.layout.mode[mode].screen[0].h = 192;
+        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].y = 144;
+        myvideo.layout.mode[mode].screen[1].w = 256;
+        myvideo.layout.mode[mode].screen[1].h = 192;
+        break;
+    case 7:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 120;
+        myvideo.layout.mode[mode].screen[0].w = 320;
+        myvideo.layout.mode[mode].screen[0].h = 240;
+        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].y = 120;
+        myvideo.layout.mode[mode].screen[1].w = 320;
+        myvideo.layout.mode[mode].screen[1].h = 240;
+        break;
+    case 8:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 160;
+        myvideo.layout.mode[mode].screen[0].h = 120;
+        myvideo.layout.mode[mode].screen[1].x = 160;
+        myvideo.layout.mode[mode].screen[1].y = 120;
+        myvideo.layout.mode[mode].screen[1].w = 480;
+        myvideo.layout.mode[mode].screen[1].h = 360;
+        break;
+    case 9:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 256;
+        myvideo.layout.mode[mode].screen[0].h = 192;
+        myvideo.layout.mode[mode].screen[1].x = 256;
+        myvideo.layout.mode[mode].screen[1].y = 192;
+        myvideo.layout.mode[mode].screen[1].w = 384;
+        myvideo.layout.mode[mode].screen[1].h = 288;
+        break;
+    case 10:
+        myvideo.layout.mode[mode].screen[0].x = 240;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 160;
+        myvideo.layout.mode[mode].screen[0].h = 120;
+        myvideo.layout.mode[mode].screen[1].x = 80;
+        myvideo.layout.mode[mode].screen[1].y = 120;
+        myvideo.layout.mode[mode].screen[1].w = 480;
+        myvideo.layout.mode[mode].screen[1].h = 360;
+        break;
+    case 11:
+        myvideo.layout.mode[mode].screen[0].x = 64;
+        myvideo.layout.mode[mode].screen[0].y = 96;
+        myvideo.layout.mode[mode].screen[0].w = 512;
+        myvideo.layout.mode[mode].screen[0].h = 384;
+        myvideo.layout.mode[mode].screen[1].x = 256;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 128;
+        myvideo.layout.mode[mode].screen[1].h = 96;
+        break;
+    case 12:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 96;
+        myvideo.layout.mode[mode].screen[0].w = 512;
+        myvideo.layout.mode[mode].screen[0].h = 384;
+        myvideo.layout.mode[mode].screen[1].x = 512;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 128;
+        myvideo.layout.mode[mode].screen[1].h = 96;
+        break;
+    case 13:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 128;
+        myvideo.layout.mode[mode].screen[0].h = 96;
+        myvideo.layout.mode[mode].screen[1].x = 128;
+        myvideo.layout.mode[mode].screen[1].y = 96;
+        myvideo.layout.mode[mode].screen[1].w = 512;
+        myvideo.layout.mode[mode].screen[1].h = 384;
+        break;
+    case 14:
+        myvideo.layout.mode[mode].screen[0].x = 192;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 256;
+        myvideo.layout.mode[mode].screen[0].h = 192;
+        myvideo.layout.mode[mode].screen[1].x = 128;
+        myvideo.layout.mode[mode].screen[1].y = 192;
+        myvideo.layout.mode[mode].screen[1].w = 384;
+        myvideo.layout.mode[mode].screen[1].h = 288;
+        break;
+    case 15:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 144;
+        myvideo.layout.mode[mode].screen[0].w = 256;
+        myvideo.layout.mode[mode].screen[0].h = 192;
+        myvideo.layout.mode[mode].screen[1].x = 256;
+        myvideo.layout.mode[mode].screen[1].y = 96;
+        myvideo.layout.mode[mode].screen[1].w = 384;
+        myvideo.layout.mode[mode].screen[1].h = 288;
+        break;
+    case 16:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 26;
+        myvideo.layout.mode[mode].screen[0].w = 427;
+        myvideo.layout.mode[mode].screen[0].h = 320;
+        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].y = 26;
+        myvideo.layout.mode[mode].screen[1].w = 427;
+        myvideo.layout.mode[mode].screen[1].h = 320;
+        myvideo.layout.mode[mode].rotate = 180;
+        break;
+    case 17:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 26;
+        myvideo.layout.mode[mode].screen[0].w = 427;
+        myvideo.layout.mode[mode].screen[0].h = 320;
+        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].y = 26;
+        myvideo.layout.mode[mode].screen[1].w = 427;
+        myvideo.layout.mode[mode].screen[1].h = 320;
+        myvideo.layout.mode[mode].rotate = 270;
+        break;
+    case 18:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 480;
+        myvideo.layout.mode[mode].screen[0].h = 320;
+        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 480;
+        myvideo.layout.mode[mode].screen[1].h = 320;
+        myvideo.layout.mode[mode].rotate = 180;
+        break;
+    case 19:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 480;
+        myvideo.layout.mode[mode].screen[0].h = 320;
+        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 480;
+        myvideo.layout.mode[mode].screen[1].h = 320;
+        myvideo.layout.mode[mode].rotate = 270;
+        break;
+    }
+
+    if (fname && fname[0]) {
+        myvideo.layout.mode[mode].bg[myvideo.layout.mode[mode].max_bg] = strdup(fname);
+        myvideo.layout.mode[mode].max_bg += 1;
+    }
+
+    if (mode > myvideo.layout.max_mode) {
+        myvideo.layout.max_mode = mode;
+    }
+
+    idx = myvideo.layout.mode[mode].max_bg;
+    printf(
+        "layout.mode[%d].bg[%d]=(%d,%d,%d,%d)(%d,%d,%d,%d)(r%d)(\"%s\")\n",
+        mode,
+        idx > 0 ? idx - 1 : 0,
+        myvideo.layout.mode[mode].screen[0].x,
+        myvideo.layout.mode[mode].screen[0].y,
+        myvideo.layout.mode[mode].screen[0].w,
+        myvideo.layout.mode[mode].screen[0].h,
+        myvideo.layout.mode[mode].screen[1].x,
+        myvideo.layout.mode[mode].screen[1].y,
+        myvideo.layout.mode[mode].screen[1].w,
+        myvideo.layout.mode[mode].screen[1].h,
+        myvideo.layout.mode[mode].rotate,
+        fname
+    );
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, add_layout_mode)
+{
+    TEST_ASSERT_EQUAL_INT(0, add_layout_mode(0, 0, NULL));
+}
+#endif
+
+static int free_layout_mode(void)
+{
+    int c0 = 0;
+    int c1 = 0;
+
+    debug("call %s()\n", __func__);
+
+    for (c0 = 0; c0 < myvideo.layout.max_mode; c0++) {
+        for (c1 = 0; c1 < myvideo.layout.mode[c0].max_bg; c1++) {
+            if (myvideo.layout.mode[c0].bg[c1]) {
+                free(myvideo.layout.mode[c0].bg[c1]);
+                myvideo.layout.mode[c0].bg[c1] = NULL;
+            }
+        }
+    }
+
+    myvideo.layout.max_mode = 0;
+    memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
+    add_layout_mode(LAYOUT_MODE_T0, NULL);
+    add_layout_mode(LAYOUT_MODE_T1, NULL);
+    add_layout_mode(LAYOUT_MODE_T18, NULL);
+    add_layout_mode(LAYOUT_MODE_T19, NULL);
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, free_layout_mode)
+{
+    myvideo.layout.mode = malloc(layout_mode_t);
+    TEST_ASSERT_EQUAL_INT(0, free_layout_mode());
+    TEST_ASSERT_NULL(myvideo.layout.mode);
+}
+#endif
+
+static int enum_layout_bg_file(void)
+{
+    int cc = 0;
+    int mode = 0;
+    int total = 0;
+    DIR *d = NULL;
+    struct dirent *dir = NULL;
+    char buf[MAX_PATH + 32] = { 0 };
+
+    printf("call %s()\n", __func__);
+
+    free_layout_mode();
+
+    total = get_bg_cnt();
+    for (cc = 0; cc < total; cc++) {
+        snprintf(buf, sizeof(buf), "%s%s/%d", myvideo.home, BG_PATH, cc);
+        printf("enum folder=\"%s\"\n", buf);
+
+        d = opendir(buf);
+        if (!d) {
+            error("failed to open dir \"%s\"\n", buf);
+            return -1;
+        }
+
+        while ((dir = readdir(d)) != NULL) {
+            if (dir->d_type == DT_DIR) {
+                continue;
+            }
+            if (strcmp(dir->d_name, ".") == 0) {
+                continue;
+            }
+            if (strcmp(dir->d_name, "..") == 0) {
+                continue;
+            }
+
+            if (dir->d_name[0] != 't') {
+                error("invalid layout bg file (\"%s\")\n", dir->d_name);
+                continue;
+            }
+
+            mode = atoi(&dir->d_name[1]);
+            add_layout_mode(mode, dir->d_name);
+        }
+        closedir(d);
+    }
+
+    return myvideo.layout.max_mode;
+}
+
+#if defined(UT)
+TEST(sdl2_video, enum_layout_bg_file)
+{
+    TEST_ASSERT_EQUAL_INT(0, enum_layout_bg_file());
+}
+#endif
+
 static int init_device(void)
 {
     int r = 0;
@@ -5493,18 +5756,6 @@ static int init_device(void)
     myvideo.cur_buf_size = myvideo.cur_w * myvideo.cur_h * 4 * 2;
     myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
 
-    myconfig.pen.sel = 0;
-    myconfig.pen.max = get_pen_cnt();
-    debug("total pen images=%d\n", myconfig.pen.max);
-
-    myconfig.layout.bg.sel = 0;
-    myconfig.layout.bg.max = get_bg_cnt();
-    debug("total bg images=%d\n", myconfig.layout.bg.max);
-
-    myconfig.menu.sel = 0;
-    myconfig.menu.max = get_menu_cnt();
-    debug("total menu images=%d\n", myconfig.menu.max);
-
 #if defined(TRIMUI)
     cc = 0;
     for (y = 0; y < NDS_H; y++) {
@@ -5522,7 +5773,16 @@ static int init_device(void)
 #endif
 
     load_config(myvideo.home);
+
+    myconfig.pen.max = get_pen_cnt();
+    debug("total pen images=%d\n", myconfig.pen.max);
+
+    myconfig.menu.max = get_menu_cnt();
+    debug("total menu images=%d\n", myconfig.menu.max);
+
     enum_lang_file();
+    enum_layout_bg_file();
+
     load_lang_file();
     load_menu_res();
     load_touch_pen();
@@ -5533,14 +5793,14 @@ static int init_device(void)
 #endif
 
 #if defined(TRIMUI)
-    if ((myconfig.layout.mode != NDS_DIS_MODE_S0) && (myconfig.layout.mode != NDS_DIS_MODE_S1)) {
-        myconfig.layout.mode = NDS_DIS_MODE_S0;
+    if ((myconfig.layout.mode.sel != LAYOUT_MODE_T2) && (myconfig.layout.mode.sel != LAYOUT_MODE_T3)) {
+        myconfig.layout.mode.sel = LAYOUT_MODE_T2;
     }
     disp_resize();
 #endif
 
 #if defined(QX1000) || defined(XT897)
-    myconfig.layout.mode = NDS_DIS_MODE_H0;
+    myconfig.layout.mode.sel = LAYOUT_MODE_T6;
 #endif
 
     init_lcd();
@@ -5696,6 +5956,7 @@ static int quit_device(void)
     free_menu_res();
     free_touch_pen();
     free_layout_bg();
+    free_layout_mode();
 
     if (myvideo.fps) {
         SDL_FreeSurface(myvideo.fps);
@@ -5947,7 +6208,7 @@ static const char *MENU_LIST_STR[] = {
     "R Joy Dead Zone",
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
-    "Check Battery",
+    "Low Battery Status",
 #endif
 };
 
@@ -5963,7 +6224,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
     }
 
     switch (mode) {
-    case NDS_DIS_MODE_VH_T0:
+    case LAYOUT_MODE_T0:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -5992,7 +6253,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         }
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
         break;
-    case NDS_DIS_MODE_VH_T1:
+    case LAYOUT_MODE_T1:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6021,7 +6282,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         }
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
         break;
-    case NDS_DIS_MODE_S0:
+    case LAYOUT_MODE_T2:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6034,14 +6295,14 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
         break;
-    case NDS_DIS_MODE_S1:
+    case LAYOUT_MODE_T3:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
         break;
-    case NDS_DIS_MODE_V0:
+    case LAYOUT_MODE_T4:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6060,7 +6321,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_V1:
+    case LAYOUT_MODE_T5:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6079,7 +6340,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_H0:
+    case LAYOUT_MODE_T6:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6098,7 +6359,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_H1:
+    case LAYOUT_MODE_T7:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6117,7 +6378,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_S0:
+    case LAYOUT_MODE_T8:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6136,7 +6397,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_S1:
+    case LAYOUT_MODE_T9:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6155,7 +6416,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_S2:
+    case LAYOUT_MODE_T10:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6174,7 +6435,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_S3:
+    case LAYOUT_MODE_T11:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6193,7 +6454,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_S4:
+    case LAYOUT_MODE_T12:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6212,7 +6473,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_S5:
+    case LAYOUT_MODE_T13:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6231,7 +6492,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_C0:
+    case LAYOUT_MODE_T14:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6250,7 +6511,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_VH_C1:
+    case LAYOUT_MODE_T15:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6269,7 +6530,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_HH0:
+    case LAYOUT_MODE_T16:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6288,7 +6549,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_HH1:
+    case LAYOUT_MODE_T17:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6307,7 +6568,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
         break;
-    case NDS_DIS_MODE_HH2:
+    case LAYOUT_MODE_T18:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6326,7 +6587,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy;
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case NDS_DIS_MODE_HH3:
+    case LAYOUT_MODE_T19:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -6343,26 +6604,6 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.h = 96;
         rt.x = sx + (128 - rt.w);
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
-        break;
-    case NDS_DIS_MODE_HRES0:
-        rt.x = sx;
-        rt.y = sy;
-        rt.w = 128;
-        rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
-        
-        rt.w = 102;
-        rt.h = 76;
-        rt.x = sx + ((128 - rt.w) / 2);
-        rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
-        break;
-    case NDS_DIS_MODE_HRES1:
-        rt.x = sx;
-        rt.y = sy;
-        rt.w = 128;
-        rt.h = 96;
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
         break;
     }
@@ -6401,19 +6642,19 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
         break;
     case MENU_LAYOUT_MODE:
         if (right_key) {
-            if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
-                myconfig.layout.mode += 1;
+            if (myconfig.layout.mode.sel < myvideo.layout.max_mode) {
+                myconfig.layout.mode.sel += 1;
             }
         }
         else {
-            if (myconfig.layout.mode > 0) {
-                myconfig.layout.mode -= 1;
+            if (myconfig.layout.mode.sel > 0) {
+                myconfig.layout.mode.sel -= 1;
             }
         }
         break;
     case MENU_SWIN_ALPHA:
-        if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) || 
-            (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+        if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) || 
+            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
         {
             if (right_key) {
                 if (myconfig.layout.swin.alpha < NDS_ALPHA_MAX) {
@@ -6429,15 +6670,15 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
         break;
     case MENU_SWIN_BORDER:
         if ((myconfig.layout.swin.alpha > 0) &&
-            ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-            (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+            ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
         {
             myconfig.layout.swin.border = right_key;
         }
         break;
     case MENU_SWIN_POS:
-        if (((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-            (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+        if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
         {
             if (right_key) {
                 if (myconfig.layout.swin.pos < 3) {
@@ -6453,13 +6694,13 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
         break;
     case MENU_LAYOUT_ATL:
         if (right_key) {
-            if (myconfig.layout.alt < NDS_DIS_MODE_LAST) {
-                myconfig.layout.alt += 1;
+            if (myconfig.layout.mode.alt < myvideo.layout.max_mode) {
+                myconfig.layout.mode.alt += 1;
             }
         }
         else {
-            if (myconfig.layout.alt > 0) {
-                myconfig.layout.alt -= 1;
+            if (myconfig.layout.mode.alt > 0) {
+                myconfig.layout.mode.alt -= 1;
             }
         }
         break;
@@ -6613,11 +6854,11 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
 #if defined(UT)
 TEST(sdl2_video, apply_sdl2_menu_setting)
 {
-    myconfig.layout.alt = 0;
+    myconfig.layout.mode.alt = 0;
     TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(MENU_LAYOUT_ATL, 1));
-    TEST_ASSERT_EQUAL_INT(1, myconfig.layout.alt);
+    TEST_ASSERT_EQUAL_INT(1, myconfig.layout.mode.alt);
     TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(MENU_LAYOUT_ATL, 0));
-    TEST_ASSERT_EQUAL_INT(0, myconfig.layout.alt);
+    TEST_ASSERT_EQUAL_INT(0, myconfig.layout.mode.alt);
 }
 #endif
 
@@ -6654,12 +6895,12 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "%s", l10n(myconfig.swap_r1_r2 ? "Yes" : "No"));
         break;
     case MENU_LAYOUT_MODE:
-        sprintf(buf, "[%d]   %s", myconfig.layout.mode, LAYOUT_MODE_STR0[myconfig.layout.mode]);
+        sprintf(buf, "[%d]   %s", myconfig.layout.mode.sel, LAYOUT_MODE_STR0[myconfig.layout.mode.sel]);
         break;
     case MENU_SWIN_ALPHA:
-        sprintf(buf, "[%d]   ", myconfig.layout.mode);
+        sprintf(buf, "[%d]   ", myconfig.layout.mode.sel);
         sx = get_font_width(buf);
-        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode]);
+        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode.sel]);
         draw_info(
             myvideo.cvt,
             buf,
@@ -6679,12 +6920,12 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "%s", l10n(SWIN_POS_STR[myconfig.layout.swin.pos]));
         break;
     case MENU_LAYOUT_ATL:
-        sprintf(buf, "[%d]   %s", myconfig.layout.alt, LAYOUT_MODE_STR0[myconfig.layout.alt]);
+        sprintf(buf, "[%d]   %s", myconfig.layout.mode.alt, LAYOUT_MODE_STR0[myconfig.layout.mode.alt]);
         break;
     case MENU_ROTATE_KEY:
-        sprintf(buf, "[%d]   ", myconfig.layout.alt);
+        sprintf(buf, "[%d]   ", myconfig.layout.mode.alt);
         sx = get_font_width(buf);
-        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.alt]);
+        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode.alt]);
         draw_info(
             myvideo.cvt,
             buf,
@@ -6821,10 +7062,10 @@ int handle_sdl2_menu(int key)
     }
 
     if (cur_sel == MENU_LAYOUT_MODE) {
-        mode = myconfig.layout.mode;
+        mode = myconfig.layout.mode.sel;
     }
     else if (cur_sel == MENU_LAYOUT_ATL) {
-        mode = myconfig.layout.alt;
+        mode = myconfig.layout.mode.alt;
     }
 
     if (myvideo.menu.sdl2.bg && myvideo.cvt) {
@@ -6855,14 +7096,14 @@ int handle_sdl2_menu(int key)
         case MENU_SWIN_ALPHA:
             sx = 20;
             if ((cur_sel == MENU_SWIN_ALPHA) &&
-                ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-                (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+                ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+                (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
-                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-                    (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))
+                if ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+                    (myconfig.layout.mode.sel == LAYOUT_MODE_T1))
                 {
                     col1 = MENU_COLOR_UNSEL;
                 }
@@ -6875,15 +7116,15 @@ int handle_sdl2_menu(int key)
             sx = 20;
             if ((cur_sel == MENU_SWIN_BORDER) &&
                 (myconfig.layout.swin.alpha > 0) &&
-                ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-                (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+                ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+                (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
                 if ((myconfig.layout.swin.alpha > 0) &&
-                    ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-                    (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+                    ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+                    (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
                 {
                     col1 = MENU_COLOR_UNSEL;
                 }
@@ -6895,14 +7136,14 @@ int handle_sdl2_menu(int key)
         case MENU_SWIN_POS:
             sx = 20;
             if ((cur_sel == MENU_SWIN_POS) &&
-                ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-                (myconfig.layout.mode == NDS_DIS_MODE_VH_T1)))
+                ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+                (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
-                if ((myconfig.layout.mode == NDS_DIS_MODE_VH_T0) ||
-                    (myconfig.layout.mode == NDS_DIS_MODE_VH_T1))
+                if ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+                    (myconfig.layout.mode.sel == LAYOUT_MODE_T1))
                 {
                     col1 = MENU_COLOR_UNSEL;
                 }

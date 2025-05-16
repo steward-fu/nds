@@ -167,7 +167,7 @@ TEST(common, write_log)
 int reset_config(void)
 {
     memset(&myconfig, 0, sizeof(myconfig));
-    myconfig.layout.mode = DEF_LAYOUT_MODE;
+    myconfig.layout.mode.sel = DEF_LAYOUT_MODE;
     myconfig.layout.swin.alpha = DEF_SWIN_ALPHA;
     myconfig.pen.speed = DEF_PEN_SPEED;
     myconfig.fast_forward = DEF_FAST_FORWARD;

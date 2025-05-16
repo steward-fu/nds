@@ -41,48 +41,39 @@
 #define LAYOUT_BG_W     640
 #define LAYOUT_BG_H     480
 
-#define NDS_DIS_MODE_VH_T0          0
-#define NDS_DIS_MODE_VH_T1          1
-#define NDS_DIS_MODE_S0             2
-#define NDS_DIS_MODE_S1             3
-#define NDS_DIS_MODE_V0             4
-#define NDS_DIS_MODE_V1             5
-#define NDS_DIS_MODE_H0             6
-#define NDS_DIS_MODE_H1             7
-#define NDS_DIS_MODE_VH_S0          8
-#define NDS_DIS_MODE_VH_S1          9
-#define NDS_DIS_MODE_VH_S2          10
-#define NDS_DIS_MODE_VH_S3          11
-#define NDS_DIS_MODE_VH_S4          12
-#define NDS_DIS_MODE_VH_S5          13
-#define NDS_DIS_MODE_VH_C0          14
-#define NDS_DIS_MODE_VH_C1          15
-#define NDS_DIS_MODE_HH0            16
-#define NDS_DIS_MODE_HH1            17
-#define NDS_DIS_MODE_HH2            18
-#define NDS_DIS_MODE_HH3            19
-#define NDS_DIS_MODE_LAST           19
+#define LAYOUT_MODE_T0  0
+#define LAYOUT_MODE_T1  1
+#define LAYOUT_MODE_T2  2
+#define LAYOUT_MODE_T3  3
+#define LAYOUT_MODE_T4  4
+#define LAYOUT_MODE_T5  5
+#define LAYOUT_MODE_T6  6
+#define LAYOUT_MODE_T7  7
+#define LAYOUT_MODE_T8  8
+#define LAYOUT_MODE_T9  9
+#define LAYOUT_MODE_T10 10
+#define LAYOUT_MODE_T11 11
+#define LAYOUT_MODE_T12 12
+#define LAYOUT_MODE_T13 13
+#define LAYOUT_MODE_T14 14
+#define LAYOUT_MODE_T15 15
+#define LAYOUT_MODE_T16 16
+#define LAYOUT_MODE_T17 17
+#define LAYOUT_MODE_T18 18
+#define LAYOUT_MODE_T19 19
 
-#define NDS_DIS_MODE_HRES0          20
-#define NDS_DIS_MODE_HRES1          21
+#define NDS_ALPHA_MAX 9
+#define MAX_PATH      255
+#define MAX_LANG_NAME 16
+#define MAX_LANG_FILE 32
+#define MAX_LANG_LINE 256
+#define MAX_MENU_LINE 256
 
-#define NDS_ALPHA_MAX               9
-
-#define MAX_PATH                    128
-#define MAX_LANG_NAME               16
-#define MAX_LANG_FILE               32
-#define MAX_LANG_LINE               256
-#define MAX_MENU_LINE               256
-
-#define DEF_LANG            "en_US"
-#define DEF_PEN_SPEED       10
-#define DEF_FAST_FORWARD    6
-#define DEF_SWIN_ALPHA      6
-#define DEF_LAYOUT_MODE     1
-
-#if !defined(MAX_PATH)
-#define MAX_PATH        255
-#endif
+#define DEF_LANG         "en_US"
+#define DEF_PEN_SPEED    10
+#define DEF_FAST_FORWARD 6
+#define DEF_SWIN_ALPHA   6
+#define DEF_LAYOUT_MODE  1
 
 #define DEBUG       0
 #define LOG_FILE    "mynds.log"
@@ -136,12 +127,13 @@ typedef struct {
     } menu;
 
     struct {
-        int alt;
-        int mode;
+        struct {
+            int alt;
+            int sel;
+        } mode;
 
         struct {
             int sel;
-            int max;
         } bg;
 
         struct {

@@ -193,10 +193,10 @@ static int is_hh_mode(void)
 {
     debug("call %s()\n", __func__);
 
-    if ((myconfig.layout.mode == NDS_DIS_MODE_HH0) ||
-        (myconfig.layout.mode == NDS_DIS_MODE_HH1) ||
-        (myconfig.layout.mode == NDS_DIS_MODE_HH2) ||
-        (myconfig.layout.mode == NDS_DIS_MODE_HH3))
+    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T16) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T17) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T18) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T19))
     {
         return 1;
     }
@@ -206,9 +206,9 @@ static int is_hh_mode(void)
 #if defined(UT)
 TEST(sdl2_event, is_hh_mode)
 {
-    myconfig.layout.mode = NDS_DIS_MODE_HH0;
+    myconfig.layout.mode.sel = LAYOUT_MODE_T16;
     TEST_ASSERT_EQUAL_INT(1, is_hh_mode());
-    myconfig.layout.mode = 0;
+    myconfig.layout.mode.sel = 0;
     TEST_ASSERT_EQUAL_INT(0, is_hh_mode());
 }
 #endif
@@ -809,8 +809,8 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (myconfig.layout.mode > 0) {
-            myconfig.layout.mode -= 1;
+        if (myconfig.layout.mode.sel > 0) {
+            myconfig.layout.mode.sel -= 1;
         }
 #endif
 
@@ -829,8 +829,8 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_RIGHT)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (myconfig.layout.mode < NDS_DIS_MODE_LAST) {
-            myconfig.layout.mode += 1;
+        if (myconfig.layout.mode.sel < myvideo.layout.max_mode) {
+            myconfig.layout.mode.sel += 1;
         }
 #endif
 
@@ -843,14 +843,14 @@ static int handle_hotkey(void)
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myevent.mode == NDS_KEY_MODE) {
-            uint32_t tmp = myconfig.layout.alt;
-            myconfig.layout.alt = myconfig.layout.mode;
-            myconfig.layout.mode = tmp;
+            uint32_t tmp = myconfig.layout.mode.alt;
+            myconfig.layout.mode.alt = myconfig.layout.mode.sel;
+            myconfig.layout.mode.sel = tmp;
         }
 #endif
 
 #if defined(TRIMUI)
-        myconfig.layout.mode = (myconfig.layout.mode == NDS_DIS_MODE_S0) ? NDS_DIS_MODE_S1 : NDS_DIS_MODE_S0;
+        myconfig.layout.mode.sel = (myconfig.layout.mode.sel == NDS_DIS_MODE_S0) ? LAYOUT_MODE_T3 : NDS_DIS_MODE_S0;
         disp_resize();
 #endif
         set_key_bit(KEY_BIT_A, 0);
@@ -864,13 +864,12 @@ static int handle_hotkey(void)
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
-                if ((myconfig.layout.mode != NDS_DIS_MODE_VH_T0) &&
-                    (myconfig.layout.mode != NDS_DIS_MODE_VH_T1) &&
-                    (myconfig.layout.mode != NDS_DIS_MODE_S1) &&
-                    (myconfig.layout.mode != NDS_DIS_MODE_HRES1))
+                if ((myconfig.layout.mode.sel != LAYOUT_MODE_T0) &&
+                    (myconfig.layout.mode.sel != LAYOUT_MODE_T1) &&
+                    (myconfig.layout.mode.sel != LAYOUT_MODE_T3))
                 {
                     myconfig.layout.bg.sel += 1;
-                    if (myconfig.layout.bg.sel > myconfig.layout.bg.max) {
+                    if (myconfig.layout.bg.sel > myvideo.layout.mode[myconfig.layout.mode.sel].max_bg) {
                         myconfig.layout.bg.sel = 0;
                     }
                 }

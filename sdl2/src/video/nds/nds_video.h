@@ -95,8 +95,6 @@ typedef enum {
 #define SCREEN_H        480
 #define BAT_MAX_VAL     4080000
 #define BAT_MIN_VAL     3400000
-#define INIT_CPU_CORE   2
-#define QUIT_CPU_CORE   2
 #endif
 
 #if defined(FLIP)
@@ -106,19 +104,11 @@ typedef enum {
 #define CCU_BASE        0x01c20000
 #define BAT_CHK_CNT     300
 #define BAT_CUR_CMD     "cat /sys/class/power_supply/battery/capacity"
-#define INIT_CPU_CORE   2
-#define INIT_CPU_CLOCK  1200
-#define QUIT_CPU_CORE   2
-#define QUIT_CPU_CLOCK  648
 #endif
 
 #if defined(A30)
 #define SCREEN_W        640
 #define SCREEN_H        480
-#define INIT_CPU_CORE   2
-#define INIT_CPU_CLOCK  1200
-#define QUIT_CPU_CORE   2
-#define QUIT_CPU_CLOCK  648
 #define DAC_BASE        0x1c22000
 #define CCU_BASE        0x01c20000
 #define BAT_CHK_CNT     300
@@ -172,8 +162,6 @@ typedef enum {
 #if defined(GKD2)
 #define SCREEN_W        640
 #define SCREEN_H        480
-#define INIT_CPU_CORE   2
-#define QUIT_CPU_CORE   2
 #endif
 
 #define NDS_STATE_SAVE  1
@@ -224,6 +212,21 @@ enum _TEXTURE_TYPE {
 };
 #endif
 
+#define MAX_LAYOUT_MODE     32
+#define MAX_LAYOUT_BG_FILE  32
+
+typedef struct {
+    struct {
+        int x;
+        int y;
+        int w;
+        int h;
+    } screen[2];
+    int rotate;
+    int max_bg;
+    char *bg[MAX_LAYOUT_BG_FILE];
+} layout_mode_t;
+
 typedef struct {
     int x;
     int y;
@@ -232,12 +235,12 @@ typedef struct {
     uint32_t fg;
     uint32_t bg;
     char msg[MAX_PATH];
-} cust_menu_sub_t ;
+} cust_menu_sub_t;
 
 typedef struct _CUST_MENU {
     int cnt;
     cust_menu_sub_t idx[MAX_MENU_LINE];
-} cust_menu_t ;
+} cust_menu_t;
 
 typedef struct {
     SDL_Window *win;
@@ -449,8 +452,11 @@ typedef struct {
     } menu;
 
     struct {
-        SDL_Surface *bg;
         int reload_bg;
+        SDL_Surface *bg;
+
+        int max_mode;
+        layout_mode_t mode[MAX_LAYOUT_MODE];
     } layout;
 
     struct {

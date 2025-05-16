@@ -221,7 +221,7 @@ static void* runner_handler(void *param)
             rt.h = ((float)rt.h) * 1.6;
 #endif
 
-            if ((myrunner.shm.buf->layout == NDS_DIS_MODE_HH1) || (myrunner.shm.buf->layout == NDS_DIS_MODE_HH3)) {
+            if ((myrunner.shm.buf->layout == LAYOUT_MODE_T17) || (myrunner.shm.buf->layout == LAYOUT_MODE_T19)) {
                 fg_vertices[5] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[6] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
@@ -234,7 +234,7 @@ static void* runner_handler(void *param)
                 fg_vertices[0] = fg_vertices[15];
                 fg_vertices[1] = fg_vertices[6];
             }
-            else if ((myrunner.shm.buf->layout == NDS_DIS_MODE_HH0) || (myrunner.shm.buf->layout == NDS_DIS_MODE_HH2)) {
+            else if ((myrunner.shm.buf->layout == LAYOUT_MODE_T16) || (myrunner.shm.buf->layout == LAYOUT_MODE_T18)) {
                 fg_vertices[15] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[16] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
@@ -261,8 +261,8 @@ static void* runner_handler(void *param)
                 fg_vertices[16] = fg_vertices[1];
             }
 
-            if (((myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T0) ||
-                (myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T1)) &&
+            if (((myrunner.shm.buf->layout == LAYOUT_MODE_T0) ||
+                (myrunner.shm.buf->layout == LAYOUT_MODE_T1)) &&
                 (myrunner.shm.buf->tex == TEXTURE_LCD0))
             {
                 glUniform1f(myrunner.gles.frag_alpha, 1.0 - ((float)myrunner.shm.buf->alpha / 10.0));
@@ -287,8 +287,8 @@ static void* runner_handler(void *param)
             glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-            if (((myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T0) ||
-                (myrunner.shm.buf->layout == NDS_DIS_MODE_VH_T1)) &&
+            if (((myrunner.shm.buf->layout == LAYOUT_MODE_T0) ||
+                (myrunner.shm.buf->layout == LAYOUT_MODE_T1)) &&
                 (myrunner.shm.buf->tex == TEXTURE_LCD0))
             {
                 glUniform1f(myrunner.gles.frag_alpha, 0.0);
