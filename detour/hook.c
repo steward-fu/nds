@@ -574,7 +574,7 @@ TEST(detour, init_table)
 
 static int prehook_cb_puts(const char *s)
 {
-    debug(s);
+    printf(s);
 }
 
 static void* kill_handler(void *param)
@@ -593,7 +593,7 @@ static void* kill_handler(void *param)
 
 static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
 {
-#if 0
+#if 1
     va_list args = { 0 };
 
     va_start(args, fmt);
@@ -653,8 +653,8 @@ int init_hook(size_t page, const char *path)
         add_prehook_cb((void *)myhook.fun.initialize_backup, (void *)prehook_cb_initialize_backup);
     }
 
-    add_prehook_cb(myhook.fun.puts, prehook_cb_puts);
-    add_prehook_cb(myhook.fun.printf_chk, prehook_cb_printf_chk);
+    //add_prehook_cb(myhook.fun.puts, prehook_cb_puts);
+    //add_prehook_cb(myhook.fun.printf_chk, prehook_cb_printf_chk);
     add_prehook_cb(
         (void *)myhook.fun.render_polygon_setup_perspective_steps,
         render_polygon_setup_perspective_steps
