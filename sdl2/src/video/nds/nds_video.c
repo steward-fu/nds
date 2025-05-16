@@ -1927,6 +1927,11 @@ static int process_screen(void)
         SDL_Rect srt = { 0, 0, NDS_W, NDS_H };
         SDL_Rect drt = { 0, idx * 120, 160, 120 };
 
+        if (*myhook.var.sdl.screen[idx].hires_mode) {
+            srt.w = NDS_Wx2;
+            srt.h = NDS_Hx2;
+        }
+
         show_pen = *myhook.var.sdl.swap_screens == idx ? 0 : 1;
         pitch = *myhook.var.sdl.bytes_per_pixel * srt.w;
         pixels = (void *)(*((uintptr_t *)myhook.var.sdl.screen[idx].pixels));

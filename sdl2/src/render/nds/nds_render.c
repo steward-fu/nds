@@ -24,6 +24,7 @@ typedef struct {
     uint32_t pitch;
 } nds_texture;
 
+extern nds_hook myhook;
 extern nds_video myvideo;
 extern nds_config myconfig;
 
@@ -427,6 +428,10 @@ static SDL_Renderer *create_renderer(SDL_Window *w, Uint32 flags)
     r->info.flags = (SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
     r->driverdata = NULL;
     r->window = w;
+
+#if defined(BRICK) || defined(GKD2) || defined(FLIP)
+    *myhook.var.system.config.hires_3d = 1;
+#endif
 
     debug("created renderer=%p\n", r);
     return r;

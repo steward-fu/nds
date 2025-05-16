@@ -481,6 +481,7 @@ static int init_table(void)
     myhook.var.system.base = (uintptr_t *)0x083f4000;
     myhook.var.system.gamecard_name = (uint32_t *)0x0847e8e8;
     myhook.var.system.savestate_num = (uint32_t *)0x08479780;
+    myhook.var.system.config.hires_3d = (uint32_t *)0x084797c4;
     myhook.var.sdl.swap_screens = (uint32_t *)0x0aee9598;
     myhook.var.sdl.bytes_per_pixel = (uint32_t *)0x0aee957c;
     myhook.var.sdl.needs_reinitializing = (uint32_t *)0x0aee95a0;
