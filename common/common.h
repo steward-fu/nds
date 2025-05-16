@@ -73,6 +73,7 @@
 #define DEF_FAST_FORWARD 6
 #define DEF_SWIN_ALPHA   6
 #define DEF_LAYOUT_MODE  1
+#define DEF_JOY_DZONE    25
 
 #define DEBUG       0
 #define LOG_FILE    "mynds.log"
