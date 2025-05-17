@@ -2154,7 +2154,7 @@ static void* kill_handler(void *param)
 
     debug("call %s()\n", __func__);
 
-    sleep(3);
+    usleep(1000000);
     sprintf(buf, "kill -9 %d", (int)param);
     system(buf);
 
