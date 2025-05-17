@@ -201,7 +201,6 @@ typedef enum {
 #endif
 } gfx_fmt_t;
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
 enum _TEXTURE_TYPE {
     TEXTURE_LCD0 = 0,
     TEXTURE_LCD1,
@@ -210,7 +209,6 @@ enum _TEXTURE_TYPE {
     TEXTURE_TMP,
     TEXTURE_MAX
 };
-#endif
 
 #define MAX_LAYOUT_MODE     32
 #define MAX_LAYOUT_BG_FILE  32

@@ -25,3 +25,7 @@ export MORE_CFLAGS=${CFLAGS}
 export MORE_LDFLAGS=${LDFLAGS}
 
 include Makefile.mk
+
+.PHONY: scp
+scp:
+	scp drastic/lib/* onion@192.168.1.111:/mnt/SDCARD/Emu/drastic/lib/

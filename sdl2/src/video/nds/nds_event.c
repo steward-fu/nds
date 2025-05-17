@@ -1122,22 +1122,22 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_VOLUP, v);
         if (myevent.stock) {
             if (v == 0) {
-                myevent.vol = inc_mini_vol();
+                myevent.vol = 0;//inc_mini_vol();
             }
         }
         else {
-            myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+            myvideo.layout.redraw_bg = REDRAW_BG_CNT;
         }
     }
     if (c == myevent.keypad.vol_down) {
         set_key_bit(KEY_BIT_VOLDOWN, v);
         if (myevent.stock) {
             if (v == 0) {
-                myevent.vol = dec_mini_vol();
+                myevent.vol = 0;//dec_mini_vol();
             }
         }
         else {
-            myvideo.layout.reload_bg = RELOAD_BG_COUNT;
+            myvideo.layout.redraw_bg = REDRAW_BG_CNT;
         }
     }
 #endif

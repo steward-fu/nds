@@ -1786,7 +1786,7 @@ int handle_drastic_menu(void)
     myvideo.menu.update = 1;
 #else
     flush_lcd(
-        -1,
+        TEXTURE_TMP,
         myvideo.menu.drastic.frame->pixels,
         myvideo.menu.drastic.frame->clip_rect,
         myvideo.menu.drastic.frame->clip_rect,
@@ -1795,7 +1795,7 @@ int handle_drastic_menu(void)
     flip_lcd();
 
     flush_lcd(
-        -1,
+        TEXTURE_TMP,
         myvideo.menu.drastic.frame->pixels,
         myvideo.menu.drastic.frame->clip_rect,
         myvideo.menu.drastic.frame->clip_rect,
@@ -2059,14 +2059,9 @@ static int process_screen(void)
 
         if (need_update) {
 #if defined(MINI)
-            MI_SYS_FlushInvCache(myconfig.screen.pixels[idx], pitch * srt.h);
+            MI_SYS_FlushInvCache(pixels, pitch * srt.h);
 #endif
-
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
             flush_lcd(idx, pixels, srt, drt, pitch);
-#else
-            flush_lcd(-1, pixels, srt, drt, pitch);
-#endif
 
 #if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
             switch (myconfig.layout.mode.sel) {
@@ -2095,10 +2090,8 @@ static int process_screen(void)
                     drt.y = SCREEN_H - drt.h;
                     break;
                 }
-                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
-#else
-                flush_lcd(-1, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
 #endif
+                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
                 break;
             }
 #endif
@@ -2141,7 +2134,7 @@ static int process_screen(void)
         rt.y = 0;
         rt.w = myvideo.fps->w;
         rt.h = myvideo.fps->h;
-        flush_lcd(-1, myvideo.fps->pixels, myvideo.fps->clip_rect, rt, myvideo.fps->pitch);
+        flush_lcd(TEXTURE_TMP, myvideo.fps->pixels, myvideo.fps->clip_rect, rt, myvideo.fps->pitch);
     }
 
 #if defined(TRIMUI)
@@ -2302,6 +2295,7 @@ static void prehook_cb_update_screen(void)
         myvideo.lcd.cur_sel ^= 1;
         *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
         *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
+
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         myvideo.menu.drastic.enable = 0;
 #endif
@@ -2665,7 +2659,7 @@ static void* video_handler(void *param)
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode.sel = 0;
                 flush_lcd(
-                    -1,
+                    TEXTURE_TMP,
                     myvideo.cvt->pixels,
                     myvideo.cvt->clip_rect,
                     myvideo.cvt->clip_rect,
@@ -2687,7 +2681,7 @@ static void* video_handler(void *param)
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode.sel = 0;
                 flush_lcd(
-                    -1,
+                    TEXTURE_TMP,
                     myvideo.menu.drastic.frame->pixels,
                     myvideo.menu.drastic.frame->clip_rect,
                     myvideo.menu.drastic.frame->clip_rect,
@@ -3727,9 +3721,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(MINI)
-    int cc = 0;
-    int copy_it = 1;
-    int dma_found = 0;
+    int copy_mem = 1;
     MI_U16 fence = 0;
     int is_rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
 #endif
@@ -3791,14 +3783,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
-#if defined(A30) || defined(RG28XX)
     w = SCREEN_W;
     h = SCREEN_H;
-#else
-    w = SCREEN_W;
-    h = SCREEN_H;
-#endif
-
     if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T17) || (myconfig.layout.mode.sel == LAYOUT_MODE_T19))) {
         fg_vertices[5] = (((float)drt.x / w) - 0.5) * 2.0;
         fg_vertices[6] = (((float)drt.y / h) - 0.5) * -2.0;
@@ -4396,37 +4382,43 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(MINI)
-    for (cc = 0; cc < 2; cc++) {
-        if (pixels == myvideo.lcd.virt_addr[cc][0]) {
-            dma_found = 1;
-            myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[cc][0];
-            break;
-        }
-        if (pixels == myvideo.lcd.virt_addr[cc][1]) {
-            dma_found = 1;
-            myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[cc][1];
-            break;
-        }
+    myvideo.gfx.src.surf.phyAddr = NULL;
+    if (pixels == myvideo.lcd.virt_addr[0][0]) {
+        myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[0][0];
+    }
+    else if (pixels == myvideo.lcd.virt_addr[0][1]) {
+        myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[0][1];
+    }
+    else if (pixels == myvideo.lcd.virt_addr[1][0]) {
+        myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[1][0];
+    }
+    if (pixels == myvideo.lcd.virt_addr[1][1]) {
+        myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[1][1];
     }
 
-    if (alpha != 0) {
-        if (myconfig.layout.swin.alpha > NDS_ALPHA_MAX) {
-            myconfig.layout.swin.alpha = 0;
-        }
-
+    if ((id == TEXTURE_LCD0) &&
+        ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+    {
         if (myconfig.layout.swin.alpha > 0) {
             float m0 = (float)myconfig.layout.swin.alpha / 10;
             float m1 = 1.0 - m0;
             uint32_t *d = myvideo.tmp.virt_addr;
-            uint32_t r0 = 0, g0 = 0, b0 = 0;
-            uint32_t r1 = 0, g1 = 0, b1 = 0;
-            int x = 0, y = 0, ax = 0, ay = 0, sw = 0, sh = 0;
+            int x = 0;
+            int y = 0;
+            int ax = 0;
+            int ay = 0;
+            int sw = 0;
+            int sh = 0;
+            uint32_t r0 = 0;
+            uint32_t g0 = 0;
+            uint32_t b0 = 0;
+            uint32_t r1 = 0;
+            uint32_t g1 = 0;
+            uint32_t b1 = 0;
             const uint32_t *s0 = myvideo.fb.virt_addr + (myvideo.cur_w * myvideo.fb.var_info.yoffset * 4);
             const uint16_t *s1_565 = pixels;
             const uint32_t *s1_888 = pixels;
-            uint32_t col[] = {
-                0x000000, 0xa0a0a0, 0x400000, 0x004000, 0x000040, 0x000000, 0xa0a000, 0x00a0a0
-            };
 
             switch (myconfig.layout.mode.sel) {
             case LAYOUT_MODE_T0:
@@ -4440,26 +4432,28 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             }
 
             ay = 0;
-            for (y=0; y<sh; y++) {
+            for (y = 0; y < sh; y++) {
                 switch (myconfig.layout.mode.sel) {
                 case LAYOUT_MODE_T0:
                     if (y && ((y % 2) == 0)) {
-                        ay+= 1;
+                        ay += 1;
                     }
                     break;
                 }
 
                 ax = 0;
-                for (x=0; x<sw; x++) {
+                for (x = 0; x < sw; x++) {
                     asm ("PLD [%0, #128]"::"r" (s0));
-                    if ((myconfig.layout.swin.border > 0) && ((y == 0) || (y == (sh - 1)) || (x == 0) || (x == (sw - 1)))) {
-                        *d++ = col[myconfig.layout.swin.border];
+                    if ((myconfig.layout.swin.border) &&
+                        ((y == 0) || (y == (sh - 1)) || (x == 0) || (x == (sw - 1))))
+                    {
+                        *d++ = 0;
                     }
                     else {
                         switch (myconfig.layout.mode.sel) {
                         case LAYOUT_MODE_T0:
                             if (x && ((x % 2) == 0)) {
-                                ax+= 1;
+                                ax += 1;
                             }
                             break;
                         }
@@ -4506,8 +4500,9 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                         *d++ = ((r0 << 16) | (g0 << 8) | b0);
                     }
                 }
+
+                copy_mem = 0;
             }
-            copy_it = 0;
         }
 
         switch (myconfig.layout.mode.sel) {
@@ -4551,7 +4546,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         }
     }
 
-    if (copy_it && (myconfig.filter == FILTER_PIXEL)) {
+    if (copy_mem && (myconfig.filter == FILTER_PIXEL)) {
         do {
             if (*myhook.var.sdl.screen[0].hires_mode != 0) {
                 break;
@@ -4876,7 +4871,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                     : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
                 );
 
-                copy_it = 0;
+                copy_mem = 0;
                 srt.x = 0;
                 srt.y = 0;
                 srt.w = NDS_Wx2;
@@ -4889,17 +4884,17 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                 uint16_t *s1 = (uint16_t*)pixels;
                 uint16_t *d = (uint16_t*)myvideo.tmp.virt_addr;
 
-                for (y=0; y<srt.h; y++) {
+                for (y = 0; y < srt.h; y++) {
                     s0 = d;
-                    for (x=0; x<srt.w; x++) {
+                    for (x = 0; x < srt.w; x++) {
                         *d++ = *s1;
                         *d++ = *s1++;
                     }
                     neon_memcpy(d, s0, 1024);
-                    d+= NDS_Wx2;
+                    d += NDS_Wx2;
                 }
 
-                copy_it = 0;
+                copy_mem = 0;
                 srt.x = 0;
                 srt.y = 0;
                 srt.w = NDS_Wx2;
@@ -4909,8 +4904,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         } while(0);
     }
 
-    if (copy_it) {
-        if (dma_found == 0) {
+    if (copy_mem) {
+        if (myvideo.gfx.src.surf.phyAddr == NULL) {
             neon_memcpy(myvideo.tmp.virt_addr, pixels, srt.h * pitch);
             myvideo.gfx.src.surf.phyAddr = myvideo.tmp.phy_addr;
             MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srt.h);
@@ -4922,7 +4917,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     myvideo.gfx.opt.u32GlobalSrcConstColor = 0;
-    myvideo.gfx.opt.eRotate = rotate;
+    myvideo.gfx.opt.eRotate = ROTATE_180;
     myvideo.gfx.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
     myvideo.gfx.opt.eDstDfbBldOp = 0;
     myvideo.gfx.opt.eDFBBlendFlag = 0;
@@ -4947,7 +4942,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.gfx.dst.surf.phyAddr = myvideo.fb.phy_addr + (myvideo.cur_w * myvideo.fb.var_info.yoffset * 4);
 
     MI_GFX_BitBlit(&myvideo.gfx.src.surf, &myvideo.gfx.src.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &fence);
-    MI_GFX_WaitAllDone(FALSE, fence);
+    MI_GFX_WaitAllDone(TRUE, fence);
 #endif
 
     return 0;
@@ -4958,7 +4953,7 @@ TEST(sdl2_video, flush_lcd)
 {
     SDL_Rect rt = { 0 };
 
-    TEST_ASSERT_EQUAL_INT(-1, flush_lcd(-1, NULL, rt, rt, 0));
+    TEST_ASSERT_EQUAL_INT(-1, flush_lcd(TEXTURE_TMP, NULL, rt, rt, 0));
 }
 #endif
 
@@ -5170,7 +5165,7 @@ static int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t 
                 rt.y = y;
                 rt.w = t2->w;
                 rt.h = t2->h;
-                flush_lcd(-1, t2->pixels, t2->clip_rect, rt, t2->pitch);
+                flush_lcd(TEXTURE_TMP, t2->pixels, t2->clip_rect, rt, t2->pitch);
                 SDL_FreeSurface(t2);
             }
             SDL_FreeSurface(t1);
@@ -5487,20 +5482,12 @@ static int load_layout_bg(void)
         SDL_FreeSurface(t);
 
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
-#if defined(GKD2) || defined(BRICK) || defined(UT)
         flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
-#else
-        flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
-#endif
 #endif
     }
     else if (myvideo.layout.bg) {
 #if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
-#if defined(GKD2) || defined(BRICK) || defined(UT)
         flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
-#else
-        flush_lcd(-1, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
-#endif
 #else
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -6123,8 +6110,8 @@ static int init_device(void)
     load_touch_pen();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
-    set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
-    set_half_vol(myconfig.half_vol);
+    //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
+    //set_half_vol(myconfig.half_vol);
 #endif
 
 #if defined(TRIMUI)
@@ -7607,7 +7594,7 @@ static int process_sdl2_setting(int key)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
-    flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
+    flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
     flip_lcd();
 #endif
     myvideo.layout.redraw_bg = REDRAW_BG_CNT;
@@ -7660,7 +7647,7 @@ static int show_hotkey(int key)
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
-    flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
+    flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
     flip_lcd();
 #endif
     myvideo.layout.redraw_bg = REDRAW_BG_CNT;
