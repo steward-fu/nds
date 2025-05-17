@@ -502,7 +502,6 @@ static int open_dsp(void)
 
 #if !defined(UT) && !defined(BRICK)
     system("amixer set \'DACL Mixer AIF1DA0L\' on");
-    system("amixer set \'DACL Mixer AIF1DA0R\' on");
 
     vol_ptr = (uint32_t *)(&mem_ptr[0xc00 + 0x258]);
     *vol_ptr = ((vol_base + (cur_vol << vol_mul)) << 8) | (vol_base + (cur_vol << vol_mul));

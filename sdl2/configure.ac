@@ -2444,8 +2444,6 @@ CheckNDSVideo()
     if test x$MOD = xa30; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30"
 
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lMali"
-
         AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
         SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
         have_joystick=yes

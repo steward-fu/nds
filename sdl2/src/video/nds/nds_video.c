@@ -125,7 +125,7 @@ const char *frag_shader_src =
     "varying vec2 frag_coord;                                   \n"
     "uniform float frag_angle;                                  \n"
     "uniform float frag_aspect;                                 \n"
-    "uniform sampler2D frag_sampler;                            \n"
+    "uniform sampler2D frag_texture;                            \n"
     "const vec2 HALF = vec2(0.5);                               \n"
     "void main()                                                \n"
     "{                                                          \n"
@@ -141,12 +141,12 @@ const char *frag_shader_src =
     "    tc -= HALF.xy;                                         \n"
     "    tc = scaleMatInv * rotMat * scaleMat * tc;             \n"
     "    tc += HALF.xy;                                         \n"
-    "    vec3 tex = texture2D(frag_sampler, tc).bgr;            \n"
+    "    vec3 tex = texture2D(frag_texture, tc).bgr;            \n"
     "    gl_FragColor = vec4(tex, 1.0);                         \n"
     "}                                                          \n";
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(FLIP)
 const char *vert_shader_src =
     "attribute vec4 vert_pos;                                   \n"
     "attribute vec2 vert_coord;                                 \n"
@@ -154,33 +154,49 @@ const char *vert_shader_src =
     "varying vec2 frag_coord;                                   \n"
     "void main()                                                \n"
     "{                                                          \n"
-#if !defined(FLIP)
-    "    const float frag_angle = 0.0;                          \n"
-    "    frag_angle = 90.0 * (3.1415 * 2.0);                    \n"
-    "    frag_angle = frag_angle / 360.0;                       \n"
-    "    mat4 rot = mat4(                                       \n"
-    "        cos(frag_angle), -sin(frag_angle), 0.0, 0.0,       \n"
-    "        sin(frag_angle),  cos(frag_angle), 0.0, 0.0,       \n"
-    "               0.0,         0.0, 1.0, 0.0,                 \n"
-    "               0.0,         0.0, 0.0, 1.0                  \n"
-    "    );                                                     \n"
-    "    gl_Position = vert_pos * rot;                          \n"
-    "    frag_coord = vert_coord;                               \n"
-#else
     "    gl_Position = vert_pos;                                \n"
     "    frag_coord = vert_coord;                               \n"
-#endif
     "}                                                          \n";
     
 const char *frag_shader_src =
     "precision mediump float;                                   \n"
     "varying vec2 frag_coord;                                   \n"
-    "uniform float s_alpha;                                     \n"
-    "uniform sampler2D frag_sampler;                            \n"
+    "uniform float frag_alpha;                                  \n"
+    "uniform sampler2D frag_texture;                            \n"
     "void main()                                                \n"
     "{                                                          \n"
-    "    vec3 tex = texture2D(frag_sampler, frag_coord).bgr;    \n"
-    "    gl_FragColor = vec4(tex, s_alpha);                     \n"
+    "    vec3 tex = texture2D(frag_texture, frag_coord).bgr;    \n"
+    "    gl_FragColor = vec4(tex, frag_alpha);                  \n"
+    "}                                                          \n";
+#endif
+
+#if defined(A30) || defined(RG28XX)
+const char *vert_shader_src =
+    "attribute vec4 vert_pos;                                   \n"
+    "attribute vec2 vert_coord;                                 \n"
+    "attribute float vert_alpha;                                \n"
+    "varying vec2 frag_coord;                                   \n"
+    "void main()                                                \n"
+    "{                                                          \n"
+    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;     \n"
+    "    mat4 rot = mat4(                                       \n"
+    "        cos(angle), -sin(angle), 0.0, 0.0,                 \n"
+    "        sin(angle),  cos(angle), 0.0, 0.0,                 \n"
+    "               0.0,         0.0, 1.0, 0.0,                 \n"
+    "               0.0,         0.0, 0.0, 1.0);                \n"
+    "    gl_Position = vert_pos * rot;                          \n"
+    "    frag_coord = vert_coord;                               \n"
+    "}                                                          \n";
+
+const char *frag_shader_src =
+    "precision mediump float;                                   \n"
+    "varying vec2 frag_coord;                                   \n"
+    "uniform float frag_alpha;                                  \n"
+    "uniform sampler2D frag_texture;                            \n"
+    "void main()                                                \n"
+    "{                                                          \n"
+    "    vec3 tex = texture2D(frag_texture, frag_coord).bgr;    \n"
+    "    gl_FragColor = vec4(tex, frag_alpha);                  \n"
     "}                                                          \n";
 #endif
 
@@ -494,7 +510,7 @@ static int init_egl(void)
 
     myvideo.wl.egl.positionLoc = glGetAttribLocation(myvideo.wl.egl.pObject, "vert_pos");
     myvideo.wl.egl.texCoordLoc = glGetAttribLocation(myvideo.wl.egl.pObject, "vert_coord");
-    myvideo.wl.egl.samplerLoc = glGetUniformLocation(myvideo.wl.egl.pObject, "frag_sampler");
+    myvideo.wl.egl.samplerLoc = glGetUniformLocation(myvideo.wl.egl.pObject, "frag_texture");
     glUniform1f(glGetUniformLocation(myvideo.wl.egl.pObject, "frag_angle"), 90 * (3.1415 * 2.0) / 360.0);
     glUniform1f(glGetUniformLocation(myvideo.wl.egl.pObject, "frag_aspect"), 1);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -1863,7 +1879,7 @@ static int process_screen(void)
         }
         else if (cur_layout_mode != myconfig.layout.mode.sel) {
             show_info = 50;
-            sprintf(buf, " %s: T%d", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
+            sprintf(buf, " %s: T%d ", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
         }
         else if (cur_layout_bg != myconfig.layout.bg.sel) {
             show_info = 50;
@@ -2104,8 +2120,10 @@ static int process_screen(void)
             draw_info(
                 NULL,
                 buf,
-                myvideo.cur_w - get_font_height(buf),
-                myvideo.cur_h - get_font_width(buf),
+                0,
+                0,
+                //myvideo.cur_w - get_font_height(buf),
+                //myvideo.cur_h - get_font_width(buf),
                 col_fg,
                 col_bg
             );
@@ -2535,11 +2553,8 @@ static void* video_handler(void *param)
 
     myvideo.egl.posLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_pos");
     myvideo.egl.texLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_coord");
-    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_sampler");
-    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "s_alpha");
-
-    glUniform1i(myvideo.egl.samLoc, 0);
-    glUniform1f(myvideo.egl.alphaLoc, 0.0);
+    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_texture");
+    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_alpha");
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
@@ -2554,16 +2569,6 @@ static void* video_handler(void *param)
     glEnableVertexAttribArray(myvideo.egl.texLoc);
     glUniform1i(myvideo.egl.samLoc, 0);
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
-
-    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-
-    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
 #if defined(A30) || defined(RG28XX)
@@ -2590,9 +2595,9 @@ static void* video_handler(void *param)
   
     myvideo.egl.display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     eglInitialize(myvideo.egl.display, &egl_major, &egl_minor);
-    eglChooseConfig(myvideo.egl.display, config_attribs, &myvideo.eglConfig, 1, &num_configs);
-    myvideo.egl.surface = eglCreateWindowSurface(myvideo.egl.display, myvideo.eglConfig, 0, window_attributes);
-    myvideo.egl.context = eglCreateContext(myvideo.egl.display, myvideo.eglConfig, EGL_NO_CONTEXT, context_attributes);
+    eglChooseConfig(myvideo.egl.display, config_attribs, &myvideo.egl.config, 1, &num_configs);
+    myvideo.egl.surface = eglCreateWindowSurface(myvideo.egl.display, myvideo.egl.config, 0, window_attributes);
+    myvideo.egl.context = eglCreateContext(myvideo.egl.display, myvideo.egl.config, EGL_NO_CONTEXT, context_attributes);
     eglMakeCurrent(myvideo.egl.display, myvideo.egl.surface, myvideo.egl.surface, myvideo.egl.context);
   
     myvideo.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
@@ -2609,34 +2614,27 @@ static void* video_handler(void *param)
     glLinkProgram(myvideo.egl.pObject);
     glUseProgram(myvideo.egl.pObject);
 
-    eglSwapInterval(myvideo.egl.display, 1);
     myvideo.egl.posLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_pos");
     myvideo.egl.texLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_coord");
-    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_sampler");
-    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "s_alpha");
+    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_texture");
+    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_alpha");
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glViewport(0, 0, SCREEN_H, SCREEN_W);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glEnableVertexAttribArray(myvideo.egl.posLoc);
     glEnableVertexAttribArray(myvideo.egl.texLoc);
     glUniform1i(myvideo.egl.samLoc, 0);
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
-
-    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
 #endif
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(FLIP) || defined(A30) || defined(RG28XX) || defined(GKD2) || defined(BRICK)
     myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
@@ -2738,14 +2736,9 @@ static void* video_handler(void *param)
     eglDestroyContext(myvideo.egl.display, myvideo.egl.context);
     eglDestroySurface(myvideo.egl.display, myvideo.egl.surface);
     eglTerminate(myvideo.egl.display);
-
-    free(myvideo.lcd.virt_addr[0][0]);
-    free(myvideo.lcd.virt_addr[0][1]);
-    free(myvideo.lcd.virt_addr[1][0]);
-    free(myvideo.lcd.virt_addr[1][1]);
 #endif
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(FLIP) || defined(A30) || defined(RG28XX) || defined(GKD2) || defined(BRICK)
     free(myvideo.lcd.virt_addr[0][0]);
     free(myvideo.lcd.virt_addr[0][1]);
     free(myvideo.lcd.virt_addr[1][0]);
@@ -3390,9 +3383,9 @@ static int quit_lcd(void)
         myvideo.fb.fd = -1;
     }
 
-    if (myvideo.mem_fd > 0) {
-        close(myvideo.mem_fd);
-        myvideo.mem_fd = -1;
+    if (myvideo.egl.mem_fd > 0) {
+        close(myvideo.egl.mem_fd);
+        myvideo.egl.mem_fd = -1;
     }
 
     return 0;
@@ -3413,7 +3406,7 @@ static int init_lcd(void)
 
     myvideo.fb.virt_addr = mmap(NULL, myvideo.cur_buf_size, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.fb.fd, 0);
     if (myvideo.fb.virt_addr == (void *)-1) {
-        error("failed to map fb buffer\n");
+        error("failed to map fb buffer(fd=%d, size=%d)\n", myvideo.fb.fd, myvideo.cur_buf_size);
         return -1;
     }
     debug("fb addr=%p, size=%d\n", myvideo.fb.virt_addr, myvideo.cur_buf_size);
@@ -3422,28 +3415,28 @@ static int init_lcd(void)
     myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
     ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
 
-    myvideo.mem_fd = open("/dev/mem", O_RDWR);
-    if (myvideo.mem_fd < 0) { 
+    myvideo.egl.mem_fd = open("/dev/mem", O_RDWR);
+    if (myvideo.egl.mem_fd < 0) { 
         error("failed to open /dev/mem\n");
         return -1;
     }
 
-    myvideo.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.mem_fd, CCU_BASE);
-    if (myvideo.ccu_mem == MAP_FAILED) {
+    myvideo.egl.ccu_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.egl.mem_fd, CCU_BASE);
+    if (myvideo.egl.ccu_mem == MAP_FAILED) {
         error("failed to map ccu memory\n");
         return -1;
     }
-    debug("ccp mem=%p\n", myvideo.ccu_mem);
-    myvideo.cpu_ptr = (uint32_t *)&myvideo.ccu_mem[0x00];
+    debug("ccp mem=%p\n", myvideo.egl.ccu_mem);
+    myvideo.egl.cpu_ptr = (uint32_t *)&myvideo.egl.ccu_mem[0x00];
 
-    myvideo.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.mem_fd, DAC_BASE);
-    if (myvideo.dac_mem == MAP_FAILED) {
+    myvideo.egl.dac_mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.egl.mem_fd, DAC_BASE);
+    if (myvideo.egl.dac_mem == MAP_FAILED) {
         debug("failed to map idac memory\n");
         return -1;
     }
 
-    debug("dac mem=%p\n", myvideo.dac_mem);
-    myvideo.vol_ptr = (uint32_t *)(&myvideo.dac_mem[0xc00 + 0x258]);
+    debug("dac mem=%p\n", myvideo.egl.dac_mem);
+    myvideo.egl.vol_ptr = (uint32_t *)(&myvideo.egl.dac_mem[0xc00 + 0x258]);
 
     return 0;
 }
@@ -3462,19 +3455,19 @@ static int quit_lcd(void)
         myvideo.fb.fd = -1;
     }
 
-    if (myvideo.ccu_mem != MAP_FAILED) {
-        munmap(myvideo.ccu_mem, 4096);
-        myvideo.ccu_mem = NULL;
+    if (myvideo.egl.ccu_mem != MAP_FAILED) {
+        munmap(myvideo.egl.ccu_mem, 4096);
+        myvideo.egl.ccu_mem = NULL;
     }
 
-    if (myvideo.dac_mem != MAP_FAILED) {
-        munmap(myvideo.dac_mem, 4096);
-        myvideo.dac_mem = NULL;
+    if (myvideo.egl.dac_mem != MAP_FAILED) {
+        munmap(myvideo.egl.dac_mem, 4096);
+        myvideo.egl.dac_mem = NULL;
     }
 
-    if (myvideo.mem_fd > 0) {
-        close(myvideo.mem_fd);
-        myvideo.mem_fd = -1;
+    if (myvideo.egl.mem_fd > 0) {
+        close(myvideo.egl.mem_fd);
+        myvideo.egl.mem_fd = -1;
     }
 
     return 0;
@@ -3742,6 +3735,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+    float w = SCREEN_W;
+    float h = SCREEN_H;
     int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
@@ -3796,40 +3791,48 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX)
+    w = SCREEN_W;
+    h = SCREEN_H;
+#else
+    w = SCREEN_W;
+    h = SCREEN_H;
+#endif
+
     if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T17) || (myconfig.layout.mode.sel == LAYOUT_MODE_T19))) {
-        fg_vertices[5] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
-        fg_vertices[6] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
+        fg_vertices[5] = (((float)drt.x / w) - 0.5) * 2.0;
+        fg_vertices[6] = (((float)drt.y / h) - 0.5) * -2.0;
 
         fg_vertices[10] = fg_vertices[5];
-        fg_vertices[11] = (((float)(drt.y + drt.w) / SCREEN_H) - 0.5) * -2.0;
+        fg_vertices[11] = (((float)(drt.y + drt.w) / h) - 0.5) * -2.0;
 
-        fg_vertices[15] = (((float)(drt.x + drt.h) / SCREEN_W) - 0.5) * 2.0;
+        fg_vertices[15] = (((float)(drt.x + drt.h) / w) - 0.5) * 2.0;
         fg_vertices[16] = fg_vertices[11];
 
         fg_vertices[0] = fg_vertices[15];
         fg_vertices[1] = fg_vertices[6];
     }
     else if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T16) || (myconfig.layout.mode.sel == LAYOUT_MODE_T18))) {
-        fg_vertices[15] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
-        fg_vertices[16] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
+        fg_vertices[15] = (((float)drt.x / w) - 0.5) * 2.0;
+        fg_vertices[16] = (((float)drt.y / h) - 0.5) * -2.0;
 
         fg_vertices[0] = fg_vertices[15];
-        fg_vertices[1] = (((float)(drt.y + drt.w) / SCREEN_H) - 0.5) * -2.0;
+        fg_vertices[1] = (((float)(drt.y + drt.w) / h) - 0.5) * -2.0;
 
-        fg_vertices[5] = (((float)(drt.x + drt.h) / SCREEN_W) - 0.5) * 2.0;
+        fg_vertices[5] = (((float)(drt.x + drt.h) / w) - 0.5) * 2.0;
         fg_vertices[6] = fg_vertices[1];
 
         fg_vertices[10] = fg_vertices[5];
         fg_vertices[11] = fg_vertices[16];
     }
     else {
-        fg_vertices[0] = (((float)drt.x / SCREEN_W) - 0.5) * 2.0;
-        fg_vertices[1] = (((float)drt.y / SCREEN_H) - 0.5) * -2.0;
+        fg_vertices[0] = (((float)drt.x / w) - 0.5) * 2.0;
+        fg_vertices[1] = (((float)drt.y / h) - 0.5) * -2.0;
 
         fg_vertices[5] = fg_vertices[0];
-        fg_vertices[6] = (((float)(drt.y + drt.h) / SCREEN_H) - 0.5) * -2.0;
+        fg_vertices[6] = (((float)(drt.y + drt.h) / h) - 0.5) * -2.0;
 
-        fg_vertices[10] = (((float)(drt.x + drt.w) / SCREEN_W) - 0.5) * 2.0;
+        fg_vertices[10] = (((float)(drt.x + drt.w) / w) - 0.5) * 2.0;
         fg_vertices[11] = fg_vertices[6];
 
         fg_vertices[15] = fg_vertices[10];
@@ -3850,20 +3853,33 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
-    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) || (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) && (tex == TEXTURE_LCD0)) {
+    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) &&
+        (tex == TEXTURE_LCD0))
+    {
         glUniform1f(myvideo.egl.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
+    else {
+        glUniform1f(myvideo.egl.alphaLoc, 1.0);
+    }
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
     glVertexAttribPointer(myvideo.egl.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
     glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) || (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) && (tex == TEXTURE_LCD0)) {
+    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) &&
+        (tex == TEXTURE_LCD0))
+    {
         glUniform1f(myvideo.egl.alphaLoc, 0.0);
         glDisable(GL_BLEND);
+    }
+    else {
+        glUniform1f(myvideo.egl.alphaLoc, 1.0);
     }
 #endif
 
@@ -4997,7 +5013,6 @@ static int flip_lcd(void)
         glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
     }
-
 #endif
 
 #if defined(MINI)
@@ -5813,24 +5828,24 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].h = 360;
         break;
     case 11:
-        myvideo.layout.mode[mode].screen[0].x = 64;
-        myvideo.layout.mode[mode].screen[0].y = 96;
-        myvideo.layout.mode[mode].screen[0].w = 512;
-        myvideo.layout.mode[mode].screen[0].h = 384;
-        myvideo.layout.mode[mode].screen[1].x = 256;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 128;
-        myvideo.layout.mode[mode].screen[1].h = 96;
+        myvideo.layout.mode[mode].screen[0].x = 256;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 128;
+        myvideo.layout.mode[mode].screen[0].h = 96;
+        myvideo.layout.mode[mode].screen[1].x = 64;
+        myvideo.layout.mode[mode].screen[1].y = 96;
+        myvideo.layout.mode[mode].screen[1].w = 512;
+        myvideo.layout.mode[mode].screen[1].h = 384;
         break;
     case 12:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 96;
-        myvideo.layout.mode[mode].screen[0].w = 512;
-        myvideo.layout.mode[mode].screen[0].h = 384;
-        myvideo.layout.mode[mode].screen[1].x = 512;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 128;
-        myvideo.layout.mode[mode].screen[1].h = 96;
+        myvideo.layout.mode[mode].screen[0].x = 512;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 128;
+        myvideo.layout.mode[mode].screen[0].h = 96;
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = 96;
+        myvideo.layout.mode[mode].screen[1].w = 512;
+        myvideo.layout.mode[mode].screen[1].h = 384;
         break;
     case 13:
         myvideo.layout.mode[mode].screen[0].x = 0;
@@ -5873,11 +5888,11 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
     case 17:
-        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].x = 320;
         myvideo.layout.mode[mode].screen[0].y = 26;
         myvideo.layout.mode[mode].screen[0].w = 427;
         myvideo.layout.mode[mode].screen[0].h = 320;
-        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 26;
         myvideo.layout.mode[mode].screen[1].w = 427;
         myvideo.layout.mode[mode].screen[1].h = 320;
@@ -5893,11 +5908,11 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
     case 19:
-        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].x = 320;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 480;
         myvideo.layout.mode[mode].screen[0].h = 320;
-        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 320;
@@ -6107,7 +6122,7 @@ static int init_device(void)
     load_menu_res();
     load_touch_pen();
 
-#if defined(MINI) || defined(TRIMUI) || defined(A30) || defined(PANDORA)
+#if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
     set_half_vol(myconfig.half_vol);
 #endif
@@ -6395,12 +6410,14 @@ static const char *JOY_MODE_STR[] = {
     "Customized Key"
 };
 
+#if defined(FLIP)
 static const char *RJOY_MODE_STR[] = {
     "Disable",
     "4-Btn",
     "Stylus",
     "Customized Key"
 };
+#endif
 
 static const char *JOY_CUST_KEY_STR[] = {
     "UP",

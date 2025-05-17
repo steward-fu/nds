@@ -33,7 +33,7 @@ if [ "$CUST_CPUCLOCK" == "1" ]; then
     ./cpuclock 1500
 fi
 
-./drastic "$1"
+./drastic "$1" > std.log 2>&1
 sync
 
 echo $sv > /proc/sys/vm/swappiness

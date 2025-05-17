@@ -1144,13 +1144,13 @@ static int update_key_bit(uint32_t c, uint32_t v)
     if (c == myevent.keypad.vol_up) {
         set_key_bit(KEY_BIT_VOLUP, v);
         if (v == 0) {
-            myevent.vol = inc_a30_vol();
+            myevent.vol = 0;//inc_a30_vol();
         }
     }
     if (c == myevent.keypad.vol_down) {
         set_key_bit(KEY_BIT_VOLDOWN, v);
         if (v == 0) {
-            myevent.vol = dec_a30_vol();
+            myevent.vol = 0;//dec_a30_vol();
         }
     }
 #endif
