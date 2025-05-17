@@ -2143,6 +2143,30 @@ TEST(sdl2_video, process_screen)
 }
 #endif
 
+static void* kill_handler(void *param)
+{
+    char buf[32] = { 0 };
+
+    debug("call %s()\n", __func__);
+
+    sleep(3);
+    sprintf(buf, "kill -9 %d", (int)param);
+    system(buf);
+
+    return NULL;
+}
+
+static void prehook_cb_select_quit(void *menu_state, void *menu_option)
+{
+    pthread_t id = 0;
+
+    debug("call %s()\n", __func__);
+
+    update_config(myvideo.home);
+    pthread_create(&id, NULL, kill_handler, (void *)getpid());
+    quit_drastic();
+}
+
 static void* prehook_cb_malloc(size_t size)
 {
     static int idx = 0;
@@ -6099,6 +6123,8 @@ static int init_device(void)
     add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
     add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
     add_prehook_cb(myhook.fun.free,    prehook_cb_free);
+
+    add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
     add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
     add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
     add_prehook_cb(myhook.fun.savestate_pre, prehook_cb_savestate_pre);

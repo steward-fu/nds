@@ -573,29 +573,6 @@ TEST(detour, init_table)
 }
 #endif
 
-static void* kill_handler(void *param)
-{
-    char buf[32] = { 0 };
-
-    debug("call %s()\n", __func__);
-
-    sleep(3);
-    sprintf(buf, "kill -9 %d", (int)param);
-    system(buf);
-
-    return NULL;
-}
-
-static void prehook_cb_select_quit(void *menu_state, void *menu_option)
-{
-    pthread_t id = 0;
-
-    debug("call %s()\n", __func__);
-
-    pthread_create(&id, NULL, kill_handler, (void *)getpid());
-    quit_drastic();
-}
-
 static int prehook_cb_puts(const char *s)
 {
     printf(s);
@@ -603,37 +580,12 @@ static int prehook_cb_puts(const char *s)
 
 static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
 {
-#if 1
     va_list args = { 0 };
 
     va_start(args, fmt);
     vprintf(fmt, args);
     va_end(args);
-#endif
 
-    // Renaming savestate file to
-    if ((fmt[0] && (fmt[0] == 'R')) &&
-        (fmt[1] && (fmt[1] == 'e')) &&
-        (fmt[2] && (fmt[2] == 'n')) &&
-        (fmt[3] && (fmt[3] == 'a')) &&
-        (fmt[4] && (fmt[4] == 'm')) &&
-        (fmt[5] && (fmt[5] == 'i')) &&
-        (fmt[6] && (fmt[6] == 'n')) &&
-        (fmt[7] && (fmt[7] == 'g')) &&
-        (fmt[8] && (fmt[8] == ' ')) &&
-        (fmt[9] && (fmt[9] == 's')) &&
-        (fmt[10] && (fmt[10] == 'a')) &&
-        (fmt[11] && (fmt[11] == 'v')) &&
-        (fmt[12] && (fmt[12] == 'e')) &&
-        (fmt[13] && (fmt[13] == 's')) &&
-        (fmt[14] && (fmt[14] == 't')) &&
-        (fmt[15] && (fmt[15] == 'a')) &&
-        (fmt[16] && (fmt[16] == 't')) &&
-        (fmt[17] && (fmt[17] == 'e')))
-    {
-        pthread_t id = 0;
-        pthread_create(&id, NULL, kill_handler, (void *)getpid());
-    }
     return 0;
 }
 
@@ -665,7 +617,6 @@ int init_hook(size_t page, const char *path)
 
     //add_prehook_cb(myhook.fun.puts, prehook_cb_puts);
     //add_prehook_cb(myhook.fun.printf_chk, prehook_cb_printf_chk);
-    add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
     add_prehook_cb(
         (void *)myhook.fun.render_polygon_setup_perspective_steps,
         render_polygon_setup_perspective_steps
