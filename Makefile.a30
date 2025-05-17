@@ -20,4 +20,7 @@ include Makefile.mk
 
 .PHONY: push
 push:
-	adb push drastic/lib/* /mnt/SDCARD/Emu/drastic/lib/
+	adb push drastic/lib/libdtr.so /mnt/SDCARD/Emu/drastic/lib/
+	adb push drastic/lib/libcommon.so /mnt/SDCARD/Emu/drastic/lib/
+	adb push drastic/lib/libasound.so.2 /mnt/SDCARD/Emu/drastic/lib/
+	adb push drastic/lib/libSDL2-2.0.so.0 /mnt/SDCARD/Emu/drastic/lib/

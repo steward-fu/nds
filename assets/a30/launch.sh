@@ -2,7 +2,7 @@
 MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
-export SDL_VIDEODRIVER=nds
+export SDL_VIDEODRIVER=NDS
 
 sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness

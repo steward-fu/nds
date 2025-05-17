@@ -773,6 +773,7 @@ static int update_joy_state(void)
         r |= trans_joy_to_custkey(&myjoy.left.last, 0);
     }
 
+#if defined(FLIP)
     if (myconfig.rjoy.mode == MYJOY_MODE_KEY) {
         r |= trans_joy_to_keypad(&myjoy.right.last, 1);
     }
@@ -782,6 +783,7 @@ static int update_joy_state(void)
     else if (myconfig.rjoy.mode == MYJOY_MODE_CUST_KEY) {
         r |= trans_joy_to_custkey(&myjoy.right.last, 1);
     }
+#endif
 
     return r;
 }

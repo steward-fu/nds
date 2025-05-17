@@ -88,10 +88,10 @@
 #define DEV_KEY_CODE_B          29
 #define DEV_KEY_CODE_X          42
 #define DEV_KEY_CODE_Y          56
-#define DEV_KEY_CODE_L1         15
-#define DEV_KEY_CODE_R1         14
-#define DEV_KEY_CODE_L2         18
-#define DEV_KEY_CODE_R2         20
+#define DEV_KEY_CODE_L1         18
+#define DEV_KEY_CODE_R1         20
+#define DEV_KEY_CODE_L2         15
+#define DEV_KEY_CODE_R2         14
 #define DEV_KEY_CODE_START      28
 #define DEV_KEY_CODE_SELECT     97
 #define DEV_KEY_CODE_MENU       1

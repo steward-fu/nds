@@ -370,25 +370,21 @@ static void update_axis_values(void)
             case 0:
                 if (!filter_dead_zone(myjoy.left.cali.x.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.left.last.x = r;
-                    debug("left joy x=%d\n", r);
                 }
                 break;
             case 1:
                 if (!filter_dead_zone(myjoy.left.cali.y.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.left.last.y = r;
-                    debug("left joy y=%d\n", r);
                 }
                 break;
             case 2:
                 if (!filter_dead_zone(myjoy.right.cali.x.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.right.last.x = r;
-                    debug("right joy x=%d\n", r);
                 }
                 break;
             case 3:
                 if (!filter_dead_zone(myjoy.right.cali.y.dead, myjoy.cur_axis[i], myjoy.last_axis[i])) {
                     myjoy.right.last.y = r;
-                    debug("right joy y=%d\n", r);
                 }
                 break;
             }
@@ -510,11 +506,21 @@ static int parse_serial_buf(const char *cmd, int len)
             }
         }
     }
+
+#if defined(FLIP)
     myjoy.cur_axis[0] = frame_to_axis(&myjoy.left.cali.x, myjoy.cur_frame.left_x);
     myjoy.cur_axis[1] = frame_to_axis(&myjoy.left.cali.y, myjoy.cur_frame.left_y);
     myjoy.cur_axis[2] = frame_to_axis(&myjoy.right.cali.x, myjoy.cur_frame.right_x);
     myjoy.cur_axis[3] = frame_to_axis(&myjoy.right.cali.y, myjoy.cur_frame.right_y);
+#endif
+
+#if defined(A30)
+    myjoy.cur_axis[0] = frame_to_axis(&myjoy.left.cali.x, myjoy.cur_frame.right_y);
+    myjoy.cur_axis[1] = frame_to_axis(&myjoy.left.cali.y, myjoy.cur_frame.right_x);
+#endif
+
     update_axis_values();
+    debug("axis=%d,%d,%d,%d\n", myjoy.cur_axis[0], myjoy.cur_axis[1], myjoy.cur_axis[2], myjoy.cur_axis[3]);
 
     return 0;
 }
@@ -597,42 +603,11 @@ static int read_joy_cfg(const char *path, cali_t *x, cali_t *y)
 
     f = fopen(path, "r");
     if (!f) {
-        debug("failed to open \"%s\"\n", path);
+        error("failed to open \"%s\"\n", path);
         return -1;
     }
 
     while (fgets(buf, sizeof(buf), f)) {
-#if defined(A30)
-        if (strcasestr(buf, "x.min=")) {
-            x->min = atoi(&buf[6]);
-            debug("joy x.min=%d\n", x->min);
-        }
-        else if (strcasestr(buf, "x.max=")) {
-            x->max = atoi(&buf[6]);
-            debug("joy x.max=%d\n", x->max);
-        }
-        else if (strcasestr(buf, "x.zero=")) {
-            x->zero = atoi(&buf[7]);
-            debug("joy x.zero=%d\n", x->zero);
-        }
-        else if (strcasestr(buf, "y.min=")) {
-            y->min = atoi(&buf[6]);
-            debug("joy y.min=%d\n", y->min);
-        }
-        else if (strcasestr(buf, "y.max=")) {
-            y->max = atoi(&buf[6]);
-            debug("joy y.max=%d\n", y->max);
-        }
-        else if (strcasestr(buf, "y.zero=")) {
-            y->zero = atoi(&buf[7]);
-            debug("joy y.zero=%d\n", y->zero);
-        }
-        else {
-            debug("invalid string=\"%s\"\n", buf);
-        }
-#endif
-
-#if defined(FLIP) || defined(UT)
         if (strcasestr(buf, "x_min=")) {
             x->min = atoi(&buf[6]);
             debug("joy x_min=%d\n", x->min);
@@ -660,7 +635,6 @@ static int read_joy_cfg(const char *path, cali_t *x, cali_t *y)
         else {
             error("invalid string=\"%s\"\n", buf);
         }
-#endif
     }
     fclose(f);
 

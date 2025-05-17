@@ -7122,8 +7122,15 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
         }
         break;
     case MENU_JOY_DZONE:
-        if (myconfig.joy.dzone > 0) {
-            myconfig.joy.dzone -= 1;
+        if (right_key) {
+            if (myconfig.joy.dzone < 255) {
+                myconfig.joy.dzone += 1;
+            }
+        }
+        else {
+            if (myconfig.joy.dzone > 0) {
+                myconfig.joy.dzone -= 1;
+            }
         }
         break;
 #endif
