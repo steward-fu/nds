@@ -2216,6 +2216,8 @@ TEST(sdl2_event, pump_event)
 
 void prehook_cb_platform_get_input(uintptr_t p)
 {
+    static int pre_tp_x = 0;
+    static int pre_tp_y = 0;
     static uint32_t pre_tp_bits = 0;
     static uint32_t pre_key_bits = 0;
 
@@ -2248,8 +2250,14 @@ void prehook_cb_platform_get_input(uintptr_t p)
         }
     }
 
-    if (pre_tp_bits != myevent.input.touch_status) {
+    if ((pre_tp_bits != myevent.input.touch_status)  ||
+        (pre_tp_x != myevent.touch.x) ||
+        (pre_tp_y != myevent.touch.y))
+    {
+        pre_tp_x = myevent.touch.x;
+        pre_tp_y = myevent.touch.y;
         pre_tp_bits = myevent.input.touch_status;
+
         if (p) {
             input->touch_x = myevent.touch.x;
             input->touch_y = myevent.touch.y;
