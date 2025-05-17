@@ -1998,7 +1998,7 @@ static int process_screen(void)
 #endif
         }
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(BRICK) || defined(GKD2)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
             ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
@@ -2025,6 +2025,7 @@ static int process_screen(void)
             }
         }
 
+#if !defined(BRICK) && !defined(GKD2)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (myconfig.filter == FILTER_PIXEL) {
@@ -2037,6 +2038,7 @@ static int process_screen(void)
         }
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+#endif
 #endif
 
         if (need_update) {
