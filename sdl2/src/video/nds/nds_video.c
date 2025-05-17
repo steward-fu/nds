@@ -7307,7 +7307,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
     case MENU_CHK_BAT:
-        sprintf(buf, "%s", l10n(myconfig.show_low_battery ? "Yes" : "No"));
+        sprintf(buf, "%s (BAT %d%%)", l10n(myconfig.show_low_battery ? "Yes" : "No"), get_bat_val());
         break;
 #endif
     }
