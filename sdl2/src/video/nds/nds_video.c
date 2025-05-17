@@ -7609,6 +7609,7 @@ static int show_hotkey(int key)
         myvideo.menu.sdl2.enable = 0;
         return 0;
     default:
+        cur_lang = -1;
         break;
     }
 

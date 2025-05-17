@@ -798,11 +798,13 @@ static int enter_sdl2_menu(sdl2_menu_type_t t)
 {
     debug("call %s(t=%d)\n", __func__, t);
 
-    myvideo.menu.sdl2.type = t;
-    myvideo.menu.sdl2.enable = 1;
-    usleep(100000);
-    handle_sdl2_menu(-1);
-    myevent.keypad.pre_bits = myevent.keypad.cur_bits = 0;
+    if (myvideo.menu.sdl2.enable == 0) {
+        myvideo.menu.sdl2.type = t;
+        myvideo.menu.sdl2.enable = 1;
+        usleep(100000);
+        handle_sdl2_menu(-1);
+        myevent.keypad.pre_bits = myevent.keypad.cur_bits = 0;
+    }
 
     return 0;
 }
