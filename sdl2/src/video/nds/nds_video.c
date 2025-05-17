@@ -49,6 +49,11 @@
 #include "nds_video.h"
 #include "nds_event.h"
 
+#if defined(FLIP)
+#include "hex_flip_hotkey_cn.h"
+#include "hex_flip_hotkey_us.h"
+#endif
+
 nds_video myvideo = { 0 };
 
 extern nds_hook myhook;
@@ -7323,7 +7328,7 @@ TEST(sdl2_video, draw_sdl2_menu_setting)
 }
 #endif
 
-int handle_sdl2_menu(int key)
+static int process_sdl2_setting(int key)
 {
     static int cur_sel = 0;
     static int pre_fast = 0;
@@ -7580,6 +7585,72 @@ int handle_sdl2_menu(int key)
     flip_lcd();
 #endif
     myvideo.layout.redraw_bg = REDRAW_BG_CNT;
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, process_sdl2_setting)
+{
+    TEST_ASSERT_EQUAL_INT(0, process_sdl2_setting());
+}
+#endif
+
+static int show_hotkey(int key)
+{
+    SDL_RWops *rw = NULL;
+    SDL_Surface *png = NULL;
+    static int cur_lang = -1;
+
+    debug("call %s(key=%d)\n", __func__, key);
+
+    switch (key) {
+    case KEY_BIT_B:
+        myvideo.menu.sdl2.enable = 0;
+        return 0;
+    default:
+        break;
+    }
+
+#if defined(FLIP)
+    if (cur_lang != myconfig.lang) {
+        cur_lang = myconfig.lang;
+
+        if (!strcmp(lang_file_name[cur_lang], "zh_CN") ||
+            !strcmp(lang_file_name[cur_lang], "zh_TW"))
+        {
+            rw = SDL_RWFromMem(hex_flip_hotkey_cn, sizeof(hex_flip_hotkey_cn));
+        }
+        else {
+            rw = SDL_RWFromMem(hex_flip_hotkey_us, sizeof(hex_flip_hotkey_us));
+        }
+        png = IMG_Load_RW(rw, 1);
+        SDL_BlitSurface(png, NULL, myvideo.cvt, NULL);
+        SDL_FreeSurface(png);
+    }
+#endif
+
+#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+    myvideo.menu.update = 1;
+#else
+    flush_lcd(-1, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
+    flip_lcd();
+#endif
+    myvideo.layout.redraw_bg = REDRAW_BG_CNT;
+
+    return 0;
+}
+
+int handle_sdl2_menu(int key)
+{
+    debug("call %skey=%d()\n", __func__, key);
+
+    switch (myvideo.menu.sdl2.type) {
+    case MENU_TYPE_SDL2:
+        return process_sdl2_setting(key);
+    case MENU_TYPE_SHOW_HOTKEY:
+        return show_hotkey(key);
+    }
 
     return 0;
 }

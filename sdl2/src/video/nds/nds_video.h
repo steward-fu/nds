@@ -215,6 +215,11 @@ enum _TEXTURE_TYPE {
 #define MAX_LAYOUT_MODE     32
 #define MAX_LAYOUT_BG_FILE  32
 
+typedef enum {
+    MENU_TYPE_SDL2 = 0,
+    MENU_TYPE_SHOW_HOTKEY,
+} sdl2_menu_type_t;
+
 typedef struct {
     struct {
         int x;
@@ -436,6 +441,7 @@ typedef struct {
             SDL_Surface *bg;
             SDL_Surface *cursor;
             bool enable;
+            sdl2_menu_type_t type;
         } sdl2;
 
         struct {

@@ -794,6 +794,26 @@ TEST(sdl2_event, update_joy_state)
 }
 #endif
 
+static int enter_sdl2_menu(sdl2_menu_type_t t)
+{
+    debug("call %s(t=%d)\n", __func__, t);
+
+    myvideo.menu.sdl2.type = t;
+    myvideo.menu.sdl2.enable = 1;
+    usleep(100000);
+    handle_sdl2_menu(-1);
+    myevent.keypad.pre_bits = myevent.keypad.cur_bits = 0;
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, enter_sdl2_menu)
+{
+    TEST_ASSERT_EQUAL_INT(0, enter_sdl2_menu());
+}
+#endif
+
 static int handle_hotkey(void)
 {
     int check_hotkey = 0;
@@ -863,6 +883,14 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_B, 0);
     }
 
+    if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
+#if defined(FLIP)
+        enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
+#endif
+
+        set_key_bit(KEY_BIT_X, 0);
+    }
+
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
@@ -907,10 +935,7 @@ static int handle_hotkey(void)
             update_wayland_res(640, 480);
 #endif
 
-            myvideo.menu.sdl2.enable = 1;
-            usleep(100000);
-            handle_sdl2_menu(-1);
-            myevent.keypad.pre_bits = myevent.keypad.cur_bits = 0;
+            enter_sdl2_menu(MENU_TYPE_SDL2);
         }
 #endif
 
