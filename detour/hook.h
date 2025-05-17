@@ -55,6 +55,7 @@ typedef struct {
     uint32_t *gamecard_name;
     uint32_t *savestate_num;
     struct {
+        uintptr_t *base;
         uint32_t *frameskip_type;
         uint32_t *frameskip_value;
         uint32_t *safe_frameskip;
@@ -94,8 +95,8 @@ typedef struct {
             uint32_t *birthday_day;
         } firmware;
 
-        uint16_t *controls_a[CONTROL_INDEX_MAX];
-        uint16_t *controls_b[CONTROL_INDEX_MAX];
+        uint16_t *controls_a;
+        uint16_t *controls_b;
     } config;
 } system_t;
 
@@ -170,6 +171,7 @@ typedef struct {
     void *puts;
     void *printf_chk;
     void *select_quit;
+    void *config_setup_input_map;
 } fun_t;
 
 typedef struct {
@@ -260,6 +262,7 @@ typedef int32_t (*nds_save_state)(void *, const char *, char *, uint16_t *, uint
 typedef int (*nds_printf_chk)(int, const char *);
 typedef int (*nds_puts)(const char *);
 typedef void (*nds_select_quit)(void *, void *);
+typedef void (*nds_config_setup_input_map)(void *);
 
 int init_hook(size_t, const char *);
 int quit_hook(void);

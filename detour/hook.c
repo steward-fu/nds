@@ -483,7 +483,10 @@ static int init_table(void)
     myhook.var.system.base = (uintptr_t *)0x083f4000;
     myhook.var.system.gamecard_name = (uint32_t *)0x0847e8e8;
     myhook.var.system.savestate_num = (uint32_t *)0x08479780;
+    myhook.var.system.config.base = (uint32_t *)0x08479328;
     myhook.var.system.config.hires_3d = (uint32_t *)0x084797c4;
+    myhook.var.system.config.controls_a = (uint16_t *)0x084797dc;
+    myhook.var.system.config.controls_b = (uint16_t *)0x0847982c;
     myhook.var.sdl.swap_screens = (uint32_t *)0x0aee9598;
     myhook.var.sdl.bytes_per_pixel = (uint32_t *)0x0aee957c;
     myhook.var.sdl.needs_reinitializing = (uint32_t *)0x0aee95a0;
@@ -559,6 +562,7 @@ static int init_table(void)
     myhook.fun.printf_chk = (void *)0x08004a04;
     myhook.fun.puts = (void *)0x0800405c;
     myhook.fun.select_quit = (void *)0x0809b134;
+    myhook.fun.config_setup_input_map = (void *)0x08097250;
 #endif
 
     return 0;
