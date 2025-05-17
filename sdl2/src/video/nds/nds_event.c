@@ -252,6 +252,8 @@ static int release_keys(void)
         }
         myevent.keypad.cur_bits >>= 1;
     }
+    myevent.input.touch_status = 0;
+    myevent.input.button_status = 0;
 
     return 0;
 }
