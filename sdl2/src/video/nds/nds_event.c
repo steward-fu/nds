@@ -1049,6 +1049,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
 #if defined(A30) || defined(FLIP)
         if (myconfig.joy.mode == MYJOY_MODE_TOUCH) {
             myconfig.joy.show_cnt = MYJOY_SHOW_CNT;
+            myevent.input.touch_status = !!v;
             SDL_SendMouseButton(myvideo.win, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
         }
 #endif
