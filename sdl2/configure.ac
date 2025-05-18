@@ -2460,10 +2460,6 @@ CheckNDSVideo()
         have_joystick=yes
     fi
 
-    if test x$MOD = xrg28xx; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DRG28XX"
-    fi
-
     if test x$MOD = xtrimui; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/trimui"
@@ -3819,9 +3815,6 @@ case "$host" in
                 CheckNDSVideo
                 ;;
             *flip*)
-                CheckNDSVideo
-                ;;
-            *rg28xx*)
                 CheckNDSVideo
                 ;;
             *trimui*)

@@ -87,7 +87,7 @@ static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 static void disp_resize(void);
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(QX1000) || defined(XT897)
 GLfloat bg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
@@ -170,7 +170,7 @@ const char *frag_shader_src =
     "}                                                          \n";
 #endif
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30)
 const char *vert_shader_src =
     "attribute vec4 vert_pos;                                   \n"
     "attribute vec2 vert_coord;                                 \n"
@@ -887,7 +887,7 @@ static int draw_drastic_menu_main(void)
             pfn((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 rt.x = myvideo.cur_w - (NDS_W + 10);
                 rt.y = 50;
                 rt.w = NDS_W;
@@ -899,7 +899,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 rt.x = myvideo.cur_w - (NDS_W + 10);
                 rt.y = 50 + NDS_H;
                 rt.w = NDS_W;
@@ -1782,7 +1782,7 @@ int handle_drastic_menu(void)
         exit(-1);
         return 0;
     }
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
     flush_lcd(
@@ -1965,7 +1965,7 @@ static int process_screen(void)
 #elif defined(XT897)
 #elif defined(TRIMUI)
 #elif defined(PANDORA)
-#elif defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#elif defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
 
         switch (myconfig.layout.mode.sel) {
@@ -1980,7 +1980,7 @@ static int process_screen(void)
         exit(-1);
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if ((myconfig.layout.mode.sel == LAYOUT_MODE_T16) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_T17) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_T18) ||
@@ -2014,7 +2014,7 @@ static int process_screen(void)
 #endif
         }
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(BRICK) || defined(GKD2)
+#if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
             ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
@@ -2063,7 +2063,7 @@ static int process_screen(void)
 #endif
             flush_lcd(idx, pixels, srt, drt, pitch);
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
             switch (myconfig.layout.mode.sel) {
             case LAYOUT_MODE_T0:
             case LAYOUT_MODE_T1:
@@ -2071,7 +2071,7 @@ static int process_screen(void)
                 drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].y;
                 drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].w;
                 drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].h;
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
                     drt.x = SCREEN_W - drt.w;
@@ -2291,12 +2291,12 @@ static void prehook_cb_update_screen(void)
         prepare_time -= 1;
     }
     else if (myvideo.lcd.update == 0) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         myvideo.lcd.cur_sel ^= 1;
         *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
         *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         myvideo.menu.drastic.enable = 0;
 #endif
 #endif
@@ -2565,7 +2565,7 @@ static void* video_handler(void *param)
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
 #endif
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30)
     EGLint egl_major = 0;
     EGLint egl_minor = 0;
     EGLint num_configs = 0;
@@ -2628,7 +2628,7 @@ static void* video_handler(void *param)
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(RG28XX) || defined(GKD2) || defined(BRICK)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK)
     myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
     myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
@@ -2647,7 +2647,7 @@ static void* video_handler(void *param)
 #endif
 
     while (myvideo.thread.running) {
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myvideo.menu.sdl2.enable) {
             if (myvideo.menu.update) {
                 int pre_mode = myconfig.layout.mode.sel;
@@ -2724,7 +2724,7 @@ static void* video_handler(void *param)
     close(myvideo.drm.fd);
 #endif
 
-#if defined(A30) || defined(RG28XX)
+#if defined(A30)
     glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
     eglMakeCurrent(myvideo.egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(myvideo.egl.display, myvideo.egl.context);
@@ -2732,7 +2732,7 @@ static void* video_handler(void *param)
     eglTerminate(myvideo.egl.display);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(RG28XX) || defined(GKD2) || defined(BRICK)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK)
     free(myvideo.lcd.virt_addr[0][0]);
     free(myvideo.lcd.virt_addr[0][1]);
     free(myvideo.lcd.virt_addr[1][0]);
@@ -3337,55 +3337,6 @@ static int disp_resize(void)
 }
 #endif
 
-#if defined(RG28XX)
-static int init_lcd(void)
-{
-    debug("call %s()\n", __func__);
-
-    myvideo.fb.fd = open("/dev/fb0", O_RDWR, 0);
-    if (myvideo.fb.fd < 0) {
-        error("failed to open /dev/fb0\n");
-        return -1;
-    }
-    ioctl(myvideo.fb.fd, FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
-
-    myvideo.fb.virt_addr = mmap(NULL, myvideo.cur_buf_size, PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.fb.fd, 0);
-    if (myvideo.fb.virt_addr == (void *)-1) {
-        error("failed to map fb buffer\n");
-        return -1;
-    }
-    debug("fb virAddr %p (size:%d)\n", myvideo.fb.virt_addr, myvideo.cur_buf_size);
-    memset(myvideo.fb.virt_addr, 0 , myvideo.cur_buf_size);
-
-    myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
-    ioctl(myvideo.fb.fd, FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
-
-    return 0;
-}
-
-static int quit_lcd(void)
-{
-    debug("call %s()\n", __func__);
-
-    if (myvideo.fb.virt_addr) {
-        munmap(myvideo.fb.virt_addr, myvideo.cur_buf_size);
-        myvideo.fb.virt_addr = NULL;
-    }
-
-    if (myvideo.fb.fd > 0) {
-        close(myvideo.fb.fd);
-        myvideo.fb.fd = -1;
-    }
-
-    if (myvideo.egl.mem_fd > 0) {
-        close(myvideo.egl.mem_fd);
-        myvideo.egl.mem_fd = -1;
-    }
-
-    return 0;
-}
-#endif
-
 #if defined(A30)
 static int init_lcd(void)
 {
@@ -3726,7 +3677,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     int is_rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     float w = SCREEN_W;
     float h = SCREEN_H;
     int tex = (id >= 0) ? id : TEXTURE_TMP;
@@ -3782,7 +3733,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(FLIP)
     w = SCREEN_W;
     h = SCREEN_H;
     if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T17) || (myconfig.layout.mode.sel == LAYOUT_MODE_T19))) {
@@ -4986,7 +4937,7 @@ static int flip_lcd(void)
     myvideo.fb.var_info.yoffset ^= myvideo.cur_h;
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(FLIP)
     eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
 
 #if defined(FLIP) 
@@ -5233,7 +5184,7 @@ int load_touch_pen(void)
         return r;
     }
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(FLIP)
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_PEN]);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -5445,16 +5396,16 @@ static int load_layout_bg(void)
     SDL_Surface *t = NULL;
     char buf[MAX_PATH + 32] = { 0 };
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
     SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
 #endif
-#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
+#if !defined(A30) && !defined(FLIP)
     SDL_Rect drt = { 0, 0, myvideo.cur_w, myvideo.cur_h };
 #endif
 
     debug("call %s()\n", __func__);
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT)
     if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode.sel)) {
         pre_mode = myconfig.layout.mode.sel;
         pre_sel = myconfig.layout.bg.sel;
@@ -5481,12 +5432,12 @@ static int load_layout_bg(void)
         SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
         SDL_FreeSurface(t);
 
-#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
+#if !defined(A30) && !defined(FLIP)
         flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #endif
     }
     else if (myvideo.layout.bg) {
-#if !defined(A30) && !defined(RG28XX) && !defined(FLIP)
+#if !defined(A30) && !defined(FLIP)
         flush_lcd(TEXTURE_BG, myvideo.layout.bg->pixels, myvideo.layout.bg->clip_rect, drt, myvideo.layout.bg->pitch);
 #else
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
@@ -7591,7 +7542,7 @@ static int process_sdl2_setting(int key)
 
     draw_small_block_win(450, 360, mode, myvideo.cvt);
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
@@ -7644,7 +7595,7 @@ static int show_hotkey(int key)
     }
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);

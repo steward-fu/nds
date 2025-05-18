@@ -9,10 +9,6 @@
 #include <dirent.h>
 #include <linux/input.h>
 
-#if defined(RG28XX)
-#include <alsa/asoundlib.h>
-#endif
-
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
@@ -68,85 +64,6 @@ TEST_SETUP(sdl2_event)
 
 TEST_TEAR_DOWN(sdl2_event)
 {
-}
-#endif
-
-#if defined(RG28XX) || defined(UT)
-static int set_rg28xx_vol(void)
-{
-#if !defined(UT)
-    char buf[MAX_PATH] = { 0 };
-#endif
-
-    debug("call %s()\n", __func__);
-
-#if !defined(UT)
-    sprintf(buf, "amixer set \'lineout volume\' %d", myevent.vol);
-    system(buf);
-#endif
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(sdl2_event, set_rg28xx_vol)
-{
-    TEST_ASSERT_EQUAL_INT(0, set_rg28xx_vol());
-}
-#endif
-
-int inc_rg28xx_vol(void)
-{
-    debug("call %s()\n", __func__);
-
-    if (myevent.vol < MAX_VOL) {
-        myevent.vol += 2;
-
-        if (myevent.vol > MAX_VOL) {
-            myevent.vol = MAX_VOL;
-        }
-
-        set_rg28xx_vol();
-    }
-
-    return myevent.vol;
-}
-
-#if defined(UT)
-TEST(sdl2_event, inc_rg28xx_vol)
-{
-    myevent.vol = 0;
-    TEST_ASSERT_EQUAL_INT(2, inc_rg28xx_vol());
-    myevent.vol = MAX_VOL;
-    TEST_ASSERT_EQUAL_INT(MAX_VOL, inc_rg28xx_vol());
-}
-#endif
-
-int dec_rg28xx_vol(void)
-{
-    debug("call %s()\n", __func__);
-
-    if (myevent.vol > 0) {
-        myevent.vol -= 2;
-
-        if (myevent.vol < 0) {
-            myevent.vol = 0;
-        }
-
-        set_rg28xx_vol();
-    }
-
-    return myevent.vol;
-}
-#endif
-
-#if defined(UT)
-TEST(sdl2_event, dec_rg28xx_vol)
-{
-    myevent.vol = 0;
-    TEST_ASSERT_EQUAL_INT(0, dec_rg28xx_vol());
-    myevent.vol = 10;
-    TEST_ASSERT_EQUAL_INT(8, dec_rg28xx_vol());
 }
 #endif
 
@@ -269,7 +186,7 @@ TEST(sdl2_event, release_keys)
 
 static int hit_hotkey(uint32_t bit)
 {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     uint32_t mask = (1 << bit) | (1 << ((myconfig.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
 #endif
 
@@ -302,7 +219,7 @@ static int set_key_bit(uint32_t bit, int val)
         }
 #endif
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myconfig.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == KEY_BIT_SELECT) {
                 myevent.keypad.cur_bits = (1 << KEY_BIT_SELECT);
@@ -834,7 +751,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myconfig.layout.mode.sel > 0) {
             myconfig.layout.mode.sel -= 1;
         }
@@ -854,7 +771,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_RIGHT)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myconfig.layout.mode.sel < myvideo.layout.max_mode) {
             myconfig.layout.mode.sel += 1;
         }
@@ -867,7 +784,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myevent.mode == NDS_KEY_MODE) {
             uint32_t tmp = myconfig.layout.mode.alt;
             myconfig.layout.mode.alt = myconfig.layout.mode.sel;
@@ -933,7 +850,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_START)) {
-#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myvideo.menu.sdl2.enable == 0) {
 #if defined(QX1000) || defined(XT897)
             update_wayland_res(640, 480);
@@ -950,7 +867,7 @@ static int handle_hotkey(void)
     }
 
     if (myconfig.hotkey == HOTKEY_BIND_MENU) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
             set_key_bit(KEY_BIT_ONION, 1);
             set_key_bit(KEY_BIT_SELECT, 0);
@@ -966,11 +883,11 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_R1)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        static int pre_ff = 0;
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+        static int pre_fast = 0;
 
-        if (pre_ff != myconfig.fast_forward) {
-            pre_ff = myconfig.fast_forward;
+        if (pre_fast != myconfig.fast_forward) {
+            pre_fast = myconfig.fast_forward;
             fast_forward(myconfig.fast_forward);
         }
         set_key_bit(KEY_BIT_FAST, 1);
@@ -983,7 +900,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_L1)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         set_key_bit(KEY_BIT_QUIT, 1);
 #endif
 
@@ -993,9 +910,9 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_L1, 0);
     }
 
-#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     if (check_hotkey && hit_hotkey(KEY_BIT_R2)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         set_key_bit(KEY_BIT_LOAD, 1);
 #else
         set_key_bit(KEY_BIT_SAVE, 1);
@@ -1004,7 +921,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_L2)) {
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         set_key_bit(KEY_BIT_SAVE, 1);
 #else
         set_key_bit(KEY_BIT_LOAD, 1);
@@ -1142,7 +1059,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
     }
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(UT)
+#if defined(A30) || defined(UT)
     if (c == myevent.keypad.vol_up) {
         set_key_bit(KEY_BIT_VOLUP, v);
         if (v == 0) {
@@ -1252,113 +1169,6 @@ TEST(sdl2_event, get_flip_key_code)
     struct input_event e = {{ 0 }};
 
     TEST_ASSERT_EQUAL_INT(0, get_flip_key_code(&e));
-}
-#endif
-
-#if defined(RG28XX) || defined(UT)
-static int get_rg28xx_key_code(struct input_event *e)
-{
-    int r = 0;
-    char buf[DEV_KEY_BUF_MAX] = { 0 };
-
-    debug("call %s(e=%p)\n", __func__, e);
-
-    if (myevent.fd < 0) {
-        error("invalid input handle\n");
-        return -1;
-    }
-
-    if (!e) {
-        error("e is null\n");
-        return -1;
-    }
-
-#if !defined(UT)
-    if (read(myevent.fd, buf, sizeof(buf)) == 0) {
-        return r;
-    }
-#endif
-
-    r = 1;
-    e->value = !!buf[12];
-
-    switch (buf[10]) {
-    case 0x11: 
-        if (e->value) {
-            e->code = (buf[12] == 0xff) ? myevent.keypad.up : myevent.keypad.down;
-        }
-        else {
-            e->code = myevent.keypad.up;
-            set_key_bit(KEY_BIT_UP, 0);
-            set_key_bit(KEY_BIT_DOWN, 0);
-        }
-        break;
-    case 0x10:
-        if (e->value) {
-            e->code = (buf[12] == 0xff) ? myevent.keypad.left : myevent.keypad.right;
-        }
-        else {
-            e->code = myevent.keypad.left;
-            set_key_bit(KEY_BIT_LEFT, 0);
-            set_key_bit(KEY_BIT_RIGHT, 0);
-        }
-        break;
-    case 0x30:
-        e->code = myevent.keypad.a;
-        break;
-    case 0x31:
-        e->code = myevent.keypad.b;
-        break;
-    case 0x33:
-        e->code = myevent.keypad.x;
-        break;
-    case 0x32:
-        e->code = myevent.keypad.y;
-        break;
-    case 0x34:
-        e->code = myevent.keypad.l1;
-        break;
-    case 0x3a:
-        e->code = myevent.keypad.l2;
-        break;
-    case 0x35:
-        e->code = myevent.keypad.r1;
-        break;
-    case 0x3b:
-        e->code = myevent.keypad.r2;
-        break;
-    case 0x38:
-        e->code = myevent.keypad.menu;
-        break;
-    case 0x36:
-        e->code = myevent.keypad.select;
-        break;
-    case 0x37:
-        e->code = myevent.keypad.start;
-        break;
-    case 0x73:
-        e->code = myevent.keypad.vol_up;
-        break;
-    case 0x72:
-        e->code = myevent.keypad.vol_down;
-        break;
-    default:
-        r = 0;
-        break;
-    }
-
-    return r;
-}
-#endif
-
-#if defined(UT)
-TEST(sdl2_event, get_rg28xx_key_code)
-{
-    struct input_event e = {{ 0 }};
-
-    e.code = 0x32;
-    TEST_ASSERT_EQUAL_INT(0, get_rg28xx_key_code(&e));
-    TEST_ASSERT_EQUAL_INT(0x32, e.code);
 }
 #endif
 
@@ -1646,8 +1456,6 @@ int input_handler(void *data)
 
 #if defined(FLIP) || defined(UT)
         rk = get_flip_key_code(&ev);
-#elif defined(RG28XX) || defined(UT)
-        rk = get_rg28xx_key_code(&ev);
 #elif defined(BRICK) || defined(UT)
         rk = get_brick_key_code(&ev);
 #else
@@ -1695,10 +1503,6 @@ void init_event(void)
     debug("call %s()\n", __func__);
 
     memset(&myevent, 0, sizeof(myevent));
-
-#if defined(RG28XX)
-    myevent.vol = 16;
-#endif
 
     myevent.mode = NDS_KEY_MODE;
     myevent.touch.max_x = NDS_W;
@@ -1752,10 +1556,6 @@ void init_event(void)
             myevent.cust_key.gpio = (uint32_t *)(myevent.cust_key.mem + 0x800 + (0x24 * 6) + 0x10);
         }
     }
-#endif
-
-#if defined(RG28XX)
-    set_volume();
 #endif
 
     myevent.thread.id = SDL_CreateThreadInternal(input_handler, "NDS Input Handler", 4096, NULL);
@@ -1925,7 +1725,7 @@ static int send_key_event(int raw_event)
         bit = 1 << cc;
         pressed = !!(myevent.keypad.cur_bits & bit);
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if ((myconfig.hotkey == HOTKEY_BIND_MENU) && (cc == KEY_BIT_MENU)) {
             continue;
         }

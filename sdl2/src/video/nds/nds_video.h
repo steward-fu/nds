@@ -90,13 +90,6 @@ typedef enum {
 #define SCREEN_H 480
 #endif
 
-#if defined(RG28XX)
-#define SCREEN_W        640
-#define SCREEN_H        480
-#define BAT_MAX_VAL     4080000
-#define BAT_MIN_VAL     3400000
-#endif
-
 #if defined(FLIP)
 #define SCREEN_W        640
 #define SCREEN_H        480
@@ -306,7 +299,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP)
+#if defined(A30) || defined(FLIP)
     struct {
         EGLConfig config;
         EGLDisplay display;
@@ -366,7 +359,7 @@ typedef struct {
         uint32_t status;
 
 
-#if defined(MINI) || defined(A30) || defined(RG28XX) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
         int cur_sel;
         void *virt_addr[2][2];
 
@@ -395,7 +388,7 @@ typedef struct {
         struct fb_var_screeninfo var_info;
         struct fb_fix_screeninfo fix_info;
 
-#if defined(A30) || defined(RG28XX) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         void *virt_addr;
 #endif
 

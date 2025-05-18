@@ -14,8 +14,6 @@
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(FLIP)
 #define INPUT_DEV   "/dev/miyooio"
-#elif defined(RG28XX)
-#define INPUT_DEV   "/dev/input/event1"
 #elif defined(PANDORA)
 #define INPUT_DEV   "/dev/input/event4"
 #elif defined(QX1000)
@@ -31,29 +29,6 @@
 #endif
 
 #define CHECK_ONION_FILE "/mnt/SDCARD/.tmp_update"
-
-#if defined(RG28XX)
-#define DEV_KEY_BUF_MAX         16
-
-#define DEV_KEY_CODE_UP         103
-#define DEV_KEY_CODE_DOWN       108
-#define DEV_KEY_CODE_LEFT       105
-#define DEV_KEY_CODE_RIGHT      106
-#define DEV_KEY_CODE_A          57
-#define DEV_KEY_CODE_B          29
-#define DEV_KEY_CODE_X          42
-#define DEV_KEY_CODE_Y          56
-#define DEV_KEY_CODE_L1         15
-#define DEV_KEY_CODE_R1         14
-#define DEV_KEY_CODE_L2         18
-#define DEV_KEY_CODE_R2         20
-#define DEV_KEY_CODE_START      28
-#define DEV_KEY_CODE_SELECT     97
-#define DEV_KEY_CODE_MENU       1
-#define DEV_KEY_CODE_POWER      -1
-#define DEV_KEY_CODE_VOL_UP     115
-#define DEV_KEY_CODE_VOL_DOWN   114
-#endif
 
 #if defined(FLIP)
 #define DEV_KEY_BUF_MAX         32
