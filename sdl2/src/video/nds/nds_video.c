@@ -201,10 +201,6 @@ const char *frag_shader_src =
 #endif
 
 #if defined(QX1000) || defined(XT897)
-static volatile int is_wl_thread_running = 0;
-
-static pthread_t thread_id[2] = { 0 };
-
 EGLint egl_cfg[] = {
     EGL_SURFACE_TYPE,
     EGL_WINDOW_BIT,
@@ -247,6 +243,65 @@ TEST_TEAR_DOWN(sdl2_video)
 {
 }
 #endif
+
+static int alloc_lcd_mem(void)
+{
+#if defined(MINI)
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][0]);
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][1]);
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][0]);
+    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][1]);
+
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][0], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][1], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][0], TRUE);
+    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][1], TRUE);
+#else
+    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
+#endif
+
+    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
+    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
+    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
+    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
+
+    return 0;
+}
+
+static int free_lcd_mem(void)
+{
+#if defined(MINI)
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4);
+    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4);
+
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][0]);
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][1]);
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][0]);
+    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][1]);
+
+    myvideo.lcd.phy_addr[0][0] = NULL;
+    myvideo.lcd.phy_addr[0][1] = NULL;
+    myvideo.lcd.phy_addr[1][0] = NULL;
+    myvideo.lcd.phy_addr[1][1] = NULL;
+#else
+    free(myvideo.lcd.virt_addr[0][0]);
+    free(myvideo.lcd.virt_addr[0][1]);
+    free(myvideo.lcd.virt_addr[1][0]);
+    free(myvideo.lcd.virt_addr[1][1]);
+#endif
+
+    myvideo.lcd.virt_addr[0][0] = NULL;
+    myvideo.lcd.virt_addr[0][1] = NULL;
+    myvideo.lcd.virt_addr[1][0] = NULL;
+    myvideo.lcd.virt_addr[1][1] = NULL;
+
+    return 0;
+}
 
 #if defined(QX1000) || defined(XT897) || defined(UT)
 void update_wayland_res(int w, int h)
@@ -297,7 +352,7 @@ TEST(sdl2_video, update_wayland_res)
 
 static void* wl_disp_handler(void* pParam)
 {
-    while (is_wl_thread_running) {
+    while (myvideo.wl.thread.running) {
         if (myvideo.wl.init && myvideo.wl.ready) {
             wl_display_dispatch(myvideo.wl.display);
         }
@@ -401,10 +456,13 @@ static int quit_egl(void)
     eglDestroySurface(myvideo.wl.egl.display, myvideo.wl.egl.surface);
     eglDestroyContext(myvideo.wl.egl.display, myvideo.wl.egl.context);
     wl_egl_window_destroy(myvideo.wl.egl.window);
+
+#if !defined(XT897)
     eglTerminate(myvideo.wl.egl.display);
     glDeleteShader(myvideo.wl.egl.vShader);
     glDeleteShader(myvideo.wl.egl.fShader);
     glDeleteProgram(myvideo.wl.egl.pObject);
+#endif
 
     return 0;
 }
@@ -541,17 +599,27 @@ TEST(sdl2_video, init_egl)
 
 static void* wl_draw_handler(void *param)
 {
+    float w = WL_WIN_H;
+    float h = WL_WIN_W;
+    int cc = 0;
+    SDL_Rect rt = { 0 };
+    void *pixels[2] = { 0 };
+
     init_wl();
     init_egl();
+    alloc_lcd_mem();
 
-    debug("call %s()\n", __func__);
+    debug("call %s()++\n", __func__);
 
 #if !defined(UT)
     myvideo.wl.init = 1;
 #endif
 
-    while (is_wl_thread_running) {
+    while (myvideo.wl.thread.running) {
         if (myvideo.wl.ready) {
+            pixels[0] = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][0];
+            pixels[1] = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][1];
+
             if (myconfig.filter == FILTER_PIXEL) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -563,23 +631,158 @@ static void* wl_draw_handler(void *param)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            glVertexAttribPointer(myvideo.wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
-            glVertexAttribPointer(myvideo.wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, myvideo.wl.info.w, myvideo.wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, myvideo.wl.bg);
+            glVertexAttribPointer(
+                myvideo.wl.egl.positionLoc,
+                3,
+                GL_FLOAT,
+                GL_FALSE,
+                5 * sizeof(GLfloat),
+                bg_vertices
+            );
+
+            glVertexAttribPointer(
+                myvideo.wl.egl.texCoordLoc,
+                2,
+                GL_FLOAT,
+                GL_FALSE,
+                5 * sizeof(GLfloat),
+                &bg_vertices[3]
+            );
+
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGBA,
+                myvideo.wl.info.w,
+                myvideo.wl.info.h,
+                0,
+                GL_RGBA,
+                GL_UNSIGNED_BYTE,
+                myvideo.wl.bg
+            );
+
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
+            if (myvideo.menu.sdl2.enable ||
+                myvideo.menu.drastic.enable)
+            {
+                rt.w = 640;
+                rt.h = 480;
+                rt.x = (WL_WIN_H - rt.w) >> 1;
+                rt.y = (WL_WIN_W - rt.h) >> 1;
 
-            glVertexAttribPointer(myvideo.wl.egl.positionLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-            glVertexAttribPointer(myvideo.wl.egl.texCoordLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, myvideo.wl.info.w, myvideo.wl.info.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, myvideo.wl.pixels[myvideo.wl.flip ^ 1]);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+                fg_vertices[0] = (((float)rt.y / h) - 0.5) * 2.0;
+                fg_vertices[1] = (((float)rt.x / w) - 0.5) * -2.0;
 
+                fg_vertices[5] = fg_vertices[0];
+                fg_vertices[6] = (((float)(rt.x + rt.w) / w) - 0.5) * -2.0;
+
+                fg_vertices[10] = (((float)(rt.y + rt.h) / h) - 0.5) * 2.0;
+                fg_vertices[11] = fg_vertices[6];
+
+                fg_vertices[15] = fg_vertices[10];
+                fg_vertices[16] = fg_vertices[1];
+
+                glVertexAttribPointer(
+                    myvideo.wl.egl.positionLoc,
+                    3,
+                    GL_FLOAT,
+                    GL_FALSE,
+                    5 * sizeof(GLfloat),
+                    fg_vertices
+                );
+
+                glVertexAttribPointer(
+                    myvideo.wl.egl.texCoordLoc,
+                    2,
+                    GL_FLOAT,
+                    GL_FALSE,
+                    5 * sizeof(GLfloat),
+                    &fg_vertices[3]
+                );
+
+                glTexImage2D(
+                    GL_TEXTURE_2D,
+                    0,
+                    GL_RGBA,
+                    myvideo.cvt->w,
+                    myvideo.cvt->h,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    myvideo.menu.sdl2.enable ?
+                        myvideo.cvt->pixels : myvideo.menu.drastic.frame->pixels
+                );
+
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+            }
+            else {
+                for (cc = 0; cc < 2; cc++) {
+                    rt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].x;
+                    rt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].y;
+                    rt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].w;
+                    rt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].h;
+                    rt.x += ((960.0 - 640.0) / 2.0);
+                    rt.y += ((540.0 - 480.0) / 2.0);
+
+                    fg_vertices[0] = (((float)rt.y / h) - 0.5) * 2.0;
+                    fg_vertices[1] = (((float)rt.x / w) - 0.5) * -2.0;
+
+                    fg_vertices[5] = fg_vertices[0];
+                    fg_vertices[6] = (((float)(rt.x + rt.w) / w) - 0.5) * -2.0;
+
+                    fg_vertices[10] = (((float)(rt.y + rt.h) / h) - 0.5) * 2.0;
+                    fg_vertices[11] = fg_vertices[6];
+
+                    fg_vertices[15] = fg_vertices[10];
+                    fg_vertices[16] = fg_vertices[1];
+
+                    glVertexAttribPointer(
+                        myvideo.wl.egl.positionLoc,
+                        3,
+                        GL_FLOAT,
+                        GL_FALSE,
+                        5 * sizeof(GLfloat),
+                        fg_vertices
+                    );
+
+                    glVertexAttribPointer(
+                        myvideo.wl.egl.texCoordLoc,
+                        2,
+                        GL_FLOAT,
+                        GL_FALSE,
+                        5 * sizeof(GLfloat),
+                        &fg_vertices[3]
+                    );
+
+                    glTexImage2D(
+                        GL_TEXTURE_2D,
+                        0,
+                        GL_RGBA,
+                        256,
+                        192,
+                        0,
+                        GL_RGBA,
+                        GL_UNSIGNED_BYTE,
+                        pixels[cc]
+                    );
+
+                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+                }
+            }
             eglSwapBuffers(myvideo.wl.egl.display, myvideo.wl.egl.surface);
         }
         else {
             usleep(1000);
         }
     }
+
+    debug("call %s()--\n", __func__);
+
+    quit_wl();
+    quit_egl();
+    free_lcd_mem();
+
     return NULL;
 }
 
@@ -2187,8 +2390,6 @@ static void prehook_cb_select_quit(void *menu_state, void *menu_option)
 
 static void* prehook_cb_malloc(size_t size)
 {
-    static int idx = 0;
-
     void *r = NULL;
     uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
 
@@ -2197,9 +2398,7 @@ static void* prehook_cb_malloc(size_t size)
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
     {
-        r = myvideo.lcd.virt_addr[0][idx];
-        idx += 1;
-        idx %= 2;
+        r = myvideo.lcd.virt_addr[0][0];
     }
     else {
         r = malloc(size);
@@ -2291,14 +2490,15 @@ static void prehook_cb_update_screen(void)
         prepare_time -= 1;
     }
     else if (myvideo.lcd.update == 0) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         myvideo.lcd.cur_sel ^= 1;
-        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
-        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
+        *((uint32_t *)myhook.var.sdl.screen[0].pixels) =
+            (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
+        *((uint32_t *)myhook.var.sdl.screen[1].pixels) =
+            (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         myvideo.menu.drastic.enable = 0;
-#endif
+#endi
 #endif
         myvideo.lcd.update = 1;
     }
@@ -2629,15 +2829,7 @@ static void* video_handler(void *param)
 #endif
 
 #if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK)
-    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-
-    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
+    alloc_lcd_mem();
 #endif
 
     debug("call %s()++\n", __func__);
@@ -2733,10 +2925,7 @@ static void* video_handler(void *param)
 #endif
 
 #if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK)
-    free(myvideo.lcd.virt_addr[0][0]);
-    free(myvideo.lcd.virt_addr[0][1]);
-    free(myvideo.lcd.virt_addr[1][0]);
-    free(myvideo.lcd.virt_addr[1][1]);
+    free_lcd_mem();
 #endif
 
     debug("call %s()--\n", __func__);
@@ -3045,11 +3234,11 @@ static int init_lcd(void)
 {
     debug("call %s()\n", __func__);
 
-    is_wl_thread_running = 1;
+    myvideo.wl.thread.running = 1;
     myvideo.wl.bg = SDL_malloc(WL_WIN_W * WL_WIN_H * 4);
     memset(myvideo.wl.bg, 0, WL_WIN_W * WL_WIN_H * 2);
-    pthread_create(&thread_id[0], NULL, wl_disp_handler, NULL);
-    pthread_create(&thread_id[1], NULL, wl_draw_handler, NULL);
+    pthread_create(&myvideo.wl.thread.id[0], NULL, wl_disp_handler, NULL);
+    pthread_create(&myvideo.wl.thread.id[1], NULL, wl_draw_handler, NULL);
     while (myvideo.wl.init == 0) {
         usleep(100000);
     }
@@ -3070,12 +3259,9 @@ static int quit_lcd(void)
 {
     debug("call %s()\n", __func__);
 
-    is_wl_thread_running = 0;
-    pthread_join(thread_id[0], NULL);
-    pthread_join(thread_id[1], NULL);
-
-    SDL_free(myvideo.wl.data);
-    myvideo.wl.data = NULL;
+    myvideo.wl.thread.running = 0;
+    pthread_join(myvideo.wl.thread.id[0], NULL);
+    pthread_join(myvideo.wl.thread.id[1], NULL);
 
     return 0;
 }
@@ -3448,20 +3634,7 @@ static int init_lcd(void)
     MI_SYS_MMA_Alloc(NULL, myvideo.cur_buf_size, &myvideo.tmp.phy_addr);
     MI_SYS_Mmap(myvideo.tmp.phy_addr, myvideo.cur_buf_size, &myvideo.tmp.virt_addr, TRUE);
 
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][0]);
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][1]);
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][0]);
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][1]);
-
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][0], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][1], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][0], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][1], TRUE);
-
-    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
+    allocate_lcd_memory();
 
     myvideo.sar_fd = open("/dev/sar", O_RDWR);
     debug("sar handle=%d\n", myvideo.sar_fd);
@@ -3486,28 +3659,7 @@ static int quit_lcd(void)
         myvideo.tmp.phy_addr = NULL;
     }
 
-    if (myvideo.lcd.virt_addr[0][0]) {
-        MI_SYS_Munmap(myvideo.lcd.virt_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4);
-        MI_SYS_Munmap(myvideo.lcd.virt_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4);
-        MI_SYS_Munmap(myvideo.lcd.virt_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4);
-        MI_SYS_Munmap(myvideo.lcd.virt_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4);
-
-        MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][0]);
-        MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][1]);
-        MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][0]);
-        MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][1]);
-
-        myvideo.lcd.virt_addr[0][0] = NULL;
-        myvideo.lcd.virt_addr[0][1] = NULL;
-        myvideo.lcd.virt_addr[1][0] = NULL;
-        myvideo.lcd.virt_addr[1][1] = NULL;
-
-        myvideo.lcd.phy_addr[0][0] = NULL;
-        myvideo.lcd.phy_addr[0][1] = NULL;
-        myvideo.lcd.phy_addr[1][0] = NULL;
-        myvideo.lcd.phy_addr[1][1] = NULL;
-    }
-
+    free_lcd_mem();
     MI_GFX_Close();
     MI_SYS_Exit();
 
@@ -3822,31 +3974,31 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(QX1000) || defined(XT897)
     if (srt.w == NDS_W) {
-        dst += (drt.y ? 0 : NDS_W);
-        asm volatile (
-            "0:  vldmia %0!, {q0-q7}    ;"
-            "    vldmia %0!, {q8-q15}   ;"
-            "    vstmia %1!, {q0-q7}    ;"
-            "    vstmia %1!, {q8-q15}   ;"
-            "1:  vldmia %0!, {q0-q7}    ;"
-            "    vldmia %0!, {q8-q15}   ;"
-            "    vstmia %1!, {q0-q7}    ;"
-            "    vstmia %1!, {q8-q15}   ;"
-            "2:  vldmia %0!, {q0-q7}    ;"
-            "    vldmia %0!, {q8-q15}   ;"
-            "    vstmia %1!, {q0-q7}    ;"
-            "    vstmia %1!, {q8-q15}   ;"
-            "3:  vldmia %0!, {q0-q7}    ;"
-            "    vldmia %0!, {q8-q15}   ;"
-            "    vstmia %1!, {q0-q7}    ;"
-            "    vstmia %1!, {q8-q15}   ;"
-            "    add %1, %1, %2         ;"
-            "    subs %3, #1            ;"
-            "    bne 0b                 ;"
-            :
-            : "r"(pixels), "r"(dst), "r"((myvideo.cur_w - srt.w) * 4), "r"(NDS_H)
-            : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
-        );
+//        dst += (drt.y ? 0 : NDS_W);
+//        asm volatile (
+//            "0:  vldmia %0!, {q0-q7}    ;"
+//            "    vldmia %0!, {q8-q15}   ;"
+//            "    vstmia %1!, {q0-q7}    ;"
+//            "    vstmia %1!, {q8-q15}   ;"
+//            "1:  vldmia %0!, {q0-q7}    ;"
+//            "    vldmia %0!, {q8-q15}   ;"
+//            "    vstmia %1!, {q0-q7}    ;"
+//            "    vstmia %1!, {q8-q15}   ;"
+//            "2:  vldmia %0!, {q0-q7}    ;"
+//            "    vldmia %0!, {q8-q15}   ;"
+//            "    vstmia %1!, {q0-q7}    ;"
+//            "    vstmia %1!, {q8-q15}   ;"
+//            "3:  vldmia %0!, {q0-q7}    ;"
+//            "    vldmia %0!, {q8-q15}   ;"
+//            "    vstmia %1!, {q0-q7}    ;"
+//            "    vstmia %1!, {q8-q15}   ;"
+//            "    add %1, %1, %2         ;"
+//            "    subs %3, #1            ;"
+//            "    bne 0b                 ;"
+//            :
+//            : "r"(pixels), "r"(dst), "r"((myvideo.cur_w - srt.w) * 4), "r"(NDS_H)
+//            : "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15", "memory", "cc"
+//        );
     }
     else {
         for (y = 0; y < srt.h; y++) {
@@ -6227,9 +6379,13 @@ static int quit_device(void)
     }
     debug("completed\n");
 
+    quit_event();
     quit_hook();
     quit_lcd();
-    quit_event();
+
+    update_config(myvideo.home);
+    system("sync");
+
     free_lang_res();
     free_menu_res();
     free_touch_pen();
@@ -6245,9 +6401,6 @@ static int quit_device(void)
         SDL_FreeSurface(myvideo.cvt);
         myvideo.cvt = NULL;
     }
-
-    update_config(myvideo.home);
-    system("sync");
 
     return 0;
 }

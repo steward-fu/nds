@@ -143,8 +143,8 @@ typedef enum {
 #if defined(XT897)
 #define WL_WIN_W        540
 #define WL_WIN_H        960
-#define SCREEN_W        NDS_Wx2
-#define SCREEN_H        NDS_H
+#define SCREEN_W        640
+#define SCREEN_H        480
 #endif
 
 #if defined(BRICK)
@@ -290,9 +290,15 @@ typedef struct {
             int size;
         } info;
 
+        struct {
+            int running;
+            pthread_t id[2];
+        } thread;
+
         int init;
         int ready;
         int flip;
+
         uint8_t *bg;
         uint8_t *data;
         uint16_t *pixels[2];
@@ -358,14 +364,11 @@ typedef struct {
         bool show_fps;
         uint32_t status;
 
-
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(UT) || defined(GKD2) || defined(BRICK)
         int cur_sel;
         void *virt_addr[2][2];
 
 #if defined(MINI)
         MI_PHY phy_addr[2][2];
-#endif
 #endif
     } lcd;
 

@@ -751,11 +751,9 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myconfig.layout.mode.sel > 0) {
             myconfig.layout.mode.sel -= 1;
         }
-#endif
 
 #if defined(TRIMUI) || defined(PANDORA)
         if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0)) {
@@ -771,11 +769,9 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_RIGHT)) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myconfig.layout.mode.sel < myvideo.layout.max_mode) {
             myconfig.layout.mode.sel += 1;
         }
-#endif
 
 #if defined(TRIMUI) || defined(PANDORA)
         set_key_bit(KEY_BIT_R2, 1);
@@ -784,13 +780,11 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myevent.mode == NDS_KEY_MODE) {
             uint32_t tmp = myconfig.layout.mode.alt;
             myconfig.layout.mode.alt = myconfig.layout.mode.sel;
             myconfig.layout.mode.sel = tmp;
         }
-#endif
 
 #if defined(TRIMUI)
         myconfig.layout.mode.sel = (myconfig.layout.mode.sel == NDS_DIS_MODE_S0) ? LAYOUT_MODE_T3 : NDS_DIS_MODE_S0;
