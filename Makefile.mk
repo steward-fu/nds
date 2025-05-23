@@ -16,6 +16,7 @@ SDL2_CFG += --disable-video-vulkan
 SDL2_CFG += --disable-video-opengl
 SDL2_CFG += --disable-video-opengles
 SDL2_CFG += --disable-video-opengles2
+SDL2_CFG += --disable-hidapi-joystick
 
 REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
 

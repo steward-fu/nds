@@ -846,10 +846,6 @@ static int handle_hotkey(void)
     if (check_hotkey && hit_hotkey(KEY_BIT_START)) {
 #if defined(MINI) || defined(QX1000) || defined(XT897) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (myvideo.menu.sdl2.enable == 0) {
-#if defined(QX1000) || defined(XT897)
-            update_wayland_res(640, 480);
-#endif
-
             enter_sdl2_menu(MENU_TYPE_SDL2);
         }
 #endif

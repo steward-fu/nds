@@ -263,68 +263,43 @@ typedef struct {
         struct wl_display *display;
         struct wl_surface *surface;
         struct wl_registry *registry;
+        struct wl_egl_window *window;
         struct wl_compositor *compositor;
         struct wl_shell_surface *shell_surface;
 
-        struct _egl {
-            EGLConfig config;
-            EGLContext context;
-            EGLDisplay display;
-            EGLSurface surface;
-
-            GLuint vShader;
-            GLuint fShader;
-            GLuint pObject;
-
-            GLuint textureId;
-            GLint positionLoc;
-            GLint texCoordLoc;
-            GLint samplerLoc;
-            struct wl_egl_window *window;
-        } egl;
-        
-        struct _org {
-            int w;
-            int h;
-            int bpp;
-            int size;
-        } info;
-
         struct {
             int running;
-            pthread_t id[2];
+            pthread_t id;
         } thread;
 
-        int init;
         int ready;
-        int flip;
-
-        uint8_t *bg;
-        uint8_t *data;
-        uint16_t *pixels[2];
     } wl;
 #endif
 
-#if defined(A30) || defined(FLIP)
+#if defined(A30) || defined(FLIP) || defined(XT897)
     struct {
         EGLConfig config;
         EGLDisplay display;
         EGLContext context;
         EGLSurface surface;
+
         GLuint vShader;
         GLuint fShader;
         GLuint pObject;
         GLuint texture[TEXTURE_MAX];
+
         GLint posLoc;
         GLint texLoc;
         GLint samLoc;
         GLint alphaLoc;
 
+#if !defined(XT897)
         int mem_fd;
         uint8_t* ccu_mem;
         uint8_t* dac_mem;
         uint32_t *vol_ptr;
         uint32_t *cpu_ptr;
+#endif
     } egl;
 #endif
 

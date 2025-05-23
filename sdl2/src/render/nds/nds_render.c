@@ -262,12 +262,6 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
 {
     debug("call %s()\n", __func__);
 
-#if defined(QX1000) || defined(XT897)
-    if (myvideo.menu.drastic.enable == 0) {
-        update_wayland_res(640, 480);
-    }
-#endif
-
     myvideo.lcd.show_fps = 0;
     myvideo.menu.drastic.enable = 1;
     usleep(100000);
