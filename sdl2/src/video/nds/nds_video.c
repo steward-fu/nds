@@ -2518,7 +2518,7 @@ static void* video_handler(void *param)
                 int pre_filter = myconfig.filter;
 
                 myvideo.menu.update = 0;
-                printf("update sdl2 menu\n");
+                debug("update sdl2 menu\n");
 
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode.sel = 0;
@@ -2540,7 +2540,7 @@ static void* video_handler(void *param)
                 int pre_filter = myconfig.filter;
 
                 myvideo.menu.update = 0;
-                printf("update drastic menu\n");
+                debug("update drastic menu\n");
 
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode.sel = 0;
@@ -5971,6 +5971,7 @@ static int init_device(void)
     load_lang_file();
     load_menu_res();
     load_touch_pen();
+    load_layout_bg();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
@@ -6139,7 +6140,7 @@ static int quit_device(void)
 
     debug("wait for savestate complete\n");
     while (myvideo.state_busy) {
-        usleep(1000000);
+        usleep(10000000);
     }
     debug("completed\n");
 
