@@ -7,5 +7,5 @@ export SDL_VIDEODRIVER=NDS
 export LD_LIBRARY_PATH=lib:/usr/local/lib:$LD_LIBRARY_PATH
 
 cd $MYDIR
-./drastic "$1"
+./drastic
 sync
