@@ -136,8 +136,8 @@ typedef enum {
 #if defined(QX1000)
 #define WL_WIN_W        1080
 #define WL_WIN_H        2160
-#define SCREEN_W        NDS_Wx2
-#define SCREEN_H        NDS_H
+#define SCREEN_W        640
+#define SCREEN_H        480
 #endif
 
 #if defined(XT897)
@@ -276,7 +276,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(QX1000) || defined(XT897)
     struct {
         EGLConfig config;
         EGLDisplay display;
@@ -293,7 +293,7 @@ typedef struct {
         GLint samLoc;
         GLint alphaLoc;
 
-#if !defined(XT897)
+#if !defined(QX1000) && !defined(XT897)
         int mem_fd;
         uint8_t* ccu_mem;
         uint8_t* dac_mem;

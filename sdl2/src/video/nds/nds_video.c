@@ -1589,7 +1589,7 @@ int handle_drastic_menu(void)
         exit(-1);
         return 0;
     }
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(
@@ -2098,7 +2098,7 @@ static void prehook_cb_update_screen(void)
         *((uint32_t *)myhook.var.sdl.screen[1].pixels) =
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
         myvideo.menu.drastic.enable = 0;
 #endif
         myvideo.lcd.update = 1;
@@ -2429,7 +2429,7 @@ static void* video_handler(void *param)
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
 #endif
 
-#if defined(XT897)
+#if defined(QX1000) || defined(XT897)
     EGLint cnt = 0;
     EGLint major = 0;
     EGLint minor = 0;
@@ -2496,7 +2496,7 @@ static void* video_handler(void *param)
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
     alloc_lcd_mem();
 #endif
 
@@ -2506,12 +2506,12 @@ static void* video_handler(void *param)
     myvideo.thread.running = 1;
 #endif
 
-#if defined(XT897)
+#if defined(QX1000) || defined(XT897)
     myvideo.wl.ready = 1;
 #endif
 
     while (myvideo.thread.running) {
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
         if (myvideo.menu.sdl2.enable) {
             if (myvideo.menu.update) {
                 int pre_mode = myconfig.layout.mode.sel;
@@ -2597,7 +2597,7 @@ static void* video_handler(void *param)
     eglTerminate(myvideo.egl.display);
 #endif
 
-#if defined(XT897)
+#if defined(QX1000) || defined(XT897)
     myvideo.wl.ready = 0;
 
     glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
@@ -2619,7 +2619,7 @@ static void* video_handler(void *param)
     wl_display_disconnect(myvideo.wl.display);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
     free_lcd_mem();
 #endif
 
@@ -3647,6 +3647,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(QX1000) || defined(XT897)
     if ((id == TEXTURE_TMP) && (drt.x == 0) && (drt.y == 0) && (drt.w == 640) && (drt.h == 480)) {
+#if defined(QX1000)
+        drt.w <<= 1;
+        drt.h <<= 1;
+#endif
+
         drt.x = (w - drt.w) / 2;
         drt.y = (h - drt.h) / 2;
     }
@@ -4783,7 +4788,7 @@ static int flip_lcd(void)
     myvideo.fb.var_info.yoffset ^= myvideo.cur_h;
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(QX1000) || defined(XT897)
     eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
 
 #if defined(FLIP) 
@@ -5258,16 +5263,16 @@ static int load_layout_bg(void)
     SDL_Surface *t = NULL;
     char buf[MAX_PATH + 32] = { 0 };
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT) || defined(XT897)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT) || defined(QX1000) || defined(XT897)
     SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
 #endif
-#if !defined(A30) && !defined(FLIP) && !defined(XT897)
+#if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
     SDL_Rect drt = { 0, 0, myvideo.cur_w, myvideo.cur_h };
 #endif
 
     debug("call %s()\n", __func__);
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT) || defined(XT897)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT) || defined(QX1000) || defined(XT897)
     if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode.sel)) {
         pre_mode = myconfig.layout.mode.sel;
         pre_sel = myconfig.layout.bg.sel;
@@ -5308,7 +5313,7 @@ static int load_layout_bg(void)
         SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
         SDL_FreeSurface(t);
 
-#if !defined(A30) && !defined(FLIP) && !defined(XT897)
+#if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
         flush_lcd(
             TEXTURE_BG,
             myvideo.layout.bg->pixels,
@@ -5319,7 +5324,7 @@ static int load_layout_bg(void)
 #endif
     }
     else if (myvideo.layout.bg) {
-#if !defined(A30) && !defined(FLIP) && !defined(XT897)
+#if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
         flush_lcd(
             TEXTURE_BG,
             myvideo.layout.bg->pixels,
@@ -5559,17 +5564,23 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, const char *fname)
 {
+#if defined(QX1000)
+    float m = 4.21875;
+#elif defined(XT897)
+    float m = 1.8725;
+#endif
+
     debug("call %s(mode=%d, bg=%d, fname=%p)\n", mode, gb, fname);
 
-#if defined(XT897)
+#if defined(QX1000) || defined(XT897)
         myvideo.layout.mode[0].screen[0].x = 0;
-        myvideo.layout.mode[0].screen[0].y = (540 - (192 * 1.8725)) / 2.0;
-        myvideo.layout.mode[0].screen[0].w = 256 * 1.8725;
-        myvideo.layout.mode[0].screen[0].h = 192 * 1.8725;
-        myvideo.layout.mode[0].screen[1].x = 256 * 1.8725;
-        myvideo.layout.mode[0].screen[1].y = (540 - (192 * 1.8725)) / 2.0;
-        myvideo.layout.mode[0].screen[1].w = 256 * 1.8725;
-        myvideo.layout.mode[0].screen[1].h = 192 * 1.8725;
+        myvideo.layout.mode[0].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[0].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[0].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[0].screen[1].x = NDS_W * m;
+        myvideo.layout.mode[0].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[0].screen[1].w = NDS_W * m;
+        myvideo.layout.mode[0].screen[1].h = NDS_H * m;
 
         myvideo.layout.max_mode = 1;
 #else
@@ -6007,7 +6018,7 @@ static int init_device(void)
 
     pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 
-#if defined(XT897)
+#if defined(QX1000) || defined(XT897)
     pthread_create(&myvideo.wl.thread.id, NULL, wl_disp_handler, NULL);
 #endif
 
@@ -7257,10 +7268,6 @@ static int process_sdl2_setting(int key)
         }
 
         myvideo.menu.sdl2.enable = 0;
-
-    #if defined(QX1000) || defined(XT897)
-        //update_wayland_res(NDS_W * 2, NDS_H);
-    #endif
         return 0;
     default:
         break;
@@ -7460,7 +7467,7 @@ static int process_sdl2_setting(int key)
 
     draw_small_block_win(450, 360, mode, myvideo.cvt);
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
@@ -7480,7 +7487,7 @@ TEST(sdl2_video, process_sdl2_setting)
 
 static int show_hotkey(int key)
 {
-#if !defined(XT897)
+#if !defined(QX1000) && !defined(XT897)
     SDL_RWops *rw = NULL;
     SDL_Surface *png = NULL;
     static int cur_lang = -1;
@@ -7514,7 +7521,7 @@ static int show_hotkey(int key)
     }
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);

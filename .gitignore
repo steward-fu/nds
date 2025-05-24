@@ -1,6 +1,8 @@
 drastic_*.zip
-nds_*.opk
 drastic/miyoo355_rootfs_32.img
+drastic/system/nds_bios_arm7.bin
+drastic/system/nds_bios_arm9.bin
+drastic/system/nds_firmware.bin
 
 sdl2/configure
 sdl2/config.log

@@ -13,7 +13,7 @@ CFLAGS  += -mtune=cortex-a7
 
 LDFLAGS += -lpulse
 LDFLAGS += -ljson-c
- 
+
 export MORE_CFLAGS=${CFLAGS}
 export MORE_LDFLAGS=${LDFLAGS}
 
