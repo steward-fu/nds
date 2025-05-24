@@ -51,6 +51,24 @@ enum _CONTROL_INDEX {
 };
 
 typedef struct {
+    FILE *_file;
+    uint8_t *memory_file;
+    uint32_t memory_file_size;
+    uint8_t *buffer;
+    uint8_t *buffer_ptr;
+} mem_file_struct;
+
+typedef struct {
+    char directory[1024];
+    char file_name[1024];
+    pthread_t thread;
+    mem_file_struct file;
+    uint8_t *buffer;
+    uint32_t extensions;
+    uint32_t busy;
+} savestate_thread_data_struct;
+
+typedef struct {
     uintptr_t *base;
     uint32_t *gamecard_name;
     uint32_t *savestate_num;
@@ -138,6 +156,7 @@ typedef struct {
     uint32_t *pcm_handler;
     uint32_t *fast_forward;
     uint32_t *desmume_footer_str;
+    savestate_thread_data_struct *savestate_thread;
 } var_t;
 
 typedef struct {

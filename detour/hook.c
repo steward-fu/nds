@@ -513,6 +513,7 @@ static int init_table(void)
     myhook.var.desmume_footer_str = (uint32_t *)0x0815a740;
     myhook.var.pcm_handler = (uint32_t *)0x083e532c;
     myhook.var.fast_forward = (uint32_t *)0x08006ad0;
+    myhook.var.savestate_thread = (savestate_thread_data_struct *)0x083e4ad0;
 
 #if defined(NDS_ARM64)
     myhook.fun.menu = (void *)0x0007fbd0;
