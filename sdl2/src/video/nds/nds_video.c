@@ -3646,14 +3646,16 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(QX1000) || defined(XT897)
-    if ((id == TEXTURE_TMP) && (drt.x == 0) && (drt.y == 0) && (drt.w == 640) && (drt.h == 480)) {
+    if (id == TEXTURE_TMP) {
 #if defined(QX1000)
         drt.w <<= 1;
         drt.h <<= 1;
 #endif
 
-        drt.x = (w - drt.w) / 2;
-        drt.y = (h - drt.h) / 2;
+        if ((drt.w >= 640) && (drt.h >= 480)) {
+            drt.x = (w - drt.w) / 2;
+            drt.y = (h - drt.h) / 2;
+        }
     }
 
     fg_vertices[0] = (((float)drt.x / w) - 0.5) * 2.0;
