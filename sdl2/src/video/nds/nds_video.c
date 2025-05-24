@@ -1972,6 +1972,7 @@ static void* kill_handler(void *param)
 
     usleep(1000000);
     sprintf(buf, "kill -9 %d", (int)param);
+    printf("killed by sdl2\n");
     system(buf);
 
     return NULL;
@@ -3678,6 +3679,22 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
+
+#if defined(XT897)
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T1) {
+        switch (id) {
+        case TEXTURE_LCD0:
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            break;
+        case TEXTURE_LCD1:
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            break;
+        }
+    }
+#endif
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -5292,6 +5309,10 @@ static int load_layout_bg(void)
             SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
         );
 
+#if defined(QX1000) || defined(XT897)
+        return 0;
+#endif
+
         if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel] == NULL) {
             return 0;
         }
@@ -5575,16 +5596,42 @@ static int add_layout_mode(int mode, const char *fname)
     debug("call %s(mode=%d, bg=%d, fname=%p)\n", mode, gb, fname);
 
 #if defined(QX1000) || defined(XT897)
-        myvideo.layout.mode[0].screen[0].x = 0;
-        myvideo.layout.mode[0].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[0].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[0].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[0].screen[1].x = NDS_W * m;
-        myvideo.layout.mode[0].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[0].screen[1].w = NDS_W * m;
-        myvideo.layout.mode[0].screen[1].h = NDS_H * m;
-
+        mode = 0;
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
         myvideo.layout.max_mode = 1;
+
+#if defined(XT897)
+        m = 2.0;
+        mode = 1;
+        myvideo.layout.mode[mode].screen[0].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 336) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = 448;
+        myvideo.layout.mode[mode].screen[0].h = 336;
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+        myvideo.layout.max_mode = 2;
+
+        m = 2.8125;
+        mode = 2;
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 180) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = 240;
+        myvideo.layout.mode[mode].screen[1].h = 180;
+        myvideo.layout.max_mode = 3;
+#endif
 #else
     switch (mode) {
     case 0:
