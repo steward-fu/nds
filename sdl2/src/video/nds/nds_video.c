@@ -2962,31 +2962,31 @@ static int init_lcd(void)
         return -1;
     }
 
-    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &gfx.pi);
-    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_MEM, &gfx.mi);
-    if(gfx.pi.enabled){
-        gfx.pi.enabled = 0;
-        ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &myvideo.fb.pi);
+    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_MEM, &myvideo.fb.mi);
+    if(myvideo.fb.pi.enabled){
+        myvideo.fb.pi.enabled = 0;
+        ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &myvideo.fb.pi);
     }
-    gfx.mi.size = myvideo.cur_buf_size;
-    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_MEM, &gfx.mi);
+    myvideo.fb.mi.size = myvideo.cur_buf_size;
+    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_MEM, &myvideo.fb.mi);
 
-    gfx.pi.enabled = 1;
-    gfx.pi.pos_x = 0;
-    gfx.pi.pos_y = 0;
-    gfx.pi.out_width = myvideo.cur_w;
-    gfx.pi.out_height = myvideo.cur_h;
-    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+    myvideo.fb.pi.enabled = 1;
+    myvideo.fb.pi.pos_x = 0;
+    myvideo.fb.pi.pos_y = 0;
+    myvideo.fb.pi.out_width = myvideo.cur_w;
+    myvideo.fb.pi.out_height = myvideo.cur_h;
+    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &myvideo.fb.pi);
 
     ioctl(myvideo.fb.fd[0], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
     ioctl(myvideo.fb.fd[0], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-    myvideo.gfx.mem[0] = mmap(0, myvideo.cur_buf_size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[0], 0);
-    memset(myvideo.gfx.mem[0], 0, myvideo.cur_buf_size);
+    myvideo.fb.mem[0] = mmap(0, myvideo.cur_buf_size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[0], 0);
+    memset(myvideo.fb.mem[0], 0, myvideo.cur_buf_size);
 
     ioctl(myvideo.fb.fd[1], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
     ioctl(myvideo.fb.fd[1], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-    myvideo.gfx.mem[1] = mmap(0, myvideo.cur_buf_size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[1], 0);
-    memset(myvideo.gfx.mem[1], 0, myvideo.cur_buf_size);
+    myvideo.fb.mem[1] = mmap(0, myvideo.cur_buf_size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[1], 0);
+    memset(myvideo.fb.mem[1], 0, myvideo.cur_buf_size);
 
     return 0;
 }
@@ -2995,14 +2995,14 @@ static int quit_lcd(void)
 {
     debug("call %s()\n", __func__);
 
-    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &gfx.pi);
-    gfx.pi.enabled = 0;
-    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &gfx.pi);
+    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &myvideo.fb.pi);
+    myvideo.fb.pi.enabled = 0;
+    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &myvideo.fb.pi);
 
-    munmap(myvideo.gfx.mem[0], myvideo.cur_buf_size);
-    munmap(myvideo.gfx.mem[1], myvideo.cur_buf_size);
-    myvideo.gfx.mem[0] = NULL;
-    myvideo.gfx.mem[1] = NULL;
+    munmap(myvideo.fb.mem[0], myvideo.cur_buf_size);
+    munmap(myvideo.fb.mem[1], myvideo.cur_buf_size);
+    myvideo.fb.mem[0] = NULL;
+    myvideo.fb.mem[1] = NULL;
 
     close(myvideo.fb.fd[0]);
     close(myvideo.fb.fd[1]);
@@ -3085,8 +3085,8 @@ static int init_lcd(void)
         return -1;
     }
 
-    myvideo.gfx.mem_fd = open("/dev/mem", O_RDWR);
-    if (myvideo.gfx.mem_fd < 0) {
+    myvideo.fb.mem_fd = open("/dev/mem", O_RDWR);
+    if (myvideo.fb.mem_fd < 0) {
         error("failed to open /dev/mem\n");
         return -1;
     }
@@ -3099,8 +3099,8 @@ static int init_lcd(void)
 
     memset(&myvideo.gfx.disp, 0, sizeof(disp_layer_config));
     memset(&myvideo.gfx.buf, 0, sizeof(disp_layer_config));
-    myvideo.gfx.mem = mmap(0, sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.gfx.mem_fd, OVL_V);
-    debug("map buffer=%p\n", myvideo.gfx.mem);
+    myvideo.fb.mem = mmap(0, sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.fb.mem_fd, OVL_V);
+    debug("map buffer=%p\n", myvideo.fb.mem);
 
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
 
@@ -3162,17 +3162,17 @@ static int quit_lcd(void)
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
     ion_free(myvideo.gfx.ion_fd, &myvideo.gfx.ion);
-    munmap(myvideo.gfx.mem, sysconf(_SC_PAGESIZE));
-    myvideo.gfx.mem = NULL;
+    munmap(myvideo.fb.mem, sysconf(_SC_PAGESIZE));
+    myvideo.fb.mem = NULL;
 
     close(myvideo.fb.fd);
     close(myvideo.gfx.ion_fd);
-    close(myvideo.gfx.mem_fd);
+    close(myvideo.fb.mem_fd);
     close(myvideo.gfx.disp_fd);
 
     myvideo.fb.fd = -1;
     myvideo.gfx.ion_fd = -1;
-    myvideo.gfx.mem_fd = -1;
+    myvideo.fb.mem_fd = -1;
     myvideo.gfx.disp_fd = -1;
 
     return 0;
@@ -3734,7 +3734,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(PANDORA)
     if ((pitch == 1024) && (srt.w == NDS_W) && (srt.h == NDS_H)) {
-        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
+        uint32_t *dst = (uint32_t *)myvideo.fb.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
         if (drt.y == 0) {
             dst += 16;
@@ -4087,7 +4087,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         int x = 0;
         int y = 0;
         const uint32_t *src = pixels;
-        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
+        uint32_t *dst = (uint32_t *)myvideo.fb.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
         for (y = 0; y < srt.h; y++) {
             for (x = 0; x < srt.w; x++) {
@@ -4854,7 +4854,7 @@ static int flip_lcd(void)
 
 #if defined(TRIMUI)
     myvideo.gfx.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)myvideo.gfx.ion.padd + (myvideo.cur_w * myvideo.cur_h * myvideo.fb.flip));
-    myvideo.gfx.mem[OVL_V_TOP_LADD0 / 4] = myvideo.gfx.buf.info.fb.addr[0];
+    myvideo.fb.mem[OVL_V_TOP_LADD0 / 4] = myvideo.gfx.buf.info.fb.addr[0];
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
     myvideo.fb.flip^= 1;
 #endif
@@ -5482,7 +5482,7 @@ static int load_layout_bg(void)
     if (myvideo.layout.bg) {
 #if !defined(UT)
         neon_memcpy(
-            myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1],
+            myvideo.fb.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1],
             myvideo.layout.bg->pixels,
             myvideo.cur_w * myvideo.cur_h * 4
         );

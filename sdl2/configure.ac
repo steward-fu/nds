@@ -2517,7 +2517,11 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -ffast-math"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a7"
+        if test x$MOD = xpandora; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a8"
+        else
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a7"
+        fi
     fi
 }
 
