@@ -51,7 +51,12 @@
 
 #if defined(FLIP)
 #include "hex_flip_hotkey_cn.h"
-#include "hex_flip_hotkey_us.h"
+#include "hex_flip_hotkey_en.h"
+#endif
+
+#if defined(BRICK)
+#include "hex_brick_hotkey_cn.h"
+#include "hex_brick_hotkey_en.h"
 #endif
 
 nds_video myvideo = { 0 };
@@ -1686,13 +1691,13 @@ static int process_screen(void)
         }
         else if (cur_layout_bg != myconfig.layout.bg.sel) {
             show_info = 50;
-            if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel]) {
+            if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path[0]) {
                 sprintf(
                     buf,
                     " %s: %d/%s ",
                     l10n("LAYOUT BG"),
                     myconfig.layout.bg.sel,
-                    myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel]
+                    myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path
                 );
             }
             else {
@@ -3508,9 +3513,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+    int tex = (id >= 0) ? id : TEXTURE_TMP;
+#endif
+
+#if defined(A30) || defined(FLIP)
     float w = SCREEN_W;
     float h = SCREEN_H;
-    int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
 #if defined(QX1000) || defined(XT897)
@@ -3527,6 +3535,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
 #if defined(GKD2) || defined(BRICK)
+debug("shm %p\n", myvideo.shm.buf);
     myvideo.shm.buf->srt.x = srt.x;
     myvideo.shm.buf->srt.y = srt.y;
     myvideo.shm.buf->srt.w = srt.w;
@@ -5313,7 +5322,9 @@ static int load_layout_bg(void)
         return 0;
 #endif
 
-        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel] == NULL) {
+        debug("mode=%d, bg=%d\n", myconfig.layout.mode.sel, myconfig.layout.bg.sel);
+        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path[0] == 0) {
+            debug("no bg image for this layout\n");
             return 0;
         }
 
@@ -5324,7 +5335,7 @@ static int load_layout_bg(void)
             myvideo.home,
             BG_PATH,
             myconfig.layout.bg.sel,
-            myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel]
+            myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path
         );
 
         t = IMG_Load(buf);
@@ -5333,6 +5344,7 @@ static int load_layout_bg(void)
             return -1;
         }
 
+        debug("updated bg image from \"%s\"\n", buf);
         SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
         SDL_FreeSurface(t);
 
@@ -5587,13 +5599,15 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, const char *fname)
 {
+    int cur_bg = myvideo.layout.mode[mode].max_bg;
+
 #if defined(QX1000)
     float m = 4.21875;
 #elif defined(XT897)
     float m = 1.8725;
 #endif
 
-    debug("call %s(mode=%d, bg=%d, fname=%p)\n", mode, gb, fname);
+    debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", mode, cur_bg, fname);
 
 #if defined(QX1000) || defined(XT897)
         mode = 0;
@@ -5834,14 +5848,15 @@ static int add_layout_mode(int mode, const char *fname)
 #endif
 
     if (fname && fname[0]) {
-        myvideo.layout.mode[mode].bg[myvideo.layout.mode[mode].max_bg] = strdup(fname);
+        strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
         myvideo.layout.mode[mode].max_bg += 1;
     }
 
     debug(
-        "layout.mode[%d].bg[%d]=(%d,%d,%d,%d)(%d,%d,%d,%d)(\"%s\")\n",
+        "layout.mode[%02d].bg[%02d]=\"%s\" (%d,%d,%d,%d  %d,%d,%d,%d)\n",
         mode,
-        myvideo.layout.mode[mode].max_bg ? myvideo.layout.mode[mode].max_bg - 1 : 0,
+        cur_bg,
+        myvideo.layout.mode[mode].bg[cur_bg].path,
         myvideo.layout.mode[mode].screen[0].x,
         myvideo.layout.mode[mode].screen[0].y,
         myvideo.layout.mode[mode].screen[0].w,
@@ -5849,8 +5864,7 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].x,
         myvideo.layout.mode[mode].screen[1].y,
         myvideo.layout.mode[mode].screen[1].w,
-        myvideo.layout.mode[mode].screen[1].h,
-        fname
+        myvideo.layout.mode[mode].screen[1].h
     );
 
     return 0;
@@ -5865,19 +5879,7 @@ TEST(sdl2_video, add_layout_mode)
 
 static int free_layout_mode(void)
 {
-    int c0 = 0;
-    int c1 = 0;
-
     debug("call %s()\n", __func__);
-
-    for (c0 = 0; c0 < myvideo.layout.max_mode; c0++) {
-        for (c1 = 0; c1 < myvideo.layout.mode[c0].max_bg; c1++) {
-            if (myvideo.layout.mode[c0].bg[c1]) {
-                free(myvideo.layout.mode[c0].bg[c1]);
-                myvideo.layout.mode[c0].bg[c1] = NULL;
-            }
-        }
-    }
 
     myvideo.layout.max_mode = 0;
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
@@ -7537,6 +7539,9 @@ TEST(sdl2_video, process_sdl2_setting)
 static int show_hotkey(int key)
 {
 #if !defined(QX1000) && !defined(XT897)
+    int is_cn = 0;
+    int src_size = 0;
+    void *src_ptr = NULL;
     SDL_RWops *rw = NULL;
     SDL_Surface *png = NULL;
     static int cur_lang = -1;
@@ -7552,18 +7557,27 @@ static int show_hotkey(int key)
         break;
     }
 
-#if defined(FLIP)
+#if defined(FLIP) || defined(BRICK)
     if (cur_lang != myconfig.lang) {
         cur_lang = myconfig.lang;
 
         if (!strcmp(lang_file_name[cur_lang], "zh_CN") ||
             !strcmp(lang_file_name[cur_lang], "zh_TW"))
         {
-            rw = SDL_RWFromMem(hex_flip_hotkey_cn, sizeof(hex_flip_hotkey_cn));
+            is_cn = 1;
         }
-        else {
-            rw = SDL_RWFromMem(hex_flip_hotkey_us, sizeof(hex_flip_hotkey_us));
-        }
+
+#if defined(FLIP)
+        src_ptr = is_cn ? hex_flip_hotkey_cn : hex_flip_hotkey_en;
+        src_size = is_cn ? sizeof(hex_flip_hotkey_cn) : sizeof(hex_flip_hotkey_en);
+#endif
+
+#if defined(BRICK)
+        src_ptr = is_cn ? hex_brick_hotkey_cn : hex_brick_hotkey_en;
+        src_size = is_cn ? sizeof(hex_brick_hotkey_cn) : sizeof(hex_brick_hotkey_en);
+#endif
+
+        rw = SDL_RWFromMem(src_ptr, src_size);
         png = IMG_Load_RW(rw, 1);
         SDL_BlitSurface(png, NULL, myvideo.cvt, NULL);
         SDL_FreeSurface(png);

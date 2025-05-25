@@ -799,7 +799,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(FLIP)
+#if defined(FLIP) || defined(BRICK)
         enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 

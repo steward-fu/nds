@@ -92,6 +92,15 @@
 #endif
 
 typedef enum {
+    TEXTURE_LCD0 = 0,
+    TEXTURE_LCD1,
+    TEXTURE_BG,
+    TEXTURE_PEN,
+    TEXTURE_TMP,
+    TEXTURE_MAX
+} texture_type_t;
+
+typedef enum {
     PEN_LT = 0,
     PEN_LB = 1,
     PEN_RT = 2,

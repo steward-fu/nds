@@ -29,15 +29,6 @@
 #define SHM_NAME "NDS_SHM"
 
 typedef enum {
-    TEXTURE_LCD0 = 0,
-    TEXTURE_LCD1,
-    TEXTURE_BG,
-    TEXTURE_PEN,
-    TEXTURE_TMP,
-    TEXTURE_MAX
-} texture_type_t;
-
-typedef enum {
     SHM_CMD_FLUSH = 0,
     SHM_CMD_FLIP,
     SHM_CMD_QUIT

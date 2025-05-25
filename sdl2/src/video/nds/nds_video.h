@@ -194,15 +194,6 @@ typedef enum {
 #endif
 } gfx_fmt_t;
 
-enum _TEXTURE_TYPE {
-    TEXTURE_LCD0 = 0,
-    TEXTURE_LCD1,
-    TEXTURE_BG,
-    TEXTURE_PEN,
-    TEXTURE_TMP,
-    TEXTURE_MAX
-};
-
 #define MAX_LAYOUT_MODE     32
 #define MAX_LAYOUT_BG_FILE  32
 
@@ -212,14 +203,20 @@ typedef enum {
 } sdl2_menu_type_t;
 
 typedef struct {
+    int max_bg;
+
     struct {
         int x;
         int y;
         int w;
         int h;
     } screen[2];
-    int max_bg;
-    char *bg[MAX_LAYOUT_BG_FILE];
+
+    struct {
+        int w;
+        int h;
+        char path[MAX_PATH];
+    } bg[MAX_LAYOUT_BG_FILE];
 } layout_mode_t;
 
 typedef struct {
