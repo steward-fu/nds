@@ -149,6 +149,8 @@ typedef enum {
 #define WL_WIN_H        960
 #define SCREEN_W        640
 #define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define MAX_CPU_CORE    2
 #endif
 
 #if defined(BRICK)

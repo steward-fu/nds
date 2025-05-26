@@ -826,7 +826,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(A30)
+#if defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(A30) || defined(XT897)
         enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
