@@ -3560,7 +3560,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.shm.buf->pitch = pitch;
     myvideo.shm.buf->alpha = 0;
     if ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T0))
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T1))
     {
         myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
     }
