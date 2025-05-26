@@ -3732,10 +3732,36 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
+    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T3) &&
+        (id == TEXTURE_LCD1))
+    {
+        glUniform1f(myvideo.egl.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+    }
+    else {
+        glUniform1f(myvideo.egl.alphaLoc, 1.0);
+    }
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[id]);
-    glVertexAttribPointer(myvideo.egl.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glVertexAttribPointer(
+        myvideo.egl.posLoc,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        5 * sizeof(GLfloat),
+        fg_vertices
+    );
+
+    glVertexAttribPointer(
+        myvideo.egl.texLoc,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        5 * sizeof(GLfloat),
+        &fg_vertices[3]
+    );
 
     glTexImage2D(
         GL_TEXTURE_2D,
@@ -3750,6 +3776,16 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     );
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+
+    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T3) &&
+        (id == TEXTURE_LCD1))
+    {
+        glUniform1f(myvideo.egl.alphaLoc, 0.0);
+        glDisable(GL_BLEND);
+    }
+    else {
+        glUniform1f(myvideo.egl.alphaLoc, 1.0);
+    }
 #endif
 
 #if defined(PANDORA)
@@ -5640,7 +5676,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
-        myvideo.layout.max_mode = 1;
+        myvideo.layout.max_mode = 0;
 
 #if defined(XT897)
         m = 2.0;
@@ -5653,7 +5689,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
-        myvideo.layout.max_mode = 2;
+        myvideo.layout.max_mode = 1;
 
         m = 2.8125;
         mode = 2;
@@ -5665,6 +5701,18 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 180) / 2.0;
         myvideo.layout.mode[mode].screen[1].w = 240;
         myvideo.layout.mode[mode].screen[1].h = 180;
+        myvideo.layout.max_mode = 2;
+
+        m = 2.8125;
+        mode = 3;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 256;
+        myvideo.layout.mode[mode].screen[1].h = 192;
         myvideo.layout.max_mode = 3;
 #endif
 #else

@@ -166,6 +166,8 @@ TEST(common, write_log)
 
 int reset_config(void)
 {
+    debug("call %s()\n", __func__);
+
     memset(&myconfig, 0, sizeof(myconfig));
     myconfig.layout.mode.sel = DEF_LAYOUT_MODE;
     myconfig.layout.swin.alpha = DEF_SWIN_ALPHA;
