@@ -64,6 +64,11 @@
 #include "hex_gkd2_hotkey_en.h"
 #endif
 
+#if defined(A30)
+#include "hex_a30_hotkey_cn.h"
+#include "hex_a30_hotkey_en.h"
+#endif
+
 nds_video myvideo = { 0 };
 
 extern nds_hook myhook;
@@ -303,6 +308,61 @@ static int free_lcd_mem(void)
 
     return 0;
 }
+
+static int get_cpu_core(int idx)
+{
+    FILE *fd = NULL;
+    char buf[MAX_PATH] = { 0 };
+
+    sprintf(buf, "cat /sys/devices/system/cpu/cpu%d/online", idx % 4); 
+    fd = popen(buf, "r");
+    if (fd == NULL) {
+        return -1;
+    }       
+    fgets(buf, sizeof(buf), fd);
+    pclose(fd);
+    return atoi(buf);
+}
+
+static void check_cpu_core_before_set(int num, int v)
+{
+    char buf[MAX_PATH] = { 0 };
+
+    if (get_cpu_core(num) != v) {
+        sprintf(buf, "echo %d > /sys/devices/system/cpu/cpu%d/online", v ? 1 : 0, num);
+        system(buf);
+    }       
+}   
+
+#if defined(A30)
+static void set_cpu_core(int n)
+{           
+    if (n <= 1) {
+        check_cpu_core_before_set(0, 1);
+        check_cpu_core_before_set(1, 0);
+        check_cpu_core_before_set(2, 0);
+        check_cpu_core_before_set(3, 0);
+    }       
+    else if (n == 2) {
+        check_cpu_core_before_set(0, 1);
+        check_cpu_core_before_set(1, 1);
+        check_cpu_core_before_set(2, 0);
+        check_cpu_core_before_set(3, 0);
+    }       
+    else if (n == 3) {
+        check_cpu_core_before_set(0, 1);
+        check_cpu_core_before_set(1, 1);
+        check_cpu_core_before_set(2, 1);
+        check_cpu_core_before_set(3, 0);
+    }
+    else {
+        check_cpu_core_before_set(0, 1);
+        check_cpu_core_before_set(1, 1);
+        check_cpu_core_before_set(2, 1);
+        check_cpu_core_before_set(3, 1);
+    }
+}
+#endif
 
 #if defined(QX1000) || defined(XT897) || defined(UT)
 static void* wl_disp_handler(void* pParam)
@@ -6131,6 +6191,16 @@ static int init_device(void)
     myconfig.layout.mode.sel = 0;
 #endif
 
+    if (myconfig.cpu_core <= 0) {
+        myconfig.cpu_core = INIT_CPU_CORE;
+    }
+#if defined(A30)
+    if (myconfig.cpu_core >= MAX_CPU_CORE) {
+        myconfig.cpu_core = INIT_CPU_CORE;
+    }
+    set_cpu_core(myconfig.cpu_core);
+#endif
+
     init_lcd();
     init_event();
     init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
@@ -6483,6 +6553,9 @@ TEST(sdl2_video, lang_prev)
 
 typedef enum {
     MENU_LANG = 0,
+#if defined(A30)
+    MENU_CPU_CORE,
+#endif
     MENU_LAYOUT_MODE,
     MENU_SWIN_ALPHA,
     MENU_SWIN_BORDER,
@@ -6519,6 +6592,9 @@ typedef enum {
 
 static const char *MENU_LIST_STR[] = {
     "Language",
+#if defined(A30)
+    "CPU Core",
+#endif
     "Layout Mode",
     "  Alpha",
     "  Border",
@@ -6971,6 +7047,20 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
             lang_prev();
         }
         break;
+#if defined(A30)
+    case MENU_CPU_CORE:
+        if (right_key) {
+            if (myconfig.cpu_core < MAX_CPU_CORE) {
+                myconfig.cpu_core += 1;
+            }
+        }
+        else {
+            if (myconfig.cpu_core > 1) {
+                myconfig.cpu_core -= 1;
+            }
+        }
+        break;
+#endif
     case MENU_BIND_HOTKEY:
         myconfig.hotkey = right_key ? HOTKEY_BIND_SELECT : HOTKEY_BIND_MENU;
         break;
@@ -7232,6 +7322,11 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     case MENU_LANG:
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
+#if defined(A30)
+    case MENU_CPU_CORE:
+        sprintf(buf, "%d", myconfig.cpu_core);
+        break;
+#endif
     case MENU_BIND_HOTKEY:
         sprintf(buf, "%s", l10n(BIND_HOTKEY_STR[myconfig.hotkey]));
         break;
@@ -7357,6 +7452,7 @@ static int process_sdl2_setting(int key)
     static int cur_sel = 0;
     static int pre_fast = 0;
     static int pre_lang = 0;
+    static int pre_cpu_core = 0;
 
     int cc = 0;
     int sx = 0;
@@ -7397,6 +7493,13 @@ static int process_sdl2_setting(int key)
             fast_forward(myconfig.fast_forward);
             pre_fast = myconfig.fast_forward;
         }
+
+#if defined(A30)
+        if (pre_cpu_core != myconfig.cpu_core) {
+            set_cpu_core(myconfig.cpu_core);
+            pre_cpu_core = myconfig.cpu_core;
+        }
+#endif
 
         myvideo.menu.sdl2.enable = 0;
         return 0;
@@ -7637,7 +7740,7 @@ static int show_hotkey(int key)
         break;
     }
 
-#if defined(FLIP) || defined(BRICK) || defined(GKD2)
+#if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2)
     if (cur_lang != myconfig.lang) {
         cur_lang = myconfig.lang;
 
@@ -7662,6 +7765,11 @@ static int show_hotkey(int key)
         src_size = is_cn ? sizeof(hex_gkd2_hotkey_cn) : sizeof(hex_gkd2_hotkey_en);
 #endif
 
+#if defined(A30)
+        src_ptr = is_cn ? hex_a30_hotkey_cn : hex_a30_hotkey_en;
+        src_size = is_cn ? sizeof(hex_a30_hotkey_cn) : sizeof(hex_a30_hotkey_en);
+#endif
+
         rw = SDL_RWFromMem(src_ptr, src_size);
         png = IMG_Load_RW(rw, 1);
         SDL_BlitSurface(png, NULL, myvideo.cvt, NULL);
@@ -7669,7 +7777,7 @@ static int show_hotkey(int key)
     }
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(A30)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);

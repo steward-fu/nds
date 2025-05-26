@@ -120,6 +120,7 @@ typedef struct {
 
     int lang;
     int hotkey;
+    int cpu_core;
     int fast_forward;
     int show_low_battery;
     filter_type_t filter;
