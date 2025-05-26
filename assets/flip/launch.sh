@@ -1,33 +1,25 @@
 #!/bin/sh
 MYDIR=`dirname "$0"`
-PORT32=`dirname "$0"`/../PORT32
-IMG=miyoo355_rootfs_32.img
+MYFS=$MYDIR/tmp
+
+export HOME=$MYDIR
+export SDL_VIDEODRIVER=NDS
+export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH
+
+sv=`cat /proc/sys/vm/swappiness`
+echo 10 > /proc/sys/vm/swappiness
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+if [ ! -f /usr/lib32 ]; then
+    mkdir -p $MYFS
+    mount -o loop $MYDIR/overlayfs.img $MYFS
+    mount -t overlay overlay -o ro,lowerdir=/usr,upperdir=$MYFS/usr/upper,workdir=$MYFS/usr/work $MYFS/usr/merged_usr
+    mount --bind $MYFS/usr/merged_usr /usr
+fi
 
 cd $MYDIR
+./drastic "$1" > std.log 2>&1
+sync
 
-if [ ! -f $IMG ]; then
-if [ ! -f $PORT32/$IMG ]; then
-    exit
-fi
-IMG=$PORT32/$IMG
-fi
-
-
-mkdir -p mnt
-mount -t squashfs $IMG mnt
-mount --bind /sys mnt/sys
-mount --bind /dev mnt/dev
-mount --bind /proc mnt/proc
-mount --bind /var/run mnt/var/run
-mount --bind /mnt/sdcard mnt/sdcard
-mount --bind /userdata mnt/userdata
-
-chroot mnt /bin/sh -c "cd /sdcard/Emu/drastic && ./run.sh \"$1\""
-
-umount mnt/userdata
-umount mnt/sdcard
-umount mnt/var/run
-umount mnt/proc
-umount mnt/sys
-umount mnt/dev
-umount mnt
+echo $sv > /proc/sys/vm/swappiness
+echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
