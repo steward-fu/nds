@@ -59,6 +59,11 @@
 #include "hex_brick_hotkey_en.h"
 #endif
 
+#if defined(GKD2)
+#include "hex_gkd2_hotkey_cn.h"
+#include "hex_gkd2_hotkey_en.h"
+#endif
+
 nds_video myvideo = { 0 };
 
 extern nds_hook myhook;
@@ -7632,7 +7637,7 @@ static int show_hotkey(int key)
         break;
     }
 
-#if defined(FLIP) || defined(BRICK)
+#if defined(FLIP) || defined(BRICK) || defined(GKD2)
     if (cur_lang != myconfig.lang) {
         cur_lang = myconfig.lang;
 
@@ -7652,6 +7657,11 @@ static int show_hotkey(int key)
         src_size = is_cn ? sizeof(hex_brick_hotkey_cn) : sizeof(hex_brick_hotkey_en);
 #endif
 
+#if defined(GKD2)
+        src_ptr = is_cn ? hex_gkd2_hotkey_cn : hex_gkd2_hotkey_en;
+        src_size = is_cn ? sizeof(hex_gkd2_hotkey_cn) : sizeof(hex_gkd2_hotkey_en);
+#endif
+
         rw = SDL_RWFromMem(src_ptr, src_size);
         png = IMG_Load_RW(rw, 1);
         SDL_BlitSurface(png, NULL, myvideo.cvt, NULL);
@@ -7659,7 +7669,7 @@ static int show_hotkey(int key)
     }
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(BRICK)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
