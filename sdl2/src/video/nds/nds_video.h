@@ -93,6 +93,8 @@ typedef enum {
 #if defined(FLIP)
 #define SCREEN_W        640
 #define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define MAX_CPU_CORE    4
 #define DAC_BASE        0x1c22000
 #define CCU_BASE        0x01c20000
 #define BAT_CHK_CNT     300
