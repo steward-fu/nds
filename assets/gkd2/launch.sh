@@ -9,6 +9,7 @@ function kill_runner() {
     if [ "$PID" != "" ]; then
         kill -9 $PID
     fi
+    rm -rf /tmp/shm
 }
 
 cd $MYDIR
