@@ -10,7 +10,7 @@ sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
-if [ ! -f /usr/lib32 ]; then
+if [ ! -d /usr/lib32 ]; then
     mkdir -p $MYFS
     mount -o loop $MYDIR/overlayfs.img $MYFS
     mount -t overlay overlay -o ro,lowerdir=/usr,upperdir=$MYFS/usr/upper,workdir=$MYFS/usr/work $MYFS/usr/merged_usr
