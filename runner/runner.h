@@ -67,7 +67,12 @@ typedef struct {
         GLint frag_aspect;
         GLint frag_alpha;
         GLuint tex_id[TEXTURE_MAX];
-        void *bg_pixels;
+
+        struct {
+            int w;
+            int h;
+            void *pixels;
+        } bg;
     } gles;
 
     struct {

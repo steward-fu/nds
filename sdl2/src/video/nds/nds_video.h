@@ -203,8 +203,6 @@ typedef enum {
 } sdl2_menu_type_t;
 
 typedef struct {
-    int max_bg;
-
     struct {
         int x;
         int y;

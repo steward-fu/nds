@@ -1768,6 +1768,7 @@ static int process_screen(void)
         drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].y;
         drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].w;
         drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].h;
+        debug("mode=%d, drt=%d,%d,%d,%d\n", myconfig.layout.mode.sel, drt.x, drt.y, drt.w, drt.h);
 
 #if defined(QX1000) || defined(XT897)
         pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
@@ -3535,7 +3536,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
 #if defined(GKD2) || defined(BRICK)
-debug("shm %p\n", myvideo.shm.buf);
+    debug("myvideo.shm.buf=%p\n", myvideo.shm.buf);
+    if (myvideo.shm.buf == NULL) {
+        error("myvideo.shm.buf is NULL\n");
+        return 0;
+    }
+
     myvideo.shm.buf->srt.x = srt.x;
     myvideo.shm.buf->srt.y = srt.y;
     myvideo.shm.buf->srt.w = srt.w;
@@ -3552,7 +3558,12 @@ debug("shm %p\n", myvideo.shm.buf);
     myvideo.shm.buf->len = srt.h * pitch;
     myvideo.shm.buf->tex = tex;
     myvideo.shm.buf->pitch = pitch;
-    myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
+    myvideo.shm.buf->alpha = 0;
+    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T0))
+    {
+        myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
+    }
     myvideo.shm.buf->layout = myconfig.layout.mode.sel;
     myvideo.shm.buf->filter = myconfig.filter;
     debug(
@@ -5286,14 +5297,13 @@ TEST(sdl2_video, free_layout_bg)
 
 static int load_layout_bg(void)
 {
+    int w = 0;
+    int h = 0;
     static int pre_sel = -1;
     static int pre_mode = -1;
     SDL_Surface *t = NULL;
     char buf[MAX_PATH + 32] = { 0 };
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT) || defined(QX1000) || defined(XT897)
-    SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
-#endif
 #if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
     SDL_Rect drt = { 0, 0, myvideo.cur_w, myvideo.cur_h };
 #endif
@@ -5306,7 +5316,15 @@ static int load_layout_bg(void)
         pre_sel = myconfig.layout.bg.sel;
 
         free_layout_bg();
-        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, srt.w, srt.h, 32, 0, 0, 0, 0);
+        w = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].w;
+        h = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].h;
+        if ((w == 0) || (h == 0)) {
+            w = LAYOUT_BG_W;
+            h = LAYOUT_BG_H;
+        }
+        debug("bg size=%dx%d\n", w, h);
+
+        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
             error("failed to create surface for bg\n");
             return -1;
@@ -5322,31 +5340,34 @@ static int load_layout_bg(void)
         return 0;
 #endif
 
-        debug("mode=%d, bg=%d\n", myconfig.layout.mode.sel, myconfig.layout.bg.sel);
-        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path[0] == 0) {
-            debug("no bg image for this layout\n");
-            return 0;
-        }
-
-        snprintf(
-            buf,
-            sizeof(buf),
-            "%s%s/%d/%s",
-            myvideo.home,
-            BG_PATH,
+        debug(
+            "mode=%d, bg=%d, img=\"%s\"\n",
+            myconfig.layout.mode.sel,
             myconfig.layout.bg.sel,
             myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path
         );
 
-        t = IMG_Load(buf);
-        if (!t) {
-            error("failed to load bg from \"%s\"\n", buf);
-            return -1;
-        }
+        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path[0]) {
+            snprintf(
+                buf,
+                sizeof(buf),
+                "%s%s/%d/%s",
+                myvideo.home,
+                BG_PATH,
+                myconfig.layout.bg.sel,
+                myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path
+            );
 
-        debug("updated bg image from \"%s\"\n", buf);
-        SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
-        SDL_FreeSurface(t);
+            t = IMG_Load(buf);
+            if (!t) {
+                error("failed to load bg from \"%s\"\n", buf);
+                return -1;
+            }
+
+            debug("updated bg image from \"%s\"\n", buf);
+            SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
+            SDL_FreeSurface(t);
+        }
 
 #if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
         flush_lcd(
@@ -5597,9 +5618,9 @@ VideoBootStrap NDS_bootstrap = {
     create_device
 };
 
-static int add_layout_mode(int mode, const char *fname)
+static int add_layout_mode(int mode, int cur_bg, const char *fname)
 {
-    int cur_bg = myvideo.layout.mode[mode].max_bg;
+    char buf[MAX_PATH + 32] = { 0 };
 
 #if defined(QX1000)
     float m = 4.21875;
@@ -5607,7 +5628,7 @@ static int add_layout_mode(int mode, const char *fname)
     float m = 1.8725;
 #endif
 
-    debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", mode, cur_bg, fname);
+    debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
 
 #if defined(QX1000) || defined(XT897)
         mode = 0;
@@ -5669,12 +5690,20 @@ static int add_layout_mode(int mode, const char *fname)
         myvideo.layout.mode[mode].screen[1].h = 480;
         break;
     case 2:
+        myvideo.layout.mode[mode].screen[0].x = 64;
+        myvideo.layout.mode[mode].screen[0].y = 48;
+        myvideo.layout.mode[mode].screen[0].w = 512;
+        myvideo.layout.mode[mode].screen[0].h = 384;
         myvideo.layout.mode[mode].screen[1].x = 64;
         myvideo.layout.mode[mode].screen[1].y = 48;
         myvideo.layout.mode[mode].screen[1].w = 512;
         myvideo.layout.mode[mode].screen[1].h = 384;
         break;
     case 3:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = 640;
+        myvideo.layout.mode[mode].screen[0].h = 480;
         myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 640;
@@ -5847,16 +5876,35 @@ static int add_layout_mode(int mode, const char *fname)
     }
 #endif
 
+    myvideo.layout.mode[mode].bg[cur_bg].w = SCREEN_W;
+    myvideo.layout.mode[mode].bg[cur_bg].h = SCREEN_H;
+    myvideo.layout.mode[mode].bg[cur_bg].path[0] = 0;
+
     if (fname && fname[0]) {
-        strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
-        myvideo.layout.mode[mode].max_bg += 1;
+        SDL_Surface *t = NULL;
+
+        snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, BG_PATH, cur_bg, fname);
+        debug("bg path=\"%s\"\n", buf);
+
+        if (access(buf, F_OK) == 0) {
+            t = IMG_Load(buf);
+            if (t) {
+                myvideo.layout.mode[mode].bg[cur_bg].w = t->w;
+                myvideo.layout.mode[mode].bg[cur_bg].h = t->h;
+                strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
+                debug("added bg img=\"%s\"(%dx%d)\n", buf, t->w, t->h);
+                SDL_FreeSurface(t);
+            }
+        }
     }
 
     debug(
-        "layout.mode[%02d].bg[%02d]=\"%s\" (%d,%d,%d,%d  %d,%d,%d,%d)\n",
+        "layout.mode[%02d].bg[%02d]=\"%s\" %dx%d (%d,%d,%d,%d  %d,%d,%d,%d)\n",
         mode,
         cur_bg,
         myvideo.layout.mode[mode].bg[cur_bg].path,
+        myvideo.layout.mode[mode].bg[cur_bg].w,
+        myvideo.layout.mode[mode].bg[cur_bg].h,
         myvideo.layout.mode[mode].screen[0].x,
         myvideo.layout.mode[mode].screen[0].y,
         myvideo.layout.mode[mode].screen[0].w,
@@ -5883,10 +5931,11 @@ static int free_layout_mode(void)
 
     myvideo.layout.max_mode = 0;
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
-    add_layout_mode(LAYOUT_MODE_T0, NULL);
-    add_layout_mode(LAYOUT_MODE_T1, NULL);
-    add_layout_mode(LAYOUT_MODE_T18, NULL);
-    add_layout_mode(LAYOUT_MODE_T19, NULL);
+    add_layout_mode(LAYOUT_MODE_T0, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_T1, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_T3, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_T18, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_T19, 0, NULL);
 
     return 0;
 }
@@ -5897,26 +5946,6 @@ TEST(sdl2_video, free_layout_mode)
     myvideo.layout.mode = malloc(layout_mode_t);
     TEST_ASSERT_EQUAL_INT(0, free_layout_mode());
     TEST_ASSERT_NULL(myvideo.layout.mode);
-}
-#endif
-
-static int add_layout_black_bg(void)
-{
-    int cc = 0;
-
-    debug("call %s()\n", __func__);
-
-    for (cc = 0; cc < myvideo.layout.max_mode; cc++) {
-        add_layout_mode(cc, NULL);
-    }
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(sdl2_video, add_layout_black_bg)
-{
-    TEST_ASSERT_EQAUAL_INT(0, add_layout_black_bg());
 }
 #endif
 
@@ -5961,12 +5990,10 @@ static int enum_layout_bg_file(void)
             }
 
             mode = atoi(&dir->d_name[1]);
-            add_layout_mode(mode, dir->d_name);
+            add_layout_mode(mode, cc, dir->d_name);
         }
         closedir(d);
     }
-
-    add_layout_black_bg();
 
     return myvideo.layout.max_mode;
 }

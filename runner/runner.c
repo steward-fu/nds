@@ -159,8 +159,8 @@ static int init_gles(void)
     glUniform1i(myrunner.gles.frag_sampler, 0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    myrunner.gles.bg_pixels = malloc(R_LCD_W * R_LCD_H * 4);
-    if (!myrunner.gles.bg_pixels) {
+    myrunner.gles.bg.pixels = malloc(R_LCD_W * R_LCD_H * 4);
+    if (!myrunner.gles.bg.pixels) {
         error("failed to allocate buffer for bg image\n");
     }
     return 0;
@@ -205,7 +205,10 @@ static void* runner_handler(void *param)
             );
 
             if (myrunner.shm.buf->tex == TEXTURE_BG) {
-                memcpy(myrunner.gles.bg_pixels, myrunner.shm.buf->buf, LAYOUT_BG_W * LAYOUT_BG_H * 4);
+                myrunner.gles.bg.w = myrunner.shm.buf->srt.w;
+                myrunner.gles.bg.h = myrunner.shm.buf->srt.h;
+                debug("bg image w=%d, h=%d, pitch=%d\n", myrunner.gles.bg.w, myrunner.gles.bg.h, myrunner.shm.buf->pitch);
+                memcpy(myrunner.gles.bg.pixels, myrunner.shm.buf->buf, myrunner.gles.bg.h * myrunner.shm.buf->pitch);
                 break;
             }
 
@@ -304,7 +307,17 @@ static void* runner_handler(void *param)
             glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[TEXTURE_BG]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, LAYOUT_BG_W, LAYOUT_BG_H, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)myrunner.gles.bg_pixels);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGBA,
+                myrunner.gles.bg.w,
+                myrunner.gles.bg.h,
+                0,
+                GL_RGBA,
+                GL_UNSIGNED_BYTE,
+                (void *)myrunner.gles.bg.pixels
+            );
             glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
             glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
@@ -323,9 +336,11 @@ static void* runner_handler(void *param)
     munmap((void *)myrunner.shm.buf, sizeof(shm_buf_t));
     shm_unlink(SHM_NAME);
 
-    if (myrunner.gles.bg_pixels) {
-        free(myrunner.gles.bg_pixels);
-        myrunner.gles.bg_pixels = NULL;
+    if (myrunner.gles.bg.pixels) {
+        free(myrunner.gles.bg.pixels);
+        myrunner.gles.bg.pixels = NULL;
+        myrunner.gles.bg.w = 0;
+        myrunner.gles.bg.h = 0;
     }
     glDeleteTextures(TEXTURE_MAX, myrunner.gles.tex_id);
     glDeleteShader(myrunner.gles.vert_shader);

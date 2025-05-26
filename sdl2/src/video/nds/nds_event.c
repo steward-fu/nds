@@ -735,6 +735,33 @@ TEST(sdl2_event, enter_sdl2_menu)
 }
 #endif
 
+static int find_next_available_bg(void)
+{
+    int cc = 0;
+    int mode = myconfig.layout.mode.sel;
+    int next = (myconfig.layout.bg.sel + 1) % MAX_LAYOUT_BG_FILE;
+
+    debug("call %s()\n", __func__);
+
+    debug("next=%d\n", next);
+    for (cc = next; cc < MAX_LAYOUT_BG_FILE; cc++) {
+        if (myvideo.layout.mode[mode].bg[cc].path[0]) {
+            debug("next available=%d\n", cc);
+            return cc;
+        }
+    }
+
+    debug("used black bg\n");
+    return MAX_LAYOUT_BG_FILE - 1;
+}
+
+#if defined(UT)
+TEST(sdl2_event, find_next_available_bg)
+{
+    TEST_ASSERT_EQUAL_INT(0, find_next_available_bg());
+}
+#endif
+
 static int handle_hotkey(void)
 {
     int check_hotkey = 0;
@@ -813,10 +840,7 @@ static int handle_hotkey(void)
                     (myconfig.layout.mode.sel != LAYOUT_MODE_T1) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_T3))
                 {
-                    myconfig.layout.bg.sel += 1;
-                    if (myconfig.layout.bg.sel > myvideo.layout.mode[myconfig.layout.mode.sel].max_bg) {
-                        myconfig.layout.bg.sel = 0;
-                    }
+                    myconfig.layout.bg.sel = find_next_available_bg();
                 }
             }
             else {
