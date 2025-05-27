@@ -6,6 +6,7 @@ export PATH=$MYDIR:$PATH
 export SDL_VIDEODRIVER=NDS
 export LD_LIBRARY_PATH=lib:/usr/local/lib:$LD_LIBRARY_PATH
 
+sudo chmod 0777 /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 cd $MYDIR

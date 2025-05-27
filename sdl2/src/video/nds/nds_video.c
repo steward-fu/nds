@@ -318,51 +318,49 @@ static int get_cpu_core(int idx)
     fd = popen(buf, "r");
     if (fd == NULL) {
         return -1;
-    }       
+    }
+
     fgets(buf, sizeof(buf), fd);
     pclose(fd);
     return atoi(buf);
 }
 
-static void check_cpu_core_before_set(int num, int v)
+static int check_cpu_core_before_set(int num, int v)
 {
     char buf[MAX_PATH] = { 0 };
+
+    debug("call %s()\n", __func__);
+
+    if (num >= MAX_CPU_CORE) {
+        return -1;
+    }
 
     if (get_cpu_core(num) != v) {
         sprintf(buf, "echo %d > /sys/devices/system/cpu/cpu%d/online", v ? 1 : 0, num);
         system(buf);
-    }       
+    }
+
+    return 0;
 }   
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
-static void set_cpu_core(int n)
-{           
-    if (n <= 1) {
-        check_cpu_core_before_set(0, 1);
-        check_cpu_core_before_set(1, 0);
-        check_cpu_core_before_set(2, 0);
-        check_cpu_core_before_set(3, 0);
-    }       
-    else if (n == 2) {
-        check_cpu_core_before_set(0, 1);
-        check_cpu_core_before_set(1, 1);
-        check_cpu_core_before_set(2, 0);
-        check_cpu_core_before_set(3, 0);
-    }       
-    else if (n == 3) {
-        check_cpu_core_before_set(0, 1);
-        check_cpu_core_before_set(1, 1);
-        check_cpu_core_before_set(2, 1);
-        check_cpu_core_before_set(3, 0);
+static int set_cpu_core(int n)
+{
+    int cc = 0;
+
+    debug("call %s(n=%d)\n", __func__, n);
+
+    n -= 1;
+    if (n < 0) {
+        error("invalid cpu number\n");
+        return -1;
     }
-    else {
-        check_cpu_core_before_set(0, 1);
-        check_cpu_core_before_set(1, 1);
-        check_cpu_core_before_set(2, 1);
-        check_cpu_core_before_set(3, 1);
+
+    for (cc = 0; cc < MAX_CPU_CORE; cc++) {
+        check_cpu_core_before_set(cc, cc <= n ? 1 : 0);
     }
+
+    return 0;
 }
-#endif
 
 #if defined(QX1000) || defined(XT897) || defined(UT)
 static void* wl_disp_handler(void* pParam)
@@ -6187,17 +6185,15 @@ static int init_device(void)
     disp_resize();
 #endif
 
-#if defined(QX1000) || defined(XT897)
-    myconfig.layout.mode.sel = 0;
-#endif
-
     if (myconfig.cpu_core <= 0) {
         myconfig.cpu_core = INIT_CPU_CORE;
     }
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
+
     if (myconfig.cpu_core >= MAX_CPU_CORE) {
         myconfig.cpu_core = INIT_CPU_CORE;
     }
+
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
     set_cpu_core(myconfig.cpu_core);
 #endif
 
