@@ -156,11 +156,15 @@ typedef enum {
 #if defined(BRICK)
 #define SCREEN_W        640
 #define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define MAX_CPU_CORE    4
 #endif
 
 #if defined(GKD2)
 #define SCREEN_W        640
 #define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define MAX_CPU_CORE    4
 #endif
 
 #define NDS_STATE_SAVE  1
