@@ -69,6 +69,11 @@
 #include "hex_a30_hotkey_en.h"
 #endif
 
+#if defined(MINI)
+#include "hex_mini_hotkey_cn.h"
+#include "hex_mini_hotkey_en.h"
+#endif
+
 nds_video myvideo = { 0 };
 
 extern nds_hook myhook;
@@ -309,6 +314,7 @@ static int free_lcd_mem(void)
     return 0;
 }
 
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
 static int get_cpu_core(int idx)
 {
     FILE *fd = NULL;
@@ -361,6 +367,7 @@ static int set_cpu_core(int n)
 
     return 0;
 }
+#endif
 
 #if defined(QX1000) || defined(XT897) || defined(UT)
 static void* wl_disp_handler(void* pParam)
@@ -3381,7 +3388,7 @@ static int init_lcd(void)
     MI_SYS_MMA_Alloc(NULL, myvideo.cur_buf_size, &myvideo.tmp.phy_addr);
     MI_SYS_Mmap(myvideo.tmp.phy_addr, myvideo.cur_buf_size, &myvideo.tmp.virt_addr, TRUE);
 
-    allocate_lcd_memory();
+    alloc_lcd_mem();
 
     myvideo.sar_fd = open("/dev/sar", O_RDWR);
     debug("sar handle=%d\n", myvideo.sar_fd);
@@ -5409,7 +5416,7 @@ static int load_layout_bg(void)
 
     debug("call %s()\n", __func__);
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(UT) || defined(QX1000) || defined(XT897)
+#if !defined(TRIMUI)
     if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode.sel)) {
         pre_mode = myconfig.layout.mode.sel;
         pre_sel = myconfig.layout.bg.sel;
@@ -5421,7 +5428,7 @@ static int load_layout_bg(void)
             w = LAYOUT_BG_W;
             h = LAYOUT_BG_H;
         }
-        debug("bg size=%dx%d\n", w, h);
+        debug("bg image size=%dx%d\n", w, h);
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
@@ -5463,7 +5470,7 @@ static int load_layout_bg(void)
                 return -1;
             }
 
-            debug("updated bg image from \"%s\"\n", buf);
+            debug("loaded bg image from \"%s\"\n", buf);
             SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
             SDL_FreeSurface(t);
         }
@@ -6171,7 +6178,6 @@ static int init_device(void)
     load_lang_file();
     load_menu_res();
     load_touch_pen();
-    load_layout_bg();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
@@ -6185,6 +6191,7 @@ static int init_device(void)
     disp_resize();
 #endif
 
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
     if (myconfig.cpu_core <= 0) {
         myconfig.cpu_core = INIT_CPU_CORE;
     }
@@ -6193,12 +6200,12 @@ static int init_device(void)
         myconfig.cpu_core = INIT_CPU_CORE;
     }
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
     set_cpu_core(myconfig.cpu_core);
 #endif
 
     init_lcd();
     init_event();
+    load_layout_bg();
     init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
 
     add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
@@ -7448,7 +7455,9 @@ static int process_sdl2_setting(int key)
     static int cur_sel = 0;
     static int pre_fast = 0;
     static int pre_lang = 0;
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
     static int pre_cpu_core = 0;
+#endif
 
     int cc = 0;
     int sx = 0;
@@ -7736,7 +7745,7 @@ static int show_hotkey(int key)
         break;
     }
 
-#if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2)
     if (cur_lang != myconfig.lang) {
         cur_lang = myconfig.lang;
 
@@ -7764,6 +7773,11 @@ static int show_hotkey(int key)
 #if defined(A30)
         src_ptr = is_cn ? hex_a30_hotkey_cn : hex_a30_hotkey_en;
         src_size = is_cn ? sizeof(hex_a30_hotkey_cn) : sizeof(hex_a30_hotkey_en);
+#endif
+
+#if defined(MINI)
+        src_ptr = is_cn ? hex_mini_hotkey_cn : hex_mini_hotkey_en;
+        src_size = is_cn ? sizeof(hex_mini_hotkey_cn) : sizeof(hex_mini_hotkey_en);
 #endif
 
         rw = SDL_RWFromMem(src_ptr, src_size);

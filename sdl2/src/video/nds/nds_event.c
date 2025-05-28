@@ -826,7 +826,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(A30) || defined(XT897)
+#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(A30) || defined(XT897)
         enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
@@ -1051,25 +1051,11 @@ static int update_key_bit(uint32_t c, uint32_t v)
     }
     if (c == myevent.keypad.vol_up) {
         set_key_bit(KEY_BIT_VOLUP, v);
-        if (myevent.stock) {
-            if (v == 0) {
-                myevent.vol = 0;//inc_mini_vol();
-            }
-        }
-        else {
-            myvideo.layout.redraw_bg = REDRAW_BG_CNT;
-        }
+        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
     }
     if (c == myevent.keypad.vol_down) {
         set_key_bit(KEY_BIT_VOLDOWN, v);
-        if (myevent.stock) {
-            if (v == 0) {
-                myevent.vol = 0;//dec_mini_vol();
-            }
-        }
-        else {
-            myvideo.layout.redraw_bg = REDRAW_BG_CNT;
-        }
+        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
     }
 #endif
 
@@ -1510,10 +1496,6 @@ TEST(sdl2_event, input_handler)
 
 void init_event(void)
 {
-#if defined(MINI) || defined(UT)
-    DIR *dir = NULL;
-#endif
-
     debug("call %s()\n", __func__);
 
     memset(&myevent, 0, sizeof(myevent));
@@ -1577,17 +1559,6 @@ void init_event(void)
         error("failed to create thread for input handler\n");
         exit(-1);
     }
-
-#if defined(MINI) || defined(UT)
-    dir = opendir(CHECK_ONION_FILE);
-    if (dir) {
-        closedir(dir);
-    }
-    else {
-        myevent.stock = 1;
-        debug("it is stock system\n");
-    }
-#endif
 }
 
 #if defined(UT)

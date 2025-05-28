@@ -376,10 +376,6 @@ typedef struct {
         SDL_Thread *id;
     } thread;
 
-#if defined(MINI) || defined(UT)
-    int stock;
-#endif
-
 #if defined(TRIMUI) || defined(UT)
     cust_key_t cust_key;
 #endif
