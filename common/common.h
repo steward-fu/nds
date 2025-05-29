@@ -61,35 +61,25 @@
 #define LAYOUT_MODE_T18 18
 #define LAYOUT_MODE_T19 19
 
-#define NDS_ALPHA_MAX 9
-#define MAX_PATH      255
-#define MAX_LANG_NAME 16
-#define MAX_LANG_FILE 32
-#define MAX_LANG_LINE 256
-#define MAX_MENU_LINE 256
+#define NDS_ALPHA_MAX   9
+#define MAX_PATH        255
+#define MAX_LANG_NAME   16
+#define MAX_LANG_FILE   32
+#define MAX_LANG_LINE   256
+#define MAX_MENU_LINE   256
 
-#define DEF_LANG         "en_US"
-#define DEF_PEN_SPEED    10
-#define DEF_FAST_FORWARD 6
-#define DEF_SWIN_ALPHA   6
-#define DEF_SWIN_BORDER  1
-#define DEF_LAYOUT_MODE  1
-#define DEF_JOY_DZONE    25
+#define DEF_LANG            "en_US"
+#define DEF_PEN_SPEED       10
+#define DEF_FAST_FORWARD    6
+#define DEF_SWIN_ALPHA      6
+#define DEF_SWIN_BORDER     1
+#define DEF_LAYOUT_MODE     1
+#define DEF_JOY_DZONE       25
 
-#define DEBUG       0
-#define LOG_FILE    "mynds.log"
-
-#if DEBUG
-#define debug(...) printf("[DEBUG] "__VA_ARGS__)
-#else
-#define debug(...)
-#endif
-
-#if !defined(UT)
-#define error(...) printf("[ERROR] "__VA_ARGS__)
-#else
-#define error(...)
-#endif
+extern int enable_debug_log;
+#define LOG_FILE            "mynds.log"
+#define debug(...)          do { if (enable_debug_log) { printf("[DEBUG] "__VA_ARGS__); } } while(0);
+#define error(...)          do { if (enable_debug_log) { printf("[ERROR] "__VA_ARGS__); } } while(0);
 
 typedef enum {
     TEXTURE_LCD0 = 0,
@@ -114,6 +104,8 @@ typedef enum {
 } filter_type_t;
 
 typedef struct {
+    uint32_t magic;
+
     int swap_l1_l2;
     int swap_r1_r2;
     int keys_rotate;

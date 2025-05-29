@@ -26,6 +26,8 @@
 #include "drastic_bios_arm7.h"
 #include "drastic_bios_arm9.h"
 
+int enable_debug_log = 0;
+
 nds_config myconfig = { 0 };
 
 #if defined(UT)
@@ -169,6 +171,7 @@ int reset_config(void)
     debug("call %s()\n", __func__);
 
     memset(&myconfig, 0, sizeof(myconfig));
+    myconfig.magic = REL_VER;
     myconfig.layout.mode.sel = DEF_LAYOUT_MODE;
     myconfig.layout.swin.alpha = DEF_SWIN_ALPHA;
     myconfig.layout.swin.border = DEF_SWIN_BORDER;
@@ -205,14 +208,29 @@ int load_config(const char *path)
     int r = 0;
     struct stat st = { 0 };
     char buf[MAX_PATH] = { 0 };
+    const char *debug = NULL;
 
-    debug("call %s()\n", __func__);
+    debug = getenv("NDS_DEBUG_LOG");
+
+    enable_debug_log = 0;
+    if (debug && !strcmp(debug, "1")) {
+        enable_debug_log = 1;
+    }
+
+    debug("call %s(enable_debug_log=%d)\n", __func__, enable_debug_log);
 
     strncpy(buf, path, sizeof(buf));
     strcat(buf, CFG_FILE);
     debug("cfg=\"%s\"\n", buf);
 
     if (read_file(buf, &myconfig, sizeof(myconfig)) < 0) {
+        r = 1;
+        reset_config();
+    }
+
+    if (myconfig.magic != REL_VER) {
+        error("reset config due to invalid nds.cfg\n");
+
         r = 1;
         reset_config();
     }
