@@ -46,12 +46,12 @@ const SDL_Scancode nds_key_code[] = {
     SDLK_BACKSPACE,     // R2
     SDLK_RCTRL,         // SELECT
     SDLK_RETURN,        // START
-    SDLK_HOME,          // MENU
     SDLK_0,             // SAVE
     SDLK_1,             // LOAD
     SDLK_2,             // FAST
     SDLK_3,             // EXIT
     SDLK_4,             // SWAP
+    SDLK_5,             // MENU
     SDLK_HOME,          // ONION
 };
 
@@ -117,6 +117,7 @@ static int is_hh_mode(void)
     {
         return 1;
     }
+
     return 0;
 }
 
@@ -186,12 +187,12 @@ TEST(sdl2_event, release_keys)
 
 static int hit_hotkey(uint32_t bit)
 {
-#if defined(MINI) || defined(A30) || defined(UT) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-    uint32_t mask = (1 << bit) | (1 << ((myconfig.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
-#endif
+    uint32_t mask = 1 << bit;
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
-    uint32_t mask = (1 << bit) | (1 << KEY_BIT_MENU);
+    mask |= (1 << ((myconfig.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
+
+#if defined(TRIMUI) || defined(PANDORA)
+    mask = (1 << bit) | (1 << KEY_BIT_MENU);
 #endif
 
     debug("call %s(bit=%d)\n", __func__, bit);
@@ -213,25 +214,25 @@ static int set_key_bit(uint32_t bit, int val)
     debug("call %s(bit=%d, val=%d, cur_bits=0x%04x)\n", __func__, bit, val, myevent.keypad.cur_bits);
 
     if (val) {
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
+#if defined(TRIMUI) || defined(PANDORA)
         if (bit == KEY_BIT_MENU) {
-            myevent.keypad.cur_bits = (1 << KEY_BIT_MENU);
+            myevent.keypad.cur_bits = 0;
         }
 #endif
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897) || defined(QX1000)
         if (myconfig.hotkey == HOTKEY_BIND_SELECT) {
             if (bit == KEY_BIT_SELECT) {
-                myevent.keypad.cur_bits = (1 << KEY_BIT_SELECT);
+                myevent.keypad.cur_bits = 0;
             }
         }
         else {
             if (bit == KEY_BIT_MENU) {
-                myevent.keypad.cur_bits = (1 << KEY_BIT_MENU);
+                myevent.keypad.cur_bits = 0;
             }
         }
 #endif
-        myevent.keypad.cur_bits|= (1 << bit);
+        myevent.keypad.cur_bits |= (1 << bit);
     }
     else {
         myevent.keypad.cur_bits &= ~(1 << bit);
@@ -874,26 +875,27 @@ static int handle_hotkey(void)
         }
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
+#if defined(TRIMUI) || defined(PANDORA)
         set_key_bit(KEY_BIT_QUIT, 1);
 #endif
         set_key_bit(KEY_BIT_START, 0);
     }
 
-    if (myconfig.hotkey == HOTKEY_BIND_MENU) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
+    if (myconfig.hotkey == HOTKEY_BIND_SELECT) {
+        if (check_hotkey && hit_hotkey(KEY_BIT_MENU)) {
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
             set_key_bit(KEY_BIT_ONION, 1);
+#endif
+            set_key_bit(KEY_BIT_MENU, 0);
+        }
+    }
+    else {
+        if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
+            set_key_bit(KEY_BIT_ONION, 1);
+#endif
             set_key_bit(KEY_BIT_SELECT, 0);
         }
-#endif
-    }
-
-    if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
-        set_key_bit(KEY_BIT_ONION, 1);
-        set_key_bit(KEY_BIT_SELECT, 0);
-#endif
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_R1)) {
@@ -1668,12 +1670,12 @@ static int update_raw_input_statue(uint32_t kbit, int val)
     case KEY_BIT_SELECT:    b = NDS_KEY_BIT_SELECT; break;
     case KEY_BIT_START:     b = NDS_KEY_BIT_START;  break;
     case KEY_BIT_SWAP:      b = NDS_KEY_BIT_SWAP;   break;
-    case KEY_BIT_MENU:      b = NDS_KEY_BIT_MENU;   break;
     case KEY_BIT_ONION:     b = NDS_KEY_BIT_MENU;   break;
     case KEY_BIT_QUIT:      b = NDS_KEY_BIT_QUIT;   break;
     case KEY_BIT_SAVE:      b = NDS_KEY_BIT_SAVE;   break;
     case KEY_BIT_LOAD:      b = NDS_KEY_BIT_LOAD;   break;
     case KEY_BIT_FAST:      b = NDS_KEY_BIT_FAST;   break;
+    default:                                        return 0;
     }
 
     if (val) {
@@ -1710,13 +1712,13 @@ static int send_key_event(int raw_event)
         bit = 1 << cc;
         pressed = !!(myevent.keypad.cur_bits & bit);
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897) || defined(QX1000)
         if ((myconfig.hotkey == HOTKEY_BIND_MENU) && (cc == KEY_BIT_MENU)) {
             continue;
         }
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1000) || defined(XT897)
+#if defined(TRIMUI) || defined(PANDORA)
         if (cc == KEY_BIT_MENU) {
             continue;
         }
