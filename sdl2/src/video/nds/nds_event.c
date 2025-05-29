@@ -779,6 +779,11 @@ static int handle_hotkey(void)
         check_hotkey = 0;
     }
 
+    if (check_hotkey && hit_hotkey(KEY_BIT_DOWN)) {
+        set_key_bit(KEY_BIT_HINGE, 1);
+        set_key_bit(KEY_BIT_DOWN, 0);
+    }
+
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
         if (myconfig.layout.mode.sel > 0) {
             myconfig.layout.mode.sel -= 1;
@@ -1659,6 +1664,7 @@ static int update_raw_input_statue(uint32_t kbit, int val)
     case KEY_BIT_SAVE:      b = NDS_KEY_BIT_SAVE;   break;
     case KEY_BIT_LOAD:      b = NDS_KEY_BIT_LOAD;   break;
     case KEY_BIT_FAST:      b = NDS_KEY_BIT_FAST;   break;
+    case KEY_BIT_HINGE:     b = NDS_KEY_BIT_HINGE;  break;
     default:                                        return 0;
     }
 
@@ -1751,6 +1757,10 @@ static int send_key_event(int raw_event)
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_ONION)) {
         set_key_bit(KEY_BIT_ONION, 0);
         update_raw_input_statue(KEY_BIT_ONION, 0);
+    }
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_HINGE)) {
+        set_key_bit(KEY_BIT_HINGE, 0);
+        update_raw_input_statue(KEY_BIT_HINGE, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();
@@ -1867,6 +1877,7 @@ static int send_touch_key(int raw_event)
             (cc == KEY_BIT_SAVE) ||
             (cc == KEY_BIT_LOAD) ||
             (cc == KEY_BIT_QUIT) ||
+            (cc == KEY_BIT_HINGE) ||
             (cc == KEY_BIT_R2))
         {
             if (changed & bit) {
@@ -1960,6 +1971,9 @@ static int send_touch_event(int raw_event)
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
         set_key_bit(KEY_BIT_FAST, 0);
+    }
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_HINGE)) {
+        set_key_bit(KEY_BIT_HINGE, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();

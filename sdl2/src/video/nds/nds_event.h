@@ -285,11 +285,12 @@
 #define KEY_BIT_QUIT            18
 #define KEY_BIT_SWAP            19
 #define KEY_BIT_ONION           20
-#define KEY_BIT_LAST            20
+#define KEY_BIT_HINGE           21
+#define KEY_BIT_LAST            21
 
-#define KEY_BIT_POWER           21
-#define KEY_BIT_VOLUP           22
-#define KEY_BIT_VOLDOWN         23
+#define KEY_BIT_POWER           22
+#define KEY_BIT_VOLUP           23
+#define KEY_BIT_VOLDOWN         24
 
 #define NDS_KEY_MODE            0
 #define NDS_TOUCH_MODE          1
@@ -307,6 +308,7 @@
 #define NDS_KEY_BIT_R           (1 << 9)
 #define NDS_KEY_BIT_START       (1 << 10)
 #define NDS_KEY_BIT_SELECT      (1 << 11)
+#define NDS_KEY_BIT_HINGE       (1 << 12)
 #define NDS_KEY_BIT_SAVE        0x0080000
 #define NDS_KEY_BIT_LOAD        0x0100000
 #define NDS_KEY_BIT_FAST        0x0200000
