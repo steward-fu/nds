@@ -766,6 +766,7 @@ TEST(sdl2_event, find_next_available_bg)
 
 static int handle_hotkey(void)
 {
+    static int cur_hinge_status = 0;
     int check_hotkey = 0;
 
 #if defined(TRIMUI)
@@ -780,7 +781,8 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_DOWN)) {
-        set_key_bit(KEY_BIT_HINGE, 1);
+        cur_hinge_status ^= 1;
+        set_key_bit(KEY_BIT_HINGE, cur_hinge_status);
         set_key_bit(KEY_BIT_DOWN, 0);
     }
 
@@ -1758,10 +1760,6 @@ static int send_key_event(int raw_event)
         set_key_bit(KEY_BIT_ONION, 0);
         update_raw_input_statue(KEY_BIT_ONION, 0);
     }
-    if (myevent.keypad.pre_bits & (1 << KEY_BIT_HINGE)) {
-        set_key_bit(KEY_BIT_HINGE, 0);
-        update_raw_input_statue(KEY_BIT_HINGE, 0);
-    }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();
         update_raw_input_statue(KEY_BIT_QUIT, 0);
@@ -1971,9 +1969,6 @@ static int send_touch_event(int raw_event)
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
         set_key_bit(KEY_BIT_FAST, 0);
-    }
-    if (myevent.keypad.pre_bits & (1 << KEY_BIT_HINGE)) {
-        set_key_bit(KEY_BIT_HINGE, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();
