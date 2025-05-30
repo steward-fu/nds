@@ -188,16 +188,15 @@ TEST(sdl2_event, release_keys)
 static int hit_hotkey(uint32_t bit)
 {
     int r = 0;
-    uint32_t mask = 1 << bit;
+    uint32_t mask = 0;
 
+    debug("call %s(bit=%d)\n", __func__, bit);
+
+    mask = 1 << bit;
     mask |= (1 << ((myconfig.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
-
-#if defined(TRIMUI)
-    mask = (1 << bit) | (1 << KEY_BIT_MENU);
-#endif
-
     r = (myevent.keypad.cur_bits ^ mask) ? 0 : 1;
-    debug("call %s(bit=%d, r=%d)\n", __func__, bit, r);
+
+    debug("bit=%d, r=%d\n", bit, r);
 
     return r;
 }
@@ -226,12 +225,6 @@ static int set_key_bit(uint32_t bit, int val)
                 myevent.keypad.cur_bits = 0;
             }
         }
-
-#if defined(TRIMUI)
-        if (bit == KEY_BIT_MENU) {
-            myevent.keypad.cur_bits = 0;
-        }
-#endif
 
         myevent.keypad.cur_bits |= (1 << bit);
     }
@@ -769,10 +762,6 @@ static int handle_hotkey(void)
     static int cur_hinge_status = 0;
     int check_hotkey = 0;
 
-#if defined(TRIMUI)
-    char buf[MAX_PATH] = { 0 };
-#endif
-
     debug("call %s()\n", __func__);
 
     check_hotkey = 1;
@@ -787,55 +776,61 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
+#if defined(TRIMUI)
+        set_key_bit(KEY_BIT_SWAP, 1);
+#else
         if (myconfig.layout.mode.sel > 0) {
             myconfig.layout.mode.sel -= 1;
-        }
-
-#if defined(TRIMUI)
-        if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0)) {
-            myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
-
-            if (myevent.mode == NDS_TOUCH_MODE) {
-                release_keys();
-            }
-            myevent.touch.slow_down = 0;
         }
 #endif
         set_key_bit(KEY_BIT_LEFT, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_RIGHT)) {
+#if defined(TRIMUI)
+        if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0)) {
+            if (*myhook.var.sdl.swap_screens) {
+                myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
+
+                if (myevent.mode == NDS_TOUCH_MODE) {
+                    release_keys();
+                }
+                myevent.touch.slow_down = 0;
+            }
+        }
+#else
         if (myconfig.layout.mode.sel < myvideo.layout.max_mode) {
             myconfig.layout.mode.sel += 1;
         }
-
-#if defined(TRIMUI)
-        set_key_bit(KEY_BIT_R2, 1);
 #endif
         set_key_bit(KEY_BIT_RIGHT, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
+#if defined(TRIMUI)
+        myconfig.layout.mode.sel = (myconfig.layout.mode.sel == LAYOUT_MODE_T2) ? LAYOUT_MODE_T3 : LAYOUT_MODE_T2;
+        resize_disp();
+#else
         if (myevent.mode == NDS_KEY_MODE) {
             uint32_t tmp = myconfig.layout.mode.alt;
             myconfig.layout.mode.alt = myconfig.layout.mode.sel;
             myconfig.layout.mode.sel = tmp;
         }
-
-#if defined(TRIMUI)
-        myconfig.layout.mode.sel = (myconfig.layout.mode.sel == NDS_DIS_MODE_S0) ? LAYOUT_MODE_T3 : NDS_DIS_MODE_S0;
-        disp_resize();
 #endif
+
         set_key_bit(KEY_BIT_A, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_B)) {
+#if !defined(TRIMUI)
         myconfig.filter = (myconfig.filter == FILTER_PIXEL) ? FILTER_BLUR : FILTER_PIXEL;
+#endif
+
         set_key_bit(KEY_BIT_B, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(A30)
+#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(A30) || defined(TRIMUI)
         enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
@@ -877,33 +872,33 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_START)) {
-#if !defined(TRIMUI)
+#if defined(TRIMUI)
+        set_key_bit(KEY_BIT_QUIT, 1);
+#else
         if (myvideo.menu.sdl2.enable == 0) {
             enter_sdl2_menu(MENU_TYPE_SDL2);
         }
-#endif
-
-#if defined(TRIMUI)
-        set_key_bit(KEY_BIT_QUIT, 1);
 #endif
         set_key_bit(KEY_BIT_START, 0);
     }
 
     if (myconfig.hotkey == HOTKEY_BIND_SELECT) {
         if (check_hotkey && hit_hotkey(KEY_BIT_MENU)) {
-            set_key_bit(KEY_BIT_ONION, 1);
+            set_key_bit(KEY_BIT_DRASTIC, 1);
             set_key_bit(KEY_BIT_MENU, 0);
         }
     }
     else {
         if (check_hotkey && hit_hotkey(KEY_BIT_SELECT)) {
-            set_key_bit(KEY_BIT_ONION, 1);
+            set_key_bit(KEY_BIT_DRASTIC, 1);
             set_key_bit(KEY_BIT_SELECT, 0);
         }
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_R1)) {
-#if !defined(TRIMUI)
+#if defined(TRIMUI)
+        set_key_bit(KEY_BIT_LOAD, 1);
+#else
         static int pre_fast = 0;
 
         if (pre_fast != myconfig.fast_forward) {
@@ -913,20 +908,16 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_FAST, 1);
 #endif
 
-#if defined(TRIMUI)
-        set_key_bit(KEY_BIT_SAVE, 1);
-#endif
         set_key_bit(KEY_BIT_R1, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_L1)) {
-#if !defined(TRIMUI)
+#if defined(TRIMUI)
+        set_key_bit(KEY_BIT_SAVE, 1);
+#else
         set_key_bit(KEY_BIT_QUIT, 1);
 #endif
 
-#if defined(TRIMUI)
-        set_key_bit(KEY_BIT_LOAD, 1);
-#endif
         set_key_bit(KEY_BIT_L1, 0);
     }
 
@@ -934,20 +925,12 @@ static int handle_hotkey(void)
 #if !defined(TRIMUI)
         set_key_bit(KEY_BIT_LOAD, 1);
 #endif
-
-#if defined(TRIMUI)
-        set_key_bit(KEY_BIT_SAVE, 1);
-#endif
         set_key_bit(KEY_BIT_R2, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_L2)) {
 #if !defined(TRIMUI)
         set_key_bit(KEY_BIT_SAVE, 1);
-#endif
-
-#if defined(TRIMUI)
-        set_key_bit(KEY_BIT_LOAD, 1);
 #endif
         set_key_bit(KEY_BIT_L2, 0);
     }
@@ -1378,6 +1361,7 @@ static int handle_trimui_special_key(void)
         if (v != pre_value) {
             r = 1;
             pre_value = v;
+            debug("set r2=%d\n", !v);
             set_key_bit(KEY_BIT_R2, !v);
         }
     }
@@ -1661,7 +1645,7 @@ static int update_raw_input_statue(uint32_t kbit, int val)
     case KEY_BIT_SELECT:    b = NDS_KEY_BIT_SELECT; break;
     case KEY_BIT_START:     b = NDS_KEY_BIT_START;  break;
     case KEY_BIT_SWAP:      b = NDS_KEY_BIT_SWAP;   break;
-    case KEY_BIT_ONION:     b = NDS_KEY_BIT_MENU;   break;
+    case KEY_BIT_DRASTIC:     b = NDS_KEY_BIT_MENU;   break;
     case KEY_BIT_QUIT:      b = NDS_KEY_BIT_QUIT;   break;
     case KEY_BIT_SAVE:      b = NDS_KEY_BIT_SAVE;   break;
     case KEY_BIT_LOAD:      b = NDS_KEY_BIT_LOAD;   break;
@@ -1756,9 +1740,13 @@ static int send_key_event(int raw_event)
         set_key_bit(KEY_BIT_FAST, 0);
         update_raw_input_statue(KEY_BIT_FAST, 0);
     }
-    if (myevent.keypad.pre_bits & (1 << KEY_BIT_ONION)) {
-        set_key_bit(KEY_BIT_ONION, 0);
-        update_raw_input_statue(KEY_BIT_ONION, 0);
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_DRASTIC)) {
+        set_key_bit(KEY_BIT_DRASTIC, 0);
+        update_raw_input_statue(KEY_BIT_DRASTIC, 0);
+    }
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_SWAP)) {
+        set_key_bit(KEY_BIT_SWAP, 0);
+        update_raw_input_statue(KEY_BIT_SWAP, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();
@@ -1875,8 +1863,7 @@ static int send_touch_key(int raw_event)
             (cc == KEY_BIT_SAVE) ||
             (cc == KEY_BIT_LOAD) ||
             (cc == KEY_BIT_QUIT) ||
-            (cc == KEY_BIT_HINGE) ||
-            (cc == KEY_BIT_R2))
+            (cc == KEY_BIT_HINGE))
         {
             if (changed & bit) {
 #if !defined(UT)
@@ -1969,6 +1956,9 @@ static int send_touch_event(int raw_event)
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
         set_key_bit(KEY_BIT_FAST, 0);
+    }
+    if (myevent.keypad.pre_bits & (1 << KEY_BIT_SWAP)) {
+        set_key_bit(KEY_BIT_SWAP, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_QUIT)) {
         release_keys();

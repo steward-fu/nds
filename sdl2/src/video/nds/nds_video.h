@@ -62,7 +62,7 @@
 #include "runner.h"
 #endif
 
-#if defined(TRIMUI)    
+#if defined(TRIMUI)
 #define FONT_SIZE 12
 #else
 #define FONT_SIZE 24
@@ -204,6 +204,8 @@ typedef enum {
 #endif
 } gfx_fmt_t;
 
+#define MENU_W              SCREEN_W
+#define MENU_H              SCREEN_H
 #define SCREEN_BUF_SIZE     (SCREEN_W * SCREEN_H * 4)
 #define SCREEN_BUF_SIZEx2   (SCREEN_W * SCREEN_H * 4 * 2)
 #define MAX_LAYOUT_MODE     32
@@ -254,11 +256,6 @@ typedef struct {
     struct {
         char *trans[MAX_LANG_LINE];
     } lang;
-
-#if defined(TRIMUI)
-    int need_restore;
-    int pre_dismode;
-#endif
 
 #if defined(QX1000) || defined(XT897)
     struct {
@@ -390,9 +387,9 @@ typedef struct {
         int mem_fd;
         int disp_fd;
         uint32_t *mem;
-        disp_layer_config disp;
-        disp_layer_config buf;
         ion_alloc_info_t ion;
+        disp_layer_config buf;
+        disp_layer_config disp;
 #endif
 
 #if defined(MINI)
@@ -435,6 +432,11 @@ typedef struct {
 
         int max_mode;
         layout_mode_t mode[MAX_LAYOUT_MODE];
+
+#if defined(TRIMUI)
+        int pre_mode;
+        int restore;
+#endif
     } layout;
 
     struct {
@@ -457,6 +459,8 @@ int handle_drastic_menu(void);
 
 int load_touch_pen(void);
 int load_menu_res(void);
+
+int resize_disp(void);
 
 #endif
 

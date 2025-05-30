@@ -284,7 +284,7 @@
 #define KEY_BIT_FAST            17
 #define KEY_BIT_QUIT            18
 #define KEY_BIT_SWAP            19
-#define KEY_BIT_ONION           20
+#define KEY_BIT_DRASTIC         20
 #define KEY_BIT_HINGE           21
 #define KEY_BIT_LAST            21
 

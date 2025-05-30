@@ -74,6 +74,11 @@
 #include "hex_mini_hotkey_en.h"
 #endif
 
+#if defined(TRIMUI)
+#include "hex_trimui_hotkey_cn.h"
+#include "hex_trimui_hotkey_en.h"
+#endif
+
 nds_video myvideo = { 0 };
 
 extern nds_hook myhook;
@@ -83,10 +88,10 @@ extern nds_config myconfig;
 static char lang_file_name[MAX_LANG_FILE][MAX_LANG_NAME] = { 0 };
 
 #if defined(TRIMUI)
-static uint32_t LUT_256x192_S00[NDS_W * NDS_H] = { 0 };
-static uint32_t LUT_256x192_S01[NDS_W * NDS_H] = { 0 };
-static uint32_t LUT_256x192_S10[NDS_W * NDS_H] = { 0 };
-static uint32_t LUT_256x192_S11[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_T20[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_T21[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_T30[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_T31[NDS_W * NDS_H] = { 0 };
 #endif
 
 static void quit_video(_THIS);
@@ -102,10 +107,6 @@ static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
 static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
-
-#if defined(TRIMUI)
-static void disp_resize(void);
-#endif
 
 #if defined(A30) || defined(FLIP) || defined(QX1000) || defined(XT897)
 GLfloat bg_vertices[] = {
@@ -642,7 +643,7 @@ static int draw_drastic_menu_main(void)
         h = 100 / div;
 
 #if defined(TRIMUI)
-        x = 30 / div;
+        x = 25 / div;
 #endif
 
         memset(buf, 0, sizeof(buf));
@@ -1833,20 +1834,14 @@ static int process_screen(void)
 
         show_pen = *myhook.var.sdl.swap_screens == idx ? 0 : 1;
         pitch = *myhook.var.sdl.bytes_per_pixel * srt.w;
-        pixels = (void *)(*((uintptr_t *)myhook.var.sdl.screen[idx].pixels));
+        pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
         drt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].x;
         drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].y;
         drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].w;
         drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].h;
         debug("mode=%d, drt=%d,%d,%d,%d\n", myconfig.layout.mode.sel, drt.x, drt.y, drt.w, drt.h);
 
-#if defined(QX1000) || defined(XT897)
-        pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
-#elif defined(TRIMUI)
-#elif defined(PANDORA)
-#elif defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
-
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         switch (myconfig.layout.mode.sel) {
         case LAYOUT_MODE_T0:
         case LAYOUT_MODE_T1:
@@ -1855,8 +1850,6 @@ static int process_screen(void)
             need_update = idx;
             break;
         }
-#else
-        exit(-1);
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
@@ -1994,8 +1987,6 @@ static int process_screen(void)
                 buf,
                 0,
                 0,
-                //SCREEN_W - get_font_height(buf),
-                //SCREEN_H - get_font_width(buf),
                 col_fg,
                 col_bg
             );
@@ -2017,10 +2008,10 @@ static int process_screen(void)
     }
 
 #if defined(TRIMUI)
-    if (need_restore) {
-        need_restore = 0;
-        myconfig.layout.mode.sel = pre_dismode;
-        disp_resize();
+    if (myvideo.layout.restore) {
+        myvideo.layout.restore = 0;
+        myconfig.layout.mode.sel = myvideo.layout.pre_mode;
+        resize_disp();
     }
 #endif
 
@@ -2939,16 +2930,16 @@ TEST(sdl2_video, quit_lcd)
     TEST_ASSERT_EQUAL_INT(0, quit_lcd());
 }
 
-static int disp_resize(void)
+int resize_disp(void)
 {
     debug("call %s()\n", __func__);
 
     return 0;
 }
 
-TEST(sdl2_video, disp_resize)
+TEST(sdl2_video, resize_disp)
 {
-    TEST_ASSERT_EQUAL_INT(0, disp_resize());
+    TEST_ASSERT_EQUAL_INT(0, resize_disp());
 }
 #endif
 
@@ -3056,13 +3047,13 @@ static int init_lcd(void)
 
     ioctl(myvideo.fb.fd[0], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
     ioctl(myvideo.fb.fd[0], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-    myvideo.fb.mem[0] = mmap(0, SCREEN_BUF_SIZEx2, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[0], 0);
-    memset(myvideo.fb.mem[0], 0, SCREEN_BUF_SIZEx2);
+    myvideo.gfx.mem[0] = mmap(0, SCREEN_BUF_SIZEx2, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[0], 0);
+    memset(myvideo.gfx.mem[0], 0, SCREEN_BUF_SIZEx2);
 
     ioctl(myvideo.fb.fd[1], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
     ioctl(myvideo.fb.fd[1], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-    myvideo.fb.mem[1] = mmap(0, SCREEN_BUF_SIZEx2, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[1], 0);
-    memset(myvideo.fb.mem[1], 0, SCREEN_BUF_SIZEx2);
+    myvideo.gfx.mem[1] = mmap(0, SCREEN_BUF_SIZEx2, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[1], 0);
+    memset(myvideo.gfx.mem[1], 0, SCREEN_BUF_SIZEx2);
 
     return 0;
 }
@@ -3075,10 +3066,10 @@ static int quit_lcd(void)
     myvideo.fb.pi.enabled = 0;
     ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &myvideo.fb.pi);
 
-    munmap(myvideo.fb.mem[0], SCREEN_BUF_SIZEx2);
-    munmap(myvideo.fb.mem[1], SCREEN_BUF_SIZEx2);
-    myvideo.fb.mem[0] = NULL;
-    myvideo.fb.mem[1] = NULL;
+    munmap(myvideo.gfx.mem[0], SCREEN_BUF_SIZEx2);
+    munmap(myvideo.gfx.mem[1], SCREEN_BUF_SIZEx2);
+    myvideo.gfx.mem[0] = NULL;
+    myvideo.gfx.mem[1] = NULL;
 
     close(myvideo.fb.fd[0]);
     close(myvideo.fb.fd[1]);
@@ -3145,6 +3136,12 @@ static int ion_free(int ion_fd, ion_alloc_info_t* info)
 static int init_lcd(void)
 {
     int r = 0;
+    int x = 0;
+    int y = 0;
+    int cc = 0;
+    int ox = 32;
+    int oy = 24;
+    uint32_t *dst = NULL;
     uint32_t args[4] = { 0, (uintptr_t)&myvideo.gfx.disp, 1, 0 };
 
     debug("call %s()\n", __func__);
@@ -3161,8 +3158,8 @@ static int init_lcd(void)
         return -1;
     }
 
-    myvideo.fb.mem_fd = open("/dev/mem", O_RDWR);
-    if (myvideo.fb.mem_fd < 0) {
+    myvideo.gfx.mem_fd = open("/dev/mem", O_RDWR);
+    if (myvideo.gfx.mem_fd < 0) {
         error("failed to open /dev/mem\n");
         return -1;
     }
@@ -3175,13 +3172,13 @@ static int init_lcd(void)
 
     memset(&myvideo.gfx.disp, 0, sizeof(disp_layer_config));
     memset(&myvideo.gfx.buf, 0, sizeof(disp_layer_config));
-    myvideo.fb.mem = mmap(0, sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.fb.mem_fd, OVL_V);
-    debug("map buffer=%p\n", myvideo.fb.mem);
+    myvideo.gfx.mem = mmap(0, sysconf(_SC_PAGESIZE), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.gfx.mem_fd, OVL_V);
+    debug("map buffer=%p\n", myvideo.gfx.mem);
 
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
 
-    myvideo.gfx.disp.channel = SCREEN_CH;
-    myvideo.gfx.disp.layer_id = SCREEN_LAYER;
+    myvideo.gfx.disp.channel = DEF_FB_CH;
+    myvideo.gfx.disp.layer_id = DEF_FB_LAYER;
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_GET_CONFIG, args);
 
     myvideo.gfx.disp.enable = 0;
@@ -3215,6 +3212,27 @@ static int init_lcd(void)
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
 
+    if ((myconfig.layout.mode.sel != LAYOUT_MODE_T2) && (myconfig.layout.mode.sel != LAYOUT_MODE_T3)) {
+        myconfig.layout.mode.sel = LAYOUT_MODE_T2;
+    }
+
+    alloc_lcd_mem();
+
+    cc = 0;
+    for (y = 0; y < NDS_H; y++) {
+        for (x = 0; x < NDS_W; x++) {
+            dst = (uint32_t *)myvideo.gfx.ion.vadd;
+            LUT_256x192_T20[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
+            LUT_256x192_T30[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
+
+            dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H);
+            LUT_256x192_T21[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
+            LUT_256x192_T31[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
+            cc+= 1;
+        }
+    }
+
+    resize_disp();
     return 0;
 }
 
@@ -3232,29 +3250,30 @@ static int quit_lcd(void)
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
     myvideo.gfx.disp.enable = 1;
-    myvideo.gfx.disp.channel = SCREEN_CH;
-    myvideo.gfx.disp.layer_id = SCREEN_LAYER;
+    myvideo.gfx.disp.channel = DEF_FB_CH;
+    myvideo.gfx.disp.layer_id = DEF_FB_LAYER;
     args[1] = (uintptr_t)&myvideo.gfx.disp;
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
 
     ion_free(myvideo.gfx.ion_fd, &myvideo.gfx.ion);
-    munmap(myvideo.fb.mem, sysconf(_SC_PAGESIZE));
-    myvideo.fb.mem = NULL;
+    munmap(myvideo.gfx.mem, sysconf(_SC_PAGESIZE));
+    myvideo.gfx.mem = NULL;
 
     close(myvideo.fb.fd);
     close(myvideo.gfx.ion_fd);
-    close(myvideo.fb.mem_fd);
+    close(myvideo.gfx.mem_fd);
     close(myvideo.gfx.disp_fd);
 
     myvideo.fb.fd = -1;
     myvideo.gfx.ion_fd = -1;
-    myvideo.fb.mem_fd = -1;
+    myvideo.gfx.mem_fd = -1;
     myvideo.gfx.disp_fd = -1;
 
+    free_lcd_mem();
     return 0;
 }
 
-static int disp_resize(void)
+int resize_disp(void)
 {
     int r = 0;
     uint32_t args[4] = { 0, (uintptr_t)&myvideo.gfx.buf, 1, 0 };
@@ -3569,8 +3588,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #if defined(TRIMUI)
     int x = 0;
     int y = 0;
-    int ox = 0;
-    int oy = 0;
     int sw = srt.w;
     int sh = srt.h;
     uint32_t *dst = NULL;
@@ -3860,7 +3877,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(PANDORA)
     if ((pitch == 1024) && (srt.w == NDS_W) && (srt.h == NDS_H)) {
-        uint32_t *dst = (uint32_t *)myvideo.fb.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
+        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
         if (drt.y == 0) {
             dst += 16;
@@ -4213,7 +4230,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         int x = 0;
         int y = 0;
         const uint32_t *src = pixels;
-        uint32_t *dst = (uint32_t *)myvideo.fb.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
+        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
 
         for (y = 0; y < srt.h; y++) {
             for (x = 0; x < srt.w; x++) {
@@ -4229,17 +4246,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         return -1;
     }
 
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T2) {
-        ox = 32;
-        oy = 24;
-    }
-
     if((srt.w == NDS_W) && (srt.h == NDS_H)) {
         if (myconfig.layout.mode.sel == LAYOUT_MODE_T2) {
-            dst = myvideo.fb.flip ? LUT_256x192_S01 : LUT_256x192_S00;
+            dst = myvideo.fb.flip ? LUT_256x192_T21 : LUT_256x192_T20;
         }
         else {
-            dst = myvideo.fb.flip ? LUT_256x192_S11 : LUT_256x192_S10;
+            dst = myvideo.fb.flip ? LUT_256x192_T31 : LUT_256x192_T30;
         }
 
         asm volatile (
@@ -4315,19 +4327,24 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             : "r8", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "memory", "cc"
         );
     }
-    else {
-        if ((srt.w >= 320) || (srt.h >= 240)) {
-            ox = 0;
-            oy = 0;
-            sw = SCREEN_W;
-            sh = SCREEN_H;
-        }
-
-        dst = (uint32_t *)myvideo.gfx.ion.vadd + (SCREEN_W * SCREEN_H * myvideo.fb.flip);
+    else if ((srt.w == SCREEN_W) && (srt.h == SCREEN_H)) {
+        dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H * myvideo.fb.flip);
         for (y = 0; y < sh; y++) {
             for (x = 0; x < sw; x++) {
-                dst[((((sw - 1) - x) + ox) * SCREEN_H) + y + oy] = *src++;
+                dst[(((sw - 1) - x) * SCREEN_H) + y] = *src++;
             }
+        }
+    }
+    else if ((srt.w == LAYOUT_BG_W) && (srt.h == LAYOUT_BG_H)) {
+        sw = SCREEN_W;
+        sh = SCREEN_H;
+        dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H * myvideo.fb.flip);
+        for (y = 0; y < sh; y++) {
+            for (x = 0; x < sw; x++) {
+                dst[(((sw - 1) - x) * SCREEN_H) + y] = *src;
+                src += 2;
+            }
+            src += srt.w;
         }
     }
 #endif
@@ -4980,9 +4997,9 @@ static int flip_lcd(void)
 
 #if defined(TRIMUI)
     myvideo.gfx.buf.info.fb.addr[0] = (uintptr_t)((uint32_t *)myvideo.gfx.ion.padd + (SCREEN_W * SCREEN_H * myvideo.fb.flip));
-    myvideo.fb.mem[OVL_V_TOP_LADD0 / 4] = myvideo.gfx.buf.info.fb.addr[0];
+    myvideo.gfx.mem[OVL_V_TOP_LADD0 >> 2] = myvideo.gfx.buf.info.fb.addr[0];
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
-    myvideo.fb.flip^= 1;
+    myvideo.fb.flip ^= 1;
 #endif
 
     return 0;
@@ -5347,6 +5364,10 @@ int load_menu_res(void)
     myvideo.menu.line_h = (float)get_font_height("X") * 1.25;
 #endif
 
+#if defined(TRIMUI)
+    myvideo.menu.line_h = 30;
+#endif
+
     myvideo.menu.sdl2.bg = load_menu_img(SDL2_MENU_BG_FILE, 0);
     myvideo.menu.sdl2.cursor = load_menu_img(SDL2_MENU_CURSOR_FILE, 1);
 
@@ -5356,12 +5377,7 @@ int load_menu_res(void)
     myvideo.menu.drastic.no = load_menu_img(DRASTIC_MENU_NO_FILE, 1);
     myvideo.menu.drastic.cursor = load_menu_img(DRASTIC_MENU_CURSOR_FILE, 1);
 
-#if defined(QX1000) || defined(XT897) || defined(UT)
-    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
-#else
-    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
-#endif
-
+    myvideo.menu.drastic.frame = SDL_CreateRGBSurface(SDL_SWSURFACE, MENU_W, MENU_H, 32, 0, 0, 0, 0);
     if (myvideo.menu.drastic.frame && myvideo.menu.drastic.bg0) {
         SDL_SoftStretch(myvideo.menu.drastic.bg0, NULL, myvideo.menu.drastic.frame, NULL);
     }
@@ -5405,21 +5421,16 @@ static int load_layout_bg(void)
 {
     int w = 0;
     int h = 0;
-    static int pre_sel = -1;
+    static int pre_bg = -1;
     static int pre_mode = -1;
     SDL_Surface *t = NULL;
     char buf[MAX_PATH + 32] = { 0 };
 
-#if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
-    SDL_Rect drt = { 0, 0, SCREEN_W, SCREEN_H };
-#endif
-
     debug("call %s()\n", __func__);
 
-#if !defined(TRIMUI)
-    if ((pre_sel != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode.sel)) {
+    if ((pre_bg != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode.sel)) {
+        pre_bg = myconfig.layout.bg.sel;
         pre_mode = myconfig.layout.mode.sel;
-        pre_sel = myconfig.layout.bg.sel;
 
         free_layout_bg();
         w = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].w;
@@ -5441,10 +5452,6 @@ static int load_layout_bg(void)
             &myvideo.layout.bg->clip_rect,
             SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
         );
-
-#if defined(QX1000) || defined(XT897)
-        return 0;
-#endif
 
         debug(
             "mode=%d, bg=%d, img=\"%s\"\n",
@@ -5474,19 +5481,23 @@ static int load_layout_bg(void)
             SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
             SDL_FreeSurface(t);
         }
-
-#if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
-        flush_lcd(
-            TEXTURE_BG,
-            myvideo.layout.bg->pixels,
-            myvideo.layout.bg->clip_rect,
-            drt,
-            myvideo.layout.bg->pitch
-        );
-#endif
     }
-    else if (myvideo.layout.bg) {
-#if !defined(A30) && !defined(FLIP) && !defined(QX1000) && !defined(XT897)
+
+#if defined(TRIMUI) || defined(UT)
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T3) {
+        return 0;
+    }
+#endif
+
+#if defined(QX1000) || defined(XT897)
+    return 0;
+#endif
+
+    if (myvideo.layout.bg) {
+#if !defined(TRIMUI)
+#if defined(MINI) && defined(BRICK) || defined(GKD2)
+        SDL_Rect drt = { 0, 0, SCREEN_W, SCREEN_H };
+
         flush_lcd(
             TEXTURE_BG,
             myvideo.layout.bg->pixels,
@@ -5510,49 +5521,10 @@ static int load_layout_bg(void)
             GL_UNSIGNED_BYTE,
             myvideo.layout.bg->pixels
         );
-        debug("updated bg pixels\n");
 #endif
-    }
 #endif
 
-#if defined(TRIMUI) || defined(UT)
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T3) {
-        return 0;
-    }
-
-    if (pre_mode != myconfig.layout.mode.sel) {
-        pre_mode = myconfig.layout.mode.sel;
-        disp_resize();
-    }
-
-    if (pre_sel != myconfig.layout.bg.sel) {
-        pre_sel = myconfig.layout.bg.sel;
-
-        if (myvideo.layout.bg) {
-            SDL_FreeSurface(myvideo.layout.bg);
-            myvideo.layout.bg = NULL;
-        }
-
-        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
-        if (!myvideo.layout.bg) {
-            error("failed to create surface for bg\n");
-            return -1;
-        }
-
-        SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
-
-        snprintf(buf, sizeof(buf), "%s%s/%d/r0,0,0,160,120,160,120,480,360.png", myvideo.home, BG_PATH, myconfig.layout.bg.sel);
-        t = IMG_Load(buf);
-        if (!t) {
-            error("failed to load bg from \"%s\"\n", buf);
-            return -1;
-        }
-        SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
-        SDL_FreeSurface(t);
-    }
-
-#if !defined(UT)
-    if (myvideo.layout.bg) {
+#if defined(TRIMUI)
         int x = 0;
         int y = 0;
         int z = 0;
@@ -5572,62 +5544,8 @@ static int load_layout_bg(void)
             }
         }
         ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &z);
-    }
-#endif
-#endif
-
-#if defined(PANDORA) || defined(UT)
-    if (pre_sel != myconfig.layout.bg.sel) {
-        SDL_Rect r0 = { 0 };
-
-        pre_sel = myconfig.layout.bg.sel;
-
-        if (myvideo.layout.bg) {
-            SDL_FreeSurface(myvideo.layout.bg);
-            myvideo.layout.bg = NULL;
-        }
-
-        myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
-        if (!myvideo.layout.bg) {
-            error("failed to create surface for bg\n");
-            return -1;
-        }
-
-        SDL_FillRect(myvideo.layout.bg, &myvideo.layout.bg->clip_rect, SDL_MapRGB(myvideo.layout.bg->format, 0x00, 0x00, 0x00));
-
-        snprintf(buf, sizeof(buf), "%s%s/%d/r0,0,0,160,120,160,120,480,360.png", myvideo.home, BG_PATH, myconfig.layout.bg.sel);
-        t = IMG_Load(buf);
-        if (!t) {
-            error("failed to load bg from \"%s\"\b", buf);
-            return -1;
-        }
-
-        SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
-        SDL_FreeSurface(t);
-
-        r0.x = 16 - 1;
-        r0.y = 48 - 1;
-        r0.w = NDS_Wx2 + 2;
-        r0.h = NDS_Hx2 + 2;
-        SDL_FillRect(myvideo.layout.bg, &r0, SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0));
-
-        r0.x = (NDS_Wx2 + 16) - 0;
-        r0.y = ((SCREEN_H - NDS_H) >> 1) - 1;
-        r0.w = NDS_W + 2;
-        r0.h = NDS_H + 2;
-        SDL_FillRect(myvideo.layout.bg, &r0, SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0));
-    }
-
-    if (myvideo.layout.bg) {
-#if !defined(UT)
-        neon_memcpy(
-            myvideo.fb.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1],
-            myvideo.layout.bg->pixels,
-            SCREEN_W * SCREEN_H * 4
-        );
 #endif
     }
-#endif
 
     return 0;
 }
@@ -5807,26 +5725,33 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 640;
         myvideo.layout.mode[mode].screen[1].h = 480;
         break;
+#if defined(TRIMUI)
     case 2:
-        myvideo.layout.mode[mode].screen[0].x = 64;
-        myvideo.layout.mode[mode].screen[0].y = 48;
-        myvideo.layout.mode[mode].screen[0].w = 512;
-        myvideo.layout.mode[mode].screen[0].h = 384;
+        myvideo.layout.mode[mode].screen[1].x = 32;
+        myvideo.layout.mode[mode].screen[1].y = 24;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H;
+        break;
+    case 3:
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = SCREEN_W;
+        myvideo.layout.mode[mode].screen[1].h = SCREEN_H;
+        break;
+#else
+    case 2:
         myvideo.layout.mode[mode].screen[1].x = 64;
         myvideo.layout.mode[mode].screen[1].y = 48;
         myvideo.layout.mode[mode].screen[1].w = 512;
         myvideo.layout.mode[mode].screen[1].h = 384;
         break;
     case 3:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 640;
-        myvideo.layout.mode[mode].screen[0].h = 480;
         myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 640;
         myvideo.layout.mode[mode].screen[1].h = 480;
         break;
+#endif
     case 4:
         myvideo.layout.mode[mode].screen[0].x = 192;
         myvideo.layout.mode[mode].screen[0].y = 48;
@@ -6049,11 +5974,14 @@ static int free_layout_mode(void)
 
     myvideo.layout.max_mode = 0;
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
+
+#if !defined(TRIMUI) && !defined(PANDORA) && !defined(QX1000) && !defined(XT897)
     add_layout_mode(LAYOUT_MODE_T0, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T1, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T3, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T18, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T19, 0, NULL);
+#endif
 
     return 0;
 }
@@ -6128,38 +6056,13 @@ static int init_device(void)
     int r = 0;
     char buf[MAX_PATH] = { 0 };
 
-#if defined(TRIMUI)
-    int x = 0;
-    int y = 0;
-    int ox = 32;
-    int oy = 24;
-    int cc = 0;
-    uint32_t *dst = NULL;
-#endif
-
     debug("call %s()\n", __func__);
 
     getcwd(myvideo.home, sizeof(myvideo.home));
     strcat(myvideo.home, "/");
     debug("home=\"%s\"\n", myvideo.home);
 
-    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
-
-#if defined(TRIMUI)
-    cc = 0;
-    for (y = 0; y < NDS_H; y++) {
-        for (x = 0; x < NDS_W; x++) {
-            dst = (uint32_t *)myvideo.gfx.ion.vadd;
-            LUT_256x192_S00[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
-            LUT_256x192_S10[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
-
-            dst = (uint32_t *)myvideo.gfx.ion.vadd + (SCREEN_W * SCREEN_H);
-            LUT_256x192_S01[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
-            LUT_256x192_S11[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
-            cc+= 1;
-        }
-    }
-#endif
+    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
 
     load_config(myvideo.home);
 
@@ -6179,13 +6082,6 @@ static int init_device(void)
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
     //set_half_vol(myconfig.half_vol);
-#endif
-
-#if defined(TRIMUI)
-    if ((myconfig.layout.mode.sel != LAYOUT_MODE_T2) && (myconfig.layout.mode.sel != LAYOUT_MODE_T3)) {
-        myconfig.layout.mode.sel = LAYOUT_MODE_T2;
-    }
-    disp_resize();
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT897)
@@ -7721,9 +7617,9 @@ TEST(sdl2_video, process_sdl2_setting)
 }
 #endif
 
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(TRIMUI)
 static int show_hotkey(int key)
 {
-#if !defined(QX1000) && !defined(XT897)
     int is_cn = 0;
     int src_size = 0;
     void *src_ptr = NULL;
@@ -7742,7 +7638,6 @@ static int show_hotkey(int key)
         break;
     }
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2)
     if (cur_lang != myconfig.lang) {
         cur_lang = myconfig.lang;
 
@@ -7777,12 +7672,16 @@ static int show_hotkey(int key)
         src_size = is_cn ? sizeof(hex_mini_hotkey_cn) : sizeof(hex_mini_hotkey_en);
 #endif
 
+#if defined(TRIMUI)
+        src_ptr = is_cn ? hex_trimui_hotkey_cn : hex_trimui_hotkey_en;
+        src_size = is_cn ? sizeof(hex_trimui_hotkey_cn) : sizeof(hex_trimui_hotkey_en);
+#endif
+
         rw = SDL_RWFromMem(src_ptr, src_size);
         png = IMG_Load_RW(rw, 1);
         SDL_BlitSurface(png, NULL, myvideo.cvt, NULL);
         SDL_FreeSurface(png);
     }
-#endif
 
 #if defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(A30)
     myvideo.menu.update = 1;
@@ -7791,10 +7690,10 @@ static int show_hotkey(int key)
     flip_lcd();
 #endif
     myvideo.layout.redraw_bg = REDRAW_BG_CNT;
-#endif
 
     return 0;
 }
+#endif
 
 int handle_sdl2_menu(int key)
 {
@@ -7803,8 +7702,12 @@ int handle_sdl2_menu(int key)
     switch (myvideo.menu.sdl2.type) {
     case MENU_TYPE_SDL2:
         return process_sdl2_setting(key);
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(TRIMUI)
     case MENU_TYPE_SHOW_HOTKEY:
         return show_hotkey(key);
+#endif
+    default:
+        return 0;
     }
 
     return 0;

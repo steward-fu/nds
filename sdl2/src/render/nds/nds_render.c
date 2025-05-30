@@ -267,12 +267,12 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
     usleep(100000);
 
 #if defined(TRIMUI)
-    if (myconfig.dis_mode != NDS_DIS_MODE_S0) {
-        need_restore = 1;
-        pre_dismode = myconfig.dis_mode;
+    if (myconfig.layout.mode.sel != LAYOUT_MODE_T2) {
+        myvideo.layout.restore = 1;
+        myvideo.layout.pre_mode = myconfig.layout.mode.sel;
     }
-    myconfig.dis_mode = NDS_DIS_MODE_S0;
-    disp_resize();
+    myconfig.layout.mode.sel = LAYOUT_MODE_T2;
+    resize_disp();
 #endif
 
 #if !defined(UT)
@@ -445,7 +445,8 @@ SDL_RenderDriver NDS_RenderDriver = {
         .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE,
         .num_texture_formats = 2,
         .texture_formats = {
-            [0] = SDL_PIXELFORMAT_RGB565, [1] = SDL_PIXELFORMAT_ARGB8888,
+            [0] = SDL_PIXELFORMAT_RGB565,
+            [1] = SDL_PIXELFORMAT_ARGB8888,
         },
         .max_texture_width = 800,
         .max_texture_height = 600,
