@@ -204,6 +204,8 @@ typedef enum {
 #endif
 } gfx_fmt_t;
 
+#define SCREEN_BUF_SIZE     (SCREEN_W * SCREEN_H * 4)
+#define SCREEN_BUF_SIZEx2   (SCREEN_W * SCREEN_H * 4 * 2)
 #define MAX_LAYOUT_MODE     32
 #define MAX_LAYOUT_BG_FILE  32
 
@@ -244,9 +246,6 @@ typedef struct _CUST_MENU {
 
 typedef struct {
     SDL_Window *win;
-    int cur_w;
-    int cur_h;
-    int cur_buf_size;
     int state_busy;
     SDL_Surface *fps;
     SDL_Surface *cvt;
