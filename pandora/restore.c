@@ -94,6 +94,31 @@ end_fb1:
     if (fbdev >= 0)
         close(fbdev);
 
+    fbdev = open("/dev/fb2", O_RDWR);
+    if (fbdev == -1) {
+        perror("open fb2");
+        goto end_fb2;
+    }
+
+    ret  = ioctl(fbdev, OMAPFB_QUERY_PLANE, &pi);
+    ret |= ioctl(fbdev, OMAPFB_QUERY_MEM, &mi);
+    if (ret != 0)
+        perror("QUERY_*");
+
+    pi.enabled = 0;
+    ret = ioctl(fbdev, OMAPFB_SETUP_PLANE, &pi);
+    if (ret != 0)
+        perror("SETUP_PLANE");
+
+    mi.size = 0;
+    ret = ioctl(fbdev, OMAPFB_SETUP_MEM, &mi);
+    if (ret != 0)
+        perror("SETUP_MEM");
+
+end_fb2:
+    if (fbdev >= 0)
+        close(fbdev);
+
     kbdfd = open("/dev/tty", O_RDWR);
     if (kbdfd == -1) {
         perror("open /dev/tty");

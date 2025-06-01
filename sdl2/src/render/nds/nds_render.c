@@ -275,6 +275,10 @@ static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, c
     resize_disp();
 #endif
 
+#if defined(PANDORA)
+    enable_fb_plane(FB_MENU);
+#endif
+
 #if !defined(UT)
     handle_drastic_menu();
 #endif

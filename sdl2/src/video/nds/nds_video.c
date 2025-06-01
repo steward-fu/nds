@@ -1672,6 +1672,7 @@ int handle_drastic_menu(void)
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
     myvideo.menu.update = 1;
 #else
+
     flush_lcd(
         TEXTURE_TMP,
         myvideo.menu.drastic.frame->pixels,
@@ -1738,6 +1739,10 @@ static int process_screen(void)
     if (myvideo.menu.drastic.enable) {
         myvideo.menu.drastic.enable = 0;
         myvideo.layout.redraw_bg = REDRAW_BG_CNT;
+
+#if defined(PANDORA)
+        enable_fb_plane(FB_GAME);
+#endif
     }
 
     if ((cur_filter != myconfig.filter) ||
@@ -1830,6 +1835,10 @@ static int process_screen(void)
         void *pixels = NULL;
         SDL_Rect srt = { 0, 0, NDS_W, NDS_H };
         SDL_Rect drt = { 0, idx * 120, 160, 120 };
+
+#if defined(PANDORA)
+        break;
+#endif
 
         if (*myhook.var.sdl.screen[idx].hires_mode) {
             srt.w = NDS_Wx2;
@@ -2165,8 +2174,8 @@ static void prehook_cb_update_screen(void)
         myvideo.lcd.cur_sel ^= 1;
 
 #if defined(PANDORA)
-        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uintptr_t)myvideo.fb.pixels[0][0];
-        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uintptr_t)myvideo.fb.pixels[0][1];
+        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uintptr_t)myvideo.fb.pixels[FB_GAME][0];
+        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uintptr_t)myvideo.fb.pixels[FB_GAME][1];
 #else
         *((uint32_t *)myhook.var.sdl.screen[0].pixels) =
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
@@ -3022,15 +3031,40 @@ static int quit_lcd(void)
 #endif
 
 #if defined(PANDORA)
+int enable_fb_plane(int n)
+{
+    int cc = 0;
+    struct omapfb_plane_info pi = { 0 };
+
+    debug("call %s(n=%d)\n", __func__, n);
+
+    for (cc = 0; cc < FB_NUM; cc++) {
+        if (myvideo.fb.fd[cc] < 0) {
+            continue;
+        }
+
+        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
+
+        pi.enabled = (cc == n) ? 1 : 0;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
+       debug("%s fb plane for /dev/fb%d\n", (cc == n) ? "enabled" : "disabled", cc + 1);
+    }
+
+    myvideo.fb.cur_idx = n;
+    debug("set cur_idx=%d\n", n);
+
+    return 0;
+}
+
 static int init_lcd(void)
 {
     int w = 320;
     int h = 480;
+    int op_w = 800;
+    int op_h = 480;
     int cc = 0;
-    int fd = -1;
     struct omapfb_mem_info mi = { 0 };
     struct omapfb_plane_info pi = { 0 };
-    struct fb_var_screeninfo fbvar = { 0 };
     const char *FB_PATH[] = {
         "/dev/fb1",
         "/dev/fb2",
@@ -3038,10 +3072,11 @@ static int init_lcd(void)
 
     debug("call %s()\n", __func__);
 
+    myvideo.fb.cur_idx = FB_GAME;
     for (cc = 0; cc < FB_NUM; cc++) {
         myvideo.fb.fd[cc] = open(FB_PATH[cc], O_RDWR);
         if (myvideo.fb.fd[cc] < 0) {
-            error("failed to open /dev/fb%d\n", cc);
+            error("failed to open %s\n", FB_PATH[cc]);
             continue;
         }
 
@@ -3053,22 +3088,35 @@ static int init_lcd(void)
         pi.enabled = 0;
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
 
-        mi.size = NDS_W * NDS_Hx2 * 4 * 2;
+        if (cc == FB_GAME) {
+            mi.size = NDS_W * NDS_Hx2 * 4 * 2;
+            pi.out_width = w;
+            pi.out_height = h;
+        }
+        else {
+            mi.size = MENU_W * MENU_H * 4 * 2;
+            pi.out_width = MENU_W;
+            pi.out_height = MENU_H;
+        }
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
 
-        pi.enabled = (cc == 0) ? 1 : 0;
-        pi.out_width = w;
-        pi.out_height = h;
-        pi.pos_x = (SCREEN_W - pi.out_width) >> 1;
-        pi.pos_y = (SCREEN_H - pi.out_height) >> 1;
+        pi.enabled = (cc == FB_GAME) ? 1 : 0;
+        pi.pos_x = (op_w - pi.out_width) >> 1;
+        pi.pos_y = (op_h - pi.out_height) >> 1;
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
 
         myvideo.fb.var_info.xoffset = 0;
         myvideo.fb.var_info.yoffset = 0;
-        myvideo.fb.var_info.xres = NDS_W;
-        myvideo.fb.var_info.yres = NDS_Hx2;
-        myvideo.fb.var_info.xres_virtual = NDS_W;
-        myvideo.fb.var_info.yres_virtual = NDS_Hx2 * 2;
+        if (cc == FB_GAME) {
+            myvideo.fb.var_info.xres = NDS_W;
+            myvideo.fb.var_info.yres = NDS_Hx2;
+        }
+        else {
+            myvideo.fb.var_info.xres = MENU_W;
+            myvideo.fb.var_info.yres = MENU_H;
+        }
+        myvideo.fb.var_info.xres_virtual = myvideo.fb.var_info.xres;
+        myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
         ioctl(myvideo.fb.fd[cc], FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
 
         close(myvideo.fb.fd[cc]);
@@ -3077,7 +3125,7 @@ static int init_lcd(void)
     for (cc = 0; cc < FB_NUM; cc++) {
         myvideo.fb.fd[cc] = open(FB_PATH[cc], O_RDWR);
         if (myvideo.fb.fd[cc] < 0) {
-            error("failed to open /dev/fb%d\n", cc);
+            error("failed to open %s\n", FB_PATH[cc]);
             continue;
         }
 
@@ -3089,14 +3137,21 @@ static int init_lcd(void)
         pi.enabled = 0;
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
 
-        mi.size = NDS_W * NDS_Hx2 * 4 * 2;
+        if (cc == FB_GAME) {
+            mi.size = NDS_W * NDS_Hx2 * 4 * 2;
+            pi.out_width = w;
+            pi.out_height = h;
+        }
+        else {
+            mi.size = w * h * 4 * 2;
+            pi.out_width = MENU_W;
+            pi.out_height = MENU_H;
+        }
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
 
-        pi.enabled = (cc == 0) ? 1 : 0;
-        pi.out_width = w;
-        pi.out_height = h;
-        pi.pos_x = (SCREEN_W - pi.out_width) >> 1;
-        pi.pos_y = (SCREEN_H - pi.out_height) >> 1;
+        pi.enabled = (cc == FB_GAME) ? 1 : 0;
+        pi.pos_x = (op_w - pi.out_width) >> 1;
+        pi.pos_y = (op_h - pi.out_height) >> 1;
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
 
         myvideo.fb.mem[cc] = mmap(0, mi.size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[cc], 0);
@@ -3106,10 +3161,16 @@ static int init_lcd(void)
 
         myvideo.fb.var_info.xoffset = 0;
         myvideo.fb.var_info.yoffset = 0;
-        myvideo.fb.var_info.xres = NDS_W;
-        myvideo.fb.var_info.yres = NDS_Hx2;
-        myvideo.fb.var_info.xres_virtual = NDS_W;
-        myvideo.fb.var_info.yres_virtual = NDS_Hx2 * 2;
+        if (cc == FB_GAME) {
+            myvideo.fb.var_info.xres = NDS_W;
+            myvideo.fb.var_info.yres = NDS_Hx2;
+        }
+        else {
+            myvideo.fb.var_info.xres = MENU_W;
+            myvideo.fb.var_info.yres = MENU_H;
+        }
+        myvideo.fb.var_info.xres_virtual = myvideo.fb.var_info.xres;
+        myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
         ioctl(myvideo.fb.fd[cc], FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
     }
 
@@ -3944,8 +4005,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(PANDORA)
-return 0;
-
     if ((srt.w == NDS_W) && (srt.h == NDS_H)) {
         uint32_t *dst = (uint32_t *)myvideo.fb.mem[!!myvideo.fb.var_info.yoffset];
 
@@ -4296,18 +4355,9 @@ return 0;
             );
         }
     }
-    else {
-        int x = 0;
-        int y = 0;
-        const uint32_t *src = pixels;
-        uint32_t *dst = (uint32_t *)myvideo.fb.mem[!!myvideo.fb.var_info.yoffset];
-
-        for (y = 0; y < srt.h; y++) {
-            for (x = 0; x < srt.w; x++) {
-                *dst++ = *src++;
-            }
-            dst += (SCREEN_W - srt.w);
-        }
+    else if ((srt.w == LAYOUT_BG_W) && (srt.h == LAYOUT_BG_H)) {
+        memcpy(myvideo.fb.mem[myvideo.fb.cur_idx], pixels, srt.w * srt.h * 4);
+        debug("copied menu pixels to /dev/fb%d\n", myvideo.fb.cur_idx + 1);
     }
 #endif
 
@@ -5015,9 +5065,10 @@ static int flip_lcd(void)
     debug("call %s()\n", __func__);
 
 #if defined(PANDORA)
-    ioctl(myvideo.fb.fd[0], FBIOPAN_DISPLAY, &myvideo.fb.var_info);
-    ioctl(myvideo.fb.fd[0], FBIO_WAITFORVSYNC, &r);
-    myvideo.fb.var_info.yoffset ^= SCREEN_H;
+    debug("flip /dev/fb%d\n", myvideo.fb.cur_idx + 1);
+    ioctl(myvideo.fb.fd[myvideo.fb.cur_idx], FBIOPAN_DISPLAY, &myvideo.fb.var_info);
+    ioctl(myvideo.fb.fd[myvideo.fb.cur_idx], FBIO_WAITFORVSYNC, &r);
+    myvideo.fb.var_info.yoffset ^= myvideo.fb.var_info.yres;
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(QX1000) || defined(XT897)
@@ -5559,7 +5610,7 @@ static int load_layout_bg(void)
     }
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000) || defined(XT897) || defined(PANDORA)
     return 0;
 #endif
 
@@ -7468,6 +7519,10 @@ static int process_sdl2_setting(int key)
 #endif
 
         myvideo.menu.sdl2.enable = 0;
+
+#if defined(PANDORA)
+        enable_fb_plane(FB_GAME);
+#endif
         return 0;
     default:
         break;

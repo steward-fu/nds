@@ -876,6 +876,11 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_QUIT, 1);
 #else
         if (myvideo.menu.sdl2.enable == 0) {
+
+#if defined(PANDORA)
+            enable_fb_plane(FB_MENU);
+#endif
+
             enter_sdl2_menu(MENU_TYPE_SDL2);
         }
 #endif

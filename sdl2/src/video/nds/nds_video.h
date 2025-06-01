@@ -133,9 +133,11 @@ typedef enum {
 #endif
 
 #if defined(PANDORA)
-#define SCREEN_W        800
+#define SCREEN_W        640
 #define SCREEN_H        480
-#define FB_NUM          1
+#define FB_NUM          2
+#define FB_GAME         0
+#define FB_MENU         1
 #endif
 
 #if defined(QX1000)
@@ -205,8 +207,8 @@ typedef enum {
 #endif
 } gfx_fmt_t;
 
-#define MENU_W              SCREEN_W
-#define MENU_H              SCREEN_H
+#define MENU_W              LAYOUT_BG_W
+#define MENU_H              LAYOUT_BG_H
 #define SCREEN_BUF_SIZE     (SCREEN_W * SCREEN_H * 4)
 #define SCREEN_BUF_SIZEx2   (SCREEN_W * SCREEN_H * 4 * 2)
 #define MAX_LAYOUT_MODE     32
@@ -359,6 +361,7 @@ typedef struct {
     struct {
 #if defined(PANDORA)
         int fd[FB_NUM];
+        int cur_idx;
         uint32_t *mem[FB_NUM];
         uint32_t *pixels[FB_NUM][2];
 #else
@@ -461,6 +464,7 @@ int load_touch_pen(void);
 int load_menu_res(void);
 
 int resize_disp(void);
+int enable_fb_plane(int);
 
 #endif
 
