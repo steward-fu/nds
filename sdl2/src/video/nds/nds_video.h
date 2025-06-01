@@ -135,6 +135,7 @@ typedef enum {
 #if defined(PANDORA)
 #define SCREEN_W        800
 #define SCREEN_H        480
+#define FB_NUM          1
 #endif
 
 #if defined(QX1000)
@@ -357,10 +358,9 @@ typedef struct {
 
     struct {
 #if defined(PANDORA)
-        int fd[2];
-        uint32_t *mem[2];
-        struct omapfb_mem_info mi;
-        struct omapfb_plane_info pi;
+        int fd[FB_NUM];
+        uint32_t *mem[FB_NUM];
+        uint32_t *pixels[FB_NUM][2];
 #else
         int fd;
 #endif

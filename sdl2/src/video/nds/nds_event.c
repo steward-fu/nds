@@ -1018,23 +1018,18 @@ static int update_key_bit(uint32_t c, uint32_t v)
     if (c == myevent.keypad.menu) {
         set_key_bit(KEY_BIT_MENU, v);
     }
-
-#if defined(QX1000) || defined(XT897) || defined(BRICK) || defined(UT)
     if (c == myevent.keypad.save) {
         set_key_bit(KEY_BIT_SAVE, v);
     }
     if (c == myevent.keypad.load) {
         set_key_bit(KEY_BIT_LOAD, v);
     }
-#if defined(QX1000) || defined(XT897) || defined(UT)
     if (c == myevent.keypad.fast) {
         set_key_bit(KEY_BIT_FAST, v);
     }
     if (c == myevent.keypad.exit) {
         set_key_bit(KEY_BIT_QUIT, v);
     }
-#endif
-#endif
 
 #if defined(MINI) || defined(UT)
     if (c == myevent.keypad.power) {
@@ -1233,6 +1228,46 @@ TEST(sdl2_event, get_brick_key_code)
 }
 #endif
 
+static int get_pandora_key_code(struct input_event *e)
+{
+    debug("call %s(e=%p)\n", __func__, e);
+
+    if ((myevent.fd < 0) || (myevent.kb_fd < 0)) {
+        error("invalid input handle\n");
+        return -1;
+    }
+
+    if (!e) {
+        error("e is null\n");
+        return -1;
+    }
+
+#if !defined(UT)
+    if (read(myevent.fd, e, sizeof(struct input_event))) {
+        if ((e->type == EV_KEY) && (e->value != 2)) {
+            return 1;
+        }
+    }
+
+    if (read(myevent.kb_fd, e, sizeof(struct input_event))) {
+        if ((e->type == EV_KEY) && (e->value != 2)) {
+            return 1;
+        }
+    }
+#endif
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, get_pandora_key_code)
+{
+    struct input_event e = {{ 0 }};
+
+    TEST_ASSERT_EQUAL_INT(0, get_pandora_key_code(&e));
+}
+#endif
+
 static int get_input_key_code(struct input_event *e)
 {
     debug("call %s(e=%p)\n", __func__, e);
@@ -1414,6 +1449,14 @@ int input_handler(void *data)
     }
 #endif
 
+#if defined(PANDORA)
+    myevent.kb_fd = open(KEYPAD_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    if (myevent.kb_fd < 0) {
+        error("failed to open \"%s\"\n", KEYPAD_DEV);
+        exit(-1);
+    }
+#endif
+
 #if defined(UT)
     myevent.thread.running = 0;
 #else
@@ -1431,10 +1474,16 @@ int input_handler(void *data)
 
         SDL_SemWait(myevent.sem);
 
+        ev.code = 0;
+        ev.type = 0;
+        ev.value = 0;
+
 #if defined(FLIP) || defined(UT)
         rk = get_flip_key_code(&ev);
 #elif defined(BRICK) || defined(UT)
         rk = get_brick_key_code(&ev);
+#elif defined(PANDORA) || defined(UT)
+        rk = get_pandora_key_code(&ev);
 #else
         rk = get_input_key_code(&ev);
 #endif
@@ -1502,10 +1551,10 @@ void init_event(void)
     myevent.keypad.vol_up = DEV_KEY_CODE_VOL_UP;
     myevent.keypad.vol_down = DEV_KEY_CODE_VOL_DOWN;
 
-#if defined(QX1000) || defined(XT897) || defined(BRICK) || defined(UT)
+#if defined(QX1000) || defined(XT897) || defined(BRICK) || defined(PANDORA) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
-#if defined(QX1000) || defined(XT897) || defined(UT)
+#if defined(QX1000) || defined(XT897) || defined(PANDORA) || defined(UT)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
 #endif
@@ -1568,6 +1617,13 @@ void quit_event(void)
         close(myevent.fd);
         myevent.fd = -1;
     }
+
+#if defined(PANDORA)
+    if(myevent.kb_fd > 0) {
+        close(myevent.kb_fd);
+        myevent.kb_fd = -1;
+    }
+#endif
 
 #if defined(TRIMUI) || defined(UT)
     if (myevent.cust_key.fd > 0) {

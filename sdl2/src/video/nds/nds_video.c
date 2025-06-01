@@ -2160,11 +2160,16 @@ static void prehook_cb_update_screen(void)
     else if (myvideo.lcd.update == 0) {
         myvideo.lcd.cur_sel ^= 1;
 
+#if defined(PANDORA)
+        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uintptr_t)myvideo.fb.pixels[0][0];
+        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uintptr_t)myvideo.fb.pixels[0][1];
+#else
         *((uint32_t *)myhook.var.sdl.screen[0].pixels) =
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
 
         *((uint32_t *)myhook.var.sdl.screen[1].pixels) =
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
+#endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
         myvideo.menu.drastic.enable = 0;
@@ -3015,68 +3020,81 @@ static int quit_lcd(void)
 #if defined(PANDORA)
 static int init_lcd(void)
 {
+    int w = 640;
+    int h = 480;
+    int cc = 0;
+    struct omapfb_mem_info mi = { 0 };
+    struct omapfb_plane_info pi = { 0 };
+    const char *FB_PATH[] = {
+        "/dev/fb1",
+        "/dev/fb2",
+    };
+
     debug("call %s()\n", __func__);
 
-    myvideo.fb.fd[0] = open("/dev/fb0", O_RDWR);
-    if (myvideo.fb.fd[0] < 0) {
-        error("failed to open /dev/fb0\n");
-        return -1;
+    for (cc = 0; cc < FB_NUM; cc++) {
+        myvideo.fb.fd[cc] = open(FB_PATH[cc], O_RDWR);
+        if (myvideo.fb.fd[cc] < 0) {
+            error("failed to open /dev/fb%d\n", cc);
+            return -1;
+        }
+
+        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
+        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
+        ioctl(myvideo.fb.fd[cc], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
+        ioctl(myvideo.fb.fd[cc], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
+
+        pi.enabled = 0;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
+
+        mi.size = NDS_W * NDS_H * 4 * 2;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
+
+        pi.enabled = (cc == 0) ? 1 : 0;
+        pi.out_width = w;
+        pi.out_height = h;
+        pi.pos_x = (SCREEN_W - w) >> 1;
+        pi.pos_y = (SCREEN_H - h) >> 1;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
+
+        myvideo.fb.mem[cc] = mmap(0, mi.size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[cc], 0);
+        myvideo.fb.pixels[cc][0] = myvideo.fb.mem[cc];
+        myvideo.fb.pixels[cc][1] = myvideo.fb.mem[cc] + (NDS_W * NDS_H);
+        memset(myvideo.fb.mem[cc], 0, mi.size);
+
+        myvideo.fb.var_info.xoffset = 0;
+        myvideo.fb.var_info.yoffset = 0;
+        myvideo.fb.var_info.xres = NDS_W;
+        myvideo.fb.var_info.yres = NDS_H;
+        myvideo.fb.var_info.xres_virtual = NDS_W;
+        myvideo.fb.var_info.yres_virtual = NDS_Hx2;
+        ioctl(myvideo.fb.fd[cc], FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
     }
-
-    myvideo.fb.fd[1] = open("/dev/fb1", O_RDWR);
-    if (myvideo.fb.fd[1] < 0) {
-        error("failed to open /dev/fb1\n");
-        return -1;
-    }
-
-    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &myvideo.fb.pi);
-    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_MEM, &myvideo.fb.mi);
-    if(myvideo.fb.pi.enabled){
-        myvideo.fb.pi.enabled = 0;
-        ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &myvideo.fb.pi);
-    }
-    myvideo.fb.mi.size = SCREEN_BUF_SIZEx2;
-    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_MEM, &myvideo.fb.mi);
-
-    myvideo.fb.pi.enabled = 1;
-    myvideo.fb.pi.pos_x = 0;
-    myvideo.fb.pi.pos_y = 0;
-    myvideo.fb.pi.out_width = SCREEN_W;
-    myvideo.fb.pi.out_height = SCREEN_H;
-    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &myvideo.fb.pi);
-
-    ioctl(myvideo.fb.fd[0], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
-    ioctl(myvideo.fb.fd[0], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-    myvideo.gfx.mem[0] = mmap(0, SCREEN_BUF_SIZEx2, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[0], 0);
-    memset(myvideo.gfx.mem[0], 0, SCREEN_BUF_SIZEx2);
-
-    ioctl(myvideo.fb.fd[1], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
-    ioctl(myvideo.fb.fd[1], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-    myvideo.gfx.mem[1] = mmap(0, SCREEN_BUF_SIZEx2, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[1], 0);
-    memset(myvideo.gfx.mem[1], 0, SCREEN_BUF_SIZEx2);
 
     return 0;
 }
 
 static int quit_lcd(void)
 {
+    int cc = 0;
+    struct omapfb_mem_info mi = { 0 };
+    struct omapfb_plane_info pi = { 0 };
+
     debug("call %s()\n", __func__);
 
-    ioctl(myvideo.fb.fd[1], OMAPFB_QUERY_PLANE, &myvideo.fb.pi);
-    myvideo.fb.pi.enabled = 0;
-    ioctl(myvideo.fb.fd[1], OMAPFB_SETUP_PLANE, &myvideo.fb.pi);
+    for (cc = 0; cc < FB_NUM; cc++) {
+        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
+        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
 
-    munmap(myvideo.gfx.mem[0], SCREEN_BUF_SIZEx2);
-    munmap(myvideo.gfx.mem[1], SCREEN_BUF_SIZEx2);
-    myvideo.gfx.mem[0] = NULL;
-    myvideo.gfx.mem[1] = NULL;
+        pi.enabled = 0;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
 
-    close(myvideo.fb.fd[0]);
-    close(myvideo.fb.fd[1]);
+        munmap(myvideo.fb.mem[cc], mi.size);
+        myvideo.fb.mem[cc] = NULL;
 
-    myvideo.fb.fd[0] = -1;
-    myvideo.fb.fd[1] = -1;
-
+        close(myvideo.fb.fd[cc]);
+        myvideo.fb.fd[cc] = -1;
+    }
     return 0;
 }
 #endif
@@ -3624,7 +3642,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(GKD2) || defined(BRICK)
     debug("myvideo.shm.buf=%p\n", myvideo.shm.buf);
-    if (myvideo.shm.buf == NULL) {
+    if (myvideo.shm.buf == MAP_FAILED) {
         error("myvideo.shm.buf is NULL\n");
         return 0;
     }
@@ -3876,8 +3894,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(PANDORA)
-    if ((pitch == 1024) && (srt.w == NDS_W) && (srt.h == NDS_H)) {
-        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
+return 0;
+
+    if ((srt.w == NDS_W) && (srt.h == NDS_H)) {
+        uint32_t *dst = (uint32_t *)myvideo.fb.mem[!!myvideo.fb.var_info.yoffset];
 
         if (drt.y == 0) {
             dst += 16;
@@ -4230,7 +4250,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         int x = 0;
         int y = 0;
         const uint32_t *src = pixels;
-        uint32_t *dst = (uint32_t *)myvideo.gfx.mem[(myvideo.fb.var_info.yoffset == 0) ? 0 : 1];
+        uint32_t *dst = (uint32_t *)myvideo.fb.mem[!!myvideo.fb.var_info.yoffset];
 
         for (y = 0; y < srt.h; y++) {
             for (x = 0; x < srt.w; x++) {
@@ -4945,8 +4965,8 @@ static int flip_lcd(void)
     debug("call %s()\n", __func__);
 
 #if defined(PANDORA)
-    ioctl(myvideo.fb.fd[1], FBIOPAN_DISPLAY, &myvideo.fb.var_info);
-    ioctl(myvideo.fb.fd[1], FBIO_WAITFORVSYNC, &r);
+    ioctl(myvideo.fb.fd[0], FBIOPAN_DISPLAY, &myvideo.fb.var_info);
+    ioctl(myvideo.fb.fd[0], FBIO_WAITFORVSYNC, &r);
     myvideo.fb.var_info.yoffset ^= SCREEN_H;
 #endif
 
@@ -5495,7 +5515,7 @@ static int load_layout_bg(void)
 
     if (myvideo.layout.bg) {
 #if !defined(TRIMUI)
-#if defined(MINI) && defined(BRICK) || defined(GKD2)
+#if defined(MINI) || defined(BRICK) || defined(GKD2) || defined(PANDORA)
         SDL_Rect drt = { 0, 0, SCREEN_W, SCREEN_H };
 
         flush_lcd(
@@ -5924,20 +5944,14 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     myvideo.layout.mode[mode].bg[cur_bg].path[0] = 0;
 
     if (fname && fname[0]) {
-        SDL_Surface *t = NULL;
-
         snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, BG_PATH, cur_bg, fname);
         debug("bg path=\"%s\"\n", buf);
 
         if (access(buf, F_OK) == 0) {
-            t = IMG_Load(buf);
-            if (t) {
-                myvideo.layout.mode[mode].bg[cur_bg].w = t->w;
-                myvideo.layout.mode[mode].bg[cur_bg].h = t->h;
-                strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
-                debug("added bg img=\"%s\"(%dx%d)\n", buf, t->w, t->h);
-                SDL_FreeSurface(t);
-            }
+            myvideo.layout.mode[mode].bg[cur_bg].w = LAYOUT_BG_W;
+            myvideo.layout.mode[mode].bg[cur_bg].h = LAYOUT_BG_H;
+            strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
+            debug("added bg img=\"%s\"(%dx%d)\n", buf, LAYOUT_BG_W, LAYOUT_BG_H);
         }
     }
 

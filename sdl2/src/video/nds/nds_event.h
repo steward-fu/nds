@@ -16,6 +16,7 @@
 #define INPUT_DEV   "/dev/miyooio"
 #elif defined(PANDORA)
 #define INPUT_DEV   "/dev/input/event4"
+#define KEYPAD_DEV  "/dev/input/event0"
 #elif defined(QX1000)
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(XT897)
@@ -128,14 +129,19 @@
 #define DEV_KEY_CODE_Y          102
 #define DEV_KEY_CODE_L1         54
 #define DEV_KEY_CODE_R1         97
-#define DEV_KEY_CODE_L2         -1
-#define DEV_KEY_CODE_R2         -1
+#define DEV_KEY_CODE_L2         25
+#define DEV_KEY_CODE_R2         14
 #define DEV_KEY_CODE_START      56
 #define DEV_KEY_CODE_SELECT     29
-#define DEV_KEY_CODE_MENU       139
+#define DEV_KEY_CODE_MENU       57
 #define DEV_KEY_CODE_POWER      -1
 #define DEV_KEY_CODE_VOL_UP     -1
 #define DEV_KEY_CODE_VOL_DOWN   -1
+
+#define DEV_KEY_CODE_SAVE       1
+#define DEV_KEY_CODE_LOAD       11
+#define DEV_KEY_CODE_FAST       3
+#define DEV_KEY_CODE_EXIT       16
 #endif
 
 #if defined(XT897)
@@ -329,6 +335,10 @@ typedef struct _cust_key_t {
 
 typedef struct {
     int fd;
+
+#if defined(PANDORA)
+    int kb_fd;
+#endif
 
     struct _keypad{
         uint32_t cur_bits;

@@ -10,8 +10,6 @@ CFLAGS  += -mfpu=neon
 CFLAGS  += -ffast-math
 CFLAGS  += -march=armv7-a
 CFLAGS  += -mtune=cortex-a8
-CFLAGS  += -ftree-vectorize
-CFLAGS  += -mfloat-abi=softfp
 
 LDFLAGS += -ljson-c
  

@@ -2467,8 +2467,6 @@ CheckNDSVideo()
 
     if test x$MOD = xpandora; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -ftree-vectorize"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfloat-abi=softfp"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lib/pandora"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lpng"

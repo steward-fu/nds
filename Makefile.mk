@@ -77,6 +77,7 @@ clean:
 	rm -rf drastic/launch.sh
 	rm -rf drastic/backup/
 	rm -rf drastic/savestates/
+	rm -rf drastic/op_runfbapp
 	rm -rf drastic/config.json
 	rm -rf drastic/overlayfs.img
 	rm -rf drastic/config/drastic.cf2

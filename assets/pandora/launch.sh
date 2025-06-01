@@ -1,11 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 MYDIR=`dirname "$0"`
 
-export HOME=$MYDIR
-export SDL_VIDEODRIVER=NDS
-export LD_LIBRARY_PATH=lib:/usr/local/lib:$LD_LIBRARY_PATH
+sv=`cat /proc/sys/vm/swappiness`
+echo 10 | sudo tee /proc/sys/vm/swappiness
+echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+/usr/pandora/scripts/op_videofir.sh default
 
 cd $MYDIR
-./drastic
-./restore
-sync
+op_runfbapp ./run.sh "$1"
+
+echo $sv | sudo tee /proc/sys/vm/swappiness
+echo ondemand | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
