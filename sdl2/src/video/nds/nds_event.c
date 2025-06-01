@@ -1228,6 +1228,7 @@ TEST(sdl2_event, get_brick_key_code)
 }
 #endif
 
+#if defined(PANDORA)
 static int get_pandora_key_code(struct input_event *e)
 {
     debug("call %s(e=%p)\n", __func__, e);
@@ -1266,6 +1267,7 @@ TEST(sdl2_event, get_pandora_key_code)
 
     TEST_ASSERT_EQUAL_INT(0, get_pandora_key_code(&e));
 }
+#endif
 #endif
 
 static int get_input_key_code(struct input_event *e)

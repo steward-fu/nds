@@ -25,6 +25,10 @@
 #include <arpa/inet.h>
 #endif
 
+#if defined(PANDORA)
+#include <linux/kd.h>
+#endif
+
 #if defined(UT)
 #include "unity_fixture.h"
 #endif
@@ -3020,11 +3024,13 @@ static int quit_lcd(void)
 #if defined(PANDORA)
 static int init_lcd(void)
 {
-    int w = 640;
+    int w = 320;
     int h = 480;
     int cc = 0;
+    int fd = -1;
     struct omapfb_mem_info mi = { 0 };
     struct omapfb_plane_info pi = { 0 };
+    struct fb_var_screeninfo fbvar = { 0 };
     const char *FB_PATH[] = {
         "/dev/fb1",
         "/dev/fb2",
@@ -3036,7 +3042,7 @@ static int init_lcd(void)
         myvideo.fb.fd[cc] = open(FB_PATH[cc], O_RDWR);
         if (myvideo.fb.fd[cc] < 0) {
             error("failed to open /dev/fb%d\n", cc);
-            return -1;
+            continue;
         }
 
         ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
@@ -3047,14 +3053,50 @@ static int init_lcd(void)
         pi.enabled = 0;
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
 
-        mi.size = NDS_W * NDS_H * 4 * 2;
+        mi.size = NDS_W * NDS_Hx2 * 4 * 2;
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
 
         pi.enabled = (cc == 0) ? 1 : 0;
         pi.out_width = w;
         pi.out_height = h;
-        pi.pos_x = (SCREEN_W - w) >> 1;
-        pi.pos_y = (SCREEN_H - h) >> 1;
+        pi.pos_x = (SCREEN_W - pi.out_width) >> 1;
+        pi.pos_y = (SCREEN_H - pi.out_height) >> 1;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
+
+        myvideo.fb.var_info.xoffset = 0;
+        myvideo.fb.var_info.yoffset = 0;
+        myvideo.fb.var_info.xres = NDS_W;
+        myvideo.fb.var_info.yres = NDS_Hx2;
+        myvideo.fb.var_info.xres_virtual = NDS_W;
+        myvideo.fb.var_info.yres_virtual = NDS_Hx2 * 2;
+        ioctl(myvideo.fb.fd[cc], FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
+
+        close(myvideo.fb.fd[cc]);
+    }
+
+    for (cc = 0; cc < FB_NUM; cc++) {
+        myvideo.fb.fd[cc] = open(FB_PATH[cc], O_RDWR);
+        if (myvideo.fb.fd[cc] < 0) {
+            error("failed to open /dev/fb%d\n", cc);
+            continue;
+        }
+
+        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
+        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
+        ioctl(myvideo.fb.fd[cc], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
+        ioctl(myvideo.fb.fd[cc], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
+
+        pi.enabled = 0;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
+
+        mi.size = NDS_W * NDS_Hx2 * 4 * 2;
+        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
+
+        pi.enabled = (cc == 0) ? 1 : 0;
+        pi.out_width = w;
+        pi.out_height = h;
+        pi.pos_x = (SCREEN_W - pi.out_width) >> 1;
+        pi.pos_y = (SCREEN_H - pi.out_height) >> 1;
         ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
 
         myvideo.fb.mem[cc] = mmap(0, mi.size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[cc], 0);
@@ -3065,9 +3107,9 @@ static int init_lcd(void)
         myvideo.fb.var_info.xoffset = 0;
         myvideo.fb.var_info.yoffset = 0;
         myvideo.fb.var_info.xres = NDS_W;
-        myvideo.fb.var_info.yres = NDS_H;
+        myvideo.fb.var_info.yres = NDS_Hx2;
         myvideo.fb.var_info.xres_virtual = NDS_W;
-        myvideo.fb.var_info.yres_virtual = NDS_Hx2;
+        myvideo.fb.var_info.yres_virtual = NDS_Hx2 * 2;
         ioctl(myvideo.fb.fd[cc], FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
     }
 
@@ -3083,18 +3125,26 @@ static int quit_lcd(void)
     debug("call %s()\n", __func__);
 
     for (cc = 0; cc < FB_NUM; cc++) {
-        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
-        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
+        if (myvideo.fb.fd[cc] > 0) {
+            ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
+            ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
 
-        pi.enabled = 0;
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
+            pi.enabled = 0;
+            ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
+            debug("disabled fb plane\n");
 
-        munmap(myvideo.fb.mem[cc], mi.size);
-        myvideo.fb.mem[cc] = NULL;
+            munmap(myvideo.fb.mem[cc], mi.size);
+            myvideo.fb.mem[cc] = NULL;
 
-        close(myvideo.fb.fd[cc]);
-        myvideo.fb.fd[cc] = -1;
+            mi.size = 0;
+            ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
+            debug("freed fb mem\n");
+
+            close(myvideo.fb.fd[cc]);
+            myvideo.fb.fd[cc] = -1;
+        }
     }
+
     return 0;
 }
 #endif
@@ -6138,6 +6188,10 @@ static int init_device(void)
     debug("drop bios files to \"%s\"\n", buf);
     if (drop_bios_files(buf) < 0) {
         r = -1;
+    }
+
+    if (myconfig.layout.mode.sel > myvideo.layout.max_mode) {
+        myconfig.layout.mode.sel = 0;
     }
 
     return r;

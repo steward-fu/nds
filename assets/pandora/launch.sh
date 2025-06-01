@@ -8,6 +8,7 @@ echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governo
 
 cd $MYDIR
 op_runfbapp ./run.sh "$1"
+./restore
 
 echo $sv | sudo tee /proc/sys/vm/swappiness
 echo ondemand | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
