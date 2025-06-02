@@ -3917,7 +3917,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
 #if defined(XT897)
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T1) {
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T3) {
         switch (id) {
         case TEXTURE_LCD0:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -3948,7 +3948,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
-    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T3) &&
+    if ((myconfig.layout.mode.sel <= LAYOUT_MODE_T1) &&
         (id == TEXTURE_LCD1))
     {
         glUniform1f(myvideo.egl.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
@@ -5765,17 +5765,14 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, int cur_bg, const char *fname)
 {
-    char buf[MAX_PATH + 32] = { 0 };
-
-#if defined(QX1000)
-    float m = 4.21875;
-#elif defined(XT897)
-    float m = 1.8725;
+#if defined(QX1000) || defined(XT897)
+    float m = 0.0;
 #endif
 
     debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000)
+        m = 4.21875;
         mode = 0;
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
@@ -5785,35 +5782,22 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
-        myvideo.layout.max_mode = 0;
 
-#if defined(XT897)
+        myvideo.layout.max_mode = mode;
+#elif defined(XT897)
         m = 2.0;
-        mode = 1;
-        myvideo.layout.mode[mode].screen[0].x = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 336) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = 448;
-        myvideo.layout.mode[mode].screen[0].h = 336;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
-        myvideo.layout.max_mode = 1;
-
-        m = 2.8125;
-        mode = 2;
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
+        mode = 0;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 180) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = 240;
-        myvideo.layout.mode[mode].screen[1].h = 180;
-        myvideo.layout.max_mode = 2;
+        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 256;
+        myvideo.layout.mode[mode].screen[1].h = 192;
 
         m = 2.8125;
-        mode = 3;
+        mode = 1;
         myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
@@ -5822,8 +5806,41 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 256;
         myvideo.layout.mode[mode].screen[1].h = 192;
-        myvideo.layout.max_mode = 3;
-#endif
+
+        m = 2.8125;
+        mode = 2;
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 192) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = 256;
+        myvideo.layout.mode[mode].screen[1].h = 192;
+
+        m = 1.8725;
+        mode = 3;
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+
+        m = 2.0;
+        mode = 4;
+        myvideo.layout.mode[mode].screen[0].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 336) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = 448;
+        myvideo.layout.mode[mode].screen[0].h = 336;
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+
+        myvideo.layout.max_mode = mode;
 #else
     switch (mode) {
     case 0:
@@ -6045,15 +6062,10 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     myvideo.layout.mode[mode].bg[cur_bg].path[0] = 0;
 
     if (fname && fname[0]) {
-        snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, BG_PATH, cur_bg, fname);
-        debug("bg path=\"%s\"\n", buf);
-
-        if (access(buf, F_OK) == 0) {
-            myvideo.layout.mode[mode].bg[cur_bg].w = LAYOUT_BG_W;
-            myvideo.layout.mode[mode].bg[cur_bg].h = LAYOUT_BG_H;
-            strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
-            debug("added bg img=\"%s\"(%dx%d)\n", buf, LAYOUT_BG_W, LAYOUT_BG_H);
-        }
+        myvideo.layout.mode[mode].bg[cur_bg].w = LAYOUT_BG_W;
+        myvideo.layout.mode[mode].bg[cur_bg].h = LAYOUT_BG_H;
+        strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
+        debug("added bg img=\"%s\"(%dx%d)\n", fname, LAYOUT_BG_W, LAYOUT_BG_H);
     }
 
     debug(
@@ -6367,7 +6379,7 @@ static int quit_device(void)
 
     debug("wait for savestate complete\n");
     while (myvideo.state_busy) {
-        usleep(10000000);
+        usleep(1000000);
     }
     debug("completed\n");
 
