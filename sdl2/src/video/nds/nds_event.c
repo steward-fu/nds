@@ -1558,10 +1558,10 @@ void init_event(void)
     myevent.keypad.vol_up = DEV_KEY_CODE_VOL_UP;
     myevent.keypad.vol_down = DEV_KEY_CODE_VOL_DOWN;
 
-#if defined(QX1000) || defined(XT897) || defined(BRICK) || defined(PANDORA) || defined(UT)
+#if defined(QX1050) || defined(QX1000) || defined(XT897) || defined(BRICK) || defined(PANDORA) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
-#if defined(QX1000) || defined(XT897) || defined(PANDORA) || defined(UT)
+#if defined(QX1050) || defined(QX1000) || defined(XT897) || defined(PANDORA) || defined(UT)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
 #endif

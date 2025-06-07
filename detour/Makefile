@@ -10,7 +10,9 @@ LDFLAGS += -lpthread
 SOURCES  = hook.c
 
 ifneq ($(MOD),ut)
+ifneq ($(MOD),qx1050)
     SOURCES += hook.S
+endif
 endif
 
 .PHONY: all

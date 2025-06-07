@@ -112,7 +112,7 @@ static int draw_touch_pen(void *, int, int);
 static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 
-#if defined(A30) || defined(FLIP) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT897)
 GLfloat bg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
@@ -132,7 +132,7 @@ GLushort vert_indices[] = {
 };
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
 const char *vert_shader_src =
     "attribute vec4 vert_pos;                                   \n"
     "attribute vec2 vert_coord;                                 \n"
@@ -216,7 +216,7 @@ const char *frag_shader_src =
     "}                                                          \n";
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
 EGLint egl_cfg[] = {
     EGL_SURFACE_TYPE,
     EGL_WINDOW_BIT,
@@ -238,7 +238,7 @@ EGLint ctx_attribs[] = {
 };
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
 static void cb_remove(void *, struct wl_registry *, uint32_t);
 static void cb_handle(void *, struct wl_registry *, uint32_t, const char *, uint32_t);
 
@@ -374,7 +374,7 @@ static int set_cpu_core(int n)
 }
 #endif
 
-#if defined(QX1000) || defined(XT897) || defined(UT)
+#if defined(QX1050) || defined(QX1000) || defined(XT897) || defined(UT)
 static void* wl_disp_handler(void* pParam)
 {
     debug("call %s()++\n", __func__);
@@ -1669,7 +1669,7 @@ int handle_drastic_menu(void)
         exit(-1);
         return 0;
     }
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
     myvideo.menu.update = 1;
 #else
 
@@ -2074,7 +2074,7 @@ static void* prehook_cb_malloc(size_t size)
     void *r = NULL;
     uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
 
-    debug("call %s(size=%d)\n", __func__, size);
+    debug("call %s(size=%d)\n", __func__, (int)size);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -2128,7 +2128,7 @@ static void* prehook_cb_realloc(void *ptr, size_t size)
     void *r = NULL;
     uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
 
-    debug("call %s(ptr=%p, size=%d)\n", __func__, ptr, size);
+    debug("call %s(ptr=%p, size=%d)\n", __func__, ptr, (int)size);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -2184,7 +2184,7 @@ static void prehook_cb_update_screen(void)
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
         myvideo.menu.drastic.enable = 0;
 #endif
         myvideo.lcd.update = 1;
@@ -2269,7 +2269,7 @@ TEST(sdl2_video, prehook_cb_print_string)
 
 static void prehook_cb_savestate_pre(void)
 {
-#if !defined(UT) && !defined(PANDORA)
+#if !defined(UT) && !defined(PANDORA) && !defined(QX1050)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #1                 \n"
@@ -2291,7 +2291,7 @@ TEST(sdl2_video, prehook_cb_savestate_pre)
 
 static void prehook_cb_savestate_post(void)
 {
-#if !defined(UT) && !defined(PANDORA)
+#if !defined(UT) && !defined(PANDORA) && !defined(QX1050)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #0                 \n"
@@ -2515,7 +2515,7 @@ static void* video_handler(void *param)
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
     EGLint cnt = 0;
     EGLint major = 0;
     EGLint minor = 0;
@@ -2582,7 +2582,7 @@ static void* video_handler(void *param)
     glUniform1f(myvideo.egl.alphaLoc, 0.0);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
     alloc_lcd_mem();
 #endif
 
@@ -2592,12 +2592,12 @@ static void* video_handler(void *param)
     myvideo.thread.running = 1;
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
     myvideo.wl.ready = 1;
 #endif
 
     while (myvideo.thread.running) {
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
         if (myvideo.menu.sdl2.enable) {
             if (myvideo.menu.update) {
                 int pre_mode = myconfig.layout.mode.sel;
@@ -2683,7 +2683,7 @@ static void* video_handler(void *param)
     eglTerminate(myvideo.egl.display);
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
     myvideo.wl.ready = 0;
 
     glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
@@ -2705,7 +2705,7 @@ static void* video_handler(void *param)
     wl_display_disconnect(myvideo.wl.display);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
     free_lcd_mem();
 #endif
 
@@ -3010,7 +3010,7 @@ static int quit_lcd(void)
 }
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
 static int init_lcd(void)
 {
     debug("call %s()\n", __func__);
@@ -3650,13 +3650,13 @@ static int draw_touch_pen(void *pixels, int width, int pitch)
         break;
     }
 
-#if !defined(UT)
+#if !defined(UT) && !defined(QX1050)
     asm volatile ("PLD [%0, #128]"::"r" (s));
 #endif
 
     for (c1 = 0; c1 < h; c1++) {
 
-#if !defined(UT)
+#if !defined(UT) && !defined(QX1050)
         asm volatile ("PLD [%0, #128]"::"r" (d_565));
         asm volatile ("PLD [%0, #128]"::"r" (d_888));
 #endif
@@ -3738,7 +3738,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     float h = SCREEN_H;
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
     float w = WL_WIN_H;
     float h = WL_WIN_W;
 #endif
@@ -3882,9 +3882,9 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
     if (id == TEXTURE_TMP) {
-#if defined(QX1000)
+#if defined(QX1050) || defined(QX1000)
         drt.w <<= 1;
         drt.h <<= 1;
 #endif
@@ -5071,7 +5071,7 @@ static int flip_lcd(void)
     myvideo.fb.var_info.yoffset ^= myvideo.fb.var_info.yres;
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT897)
     eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
 
 #if defined(FLIP) 
@@ -5610,7 +5610,7 @@ static int load_layout_bg(void)
     }
 #endif
 
-#if defined(QX1000) || defined(XT897) || defined(PANDORA)
+#if defined(QX1050) || defined(QX1000) || defined(XT897) || defined(PANDORA)
     return 0;
 #endif
 
@@ -5765,13 +5765,13 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, int cur_bg, const char *fname)
 {
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
     float m = 0.0;
 #endif
 
     debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
 
-#if defined(QX1000)
+#if defined(QX1050) || defined(QX1000)
         m = 5;
         mode = 0;
         myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
@@ -6135,7 +6135,7 @@ static int free_layout_mode(void)
     myvideo.layout.max_mode = 0;
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
 
-#if !defined(TRIMUI) && !defined(PANDORA) && !defined(QX1000) && !defined(XT897)
+#if !defined(TRIMUI) && !defined(PANDORA) && !defined(QX1050) && !defined(QX1000) && !defined(XT897)
     add_layout_mode(LAYOUT_MODE_T0, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T1, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T3, 0, NULL);
@@ -6275,7 +6275,7 @@ static int init_device(void)
 
     pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT897)
     pthread_create(&myvideo.wl.thread.id, NULL, wl_disp_handler, NULL);
 #endif
 
@@ -7767,7 +7767,7 @@ static int process_sdl2_setting(int key)
 
     draw_small_block_win(450, 360, mode, myvideo.cvt);
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);

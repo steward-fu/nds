@@ -483,7 +483,7 @@ static int init_table(void)
     myhook.var.system.base = (uintptr_t *)0x083f4000;
     myhook.var.system.gamecard_name = (uint32_t *)0x0847e8e8;
     myhook.var.system.savestate_num = (uint32_t *)0x08479780;
-    myhook.var.system.config.base = (uint32_t *)0x08479328;
+    myhook.var.system.config.base = (uintptr_t *)0x08479328;
     myhook.var.system.config.hires_3d = (uint32_t *)0x084797c4;
     myhook.var.system.config.controls_a = (uint16_t *)0x084797dc;
     myhook.var.system.config.controls_b = (uint16_t *)0x0847982c;
@@ -620,12 +620,12 @@ int init_hook(size_t page, const char *path)
         add_prehook_cb((void *)myhook.fun.initialize_backup, (void *)prehook_cb_initialize_backup);
     }
 
-    //add_prehook_cb(myhook.fun.puts, prehook_cb_puts);
-    //add_prehook_cb(myhook.fun.printf_chk, prehook_cb_printf_chk);
+#if !defined(NDS_ARM64)
     add_prehook_cb(
         (void *)myhook.fun.render_polygon_setup_perspective_steps,
         render_polygon_setup_perspective_steps
     );
+#endif
 
     return 0;
 }

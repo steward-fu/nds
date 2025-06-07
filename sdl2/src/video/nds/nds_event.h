@@ -19,6 +19,8 @@
 #define KEYPAD_DEV  "/dev/input/event0"
 #elif defined(QX1000)
 #define INPUT_DEV   "/dev/input/event3"
+#elif defined(QX1050)
+#define INPUT_DEV   "/dev/input/event3"
 #elif defined(XT897)
 #define INPUT_DEV   "/dev/input/event1"
 #elif defined(GKD2)
@@ -166,6 +168,32 @@
 
 #define DEV_KEY_CODE_SAVE       2
 #define DEV_KEY_CODE_LOAD       11
+#define DEV_KEY_CODE_FAST       -1
+#define DEV_KEY_CODE_EXIT       28
+#endif
+
+#if defined(QX1050)
+#define DEV_KEY_CODE_UP         16
+#define DEV_KEY_CODE_DOWN       27
+#define DEV_KEY_CODE_LEFT       43
+#define DEV_KEY_CODE_RIGHT      30
+#define DEV_KEY_CODE_A          40
+#define DEV_KEY_CODE_B          52
+#define DEV_KEY_CODE_X          25
+#define DEV_KEY_CODE_Y          38
+#define DEV_KEY_CODE_L1         41
+#define DEV_KEY_CODE_R1         17
+#define DEV_KEY_CODE_L2         111
+#define DEV_KEY_CODE_R2         15
+#define DEV_KEY_CODE_SELECT     51
+#define DEV_KEY_CODE_START      103
+#define DEV_KEY_CODE_MENU       57
+#define DEV_KEY_CODE_POWER      -1
+#define DEV_KEY_CODE_VOL_UP     -1
+#define DEV_KEY_CODE_VOL_DOWN   -1
+
+#define DEV_KEY_CODE_SAVE       2
+#define DEV_KEY_CODE_LOAD       13
 #define DEV_KEY_CODE_FAST       -1
 #define DEV_KEY_CODE_EXIT       28
 #endif

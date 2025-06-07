@@ -1,0 +1,25 @@
+export MOD=qx1050
+export NDS_GCC=0
+export NDS_ALSA=1
+export NDS_ARM64=1
+
+CFLAGS  += -O3
+CFLAGS  += -DQX1050
+CFLAGS  += -DNDS_ARM64
+CFLAGS  += -Wl,--no-undefined
+
+CFLAGS  += -ffast-math
+CFLAGS  += -march=armv8-a
+CFLAGS  += -mtune=cortex-a53
+
+LDFLAGS += -lpulse
+LDFLAGS += -ljson-c
+
+export MORE_CFLAGS=${CFLAGS}
+export MORE_LDFLAGS=${LDFLAGS}
+
+include Makefile.mk
+
+.PHONY: cp
+cp:
+	cp -a drastic/lib/* ~/Games/nds/lib/

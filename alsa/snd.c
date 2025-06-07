@@ -737,7 +737,7 @@ static int put_queue(queue_t *q, uint8_t *buf, size_t size)
             tmp = q->size - q->wsize;
             size-= tmp;
 
-#if defined(UT) || defined(FLIP)
+#if defined(UT) || defined(QX1050)
             memcpy(&q->buf[q->wsize], buf, tmp);
             memcpy(q->buf, &buf[tmp], size);
 #else
@@ -748,7 +748,7 @@ static int put_queue(queue_t *q, uint8_t *buf, size_t size)
             q->wsize = size;
         }
         else {
-#if defined(UT) || defined(FLIP)
+#if defined(UT) || defined(QX1050)
             memcpy(&q->buf[q->wsize], buf, size);
 #else
             neon_memcpy(&q->buf[q->wsize], buf, size);
@@ -814,7 +814,7 @@ static size_t get_queue(queue_t *q, uint8_t *buf, size_t len)
             tmp = q->size - q->rsize;
             size-= tmp;
 
-#if defined(UT) || defined(FLIP)
+#if defined(UT) || defined(QX1050)
             memcpy(buf, &q->buf[q->rsize], tmp);
             memcpy(&buf[tmp], q->buf, size);
 #else
@@ -825,7 +825,7 @@ static size_t get_queue(queue_t *q, uint8_t *buf, size_t len)
             q->rsize = size;
         }
         else {
-#if defined(UT) || defined(FLIP)
+#if defined(UT) || defined(QX1050)
             memcpy(buf, &q->buf[q->rsize], size);
 #else
             neon_memcpy(buf, &q->buf[q->rsize], size);

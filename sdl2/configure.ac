@@ -2479,6 +2479,13 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
+    if test x$MOD = xqx1050; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1050"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
+    fi
+
     if test x$MOD = xxt897; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DXT897"
 
@@ -2512,12 +2519,13 @@ CheckNDSVideo()
         have_joystick=yes
     else
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -ffast-math"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
-        if test x$MOD = xpandora; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a8"
+        if test x$MOD = xqx1050; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv8-a"
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a53"
         else
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
             EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a7"
         fi
     fi
@@ -3826,6 +3834,9 @@ case "$host" in
                 CheckNDSVideo
                 ;;
             *qx1000*)
+                CheckNDSVideo
+                ;;
+            *qx1050*)
                 CheckNDSVideo
                 ;;
             *gkd2*)
