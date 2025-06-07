@@ -6261,6 +6261,15 @@ static int init_device(void)
     load_layout_bg();
     init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
 
+#if defined(NDS_ARM64)
+    r = 0;
+    r |= patch_drastic64(myvideo.home, 0x00087f00, prehook_cb_print_string);
+    if (r) {
+        system("touch rerun");
+        error("must rerun drastic after patched\n");
+        exit(-1);
+    }
+#else
     add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
     add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
     add_prehook_cb(myhook.fun.free,    prehook_cb_free);
@@ -6272,6 +6281,7 @@ static int init_device(void)
     add_prehook_cb(myhook.fun.savestate_post, prehook_cb_savestate_post);
     add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
     add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
+#endif
 
     pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 

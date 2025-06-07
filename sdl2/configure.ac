@@ -2481,6 +2481,7 @@ CheckNDSVideo()
 
     if test x$MOD = xqx1050; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1050"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM64"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"

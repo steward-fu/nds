@@ -4,6 +4,7 @@ drastic/miyoo355_rootfs_32.img
 drastic/system/nds_bios_arm7.bin
 drastic/system/nds_bios_arm9.bin
 drastic/system/nds_firmware.bin
+drastic/drastic64
 
 sdl2/configure
 sdl2/config.log

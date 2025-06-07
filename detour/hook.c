@@ -670,21 +670,27 @@ TEST(detour, render_polygon_setup_perspective_steps)
 }
 #endif
 
-int patch_drastic64(uint64_t pos, uint64_t pfn)
+int patch_drastic64(const char *home, uint64_t pos, uint64_t pfn)
 {
     #define LEN 16
 
     int r = -1;
     int len = 0;
     FILE* fp = NULL;
+    char buf[MAX_PATH] = { 0 };
     uint8_t src[LEN] = { 0 };
     uint8_t dst[LEN] = { 0x42, 0x00, 0x00, 0x58, 0x40, 0x00, 0x1f, 0xd6 };
 
-    debug("call %s()\n", __func__);
+    debug("call %s(home=\"%s\")\n", __func__, home);
 
-    fp = fopen("drastic64", "rb+");
+    system("cp drastic64 drastic64_patched");
+
+    snprintf(buf, MAX_PATH, "%sdrastic64_patched", home);
+    debug("drastic64 is located at \"%s\"\n", buf);
+
+    fp = fopen(buf, "rb+");
     if (fp == NULL) {
-        error("failed to open drastic file\n");
+        error("failed to open drastic file (\"%s\")\n", buf);
         return r;
     }
 

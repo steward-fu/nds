@@ -292,6 +292,7 @@ int save_state(int slot);
 int fast_forward(uint8_t v);
 int unlock_protected_area(void *);
 void render_polygon_setup_perspective_steps(void);
+int patch_drastic64(const char *, uint64_t, uint64_t);
 
 #endif
 
