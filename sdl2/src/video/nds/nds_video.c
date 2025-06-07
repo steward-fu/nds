@@ -5772,13 +5772,46 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
 
 #if defined(QX1000)
-        m = 4.21875;
+        m = 5;
         mode = 0;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_Wx2;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_Wx2;
+        myvideo.layout.mode[mode].screen[1].h = NDS_Hx2;
+
+        m = 5.625;
+        mode = 1;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_Wx2;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_Wx2;
+        myvideo.layout.mode[mode].screen[1].h = NDS_Hx2;
+
+        m = 4.21875;
+        mode = 2;
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
         myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+
+        m = 4.0;
+        mode = 3;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_Wx2 * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].x = myvideo.layout.mode[mode].screen[0].x + myvideo.layout.mode[mode].screen[0].w;
         myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
