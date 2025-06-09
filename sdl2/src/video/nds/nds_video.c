@@ -584,7 +584,7 @@ static int get_current_menu_layer(void)
     const char *P5 = "KB Return: toggle cheat";
     const char *P6 = "KB Return: select";
 
-    debug("call %s()\n", __func__);
+    printf("call %s(item.cnt=%d)\n", __func__, myvideo.menu.drastic.item.cnt);
 
     for (cc = 0; cc < myvideo.menu.drastic.item.cnt; cc++) {
         if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P0, strlen(P0))) {
@@ -1642,7 +1642,7 @@ int handle_drastic_menu(void)
         myvideo.menu.drastic.frame, NULL
     );
 
-    debug("cur layer=%d\n", layer);
+    printf("cur layer=%d\n", layer);
     switch (layer) {
     case MENU_MAIN:
         draw_drastic_menu_main();
@@ -1666,7 +1666,7 @@ int handle_drastic_menu(void)
         draw_drastic_menu_rom();
         break;
     default:
-        exit(-1);
+        //exit(-1);
         return 0;
     }
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
@@ -2051,7 +2051,7 @@ static void* kill_handler(void *param)
     debug("call %s()\n", __func__);
 
     usleep(1000000);
-    sprintf(buf, "kill -9 %d", (int)param);
+    sprintf(buf, "kill -9 %d", (unsigned int)param);
     printf("killed by sdl2\n");
     system(buf);
 
@@ -2210,6 +2210,7 @@ static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t 
     debug("call %s(p=\"%s\", fg=0x%x, bg=0x%x, x=%d, y=%d)\n", __func__, p, fg, bg, x, y);
 
     if (p && (strlen(p) > 0)) {
+        debug("x=%d, y=%d, fg=0x%x, bg=0x%x, \'%s\'\n", x, y, fg, bg, p);
         if (myvideo.menu.drastic.item.cnt < MAX_MENU_LINE) {
             myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].x = x;
             myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].y = y;
@@ -2217,8 +2218,8 @@ static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t 
             myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].bg = bg;
             strcpy(myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].msg, p);
             myvideo.menu.drastic.item.cnt += 1;
+            printf("added info => x=%d, y=%d, fg=0x%x, bg=0x%x, \'%s\'\n", x, y, fg, bg, p);
         }
-        debug("x=%d, y=%d, fg=0x%x, bg=0x%x, \'%s\'\n", x, y, fg, bg, p);
     }
 
     if ((x == 0) && (y == 0) && (fg == 0xffff) && (bg == 0x0000)) {
@@ -2269,7 +2270,7 @@ TEST(sdl2_video, prehook_cb_print_string)
 
 static void prehook_cb_savestate_pre(void)
 {
-#if !defined(UT) && !defined(PANDORA) && !defined(QX1050)
+#if !defined(UT) && !defined(QX1050)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #1                 \n"
@@ -2291,7 +2292,7 @@ TEST(sdl2_video, prehook_cb_savestate_pre)
 
 static void prehook_cb_savestate_post(void)
 {
-#if !defined(UT) && !defined(PANDORA) && !defined(QX1050)
+#if !defined(UT) && !defined(QX1050)
     asm volatile (
         "mov r1, %0                 \n"
         "mov r2, #0                 \n"
@@ -6259,29 +6260,42 @@ static int init_device(void)
     init_lcd();
     init_event();
     load_layout_bg();
-    init_hook(sysconf(_SC_PAGESIZE), myconfig.state_path);
+    init_hook(myvideo.home, sysconf(_SC_PAGESIZE), myconfig.state_path);
 
-#if defined(NDS_ARM64)
     r = 0;
-    r |= patch_drastic64(myvideo.home, 0x00087f00, prehook_cb_print_string);
+
+#if !defined(NDS_ARM64)
+    debug("hook prehook_cb_malloc\n");
+    r |= add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
+    debug("hook prehook_cb_realloc\n");
+    r |= add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
+    debug("hook prehook_cb_free\n");
+    r |= add_prehook_cb(myhook.fun.free,    prehook_cb_free);
+#endif
+
+    debug("hook prehook_cb_select_quit\n");
+    r |= add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
+    debug("hook prehook_cb_print_string\n");
+    r |= add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
+    debug("hook prehook_cb_update_screen\n");
+    r |= add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
+    debug("hook prehook_cb_blit_screen_menu\n");
+    r |= add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
+    debug("hook prehook_cb_platform_get_input\n");
+    r |= add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
+
+#if !defined(NDS_ARM64)
+    debug("hook prehook_cb_savestate_pre\n");
+    r |= add_prehook_cb(myhook.fun.savestate_pre, prehook_cb_savestate_pre);
+    debug("hook prehook_cb_savestate_post\n");
+    r |= add_prehook_cb(myhook.fun.savestate_post, prehook_cb_savestate_post);
+#endif
+
     if (r) {
         system("touch rerun");
         error("must rerun drastic after patched\n");
         exit(-1);
     }
-#else
-    add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
-    add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
-    add_prehook_cb(myhook.fun.free,    prehook_cb_free);
-
-    add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
-    add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
-    add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
-    add_prehook_cb(myhook.fun.savestate_pre, prehook_cb_savestate_pre);
-    add_prehook_cb(myhook.fun.savestate_post, prehook_cb_savestate_post);
-    add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
-    add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
-#endif
 
     pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 

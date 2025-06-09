@@ -24,8 +24,8 @@ nds_hook myhook = { 0 };
 
 static int is_state_hooked = 0;
 static size_t page_size = 4096;
+static char home_path[MAX_PATH] = { 0 };
 static char state_path[MAX_PATH] = { 0 };
-
 static int init_table(void);
 
 #if defined(UT)
@@ -436,6 +436,75 @@ TEST(detour, quit_drastic)
 }
 #endif
 
+static int patch_drastic64(uint64_t pos, uint64_t pfn)
+{
+    #define LEN 16
+    #define DRASTIC64 "drastic64"
+    #define DRASTIC64_PATCHED "drastic64_patched"
+
+    int r = -1;
+    int len = 0;
+    FILE* fp = NULL;
+    char buf[MAX_PATH] = { 0 };
+    uint8_t src[LEN] = { 0 };
+    uint8_t dst[LEN] = { 0x42, 0x00, 0x00, 0x58, 0x40, 0x00, 0x1f, 0xd6 };
+
+    debug("call %s(pos=0x%x, pfn=%p)\n", __func__, pos, pfn);
+
+    snprintf(buf, sizeof(buf), "%s%s", home_path, DRASTIC64_PATCHED);
+    debug("patch the target file (\"%s\")\n", buf);
+
+    fp = fopen(buf, "rb+");
+    if (fp == NULL) {
+        error("failed to open drastic file\n");
+        return r;
+    }
+
+    fseek(fp, pos, SEEK_SET);
+    len = fread(src, 1, LEN, fp);
+    debug("read %d bytes\n", len);
+
+    dst[8] = (uint8_t)(pfn >> 0);
+    dst[9] = (uint8_t)(pfn >> 8);
+    dst[10] = (uint8_t)(pfn >> 16);
+    dst[11] = (uint8_t)(pfn >> 24);
+    dst[12] = (uint8_t)(pfn >> 32);
+    dst[13] = (uint8_t)(pfn >> 40);
+    dst[14] = (uint8_t)(pfn >> 48);
+    dst[15] = (uint8_t)(pfn >> 56);
+
+    debug("org 0x%04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+        pos,
+        src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7],
+        src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
+    );
+    debug("new 0x%04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+        pos,
+        dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7],
+        dst[9], dst[9], dst[10], dst[11], dst[12], dst[13], dst[14], dst[15]
+    );
+
+    if (memcmp(src, dst, LEN)) {
+        fseek(fp, pos, SEEK_SET);
+        len = fwrite(dst, 1, LEN, fp);
+        debug("patched drastic at 0x%llx successfully\n", pos);
+    }
+    else {
+        r = 0;
+    }
+
+    fclose(fp);
+
+    return r;
+}
+
+#if defined(UT)
+TEST(detour, patch_drastic64)
+{
+    TEST_ASSERT_EQUAL_INT(-1, patch_drastic64(0, 0));
+}
+#endif
+
 int add_prehook_cb(void *org, void *cb)
 {
     int r = -1;
@@ -451,10 +520,14 @@ int add_prehook_cb(void *org, void *cb)
     return 0;
 #endif
 
+#if defined(NDS_ARM64)
+    r = patch_drastic64((uintptr_t)org, (uintptr_t)cb);
+#else
     if (unlock_protected_area(org) >= 0) {
         uintptr_t c = (uintptr_t)cb;
         volatile uint8_t *m = (uint8_t *)(intptr_t)org;
 
+        r = 0;
         m[0] = 0x04;
         m[1] = 0xf0;
         m[2] = 0x1f;
@@ -464,6 +537,7 @@ int add_prehook_cb(void *org, void *cb)
         m[6] = c >> 16;
         m[7] = c >> 24;
     }
+#endif
 
     return r;
 }
@@ -534,6 +608,8 @@ static int init_table(void)
     myhook.fun.initialize_backup = (void *)0x00072530;
     myhook.fun.set_screen_menu_off = (void *)0x0008a4a0;
     myhook.fun.get_screen_ptr = (void *)0x0008a9c0;
+    myhook.fun.select_quit = (void *)0x0007a260;
+    myhook.fun.platform_get_input = (void *)0x0008acc0;
     myhook.fun.spu_adpcm_decode_block = (void *)0;
     myhook.fun.render_scanline_tiled_4bpp = (void *)0;
     myhook.fun.render_polygon_setup_perspective_steps = (void *)0;
@@ -601,12 +677,13 @@ TEST(detour, prehook_cb_printf_chk)
 }
 #endif
 
-int init_hook(size_t page, const char *path)
+int init_hook(const char *home, size_t page, const char *path)
 {
     page_size = page;
 
-    debug("call %s(page=%d, path=\"%s\")\n", __func__, page, path);
+    debug("call %s(home=\"%s\", page=%d, path=\"%s\")\n", __func__, home, page, path);
 
+    strncpy(home_path, home, sizeof(home_path));
     init_table();
 
     is_state_hooked = 0;
@@ -667,75 +744,6 @@ TEST(detour, render_polygon_setup_perspective_steps)
 {
     render_polygon_setup_perspective_steps();
     TEST_PASS();
-}
-#endif
-
-int patch_drastic64(const char *home, uint64_t pos, uint64_t pfn)
-{
-    #define LEN 16
-
-    int r = -1;
-    int len = 0;
-    FILE* fp = NULL;
-    char buf[MAX_PATH] = { 0 };
-    uint8_t src[LEN] = { 0 };
-    uint8_t dst[LEN] = { 0x42, 0x00, 0x00, 0x58, 0x40, 0x00, 0x1f, 0xd6 };
-
-    debug("call %s(home=\"%s\")\n", __func__, home);
-
-    system("cp drastic64 drastic64_patched");
-
-    snprintf(buf, MAX_PATH, "%sdrastic64_patched", home);
-    debug("drastic64 is located at \"%s\"\n", buf);
-
-    fp = fopen(buf, "rb+");
-    if (fp == NULL) {
-        error("failed to open drastic file (\"%s\")\n", buf);
-        return r;
-    }
-
-    fseek(fp, pos, SEEK_SET);
-    len = fread(src, 1, LEN, fp);
-    debug("read %d bytes\n", len);
-
-    dst[8] = (uint8_t)(pfn >> 0);
-    dst[9] = (uint8_t)(pfn >> 8);
-    dst[10] = (uint8_t)(pfn >> 16);
-    dst[11] = (uint8_t)(pfn >> 24);
-    dst[12] = (uint8_t)(pfn >> 32);
-    dst[13] = (uint8_t)(pfn >> 40);
-    dst[14] = (uint8_t)(pfn >> 48);
-    dst[15] = (uint8_t)(pfn >> 56);
-
-    debug("org %04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-        pos,
-        src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7],
-        src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
-    );
-    debug("new %04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-        pos,
-        dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7],
-        dst[9], dst[9], dst[10], dst[11], dst[12], dst[13], dst[14], dst[15]
-    );
-
-    if (memcmp(src, dst, LEN)) {
-        fseek(fp, pos, SEEK_SET);
-        len = fwrite(dst, 1, LEN, fp);
-        debug("patched drastic at 0x%llx successfully\n", pos);
-    }
-    else {
-        r = 0;
-    }
-
-    fclose(fp);
-
-    return r;
-}
-
-#if defined(UT)
-TEST(detour, patch_drastic64)
-{
-    TEST_ASSERT_EQUAL_INT(-1, patch_drastic64(0, 0));
 }
 #endif
 

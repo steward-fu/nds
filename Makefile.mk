@@ -80,5 +80,6 @@ clean:
 	rm -rf drastic/savestates/
 	rm -rf drastic/config.json
 	rm -rf drastic/overlayfs.img
+	rm -rf drastic/drastic64_patched
 	rm -rf drastic/config/drastic.cf2
 	rm -rf drastic/input_capture_crash.ir
