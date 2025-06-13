@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -438,9 +439,8 @@ TEST(detour, quit_drastic)
 
 static int patch_drastic64(uint64_t pos, uint64_t pfn)
 {
-    #define LEN 16
+    #define LEN       16
     #define DRASTIC64 "drastic64"
-    #define DRASTIC64_PATCHED "drastic64_patched"
 
     int r = -1;
     int len = 0;
@@ -451,12 +451,12 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
 
     debug("call %s(pos=0x%x, pfn=%p)\n", __func__, pos, pfn);
 
-    snprintf(buf, sizeof(buf), "%s%s", home_path, DRASTIC64_PATCHED);
+    snprintf(buf, sizeof(buf), "/tmp/%s", DRASTIC64);
     debug("patch the target file (\"%s\")\n", buf);
 
     fp = fopen(buf, "rb+");
     if (fp == NULL) {
-        error("failed to open drastic file\n");
+        error("failed to open file (\'%s\', err=%d)\n", buf, errno);
         return r;
     }
 
@@ -487,7 +487,7 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     if (memcmp(src, dst, LEN)) {
         fseek(fp, pos, SEEK_SET);
         len = fwrite(dst, 1, LEN, fp);
-        debug("patched drastic at 0x%llx successfully\n", pos);
+        debug("patched drastic64 at 0x%llx successfully\n", pos);
     }
     else {
         r = 0;
@@ -596,6 +596,7 @@ static int init_table(void)
     myhook.fun.malloc = (void *)0x0000dfb0;
     myhook.fun.screen_copy16 = (void *)0x00088290;
     myhook.fun.print_string = (void *)0x00087f00;
+    myhook.fun.print_string_ext = (void *)0x00087bf0;
     myhook.fun.load_state_index = (void *)0x00075230;
     myhook.fun.save_state_index = (void *)0x00075150;
     myhook.fun.quit = (void *)0x0000e8d0;
@@ -610,6 +611,7 @@ static int init_table(void)
     myhook.fun.get_screen_ptr = (void *)0x0008a9c0;
     myhook.fun.select_quit = (void *)0x0007a260;
     myhook.fun.platform_get_input = (void *)0x0008acc0;
+
     myhook.fun.spu_adpcm_decode_block = (void *)0;
     myhook.fun.render_scanline_tiled_4bpp = (void *)0;
     myhook.fun.render_polygon_setup_perspective_steps = (void *)0;

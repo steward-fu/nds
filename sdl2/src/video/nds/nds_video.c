@@ -584,7 +584,7 @@ static int get_current_menu_layer(void)
     const char *P5 = "KB Return: toggle cheat";
     const char *P6 = "KB Return: select";
 
-    printf("call %s(item.cnt=%d)\n", __func__, myvideo.menu.drastic.item.cnt);
+    debug("call %s(item.cnt=%d)\n", __func__, myvideo.menu.drastic.item.cnt);
 
     for (cc = 0; cc < myvideo.menu.drastic.item.cnt; cc++) {
         if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P0, strlen(P0))) {
@@ -1533,7 +1533,7 @@ static int draw_drastic_menu_rom(void)
     div = 2;
 #endif
 
-    for (cc=0; cc<myvideo.menu.drastic.item.cnt; cc++) {
+    for (cc = 0; cc < myvideo.menu.drastic.item.cnt; cc++) {
         if (myvideo.menu.drastic.item.idx[cc].x == 10) {
             if (myvideo.menu.drastic.item.idx[cc].bg > 0) {
                 chk = 10;
@@ -1549,7 +1549,7 @@ static int draw_drastic_menu_rom(void)
     }
 
     cursor = 0;
-    for (cc=0; cc<myvideo.menu.drastic.item.cnt; cc++) {
+    for (cc = 0; cc < myvideo.menu.drastic.item.cnt; cc++) {
         if (myvideo.menu.drastic.item.idx[cc].x == chk) {
             if (myvideo.menu.drastic.item.idx[cc].bg > 0) {
                 break;
@@ -1559,7 +1559,7 @@ static int draw_drastic_menu_rom(void)
     }
 
     all = 0;
-    for (cc=0; cc<myvideo.menu.drastic.item.cnt; cc++) {
+    for (cc = 0; cc < myvideo.menu.drastic.item.cnt; cc++) {
         if (myvideo.menu.drastic.item.idx[cc].x == chk) {
             all+= 1;
         }
@@ -1597,7 +1597,7 @@ static int draw_drastic_menu_rom(void)
     draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, 25 / div, 0xa0cb93, 0);
 
     cnt = 0;
-    for (cc=0; cc<myvideo.menu.drastic.item.cnt; cc++) {
+    for (cc = 0; cc < myvideo.menu.drastic.item.cnt; cc++) {
         w = myvideo.menu.line_h / div;
         p = &myvideo.menu.drastic.item.idx[cc];
         if (p->x == chk) {
@@ -1642,7 +1642,7 @@ int handle_drastic_menu(void)
         myvideo.menu.drastic.frame, NULL
     );
 
-    printf("cur layer=%d\n", layer);
+    debug("cur layer=%d\n", layer);
     switch (layer) {
     case MENU_MAIN:
         draw_drastic_menu_main();
@@ -1666,7 +1666,6 @@ int handle_drastic_menu(void)
         draw_drastic_menu_rom();
         break;
     default:
-        //exit(-1);
         return 0;
     }
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT897)
@@ -2051,8 +2050,8 @@ static void* kill_handler(void *param)
     debug("call %s()\n", __func__);
 
     usleep(1000000);
-    sprintf(buf, "kill -9 %d", (unsigned int)param);
-    printf("killed by sdl2\n");
+    sprintf(buf, "kill -9 %d", (uint32_t)param);
+    printf("killed by sdl2 library\n");
     system(buf);
 
     return NULL;
@@ -2199,6 +2198,20 @@ TEST(sdl2_video, prehook_cb_update_screen)
 }
 #endif
 
+static void prehook_cb_print_string_ext(
+    char *p,
+    unsigned long fg,
+    unsigned long bg,
+    int x,
+    int y,
+    long screen_ptr,
+    long p7,
+    unsigned long screen_pitch,
+    unsigned int p9)
+{
+    debug("call %s(p=\'%s\', fg=0x%08lx, bg=0x%08lx, x=%03d, y=%03d)\n", __func__, p, fg, bg, x, y);
+}
+
 static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
     int w = 0, h = 0;
@@ -2207,10 +2220,9 @@ static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t 
     SDL_Surface *t1 = NULL;
     static int fps_cnt = 0;
 
-    debug("call %s(p=\"%s\", fg=0x%x, bg=0x%x, x=%d, y=%d)\n", __func__, p, fg, bg, x, y);
+    debug("call %s(p=\'%s\', fg=0x%08x, bg=0x%08x, x=%03d, y=%03d)\n", __func__, p, fg, bg, x, y);
 
     if (p && (strlen(p) > 0)) {
-        debug("x=%d, y=%d, fg=0x%x, bg=0x%x, \'%s\'\n", x, y, fg, bg, p);
         if (myvideo.menu.drastic.item.cnt < MAX_MENU_LINE) {
             myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].x = x;
             myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].y = y;
@@ -2218,7 +2230,7 @@ static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t 
             myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].bg = bg;
             strcpy(myvideo.menu.drastic.item.idx[myvideo.menu.drastic.item.cnt].msg, p);
             myvideo.menu.drastic.item.cnt += 1;
-            printf("added info => x=%d, y=%d, fg=0x%x, bg=0x%x, \'%s\'\n", x, y, fg, bg, p);
+            debug("added info => x=%03d, y=%03d, fg=0x%08x, bg=0x%08x, \'%s\'\n", x, y, fg, bg, p);
         }
     }
 
@@ -6277,6 +6289,9 @@ static int init_device(void)
     r |= add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
     debug("hook prehook_cb_print_string\n");
     r |= add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
+    debug("hook prehook_cb_print_string_ext\n");
+    r |= add_prehook_cb(myhook.fun.print_string_ext, prehook_cb_print_string_ext);
+
     debug("hook prehook_cb_update_screen\n");
     r |= add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
     debug("hook prehook_cb_blit_screen_menu\n");

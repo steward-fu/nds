@@ -260,7 +260,7 @@ TEST(sdl2_render, queue_fill_rects)
 
 static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, const SDL_Rect *srt, const SDL_FRect *drt)
 {
-    printf("call %s()\n", __func__);
+    debug("call %s()\n", __func__);
 
     myvideo.lcd.show_fps = 0;
     myvideo.menu.drastic.enable = 1;

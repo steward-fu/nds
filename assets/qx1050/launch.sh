@@ -1,5 +1,7 @@
 #!/bin/sh
 MYDIR=`dirname "$0"`
+PATCH=/tmp/drastic64
+DRASTIC=drastic64
 
 export HOME=$MYDIR
 export PATH=$MYDIR:$PATH
@@ -9,15 +11,13 @@ export LD_LIBRARY_PATH=lib:/usr/local/lib:$LD_LIBRARY_PATH
 cd $MYDIR
 
 rm -rf rerun
-cp drastic64 drastic64_patched
-
-./drastic64
+cp $DRASTIC $PATCH
+./$DRASTIC
 
 if [ -f rerun ]; then
     rm -rf rerun
-    cp drastic64_patched drastic64
-    ./drastic64
+    $PATCH
 fi
 
-rm -rf drastic64_patched
+rm -rf $PATCH
 sync

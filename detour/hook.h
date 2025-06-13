@@ -191,6 +191,7 @@ typedef struct {
     void *printf_chk;
     void *select_quit;
     void *config_setup_input_map;
+    void *print_string_ext;
 } fun_t;
 
 typedef struct {
