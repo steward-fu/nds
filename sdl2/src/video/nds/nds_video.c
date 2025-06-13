@@ -6289,8 +6289,11 @@ static int init_device(void)
     r |= add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
     debug("hook prehook_cb_print_string\n");
     r |= add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
+
+#if !defined(NDS_ARM64)
     debug("hook prehook_cb_print_string_ext\n");
     r |= add_prehook_cb(myhook.fun.print_string_ext, prehook_cb_print_string_ext);
+#endif
 
     debug("hook prehook_cb_update_screen\n");
     r |= add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
@@ -6306,11 +6309,13 @@ static int init_device(void)
     r |= add_prehook_cb(myhook.fun.savestate_post, prehook_cb_savestate_post);
 #endif
 
+#if defined(NDS_ARM64)
     if (r) {
         system("touch rerun");
         error("must rerun drastic after patched\n");
         exit(-1);
     }
+#endif
 
     pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 

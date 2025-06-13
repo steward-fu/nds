@@ -76,6 +76,7 @@ clean:
 	rm -rf drastic/cpuclock
 	rm -rf drastic/launch.sh
 	rm -rf drastic/backup/
+	rm -rf drastic/rerun
 	rm -rf drastic/restore
 	rm -rf drastic/savestates/
 	rm -rf drastic/config.json
