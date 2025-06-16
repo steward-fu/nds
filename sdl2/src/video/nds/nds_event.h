@@ -186,7 +186,7 @@
 #define DEV_KEY_CODE_L1         16
 #define DEV_KEY_CODE_R1         18
 #define DEV_KEY_CODE_L2         14
-#define DEV_KEY_CODE_R2         41
+#define DEV_KEY_CODE_R2         40
 #define DEV_KEY_CODE_SELECT     51
 #define DEV_KEY_CODE_START      52
 #define DEV_KEY_CODE_MENU       57
