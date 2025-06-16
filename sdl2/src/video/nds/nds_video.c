@@ -3936,7 +3936,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
 #if defined(XT894) || defined(XT897)
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T3) {
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T4) {
         switch (id) {
         case TEXTURE_LCD0:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
