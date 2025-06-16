@@ -26,7 +26,7 @@
 #include <sys/time.h>
 #include <syslog.h>
 
-#if defined(QX1000) || defined(XT897) || defined(UT)
+#if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
 #include <pulse/pulseaudio.h>
 #endif
 
@@ -49,7 +49,7 @@ extern nds_hook myhook;
 static queue_t queue = { 0 };
 static pthread_t thread = { 0 };
 
-#if defined(QX1000) || defined(XT897) || defined(UT)
+#if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
 typedef struct {
     pa_threaded_mainloop *mainloop;
     pa_context *context;
@@ -191,7 +191,7 @@ TEST(alsa, adpcm_decode_block)
 }
 #endif
 
-#if defined(QX1000) || defined(XT897) || defined(UT)
+#if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
 static void context_state_cb(pa_context *context, void *userdata)
 {
     debug("call %s()\n", __func__);
@@ -903,7 +903,7 @@ static void* audio_handler(void *id)
                 write(dsp_fd, pcm_buf, pcm_buf_len);
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000) || defined(XT894) || defined(XT897)
                 if (pa.mainloop) {
                     pa_threaded_mainloop_lock(pa.mainloop);
                     pa_stream_write(pa.stream, pcm_buf, pcm_buf_len, NULL, 0, PA_SEEK_RELATIVE);
@@ -1288,7 +1288,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     ioctl(dsp_fd, SOUND_PCM_WRITE_RATE, &arg);
 #endif
 
-#if defined(QX1000) || defined(XT897)
+#if defined(QX1000) || defined(XT894) || defined(XT897)
     pa.mainloop = pa_threaded_mainloop_new();
     if (pa.mainloop == NULL) {
         error("failed to open PulseAudio device\n");
@@ -1379,7 +1379,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     }
 #endif
 
-#if defined(QX1000) ||defined(XT897)
+#if defined(QX1000) || defined(XT894) || defined(XT897)
     if (pa.mainloop) {
         pa_threaded_mainloop_stop(pa.mainloop);
     }

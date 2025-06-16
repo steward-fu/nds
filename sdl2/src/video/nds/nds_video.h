@@ -15,7 +15,7 @@
 #include <linux/omapfb.h>
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
 #include <wayland-client.h>
 #include <wayland-egl.h>
 #endif
@@ -68,7 +68,7 @@
 #define FONT_SIZE 24
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1050) || defined(QX1000) || defined(XT897) || defined(BRICK)
+#if defined(TRIMUI) || defined(PANDORA) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(BRICK)
 #define REDRAW_BG_CNT 1
 #else
 #define REDRAW_BG_CNT 120
@@ -155,6 +155,15 @@ typedef enum {
 #endif
 
 #if defined(XT897)
+#define WL_WIN_W        540
+#define WL_WIN_H        960
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define MAX_CPU_CORE    2
+#endif
+
+#if defined(XT894)
 #define WL_WIN_W        540
 #define WL_WIN_H        960
 #define SCREEN_W        640
@@ -267,7 +276,7 @@ typedef struct {
         char *trans[MAX_LANG_LINE];
     } lang;
 
-#if defined(QX1050) || defined(QX1000) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     struct {
         struct wl_shell *shell;
         struct wl_region *region;
@@ -287,7 +296,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     struct {
         EGLConfig config;
         EGLDisplay display;
@@ -304,7 +313,7 @@ typedef struct {
         GLint samLoc;
         GLint alphaLoc;
 
-#if !defined(QX1050) && !defined(QX1000) && !defined(XT897)
+#if !defined(QX1050) && !defined(QX1000) && !defined(XT894) && !defined(XT897)
         int mem_fd;
         uint8_t* ccu_mem;
         uint8_t* dac_mem;

@@ -2494,6 +2494,13 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
+    if test x$MOD = xxt894; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DXT894"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
+    fi
+
     if test x$MOD = xgkd2; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKD2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
@@ -3847,6 +3854,9 @@ case "$host" in
                 CheckNDSVideo
                 ;;
             *xt897*)
+                CheckNDSVideo
+                ;;
+            *xt894*)
                 CheckNDSVideo
                 ;;
             *)

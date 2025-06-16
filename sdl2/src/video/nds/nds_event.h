@@ -23,6 +23,8 @@
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(XT897)
 #define INPUT_DEV   "/dev/input/event1"
+#elif defined(XT894)
+#define INPUT_DEV   "/dev/input/event3"
 #elif defined(GKD2)
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(BRICK)
@@ -147,6 +149,32 @@
 #endif
 
 #if defined(XT897)
+#define DEV_KEY_CODE_UP         17
+#define DEV_KEY_CODE_DOWN       31
+#define DEV_KEY_CODE_LEFT       30
+#define DEV_KEY_CODE_RIGHT      32
+#define DEV_KEY_CODE_A          38
+#define DEV_KEY_CODE_B          37
+#define DEV_KEY_CODE_X          24
+#define DEV_KEY_CODE_Y          23
+#define DEV_KEY_CODE_L1         16
+#define DEV_KEY_CODE_R1         18
+#define DEV_KEY_CODE_L2         14
+#define DEV_KEY_CODE_R2         41
+#define DEV_KEY_CODE_SELECT     51
+#define DEV_KEY_CODE_START      52
+#define DEV_KEY_CODE_MENU       57
+#define DEV_KEY_CODE_POWER      -1
+#define DEV_KEY_CODE_VOL_UP     -1
+#define DEV_KEY_CODE_VOL_DOWN   -1
+
+#define DEV_KEY_CODE_SAVE       2
+#define DEV_KEY_CODE_LOAD       11
+#define DEV_KEY_CODE_FAST       -1
+#define DEV_KEY_CODE_EXIT       28
+#endif
+
+#if defined(XT894)
 #define DEV_KEY_CODE_UP         17
 #define DEV_KEY_CODE_DOWN       31
 #define DEV_KEY_CODE_LEFT       30
