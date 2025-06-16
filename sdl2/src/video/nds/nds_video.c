@@ -2611,49 +2611,45 @@ static void* video_handler(void *param)
 
     while (myvideo.thread.running) {
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
-        if (myvideo.menu.sdl2.enable) {
+        if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
             if (myvideo.menu.update) {
                 int pre_mode = myconfig.layout.mode.sel;
                 int pre_filter = myconfig.filter;
+                float pre_alpha = myconfig.layout.swin.alpha;
 
                 myvideo.menu.update = 0;
-                debug("update sdl2 menu\n");
 
                 myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode.sel = 0;
-                flush_lcd(
-                    TEXTURE_TMP,
-                    myvideo.cvt->pixels,
-                    myvideo.cvt->clip_rect,
-                    myvideo.cvt->clip_rect,
-                    myvideo.cvt->pitch
-                );
+                myconfig.layout.swin.alpha = 0.0;
+
+                if (myvideo.menu.sdl2.enable) {
+                    debug("update sdl2 menu\n");
+
+                    flush_lcd(
+                        TEXTURE_TMP,
+                        myvideo.cvt->pixels,
+                        myvideo.cvt->clip_rect,
+                        myvideo.cvt->clip_rect,
+                        myvideo.cvt->pitch
+                    );
+                }
+                else {
+                    debug("update drastic menu\n");
+
+                    flush_lcd(
+                        TEXTURE_TMP,
+                        myvideo.menu.drastic.frame->pixels,
+                        myvideo.menu.drastic.frame->clip_rect,
+                        myvideo.menu.drastic.frame->clip_rect,
+                        myvideo.menu.drastic.frame->pitch
+                    );
+                }
                 flip_lcd();
+
                 myconfig.filter = pre_filter;
                 myconfig.layout.mode.sel = pre_mode;
-            }
-        }
-        else if (myvideo.menu.drastic.enable) {
-            if (myvideo.menu.update) {
-                int pre_mode = myconfig.layout.mode.sel;
-                int pre_filter = myconfig.filter;
-
-                myvideo.menu.update = 0;
-                debug("update drastic menu\n");
-
-                myconfig.filter = FILTER_BLUR;
-                myconfig.layout.mode.sel = 0;
-
-                flush_lcd(
-                    TEXTURE_TMP,
-                    myvideo.menu.drastic.frame->pixels,
-                    myvideo.menu.drastic.frame->clip_rect,
-                    myvideo.menu.drastic.frame->clip_rect,
-                    myvideo.menu.drastic.frame->pitch
-                );
-                flip_lcd();
-                myconfig.filter = pre_filter;
-                myconfig.layout.mode.sel = pre_mode;
+                myconfig.layout.swin.alpha = pre_alpha;
             }
         }
         else if (myvideo.lcd.update) {
@@ -3897,6 +3893,16 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     if (id == TEXTURE_TMP) {
+#if defined(XT894)
+        int cc = 0;
+        uint32_t *p = (uint32_t *)pixels;
+
+        id = TEXTURE_LCD0;
+        for (cc = 0; cc < (srt.w * srt.h); cc++) {
+            p[cc] = (p[cc] | 0xff000000);
+        }
+#endif
+
 #if defined(QX1050) || defined(QX1000)
         drt.w <<= 1;
         drt.h <<= 1;
