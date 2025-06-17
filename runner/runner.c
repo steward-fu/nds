@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
+//#define SDL_DISABLE_ARM_NEON_H
 #include <SDL.h>
 #include <SDL_image.h>
 #include <GLES2/gl2.h>
@@ -76,7 +77,8 @@ static GLfloat fg_vertices[] = {
 static GLushort vert_indices[] = {
     0, 1, 2, 0, 2, 3
 };
-  
+
+int enable_debug_log = 0;
 static runner_t myrunner = { 0 };
 
 static int init_shm(void)
@@ -356,8 +358,16 @@ static void* runner_handler(void *param)
 int main(int argc, char **argv)
 {
     pthread_t id = 0;
+    const char *debug = NULL;
 
-    debug("call %s()\n", __func__);
+    debug = getenv(NDS_DEBUG);
+
+    enable_debug_log = 0;
+    if (debug && !strcmp(debug, "1")) {
+        enable_debug_log = 1;
+    }
+
+    debug("call %s(enable_debug_log=%d)\n", __func__, enable_debug_log);
 
     pthread_create(&id, NULL, runner_handler, NULL);
     pthread_join(id, NULL);

@@ -210,7 +210,7 @@ int load_config(const char *path)
     char buf[MAX_PATH] = { 0 };
     const char *debug = NULL;
 
-    debug = getenv("NDS_DEBUG_LOG");
+    debug = getenv(NDS_DEBUG);
 
     enable_debug_log = 0;
     if (debug && !strcmp(debug, "1")) {

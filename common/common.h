@@ -8,6 +8,7 @@
 #define NDS_H       192
 #define NDS_Wx2     (NDS_W << 1)
 #define NDS_Hx2     (NDS_H << 1)
+#define NDS_DEBUG   "NDS_DEBUG_LOG"
 
 #define RES_PATH    "res"
 #define BG_PATH     RES_PATH"/bg"
