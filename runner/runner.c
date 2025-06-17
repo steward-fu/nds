@@ -15,7 +15,7 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
-//#define SDL_DISABLE_ARM_NEON_H
+#define SDL_DISABLE_ARM_NEON_H
 #include <SDL.h>
 #include <SDL_image.h>
 #include <GLES2/gl2.h>
