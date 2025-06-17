@@ -2249,6 +2249,8 @@ static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t 
             col.r = 0xcc;
             col.g = 0xcc;
             col.b = 0x00;
+            // *myhook.var.system.video.realtime_speed_percentage
+            // *myhook.var.system.video.rendered_frames_percentage
             TTF_SizeUTF8(myvideo.menu.font, p, &w, &h);
             t0 = TTF_RenderUTF8_Solid(myvideo.menu.font, p, col);
             if (t0) {

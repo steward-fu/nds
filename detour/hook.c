@@ -561,6 +561,8 @@ static int init_table(void)
     myhook.var.system.config.hires_3d = (uint32_t *)0x084797c4;
     myhook.var.system.config.controls_a = (uint16_t *)0x084797dc;
     myhook.var.system.config.controls_b = (uint16_t *)0x0847982c;
+    myhook.var.system.video.realtime_speed_percentage = (float *)0x0aedec08;
+    myhook.var.system.video.rendered_frames_percentage = (float *)0x0aedec0c;
     myhook.var.sdl.swap_screens = (uint32_t *)0x0aee9598;
     myhook.var.sdl.bytes_per_pixel = (uint32_t *)0x0aee957c;
     myhook.var.sdl.needs_reinitializing = (uint32_t *)0x0aee95a0;

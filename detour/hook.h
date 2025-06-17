@@ -116,6 +116,11 @@ typedef struct {
         uint16_t *controls_a;
         uint16_t *controls_b;
     } config;
+
+    struct {
+        float *realtime_speed_percentage;
+        float *rendered_frames_percentage;
+    } video;
 } system_t;
 
 typedef struct {
