@@ -303,15 +303,15 @@ typedef struct {
         EGLContext context;
         EGLSurface surface;
 
-        GLuint vShader;
-        GLuint fShader;
-        GLuint pObject;
+        GLuint object;
+        GLuint vert_shader;
+        GLuint frag_shader;
         GLuint texture[TEXTURE_MAX];
 
-        GLint posLoc;
-        GLint texLoc;
-        GLint samLoc;
-        GLint alphaLoc;
+        GLint vert_pos;
+        GLint vert_coord;
+        GLint frag_alpha;
+        GLint frag_texture;
 
 #if !defined(QX1050) && !defined(QX1000) && !defined(XT894) && !defined(XT897)
         int mem_fd;
@@ -466,6 +466,10 @@ typedef struct {
         int running;
         pthread_t id;
     } thread;
+
+    struct {
+        SDL_Surface *img;
+    } overlay;
 } nds_video;
 
 void update_wayland_res(int, int);

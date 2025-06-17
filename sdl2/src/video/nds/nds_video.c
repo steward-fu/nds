@@ -2433,24 +2433,24 @@ static void* video_handler(void *param)
     myvideo.egl.context = eglCreateContext(myvideo.egl.display, cfg, EGL_NO_CONTEXT, ctx_cfg);
     eglMakeCurrent(myvideo.egl.display, myvideo.egl.surface, myvideo.egl.surface, myvideo.egl.context);
 
-    myvideo.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(myvideo.egl.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(myvideo.egl.vShader);
+    myvideo.egl.vert_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.egl.vert_shader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.egl.vert_shader);
 
-    myvideo.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(myvideo.egl.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(myvideo.egl.fShader);
+    myvideo.egl.frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.egl.frag_shader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.egl.frag_shader);
     
-    myvideo.egl.pObject = glCreateProgram();
-    glAttachShader(myvideo.egl.pObject, myvideo.egl.vShader);
-    glAttachShader(myvideo.egl.pObject, myvideo.egl.fShader);
-    glLinkProgram(myvideo.egl.pObject);
-    glUseProgram(myvideo.egl.pObject);
+    myvideo.egl.object = glCreateProgram();
+    glAttachShader(myvideo.egl.object, myvideo.egl.vert_shader);
+    glAttachShader(myvideo.egl.object, myvideo.egl.frag_shader);
+    glLinkProgram(myvideo.egl.object);
+    glUseProgram(myvideo.egl.object);
 
-    myvideo.egl.posLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_pos");
-    myvideo.egl.texLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_coord");
-    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_texture");
-    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_alpha");
+    myvideo.egl.vert_pos = glGetAttribLocation(myvideo.egl.object, "vert_pos");
+    myvideo.egl.vert_coord = glGetAttribLocation(myvideo.egl.object, "vert_coord");
+    myvideo.egl.frag_texture = glGetUniformLocation(myvideo.egl.object, "frag_texture");
+    myvideo.egl.frag_alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
@@ -2461,10 +2461,10 @@ static void* video_handler(void *param)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(myvideo.egl.posLoc);
-    glEnableVertexAttribArray(myvideo.egl.texLoc);
-    glUniform1i(myvideo.egl.samLoc, 0);
-    glUniform1f(myvideo.egl.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.egl.vert_pos);
+    glEnableVertexAttribArray(myvideo.egl.vert_coord);
+    glUniform1i(myvideo.egl.frag_texture, 0);
+    glUniform1f(myvideo.egl.frag_alpha, 0.0);
 #endif
 
 #if defined(A30)
@@ -2496,24 +2496,24 @@ static void* video_handler(void *param)
     myvideo.egl.context = eglCreateContext(myvideo.egl.display, myvideo.egl.config, EGL_NO_CONTEXT, context_attributes);
     eglMakeCurrent(myvideo.egl.display, myvideo.egl.surface, myvideo.egl.surface, myvideo.egl.context);
   
-    myvideo.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(myvideo.egl.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(myvideo.egl.vShader);
+    myvideo.egl.vert_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.egl.vert_shader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.egl.vert_shader);
   
-    myvideo.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(myvideo.egl.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(myvideo.egl.fShader);
+    myvideo.egl.frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.egl.frag_shader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.egl.frag_shader);
    
-    myvideo.egl.pObject = glCreateProgram();
-    glAttachShader(myvideo.egl.pObject, myvideo.egl.vShader);
-    glAttachShader(myvideo.egl.pObject, myvideo.egl.fShader);
-    glLinkProgram(myvideo.egl.pObject);
-    glUseProgram(myvideo.egl.pObject);
+    myvideo.egl.object = glCreateProgram();
+    glAttachShader(myvideo.egl.object, myvideo.egl.vert_shader);
+    glAttachShader(myvideo.egl.object, myvideo.egl.frag_shader);
+    glLinkProgram(myvideo.egl.object);
+    glUseProgram(myvideo.egl.object);
 
-    myvideo.egl.posLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_pos");
-    myvideo.egl.texLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_coord");
-    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_texture");
-    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_alpha");
+    myvideo.egl.vert_pos = glGetAttribLocation(myvideo.egl.object, "vert_pos");
+    myvideo.egl.vert_coord = glGetAttribLocation(myvideo.egl.object, "vert_coord");
+    myvideo.egl.frag_texture = glGetUniformLocation(myvideo.egl.object, "frag_texture");
+    myvideo.egl.frag_alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
@@ -2524,10 +2524,10 @@ static void* video_handler(void *param)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(myvideo.egl.posLoc);
-    glEnableVertexAttribArray(myvideo.egl.texLoc);
-    glUniform1i(myvideo.egl.samLoc, 0);
-    glUniform1f(myvideo.egl.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.egl.vert_pos);
+    glEnableVertexAttribArray(myvideo.egl.vert_coord);
+    glUniform1i(myvideo.egl.frag_texture, 0);
+    glUniform1f(myvideo.egl.frag_alpha, 0.0);
 #endif
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2563,24 +2563,24 @@ static void* video_handler(void *param)
     myvideo.egl.context = eglCreateContext(myvideo.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
     eglMakeCurrent(myvideo.egl.display, myvideo.egl.surface, myvideo.egl.surface, myvideo.egl.context);
 
-    myvideo.egl.vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(myvideo.egl.vShader, 1, &vert_shader_src, NULL);
-    glCompileShader(myvideo.egl.vShader);
+    myvideo.egl.vert_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myvideo.egl.vert_shader, 1, &vert_shader_src, NULL);
+    glCompileShader(myvideo.egl.vert_shader);
 
-    myvideo.egl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(myvideo.egl.fShader, 1, &frag_shader_src, NULL);
-    glCompileShader(myvideo.egl.fShader);
+    myvideo.egl.frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myvideo.egl.frag_shader, 1, &frag_shader_src, NULL);
+    glCompileShader(myvideo.egl.frag_shader);
     
-    myvideo.egl.pObject = glCreateProgram();
-    glAttachShader(myvideo.egl.pObject, myvideo.egl.vShader);
-    glAttachShader(myvideo.egl.pObject, myvideo.egl.fShader);
-    glLinkProgram(myvideo.egl.pObject);
-    glUseProgram(myvideo.egl.pObject);
+    myvideo.egl.object = glCreateProgram();
+    glAttachShader(myvideo.egl.object, myvideo.egl.vert_shader);
+    glAttachShader(myvideo.egl.object, myvideo.egl.frag_shader);
+    glLinkProgram(myvideo.egl.object);
+    glUseProgram(myvideo.egl.object);
 
-    myvideo.egl.posLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_pos");
-    myvideo.egl.texLoc = glGetAttribLocation(myvideo.egl.pObject, "vert_coord");
-    myvideo.egl.samLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_texture");
-    myvideo.egl.alphaLoc = glGetUniformLocation(myvideo.egl.pObject, "frag_alpha");
+    myvideo.egl.vert_pos = glGetAttribLocation(myvideo.egl.object, "vert_pos");
+    myvideo.egl.vert_coord = glGetAttribLocation(myvideo.egl.object, "vert_coord");
+    myvideo.egl.frag_texture = glGetUniformLocation(myvideo.egl.object, "frag_texture");
+    myvideo.egl.frag_alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
@@ -2591,10 +2591,10 @@ static void* video_handler(void *param)
     glClear(GL_COLOR_BUFFER_BIT);
     glActiveTexture(GL_TEXTURE0);
 
-    glEnableVertexAttribArray(myvideo.egl.posLoc);
-    glEnableVertexAttribArray(myvideo.egl.texLoc);
-    glUniform1i(myvideo.egl.samLoc, 0);
-    glUniform1f(myvideo.egl.alphaLoc, 0.0);
+    glEnableVertexAttribArray(myvideo.egl.vert_pos);
+    glEnableVertexAttribArray(myvideo.egl.vert_coord);
+    glUniform1i(myvideo.egl.frag_texture, 0);
+    glUniform1f(myvideo.egl.frag_alpha, 0.0);
 #endif
 
 #if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2674,9 +2674,9 @@ static void* video_handler(void *param)
     eglDestroyContext(myvideo.egl.display, myvideo.egl.context);
 
     eglTerminate(myvideo.egl.display);
-    glDeleteShader(myvideo.egl.vShader);
-    glDeleteShader(myvideo.egl.fShader);
-    glDeleteProgram(myvideo.egl.pObject);
+    glDeleteShader(myvideo.egl.vert_shader);
+    glDeleteShader(myvideo.egl.frag_shader);
+    glDeleteProgram(myvideo.egl.object);
 
     drmModeRmFB(myvideo.drm.fd, myvideo.drm.fb); 
     drmModeFreeCrtc(myvideo.drm.crtc);
@@ -2703,9 +2703,9 @@ static void* video_handler(void *param)
     eglDestroySurface(myvideo.egl.display, myvideo.egl.surface);
     eglDestroyContext(myvideo.egl.display, myvideo.egl.context);
     eglTerminate(myvideo.egl.display);
-    glDeleteShader(myvideo.egl.vShader);
-    glDeleteShader(myvideo.egl.fShader);
-    glDeleteProgram(myvideo.egl.pObject);
+    glDeleteShader(myvideo.egl.vert_shader);
+    glDeleteShader(myvideo.egl.frag_shader);
+    glDeleteProgram(myvideo.egl.object);
 
     wl_shell_surface_destroy(myvideo.wl.shell_surface);
     wl_shell_destroy(myvideo.wl.shell);
@@ -3867,29 +3867,29 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) &&
         (tex == TEXTURE_LCD0))
     {
-        glUniform1f(myvideo.egl.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
+        glUniform1f(myvideo.egl.frag_alpha, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
     else {
-        glUniform1f(myvideo.egl.alphaLoc, 1.0);
+        glUniform1f(myvideo.egl.frag_alpha, 1.0);
     }
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
-    glVertexAttribPointer(myvideo.egl.posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(myvideo.egl.texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glVertexAttribPointer(myvideo.egl.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.egl.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
     if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
         (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) &&
         (tex == TEXTURE_LCD0))
     {
-        glUniform1f(myvideo.egl.alphaLoc, 0.0);
+        glUniform1f(myvideo.egl.frag_alpha, 0.0);
         glDisable(GL_BLEND);
     }
     else {
-        glUniform1f(myvideo.egl.alphaLoc, 1.0);
+        glUniform1f(myvideo.egl.frag_alpha, 1.0);
     }
 #endif
 
@@ -3972,18 +3972,18 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     if ((myconfig.layout.mode.sel <= LAYOUT_MODE_T1) &&
         (id == TEXTURE_LCD1))
     {
-        glUniform1f(myvideo.egl.alphaLoc, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
+        glUniform1f(myvideo.egl.frag_alpha, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
     else {
-        glUniform1f(myvideo.egl.alphaLoc, 1.0);
+        glUniform1f(myvideo.egl.frag_alpha, 1.0);
     }
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[id]);
     glVertexAttribPointer(
-        myvideo.egl.posLoc,
+        myvideo.egl.vert_pos,
         3,
         GL_FLOAT,
         GL_FALSE,
@@ -3992,7 +3992,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     );
 
     glVertexAttribPointer(
-        myvideo.egl.texLoc,
+        myvideo.egl.vert_coord,
         2,
         GL_FLOAT,
         GL_FALSE,
@@ -4017,11 +4017,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     if ((myconfig.layout.mode.sel == LAYOUT_MODE_T3) &&
         (id == TEXTURE_LCD1))
     {
-        glUniform1f(myvideo.egl.alphaLoc, 0.0);
+        glUniform1f(myvideo.egl.frag_alpha, 0.0);
         glDisable(GL_BLEND);
     }
     else {
-        glUniform1f(myvideo.egl.alphaLoc, 1.0);
+        glUniform1f(myvideo.egl.frag_alpha, 1.0);
     }
 #endif
 
@@ -5111,7 +5111,7 @@ static int flip_lcd(void)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glVertexAttribPointer(
-            myvideo.egl.posLoc,
+            myvideo.egl.vert_pos,
             3,
             GL_FLOAT,
             GL_FALSE,
@@ -5120,7 +5120,7 @@ static int flip_lcd(void)
         );
 
         glVertexAttribPointer(
-            myvideo.egl.texLoc,
+            myvideo.egl.vert_coord,
             2,
             GL_FLOAT,
             GL_FALSE,
