@@ -87,6 +87,7 @@ typedef enum {
     TEXTURE_LCD1,
     TEXTURE_BG,
     TEXTURE_PEN,
+    TEXTURE_OVERLAY,
     TEXTURE_TMP,
     TEXTURE_MAX
 } texture_type_t;

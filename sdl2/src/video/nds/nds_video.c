@@ -2603,6 +2603,9 @@ static void* video_handler(void *param)
 
     debug("call %s()++\n", __func__);
 
+    myvideo.overlay.img = IMG_Load("/mnt/SDCARD/Emu/drastic/res/overlay/grid.png");
+    debug("overlay img=%p\n", myvideo.overlay.img);
+
 #if !defined(UT)
     myvideo.thread.running = 1;
 #endif
@@ -2615,15 +2618,15 @@ static void* video_handler(void *param)
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
             if (myvideo.menu.update) {
-                int pre_mode = myconfig.layout.mode.sel;
-                int pre_filter = myconfig.filter;
-                float pre_alpha = myconfig.layout.swin.alpha;
+                //int pre_mode = myconfig.layout.mode.sel;
+                //int pre_filter = myconfig.filter;
+                //float pre_alpha = myconfig.layout.swin.alpha;
 
                 myvideo.menu.update = 0;
 
-                myconfig.filter = FILTER_BLUR;
-                myconfig.layout.mode.sel = 0;
-                myconfig.layout.swin.alpha = 0.0;
+                //myconfig.filter = FILTER_BLUR;
+                //myconfig.layout.mode.sel = 0;
+                //myconfig.layout.swin.alpha = 0.0;
 
                 if (myvideo.menu.sdl2.enable) {
                     debug("update sdl2 menu\n");
@@ -2649,9 +2652,9 @@ static void* video_handler(void *param)
                 }
                 flip_lcd();
 
-                myconfig.filter = pre_filter;
-                myconfig.layout.mode.sel = pre_mode;
-                myconfig.layout.swin.alpha = pre_alpha;
+                //myconfig.filter = pre_filter;
+                //myconfig.layout.mode.sel = pre_mode;
+                //myconfig.layout.swin.alpha = pre_alpha;
             }
         }
         else if (myvideo.lcd.update) {
@@ -2665,6 +2668,10 @@ static void* video_handler(void *param)
         else {
             usleep(0);
         }
+    }
+
+    if (myvideo.overlay.img) {
+        SDL_FreeSurface(myvideo.overlay.img);
     }
 
 #if defined(FLIP)
@@ -3851,15 +3858,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     if (tex == TEXTURE_TMP) {
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        if (myconfig.filter == FILTER_PIXEL) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        }
-        else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        }
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
