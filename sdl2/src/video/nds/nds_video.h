@@ -312,6 +312,7 @@ typedef struct {
         GLint vert_coord;
         GLint frag_alpha;
         GLint frag_texture;
+        GLint frag_overlay;
 
 #if !defined(QX1050) && !defined(QX1000) && !defined(XT894) && !defined(XT897)
         int mem_fd;

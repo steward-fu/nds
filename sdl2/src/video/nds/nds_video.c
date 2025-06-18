@@ -179,9 +179,14 @@ const char *frag_shader_src =
     "varying vec2 frag_coord;                                   \n"
     "uniform float frag_alpha;                                  \n"
     "uniform sampler2D frag_texture;                            \n"
+    "uniform sampler2D frag_overlay;                            \n"
     "void main()                                                \n"
     "{                                                          \n"
-    "    vec3 tex = texture2D(frag_texture, frag_coord).bgr;    \n"
+    "    vec3 tex = mix(                                        \n"
+    "        texture2D(frag_texture, frag_coord),               \n"
+    "        texture2D(frag_overlay, frag_coord),               \n"
+    "        0.0                                                \n"
+    "    ).bgr;                                                 \n"
     "    gl_FragColor = vec4(tex, frag_alpha);                  \n"
     "}                                                          \n";
 #endif
@@ -2450,10 +2455,18 @@ static void* video_handler(void *param)
     myvideo.egl.vert_pos = glGetAttribLocation(myvideo.egl.object, "vert_pos");
     myvideo.egl.vert_coord = glGetAttribLocation(myvideo.egl.object, "vert_coord");
     myvideo.egl.frag_texture = glGetUniformLocation(myvideo.egl.object, "frag_texture");
+    myvideo.egl.frag_overlay = glGetUniformLocation(myvideo.egl.object, "frag_overlay");
     myvideo.egl.frag_alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
+
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -2464,6 +2477,7 @@ static void* video_handler(void *param)
     glEnableVertexAttribArray(myvideo.egl.vert_pos);
     glEnableVertexAttribArray(myvideo.egl.vert_coord);
     glUniform1i(myvideo.egl.frag_texture, 0);
+    glUniform1i(myvideo.egl.frag_overlay, 1);
     glUniform1f(myvideo.egl.frag_alpha, 0.0);
 #endif
 
@@ -2603,8 +2617,29 @@ static void* video_handler(void *param)
 
     debug("call %s()++\n", __func__);
 
+#if defined(FLIP)
     myvideo.overlay.img = IMG_Load("/mnt/SDCARD/Emu/drastic/res/overlay/grid.png");
     debug("overlay img=%p\n", myvideo.overlay.img);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        myvideo.overlay.img->w,
+        myvideo.overlay.img->h,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        myvideo.overlay.img->pixels
+    );
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
+#endif
 
 #if !defined(UT)
     myvideo.thread.running = 1;
@@ -2657,9 +2692,11 @@ static void* video_handler(void *param)
         }
     }
 
+#if defined(FLIP)
     if (myvideo.overlay.img) {
         SDL_FreeSurface(myvideo.overlay.img);
     }
+#endif
 
 #if defined(FLIP)
     glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
@@ -3844,6 +3881,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     if (tex == TEXTURE_TMP) {
+        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
