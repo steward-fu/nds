@@ -304,15 +304,21 @@ typedef struct {
         EGLSurface surface;
 
         GLuint object;
-        GLuint vert_shader;
-        GLuint frag_shader;
         GLuint texture[TEXTURE_MAX];
 
-        GLint vert_tex_pos;
-        GLint vert_tex_coord;
-        GLint frag_alpha;
-        GLint frag_texture;
-        GLint frag_overlay;
+        struct {
+            GLuint shader;
+            GLint tex_pos;
+            GLint tex_coord;
+        } vert;
+
+        struct {
+            GLuint shader;
+            GLint alpha;
+            GLint tex_main;
+            GLint tex_overlay;
+            GLint enable_overlay;
+        } frag;
 
 #if !defined(QX1050) && !defined(QX1000) && !defined(XT894) && !defined(XT897)
         int mem_fd;
