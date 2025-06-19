@@ -134,91 +134,91 @@ GLushort vert_indices[] = {
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
 const char *vert_shader_src =
-    "attribute vec4 vert_pos;                                   \n"
-    "attribute vec2 vert_coord;                                 \n"
-    "attribute float vert_alpha;                                \n"
-    "varying vec2 frag_coord;                                   \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "    const float angle = 270.0 * (3.1415 * 2.0) / 360.0;    \n"
-    "    mat4 rot = mat4(                                       \n"
-    "        cos(angle), -sin(angle), 0.0, 0.0,                 \n"
-    "        sin(angle),  cos(angle), 0.0, 0.0,                 \n"
-    "               0.0,         0.0, 1.0, 0.0,                 \n"
-    "               0.0,         0.0, 0.0, 1.0);                \n"
-    "    gl_Position = vert_pos * rot;                          \n"
-    "    frag_coord = vert_coord;                               \n"
-    "}                                                          \n";
+    "attribute vec4 vert_tex_pos;                                   \n"
+    "attribute vec2 vert_tex_coord;                                 \n"
+    "attribute float vert_alpha;                                    \n"
+    "varying vec2 frag_tex_coord;                                   \n"
+    "void main()                                                    \n"
+    "{                                                              \n"
+    "    const float angle = 270.0 * (3.1415 * 2.0) / 360.0;        \n"
+    "    mat4 rot = mat4(                                           \n"
+    "        cos(angle), -sin(angle), 0.0, 0.0,                     \n"
+    "        sin(angle),  cos(angle), 0.0, 0.0,                     \n"
+    "               0.0,         0.0, 1.0, 0.0,                     \n"
+    "               0.0,         0.0, 0.0, 1.0);                    \n"
+    "    gl_Position = vert_tex_pos * rot;                          \n"
+    "    frag_tex_coord = vert_tex_coord;                           \n"
+    "}                                                              \n";
 
 const char *frag_shader_src =
-    "precision mediump float;                                   \n"
-    "varying vec2 frag_coord;                                   \n"
-    "uniform float frag_alpha;                                  \n"
-    "uniform sampler2D frag_texture;                            \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "    vec3 tex = texture2D(frag_texture, frag_coord).bgr;    \n"
-    "    gl_FragColor = vec4(tex, frag_alpha);                  \n"
-    "}                                                          \n";
+    "precision mediump float;                                       \n"
+    "varying vec2 frag_tex_coord;                                   \n"
+    "uniform float frag_alpha;                                      \n"
+    "uniform sampler2D frag_texture;                                \n"
+    "void main()                                                    \n"
+    "{                                                              \n"
+    "    vec3 tex = texture2D(frag_texture, frag_tex_coord).bgr;    \n"
+    "    gl_FragColor = vec4(tex, frag_alpha);                      \n"
+    "}                                                              \n";
 #endif
 
 #if defined(FLIP)
 const char *vert_shader_src =
-    "attribute vec4 vert_pos;                                   \n"
-    "attribute vec2 vert_coord;                                 \n"
-    "attribute float vert_alpha;                                \n"
-    "varying vec2 frag_coord;                                   \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "    gl_Position = vert_pos;                                \n"
-    "    frag_coord = vert_coord;                               \n"
-    "}                                                          \n";
+    "attribute vec4 vert_tex_pos;                                   \n"
+    "attribute vec2 vert_tex_coord;                                 \n"
+    "attribute float vert_alpha;                                    \n"
+    "varying vec2 frag_tex_coord;                                   \n"
+    "void main()                                                    \n"
+    "{                                                              \n"
+    "    gl_Position = vert_tex_pos;                                \n"
+    "    frag_tex_coord = vert_tex_coord;                           \n"
+    "}                                                              \n";
     
 const char *frag_shader_src =
-    "precision mediump float;                                   \n"
-    "varying vec2 frag_coord;                                   \n"
-    "uniform float frag_alpha;                                  \n"
-    "uniform sampler2D frag_texture;                            \n"
-    "uniform sampler2D frag_overlay;                            \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "    vec3 tex = mix(                                        \n"
-    "        texture2D(frag_texture, frag_coord),               \n"
-    "        texture2D(frag_overlay, frag_coord),               \n"
-    "        0.0                                                \n"
-    "    ).bgr;                                                 \n"
-    "    gl_FragColor = vec4(tex, frag_alpha);                  \n"
-    "}                                                          \n";
+    "precision mediump float;                                       \n"
+    "varying vec2 frag_tex_coord;                                   \n"
+    "uniform float frag_alpha;                                      \n"
+    "uniform sampler2D frag_texture;                                \n"
+    "uniform sampler2D frag_overlay;                                \n"
+    "void main()                                                    \n"
+    "{                                                              \n"
+    "    vec3 tex = mix(                                            \n"
+    "        texture2D(frag_texture, frag_tex_coord),               \n"
+    "        texture2D(frag_overlay, frag_tex_coord),               \n"
+    "        texture2D(frag_overlay, frag_tex_coord).a              \n"
+    "    ).bgr;                                                     \n"
+    "    gl_FragColor = vec4(tex, frag_alpha);                      \n"
+    "}                                                              \n";
 #endif
 
 #if defined(A30)
 const char *vert_shader_src =
-    "attribute vec4 vert_pos;                                   \n"
-    "attribute vec2 vert_coord;                                 \n"
-    "attribute float vert_alpha;                                \n"
-    "varying vec2 frag_coord;                                   \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;     \n"
-    "    mat4 rot = mat4(                                       \n"
-    "        cos(angle), -sin(angle), 0.0, 0.0,                 \n"
-    "        sin(angle),  cos(angle), 0.0, 0.0,                 \n"
-    "               0.0,         0.0, 1.0, 0.0,                 \n"
-    "               0.0,         0.0, 0.0, 1.0);                \n"
-    "    gl_Position = vert_pos * rot;                          \n"
-    "    frag_coord = vert_coord;                               \n"
-    "}                                                          \n";
+    "attribute vec4 vert_tex_pos;                                   \n"
+    "attribute vec2 vert_tex_coord;                                 \n"
+    "attribute float vert_alpha;                                    \n"
+    "varying vec2 frag_tex_coord;                                   \n"
+    "void main()                                                    \n"
+    "{                                                              \n"
+    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;         \n"
+    "    mat4 rot = mat4(                                           \n"
+    "        cos(angle), -sin(angle), 0.0, 0.0,                     \n"
+    "        sin(angle),  cos(angle), 0.0, 0.0,                     \n"
+    "               0.0,         0.0, 1.0, 0.0,                     \n"
+    "               0.0,         0.0, 0.0, 1.0);                    \n"
+    "    gl_Position = vert_tex_pos * rot;                          \n"
+    "    frag_tex_coord = vert_tex_coord;                           \n"
+    "}                                                              \n";
 
 const char *frag_shader_src =
-    "precision mediump float;                                   \n"
-    "varying vec2 frag_coord;                                   \n"
-    "uniform float frag_alpha;                                  \n"
-    "uniform sampler2D frag_texture;                            \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "    vec3 tex = texture2D(frag_texture, frag_coord).bgr;    \n"
-    "    gl_FragColor = vec4(tex, frag_alpha);                  \n"
-    "}                                                          \n";
+    "precision mediump float;                                       \n"
+    "varying vec2 frag_tex_coord;                                   \n"
+    "uniform float frag_alpha;                                      \n"
+    "uniform sampler2D frag_texture;                                \n"
+    "void main()                                                    \n"
+    "{                                                              \n"
+    "    vec3 tex = texture2D(frag_texture, frag_tex_coord).bgr;    \n"
+    "    gl_FragColor = vec4(tex, frag_alpha);                      \n"
+    "}                                                              \n";
 #endif
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2452,8 +2452,8 @@ static void* video_handler(void *param)
     glLinkProgram(myvideo.egl.object);
     glUseProgram(myvideo.egl.object);
 
-    myvideo.egl.vert_pos = glGetAttribLocation(myvideo.egl.object, "vert_pos");
-    myvideo.egl.vert_coord = glGetAttribLocation(myvideo.egl.object, "vert_coord");
+    myvideo.egl.vert_tex_pos = glGetAttribLocation(myvideo.egl.object, "vert_tex_pos");
+    myvideo.egl.vert_tex_coord = glGetAttribLocation(myvideo.egl.object, "vert_tex_coord");
     myvideo.egl.frag_texture = glGetUniformLocation(myvideo.egl.object, "frag_texture");
     myvideo.egl.frag_overlay = glGetUniformLocation(myvideo.egl.object, "frag_overlay");
     myvideo.egl.frag_alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
@@ -2474,8 +2474,8 @@ static void* video_handler(void *param)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(myvideo.egl.vert_pos);
-    glEnableVertexAttribArray(myvideo.egl.vert_coord);
+    glEnableVertexAttribArray(myvideo.egl.vert_tex_pos);
+    glEnableVertexAttribArray(myvideo.egl.vert_tex_coord);
     glUniform1i(myvideo.egl.frag_texture, 0);
     glUniform1i(myvideo.egl.frag_overlay, 1);
     glUniform1f(myvideo.egl.frag_alpha, 0.0);
@@ -2524,8 +2524,8 @@ static void* video_handler(void *param)
     glLinkProgram(myvideo.egl.object);
     glUseProgram(myvideo.egl.object);
 
-    myvideo.egl.vert_pos = glGetAttribLocation(myvideo.egl.object, "vert_pos");
-    myvideo.egl.vert_coord = glGetAttribLocation(myvideo.egl.object, "vert_coord");
+    myvideo.egl.vert_tex_pos = glGetAttribLocation(myvideo.egl.object, "vert_tex_pos");
+    myvideo.egl.vert_tex_coord = glGetAttribLocation(myvideo.egl.object, "vert_tex_coord");
     myvideo.egl.frag_texture = glGetUniformLocation(myvideo.egl.object, "frag_texture");
     myvideo.egl.frag_alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
 
@@ -2538,8 +2538,8 @@ static void* video_handler(void *param)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(myvideo.egl.vert_pos);
-    glEnableVertexAttribArray(myvideo.egl.vert_coord);
+    glEnableVertexAttribArray(myvideo.egl.vert_tex_pos);
+    glEnableVertexAttribArray(myvideo.egl.vert_tex_coord);
     glUniform1i(myvideo.egl.frag_texture, 0);
     glUniform1f(myvideo.egl.frag_alpha, 0.0);
 #endif
@@ -2591,8 +2591,8 @@ static void* video_handler(void *param)
     glLinkProgram(myvideo.egl.object);
     glUseProgram(myvideo.egl.object);
 
-    myvideo.egl.vert_pos = glGetAttribLocation(myvideo.egl.object, "vert_pos");
-    myvideo.egl.vert_coord = glGetAttribLocation(myvideo.egl.object, "vert_coord");
+    myvideo.egl.vert_tex_pos = glGetAttribLocation(myvideo.egl.object, "vert_tex_pos");
+    myvideo.egl.vert_tex_coord = glGetAttribLocation(myvideo.egl.object, "vert_tex_coord");
     myvideo.egl.frag_texture = glGetUniformLocation(myvideo.egl.object, "frag_texture");
     myvideo.egl.frag_alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -2605,8 +2605,8 @@ static void* video_handler(void *param)
     glClear(GL_COLOR_BUFFER_BIT);
     glActiveTexture(GL_TEXTURE0);
 
-    glEnableVertexAttribArray(myvideo.egl.vert_pos);
-    glEnableVertexAttribArray(myvideo.egl.vert_coord);
+    glEnableVertexAttribArray(myvideo.egl.vert_tex_pos);
+    glEnableVertexAttribArray(myvideo.egl.vert_tex_coord);
     glUniform1i(myvideo.egl.frag_texture, 0);
     glUniform1f(myvideo.egl.frag_alpha, 0.0);
 #endif
@@ -3901,8 +3901,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
-    glVertexAttribPointer(myvideo.egl.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(myvideo.egl.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glVertexAttribPointer(myvideo.egl.vert_tex_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myvideo.egl.vert_tex_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
     if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
@@ -3998,7 +3998,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[id]);
     glVertexAttribPointer(
-        myvideo.egl.vert_pos,
+        myvideo.egl.vert_tex_pos,
         3,
         GL_FLOAT,
         GL_FALSE,
@@ -4007,7 +4007,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     );
 
     glVertexAttribPointer(
-        myvideo.egl.vert_coord,
+        myvideo.egl.vert_tex_coord,
         2,
         GL_FLOAT,
         GL_FALSE,
@@ -5126,7 +5126,7 @@ static int flip_lcd(void)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glVertexAttribPointer(
-            myvideo.egl.vert_pos,
+            myvideo.egl.vert_tex_pos,
             3,
             GL_FLOAT,
             GL_FALSE,
@@ -5135,7 +5135,7 @@ static int flip_lcd(void)
         );
 
         glVertexAttribPointer(
-            myvideo.egl.vert_coord,
+            myvideo.egl.vert_tex_coord,
             2,
             GL_FLOAT,
             GL_FALSE,

@@ -308,8 +308,8 @@ typedef struct {
         GLuint frag_shader;
         GLuint texture[TEXTURE_MAX];
 
-        GLint vert_pos;
-        GLint vert_coord;
+        GLint vert_tex_pos;
+        GLint vert_tex_coord;
         GLint frag_alpha;
         GLint frag_texture;
         GLint frag_overlay;
