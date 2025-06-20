@@ -56,17 +56,24 @@ typedef struct {
 
     struct {
         SDL_GLContext ctx;
-        GLuint vert_shader;
-        GLuint frag_shader;
-        GLuint program;
+        GLuint object;
+        GLuint texture[TEXTURE_MAX];
 
-        GLint vert_pos;
-        GLint vert_coord;
-        GLint frag_sampler;
-        GLint frag_rotate;
-        GLint frag_aspect;
-        GLint frag_alpha;
-        GLuint tex_id[TEXTURE_MAX];
+        struct {
+            GLuint shader;
+            GLint tex_pos;
+            GLint tex_coord;
+        } vert;
+
+        struct {
+            GLuint shader;
+            GLint alpha;
+            GLint rotate;
+            GLint aspect;
+            GLint tex_main;
+            GLint tex_overlay;
+            GLint enable_overlay;
+        } frag;
 
         struct {
             int w;

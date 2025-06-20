@@ -115,33 +115,33 @@ static int init_gles(void)
     myrunner.sdl2.win = SDL_CreateWindow("DraStic", 0, 0, R_LCD_W, R_LCD_H, SDL_WINDOW_OPENGL);
     myrunner.gles.ctx = SDL_GL_CreateContext(myrunner.sdl2.win);
   
-    myrunner.gles.vert_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(myrunner.gles.vert_shader, 1, &vert_shader_code, NULL);
-    glCompileShader(myrunner.gles.vert_shader);
+    myrunner.gles.vert.shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(myrunner.gles.vert.shader, 1, &vert_shader_code, NULL);
+    glCompileShader(myrunner.gles.vert.shader);
  
-    myrunner.gles.frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(myrunner.gles.frag_shader, 1, &frag_shader_code, NULL);
-    glCompileShader(myrunner.gles.frag_shader);
+    myrunner.gles.frag.shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(myrunner.gles.frag.shader, 1, &frag_shader_code, NULL);
+    glCompileShader(myrunner.gles.frag.shader);
  
-    myrunner.gles.program = glCreateProgram();
-    glAttachShader(myrunner.gles.program, myrunner.gles.vert_shader);
-    glAttachShader(myrunner.gles.program, myrunner.gles.frag_shader);
-    glLinkProgram(myrunner.gles.program);
-    glUseProgram(myrunner.gles.program);
+    myrunner.gles.object = glCreateProgram();
+    glAttachShader(myrunner.gles.object, myrunner.gles.vert.shader);
+    glAttachShader(myrunner.gles.object, myrunner.gles.frag.shader);
+    glLinkProgram(myrunner.gles.object);
+    glUseProgram(myrunner.gles.object);
   
-    myrunner.gles.vert_pos = glGetAttribLocation(myrunner.gles.program, "vert_pos");
-    myrunner.gles.vert_coord = glGetAttribLocation(myrunner.gles.program, "vert_coord");
-    myrunner.gles.frag_sampler = glGetUniformLocation(myrunner.gles.program, "frag_sampler");
-    myrunner.gles.frag_rotate = glGetUniformLocation(myrunner.gles.program, "frag_rotate");
-    myrunner.gles.frag_aspect = glGetUniformLocation(myrunner.gles.program, "frag_aspect");
-    myrunner.gles.frag_alpha = glGetUniformLocation(myrunner.gles.program, "frag_alpha");
+    myrunner.gles.vert.tex_pos = glGetAttribLocation(myrunner.gles.object, "vert_pos");
+    myrunner.gles.vert.tex_coord = glGetAttribLocation(myrunner.gles.object, "vert_coord");
+    myrunner.gles.frag.tex_main = glGetUniformLocation(myrunner.gles.object, "frag_sampler");
+    myrunner.gles.frag.rotate = glGetUniformLocation(myrunner.gles.object, "frag_rotate");
+    myrunner.gles.frag.aspect = glGetUniformLocation(myrunner.gles.object, "frag_aspect");
+    myrunner.gles.frag.alpha = glGetUniformLocation(myrunner.gles.object, "frag_alpha");
 
-    glUniform1f(myrunner.gles.frag_rotate, 0);
-    glUniform1f(myrunner.gles.frag_aspect, (float)R_LCD_W / R_LCD_H);
+    glUniform1f(myrunner.gles.frag.rotate, 0);
+    glUniform1f(myrunner.gles.frag.aspect, (float)R_LCD_W / R_LCD_H);
       
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(TEXTURE_MAX, myrunner.gles.tex_id);
-    glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[TEXTURE_LCD0]);
+    glGenTextures(TEXTURE_MAX, myrunner.gles.texture);
+    glBindTexture(GL_TEXTURE_2D, myrunner.gles.texture[TEXTURE_LCD0]);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -151,14 +151,14 @@ static int init_gles(void)
   
     glViewport(0, 0, R_LCD_W, R_LCD_H);
     glClear(GL_COLOR_BUFFER_BIT);
-    glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-    glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
-    glEnableVertexAttribArray(myrunner.gles.vert_pos);
-    glEnableVertexAttribArray(myrunner.gles.vert_coord);
+    glVertexAttribPointer(myrunner.gles.vert.tex_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+    glVertexAttribPointer(myrunner.gles.vert.tex_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+    glEnableVertexAttribArray(myrunner.gles.vert.tex_pos);
+    glEnableVertexAttribArray(myrunner.gles.vert.tex_coord);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[TEXTURE_LCD0]);
-    glUniform1i(myrunner.gles.frag_sampler, 0);
+    glBindTexture(GL_TEXTURE_2D, myrunner.gles.texture[TEXTURE_LCD0]);
+    glUniform1i(myrunner.gles.frag.tex_main, 0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
     myrunner.gles.bg.pixels = malloc(R_LCD_W * R_LCD_H * 4);
@@ -270,14 +270,14 @@ static void* runner_handler(void *param)
                 (myrunner.shm.buf->layout == LAYOUT_MODE_T1)) &&
                 (myrunner.shm.buf->tex == TEXTURE_LCD0))
             {
-                glUniform1f(myrunner.gles.frag_alpha, 1.0 - ((float)myrunner.shm.buf->alpha / 10.0));
+                glUniform1f(myrunner.gles.frag.alpha, 1.0 - ((float)myrunner.shm.buf->alpha / 10.0));
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 glEnable(GL_BLEND);
             }
 
             glActiveTexture(GL_TEXTURE0);
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[myrunner.shm.buf->tex]);
+            glBindTexture(GL_TEXTURE_2D, myrunner.gles.texture[myrunner.shm.buf->tex]);
             if (myrunner.shm.buf->filter == FILTER_PIXEL) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -288,15 +288,15 @@ static void* runner_handler(void *param)
             }
 
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, myrunner.shm.buf->srt.w, myrunner.shm.buf->srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)myrunner.shm.buf->buf);
-            glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
-            glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
+            glVertexAttribPointer(myrunner.gles.vert.tex_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), fg_vertices);
+            glVertexAttribPointer(myrunner.gles.vert.tex_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
             if (((myrunner.shm.buf->layout == LAYOUT_MODE_T0) ||
                 (myrunner.shm.buf->layout == LAYOUT_MODE_T1)) &&
                 (myrunner.shm.buf->tex == TEXTURE_LCD0))
             {
-                glUniform1f(myrunner.gles.frag_alpha, 0.0);
+                glUniform1f(myrunner.gles.frag.alpha, 0.0);
                 glDisable(GL_BLEND);
             }
             break;
@@ -306,7 +306,7 @@ static void* runner_handler(void *param)
 
             glActiveTexture(GL_TEXTURE0);
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glBindTexture(GL_TEXTURE_2D, myrunner.gles.tex_id[TEXTURE_BG]);
+            glBindTexture(GL_TEXTURE_2D, myrunner.gles.texture[TEXTURE_BG]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexImage2D(
@@ -320,8 +320,8 @@ static void* runner_handler(void *param)
                 GL_UNSIGNED_BYTE,
                 (void *)myrunner.gles.bg.pixels
             );
-            glVertexAttribPointer(myrunner.gles.vert_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
-            glVertexAttribPointer(myrunner.gles.vert_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
+            glVertexAttribPointer(myrunner.gles.vert.tex_pos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), bg_vertices);
+            glVertexAttribPointer(myrunner.gles.vert.tex_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &bg_vertices[3]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
             break;
@@ -344,9 +344,9 @@ static void* runner_handler(void *param)
         myrunner.gles.bg.w = 0;
         myrunner.gles.bg.h = 0;
     }
-    glDeleteTextures(TEXTURE_MAX, myrunner.gles.tex_id);
-    glDeleteShader(myrunner.gles.vert_shader);
-    glDeleteShader(myrunner.gles.frag_shader);
+    glDeleteTextures(TEXTURE_MAX, myrunner.gles.texture);
+    glDeleteShader(myrunner.gles.vert.shader);
+    glDeleteShader(myrunner.gles.frag.shader);
     SDL_DestroyWindow(myrunner.sdl2.win);
     SDL_GL_DeleteContext(myrunner.gles.ctx);
     SDL_Quit();

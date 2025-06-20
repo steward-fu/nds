@@ -2654,7 +2654,10 @@ static void* video_handler(void *param)
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
             if (myvideo.menu.update) {
+                int pre_mode = myconfig.layout.mode.sel;
+
                 myvideo.menu.update = 0;
+                myconfig.layout.mode.sel = LAYOUT_MODE_T0;
                 if (myvideo.menu.sdl2.enable) {
                     debug("update sdl2 menu\n");
 
@@ -2678,6 +2681,7 @@ static void* video_handler(void *param)
                     );
                 }
                 flip_lcd();
+                myconfig.layout.mode.sel = pre_mode;
             }
         }
         else if (myvideo.lcd.update) {
