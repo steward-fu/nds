@@ -840,7 +840,7 @@ static int handle_hotkey(void)
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
-                if (!myvideo.layout.overlay.max &&
+                if ((myconfig.layout.mode.sel != LAYOUT_MODE_OV) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_T0) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_T1) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_T3))
