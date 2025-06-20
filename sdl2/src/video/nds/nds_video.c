@@ -2655,9 +2655,12 @@ static void* video_handler(void *param)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
             if (myvideo.menu.update) {
                 int pre_mode = myconfig.layout.mode.sel;
+                int pre_filter = myconfig.filter;
 
                 myvideo.menu.update = 0;
+                myconfig.filter = FILTER_BLUR;
                 myconfig.layout.mode.sel = LAYOUT_MODE_T0;
+
                 if (myvideo.menu.sdl2.enable) {
                     debug("update sdl2 menu\n");
 
@@ -2681,6 +2684,8 @@ static void* video_handler(void *param)
                     );
                 }
                 flip_lcd();
+
+                myconfig.filter = pre_filter;
                 myconfig.layout.mode.sel = pre_mode;
             }
         }
@@ -2956,6 +2961,11 @@ static int load_overlay_file(void)
 
         debug("load overlay from \"%s\"\n", buf);
 
+#if defined(GKD2) || defined(BRICK)
+        strcpy(myvideo.shm.buf->overlay.image, buf);
+        myvideo.layout.overlay.reload = 1;
+#endif
+
         t = IMG_Load(buf);
         tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0xff0000, 0xff00, 0xff, 0xff000000);
         myvideo.layout.overlay.bg = SDL_ConvertSurface(t, tmp->format, 0);
@@ -3009,6 +3019,11 @@ static int load_overlay_file(void)
         debug("overlay image=%p\n", myvideo.layout.overlay.bg);
     }
     else {
+#if defined(GKD2) || defined(BRICK)
+        myvideo.shm.buf->overlay.image[0] = 0;
+        myvideo.layout.overlay.reload = 1;
+#endif
+
         myvideo.layout.overlay.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
 
         SDL_FillRect(myvideo.layout.overlay.bg, &myvideo.layout.overlay.bg->clip_rect, SDL_MapRGB(myvideo.layout.overlay.bg->format, 0x00, 0x00, 0x00));
@@ -3989,6 +4004,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.shm.buf->drt.y = drt.y;
     myvideo.shm.buf->drt.w = drt.w;
     myvideo.shm.buf->drt.h = drt.h;
+
+    if (myvideo.layout.overlay.reload) {
+        myvideo.shm.buf->overlay.reload = 1;
+        myvideo.layout.overlay.reload = 0;
+    }
 
     memcpy(myvideo.shm.buf->buf, pixels, srt.h * pitch);
 

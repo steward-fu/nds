@@ -464,6 +464,10 @@ typedef struct {
             int idx;
             SDL_Surface *bg;
             SDL_Surface *mask[2];
+
+#if defined(GKD2) || defined(BRICK)
+            int reload;
+#endif
         } overlay;
 
 #if defined(TRIMUI)

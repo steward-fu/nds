@@ -46,6 +46,13 @@ typedef struct {
     uint32_t len;
     SDL_Rect srt;
     SDL_Rect drt;
+
+    struct {
+        int reload;
+        SDL_Rect lcd[2];
+        char image[MAX_PATH];
+    } overlay;
+
     uint8_t buf[R_LCD_W * R_LCD_H * 4];
 } shm_buf_t;
  
@@ -80,6 +87,11 @@ typedef struct {
             int h;
             void *pixels;
         } bg;
+
+        struct {
+            SDL_Surface *bg;
+            SDL_Surface *mask[2];
+        } overlay;
     } gles;
 
     struct {

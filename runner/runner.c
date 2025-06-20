@@ -25,38 +25,47 @@
 #include "runner.h"
 
 const char *vert_shader_code =
-    "attribute vec4 vert_pos;                                           \n"
-    "attribute vec2 vert_coord;                                         \n"
-    "attribute float vert_alpha;                                        \n"
-    "varying vec2 frag_coord;                                           \n"
+    "attribute vec4 vert_tex_pos;                                       \n"
+    "attribute vec2 vert_tex_coord;                                     \n"
+    "varying vec2 frag_tex_coord;                                       \n"
     "void main()                                                        \n"
     "{                                                                  \n"
-    "    gl_Position = vert_pos;                                        \n"
-    "    frag_coord = vert_coord;                                       \n"
+    "    gl_Position = vert_tex_pos;                                    \n"
+    "    frag_tex_coord = vert_tex_coord;                               \n"
     "}                                                                  \n";
 
 const char *frag_shader_code =
-    "#ifdef GL_ES                                                       \n"
     "precision mediump float;                                           \n"
-    "#endif                                                             \n"
-    "varying vec2 frag_coord;                                           \n"
+    "varying vec2 frag_tex_coord;                                       \n"
     "uniform float frag_rotate;                                         \n"
     "uniform float frag_aspect;                                         \n"
     "uniform float frag_alpha;                                          \n"
-    "uniform sampler2D frag_sampler;                                    \n"
+    "uniform int frag_enable_overlay;                                   \n"
+    "uniform sampler2D frag_tex_main;                                   \n"
+    "uniform sampler2D frag_tex_overlay;                                \n"
     "const vec2 HALF = vec2(0.5);                                       \n"
     "void main()                                                        \n"
     "{                                                                  \n"
     "    float aSin = sin(frag_rotate);                                 \n"
     "    float aCos = cos(frag_rotate);                                 \n"
-    "    vec2 tc = frag_coord;                                          \n"
+    "    vec2 tc = frag_tex_coord;                                      \n"
     "    mat2 rotMat = mat2(aCos, -aSin, aSin, aCos);                   \n"
     "    mat2 scaleMat = mat2(frag_aspect, 0.0, 0.0, 1.0);              \n"
     "    mat2 scaleMatInv = mat2(1.0 / frag_aspect, 0.0, 0.0, 1.0);     \n"
     "    tc -= HALF.xy;                                                 \n"
     "    tc = scaleMatInv * rotMat * scaleMat * tc;                     \n"
     "    tc += HALF.xy;                                                 \n"
-    "    vec3 tex = texture2D(frag_sampler, tc).bgr;                    \n"
+    "    vec3 tex;                                                      \n"
+    "    if (frag_enable_overlay > 0) {                                 \n"
+    "        tex = mix(                                                 \n"
+    "            texture2D(frag_tex_main, frag_tex_coord),              \n"
+    "            texture2D(frag_tex_overlay, frag_tex_coord),           \n"
+    "            texture2D(frag_tex_overlay, frag_tex_coord).a          \n"
+    "        ).bgr;                                                     \n"
+    "   }                                                               \n"
+    "   else {                                                          \n"
+    "       tex = texture2D(frag_tex_main, frag_tex_coord).bgr;         \n"
+    "   }                                                               \n"
     "    gl_FragColor = vec4(tex, frag_alpha);                          \n"
     "}                                                                  \n";
 
@@ -129,12 +138,12 @@ static int init_gles(void)
     glLinkProgram(myrunner.gles.object);
     glUseProgram(myrunner.gles.object);
   
-    myrunner.gles.vert.tex_pos = glGetAttribLocation(myrunner.gles.object, "vert_pos");
-    myrunner.gles.vert.tex_coord = glGetAttribLocation(myrunner.gles.object, "vert_coord");
-    myrunner.gles.frag.tex_main = glGetUniformLocation(myrunner.gles.object, "frag_sampler");
+    myrunner.gles.vert.tex_pos = glGetAttribLocation(myrunner.gles.object, "vert_tex_pos");
+    myrunner.gles.vert.tex_coord = glGetAttribLocation(myrunner.gles.object, "vert_tex_coord");
     myrunner.gles.frag.rotate = glGetUniformLocation(myrunner.gles.object, "frag_rotate");
     myrunner.gles.frag.aspect = glGetUniformLocation(myrunner.gles.object, "frag_aspect");
     myrunner.gles.frag.alpha = glGetUniformLocation(myrunner.gles.object, "frag_alpha");
+    myrunner.gles.frag.tex_main = glGetUniformLocation(myrunner.gles.object, "frag_tex_main");
 
     glUniform1f(myrunner.gles.frag.rotate, 0);
     glUniform1f(myrunner.gles.frag.aspect, (float)R_LCD_W / R_LCD_H);
@@ -168,9 +177,97 @@ static int init_gles(void)
     return 0;
 }
 
+static int load_overlay_file(const char *path, SDL_Rect lcd[2])
+{
+    int cc = 0;
+    char buf[MAX_PATH + 32] = { 0 };
+
+    debug("call %s(path=%s)\n", __func__, path);
+
+    if (myrunner.gles.overlay.bg) {
+        SDL_FreeSurface(myrunner.gles.overlay.bg);
+        myrunner.gles.overlay.bg = NULL;
+    }
+
+    for (cc = 0; cc < 2; cc++) {
+        if (myrunner.gles.overlay.mask[cc]) {
+            SDL_FreeSurface(myrunner.gles.overlay.mask[cc]);
+            myrunner.gles.overlay.mask[cc] = NULL;
+        }
+    }
+
+    if (path && path[0]) {
+        SDL_Surface *t = NULL;
+        SDL_Surface *tmp = NULL;
+
+        debug("load overlay from \"%s\"\n", path);
+
+        t = IMG_Load(path);
+        tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, 128, 128, 32, 0xff0000, 0xff00, 0xff, 0xff000000);
+        myrunner.gles.overlay.bg = SDL_ConvertSurface(t, tmp->format, 0);
+        SDL_FreeSurface(t);
+
+        for (cc = 0; cc < 2; cc++) {
+            SDL_Rect srt = { 0 };
+            SDL_Rect drt = { 0 };
+
+            if (lcd[cc].w && lcd[cc].h) {
+                myrunner.gles.overlay.mask[cc] = SDL_CreateRGBSurface(
+                    SDL_SWSURFACE,
+                    lcd[cc].w,
+                    lcd[cc].h,
+                    32,
+                    0xff0000,
+                    0xff00,
+                    0xff,
+                    0xff000000
+                );
+
+                srt.w = lcd[cc].w;
+                srt.h = lcd[cc].h;
+                srt.x = LAYOUT_BG_W - (lcd[cc].x + srt.w);
+                srt.y = LAYOUT_BG_H - (lcd[cc].y + srt.h);
+                debug("mask[%d]=%d,%d,%d,%d (org:%d,%d,%d,%d)\n",
+                    cc,
+                    srt.x,
+                    srt.y,
+                    srt.w,
+                    srt.h,
+                    lcd[cc].x,
+                    lcd[cc].y,
+                    lcd[cc].w,
+                    lcd[cc].h
+                );
+
+                drt.w = lcd[cc].w;
+                drt.h = lcd[cc].h;
+
+                SDL_BlitSurface(
+                    myrunner.gles.overlay.bg,
+                    &srt,
+                    myrunner.gles.overlay.mask[cc],
+                    &drt
+                );
+            }
+        }
+        SDL_FreeSurface(tmp);
+
+        debug("overlay image=%p\n", myrunner.gles.overlay.bg);
+    }
+    else {
+        myrunner.gles.overlay.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
+
+        SDL_FillRect(myrunner.gles.overlay.bg, &myrunner.gles.overlay.bg->clip_rect, SDL_MapRGB(myrunner.gles.overlay.bg->format, 0x00, 0x00, 0x00));
+        debug("loaded black overlay image\n");
+    }
+
+    return 0;
+}
+
 static void* runner_handler(void *param)
 {
     int r = 0;
+    int cc = 0;
     int running = 0;
     SDL_Rect rt = { 0 };
     char cur_bg_path[MAX_PATH] = { 0 };
@@ -225,6 +322,11 @@ static void* runner_handler(void *param)
             rt.w = ((float)rt.w) * 1.6;
             rt.h = ((float)rt.h) * 1.6;
 #endif
+
+            if ((myrunner.shm.buf->layout == LAYOUT_MODE_OV) && (myrunner.shm.buf->overlay.reload)) {
+                load_overlay_file(myrunner.shm.buf->overlay.image, myrunner.shm.buf->overlay.lcd);
+                myrunner.shm.buf->overlay.reload = 0;
+            }
 
             if ((myrunner.shm.buf->layout == LAYOUT_MODE_T17) || (myrunner.shm.buf->layout == LAYOUT_MODE_T19)) {
                 fg_vertices[5] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
@@ -344,6 +446,19 @@ static void* runner_handler(void *param)
         myrunner.gles.bg.w = 0;
         myrunner.gles.bg.h = 0;
     }
+
+    if (myrunner.gles.overlay.bg) {
+        SDL_FreeSurface(myrunner.gles.overlay.bg);
+        myrunner.gles.overlay.bg = NULL;
+    }
+
+    for (cc = 0; cc < 2; cc++) {
+        if (myrunner.gles.overlay.mask[cc]) {
+            SDL_FreeSurface(myrunner.gles.overlay.mask[cc]);
+            myrunner.gles.overlay.mask[cc] = NULL;
+        }
+    }
+
     glDeleteTextures(TEXTURE_MAX, myrunner.gles.texture);
     glDeleteShader(myrunner.gles.vert.shader);
     glDeleteShader(myrunner.gles.frag.shader);
