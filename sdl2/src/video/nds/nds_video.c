@@ -1790,7 +1790,12 @@ static int process_screen(void)
         }
         else if (cur_layout_mode != myconfig.layout.mode.sel) {
             show_info = 50;
-            sprintf(buf, " %s: T%d ", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
+            if (myconfig.layout.mode.sel == LAYOUT_MODE_OV) {
+                sprintf(buf, " %s: %s ", l10n("LAYOUT MODE"), l10n("OVERLAY"));
+            }
+            else {
+                sprintf(buf, " %s: T%d ", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
+            }
         }
         else if (cur_layout_bg != myconfig.layout.bg.sel) {
             show_info = 50;

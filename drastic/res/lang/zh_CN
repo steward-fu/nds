@@ -1,5 +1,6 @@
 CPU=CPU频率
 Overlay=遮罩图片
+OVERLAY=遮罩图片
 Layout Mode=显示组合
 LAYOUT MODE=显示组合
   Alpha=小画透明度
