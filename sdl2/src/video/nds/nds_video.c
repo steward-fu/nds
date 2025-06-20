@@ -6769,6 +6769,7 @@ typedef enum {
     MENU_SWIN_BORDER,
     MENU_SWIN_POS,
     MENU_LAYOUT_ATL,
+    MENU_OVERLAY,
     MENU_ROTATE_KEY,
     MENU_BIND_HOTKEY,
     MENU_SWAP_L1L2,
@@ -6808,6 +6809,7 @@ static const char *MENU_LIST_STR[] = {
     "  Border",
     "  Position",
     "Layout Alt.",
+    "Overlay",
     "Rotate Key",
     "Bind Hotkey",
     "Swap L1-L2",
@@ -7342,6 +7344,12 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
             }
         }
         break;
+    case MENU_OVERLAY:
+        if (right_key) {
+        }
+        else {
+        }
+        break;
     case MENU_ROTATE_KEY:
         if (right_key) {
             if (myconfig.keys_rotate < 2) {
@@ -7572,6 +7580,8 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     case MENU_LAYOUT_ATL:
         sprintf(buf, "[%d]   %s", myconfig.layout.mode.alt, LAYOUT_MODE_STR0[myconfig.layout.mode.alt]);
         break;
+    case MENU_OVERLAY:
+        break;
     case MENU_ROTATE_KEY:
         sprintf(buf, "[%d]   ", myconfig.layout.mode.alt);
         sx = get_font_width(buf);
@@ -7668,6 +7678,7 @@ static int process_sdl2_setting(int key)
     int sx = 0;
     int s0 = 0;
     int s1 = 0;
+    int ov = -1;
     int idx = 0;
     int mode = -1;
     uint32_t col0 = 0;
@@ -7726,6 +7737,9 @@ static int process_sdl2_setting(int key)
     }
     else if (cur_sel == MENU_LAYOUT_ATL) {
         mode = myconfig.layout.mode.alt;
+    }
+    else if (cur_sel == MENU_OVERLAY) {
+        ov = myconfig.layout.mode.alt;
     }
 
     if (myvideo.menu.sdl2.bg && myvideo.cvt) {
