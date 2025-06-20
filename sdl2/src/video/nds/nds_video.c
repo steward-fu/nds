@@ -2642,12 +2642,6 @@ static void* video_handler(void *param)
 
     debug("call %s()++\n", __func__);
 
-#if defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
-    //myvideo.overlay.img = IMG_Load("/mnt/SDCARD/Emu/drastic/res/overlay/grid.png");
-    myvideo.overlay.img = IMG_Load("/home/defaultuser/Data/nds/drastic/res/overlay/grid.png");
-    debug("overlay img=%p\n", myvideo.overlay.img);
-#endif
-
 #if !defined(UT)
     myvideo.thread.running = 1;
 #endif
@@ -2698,12 +2692,6 @@ static void* video_handler(void *param)
             usleep(0);
         }
     }
-
-#if defined(FLIP)
-    if (myvideo.overlay.img) {
-        SDL_FreeSurface(myvideo.overlay.img);
-    }
-#endif
 
 #if defined(FLIP)
     glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
@@ -2851,6 +2839,187 @@ TEST(sdl2_video, load_lang_file)
 {
     TEST_ASSERT_EQUAL_INT(-1, load_lang_file(NULL));
     TEST_ASSERT_EQUAL_INT(0, load_lang_file(DEF_LANG));
+}
+#endif
+
+static int get_total_file_count(const char *folder)
+{
+    int cnt = 0;
+    DIR *d = NULL;
+    struct dirent *dir = NULL;
+    char buf[MAX_PATH] = { 0 };
+
+    debug("call %s()\n", __func__);
+
+    snprintf(buf, sizeof(buf), "%s/%s", myvideo.home, folder);
+    debug("enum folder=\"%s\"\n", buf);
+
+    d = opendir(buf);
+    if (!d) {
+        error("failed to open dir \"%s\"\n", buf);
+        return 0;
+    }
+
+    cnt = 0;
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_type == DT_DIR) {
+            continue;
+        }
+        if (strcmp(dir->d_name, ".") == 0) {
+            continue;
+        }
+        if (strcmp(dir->d_name, "..") == 0) {
+            continue;
+        }
+
+        cnt += 1;
+    }
+    closedir(d);
+
+    return cnt;
+}
+
+static int get_file_name_by_index(const char *folder, int idx, char *buf, int full)
+{
+    int r = -1;
+    int cnt = 0;
+    DIR *d = NULL;
+    struct dirent *dir = NULL;
+
+    debug("call %s()\n", __func__);
+
+    sprintf(buf, "%s%s", myvideo.home, folder);
+    debug("enum folder=\"%s\"\n", buf);
+
+    d = opendir(buf);
+    if (!d) {
+        error("failed to open dir \"%s\"\n", buf);
+        return r;
+    }
+
+    cnt = 0;
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_type == DT_DIR) {
+            continue;
+        }
+        if (strcmp(dir->d_name, ".") == 0) {
+            continue;
+        }
+        if (strcmp(dir->d_name, "..") == 0) {
+            continue;
+        }
+
+        if (cnt == idx) {
+            r = 0;
+            if (full) {
+                sprintf(buf, "%s/%s/%s", myvideo.home, folder, dir->d_name);
+            }
+            else {
+                strcpy(buf, dir->d_name);
+            }
+            debug("found file \"%s\" by index (%d)\n", buf, idx);
+            break;
+        }
+        cnt += 1;
+    }
+    closedir(d);
+
+    return r;
+}
+
+static int load_overlay_file(void)
+{
+    int cc = 0;
+    char buf[MAX_PATH + 32] = { 0 };
+
+    debug("call %s(sel=%d, max=%d)\n", __func__, myconfig.layout.overlay.sel, myvideo.layout.overlay.max);
+
+    if (myvideo.layout.overlay.bg) {
+        SDL_FreeSurface(myvideo.layout.overlay.bg);
+        myvideo.layout.overlay.bg = NULL;
+    }
+
+    for (cc = 0; cc < 2; cc++) {
+        if (myvideo.layout.overlay.mask[cc]) {
+            SDL_FreeSurface(myvideo.layout.overlay.mask[cc]);
+            myvideo.layout.overlay.mask[cc] = NULL;
+        }
+    }
+
+    if (get_file_name_by_index(OVERLAY_PATH, myconfig.layout.overlay.sel, buf, 1) >= 0) {
+        SDL_Surface *t = NULL;
+        SDL_Surface *tmp = NULL;
+
+        debug("load overlay from \"%s\"\n", buf);
+
+        t = IMG_Load(buf);
+        tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0xff0000, 0xff00, 0xff, 0xff000000);
+        myvideo.layout.overlay.bg = SDL_ConvertSurface(t, tmp->format, 0);
+        SDL_FreeSurface(t);
+
+        for (cc = 0; cc < 2; cc++) {
+            SDL_Rect srt = { 0 };
+            SDL_Rect drt = { 0 };
+
+            if (myconfig.layout.overlay.lcd[cc].w && myconfig.layout.overlay.lcd[cc].h) {
+                myvideo.layout.overlay.mask[cc] = SDL_CreateRGBSurface(
+                    SDL_SWSURFACE,
+                    myconfig.layout.overlay.lcd[cc].w,
+                    myconfig.layout.overlay.lcd[cc].h,
+                    32,
+                    0xff0000,
+                    0xff00,
+                    0xff,
+                    0xff000000
+                );
+
+                srt.w = myconfig.layout.overlay.lcd[cc].w;
+                srt.h = myconfig.layout.overlay.lcd[cc].h;
+                srt.x = SCREEN_W - (myconfig.layout.overlay.lcd[cc].x + srt.w);
+                srt.y = SCREEN_H - (myconfig.layout.overlay.lcd[cc].y + srt.h);
+                debug("mask[%d]=%d,%d,%d,%d (org:%d,%d,%d,%d)\n",
+                    cc,
+                    srt.x,
+                    srt.y,
+                    srt.w,
+                    srt.h,
+                    myconfig.layout.overlay.lcd[cc].x,
+                    myconfig.layout.overlay.lcd[cc].y,
+                    myconfig.layout.overlay.lcd[cc].w,
+                    myconfig.layout.overlay.lcd[cc].h
+                );
+
+                drt.w = myconfig.layout.overlay.lcd[cc].w;
+                drt.h = myconfig.layout.overlay.lcd[cc].h;
+
+                SDL_BlitSurface(
+                    myvideo.layout.overlay.bg,
+                    &srt,
+                    myvideo.layout.overlay.mask[cc],
+                    &drt
+                );
+            }
+        }
+        SDL_FreeSurface(tmp);
+
+        debug("overlay image=%p\n", myvideo.layout.overlay.bg);
+    }
+    else {
+        myvideo.layout.overlay.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
+
+        SDL_FillRect(myvideo.layout.overlay.bg, &myvideo.layout.overlay.bg->clip_rect, SDL_MapRGB(myvideo.layout.overlay.bg->format, 0x00, 0x00, 0x00));
+        debug("loaded black overlay image\n");
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, load_overlay_file)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_device());
+    TEST_ASSERT_EQUAL_INT(3, load_overlay_file());
+    TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
 #endif
 
@@ -3795,7 +3964,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     debug("call %s(tex=%d, pixels=%p, pitch=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d))\n",
         __func__, id, pixels, pitch, srt.x, srt.y, srt.w, srt.h, drt.x, drt.y, drt.w, drt.h);
 
-    if (pixels == NULL) {
+    if ((pixels == NULL) || (srt.w == 0) || (srt.h == 0) || (drt.w == 0) || (drt.h == 0)) {
         error("pixel is null\n");
         return -1;
     }
@@ -3888,9 +4057,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     glUniform1i(myvideo.egl.frag.enable_overlay, 0);
-    if (!myvideo.menu.sdl2.enable &&
+    if (((tex == TEXTURE_LCD0) || (tex == TEXTURE_LCD1)) &&
+        !myvideo.menu.sdl2.enable &&
         !myvideo.menu.drastic.enable &&
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T3))
+        myvideo.layout.overlay.bg &&
+        (myconfig.layout.mode.sel == LAYOUT_MODE_OV))
     {
         glUniform1i(myvideo.egl.frag.enable_overlay, 1);
         glActiveTexture(GL_TEXTURE1);
@@ -3901,12 +4072,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             GL_TEXTURE_2D,
             0,
             GL_RGBA,
-            myvideo.overlay.img->w,
-            myvideo.overlay.img->h,
+            myvideo.layout.overlay.mask[tex]->w,
+            myvideo.layout.overlay.mask[tex]->h,
             0,
             GL_RGBA,
             GL_UNSIGNED_BYTE,
-            myvideo.overlay.img->pixels
+            myvideo.layout.overlay.mask[tex]->pixels
         );
     }
 
@@ -4023,12 +4194,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             GL_TEXTURE_2D,
             0,
             GL_RGBA,
-            myvideo.overlay.img->w,
-            myvideo.overlay.img->h,
+            myvideo.layout.overlay.bg->w,
+            myvideo.layout.overlay.bg->h,
             0,
             GL_RGBA,
             GL_UNSIGNED_BYTE,
-            myvideo.overlay.img->pixels
+            myvideo.layout.overlay.bg->pixels
         );
     }
 #endif
@@ -5178,6 +5349,28 @@ static int flip_lcd(void)
 #endif
 
     if (myvideo.layout.bg) {
+        glUniform1i(myvideo.egl.frag.enable_overlay, 0);
+        if (myvideo.layout.overlay.bg &&
+            (myconfig.layout.mode.sel == LAYOUT_MODE_OV))
+        {
+            glUniform1i(myvideo.egl.frag.enable_overlay, 1);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGBA,
+                myvideo.layout.overlay.bg->w,
+                myvideo.layout.overlay.bg->h,
+                0,
+                GL_RGBA,
+                GL_UNSIGNED_BYTE,
+                myvideo.layout.overlay.bg->pixels
+            );
+        }
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glVertexAttribPointer(
@@ -5993,7 +6186,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.max_mode = mode;
 #else
     switch (mode) {
-    case 0:
+    case LAYOUT_MODE_T0:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 160;
@@ -6003,7 +6196,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 640;
         myvideo.layout.mode[mode].screen[1].h = 480;
         break;
-    case 1:
+    case LAYOUT_MODE_T1:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 256;
@@ -6014,33 +6207,33 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].h = 480;
         break;
 #if defined(TRIMUI)
-    case 2:
+    case LAYOUT_MODE_T2:
         myvideo.layout.mode[mode].screen[1].x = 32;
         myvideo.layout.mode[mode].screen[1].y = 24;
         myvideo.layout.mode[mode].screen[1].w = NDS_W;
         myvideo.layout.mode[mode].screen[1].h = NDS_H;
         break;
-    case 3:
+    case LAYOUT_MODE_T3:
         myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = SCREEN_W;
         myvideo.layout.mode[mode].screen[1].h = SCREEN_H;
         break;
 #else
-    case 2:
+    case LAYOUT_MODE_T2:
         myvideo.layout.mode[mode].screen[1].x = 64;
         myvideo.layout.mode[mode].screen[1].y = 48;
         myvideo.layout.mode[mode].screen[1].w = 512;
         myvideo.layout.mode[mode].screen[1].h = 384;
         break;
-    case 3:
+    case LAYOUT_MODE_T3:
         myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 640;
         myvideo.layout.mode[mode].screen[1].h = 480;
         break;
 #endif
-    case 4:
+    case LAYOUT_MODE_T4:
         myvideo.layout.mode[mode].screen[0].x = 192;
         myvideo.layout.mode[mode].screen[0].y = 48;
         myvideo.layout.mode[mode].screen[0].w = 256;
@@ -6050,7 +6243,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 256;
         myvideo.layout.mode[mode].screen[1].h = 192;
         break;
-    case 5:
+    case LAYOUT_MODE_T5:
         myvideo.layout.mode[mode].screen[0].x = 160;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 320;
@@ -6060,7 +6253,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 320;
         myvideo.layout.mode[mode].screen[1].h = 240;
         break;
-    case 6:
+    case LAYOUT_MODE_T6:
         myvideo.layout.mode[mode].screen[0].x = 64;
         myvideo.layout.mode[mode].screen[0].y = 144;
         myvideo.layout.mode[mode].screen[0].w = 256;
@@ -6070,7 +6263,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 256;
         myvideo.layout.mode[mode].screen[1].h = 192;
         break;
-    case 7:
+    case LAYOUT_MODE_T7:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 120;
         myvideo.layout.mode[mode].screen[0].w = 320;
@@ -6080,7 +6273,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 320;
         myvideo.layout.mode[mode].screen[1].h = 240;
         break;
-    case 8:
+    case LAYOUT_MODE_T8:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 160;
@@ -6090,7 +6283,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 360;
         break;
-    case 9:
+    case LAYOUT_MODE_T9:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 256;
@@ -6100,7 +6293,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 384;
         myvideo.layout.mode[mode].screen[1].h = 288;
         break;
-    case 10:
+    case LAYOUT_MODE_T10:
         myvideo.layout.mode[mode].screen[0].x = 240;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 160;
@@ -6110,7 +6303,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 360;
         break;
-    case 11:
+    case LAYOUT_MODE_T11:
         myvideo.layout.mode[mode].screen[0].x = 256;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 128;
@@ -6120,7 +6313,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 512;
         myvideo.layout.mode[mode].screen[1].h = 384;
         break;
-    case 12:
+    case LAYOUT_MODE_T12:
         myvideo.layout.mode[mode].screen[0].x = 512;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 128;
@@ -6130,7 +6323,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 512;
         myvideo.layout.mode[mode].screen[1].h = 384;
         break;
-    case 13:
+    case LAYOUT_MODE_T13:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 128;
@@ -6140,7 +6333,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 512;
         myvideo.layout.mode[mode].screen[1].h = 384;
         break;
-    case 14:
+    case LAYOUT_MODE_T14:
         myvideo.layout.mode[mode].screen[0].x = 192;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 256;
@@ -6150,7 +6343,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 384;
         myvideo.layout.mode[mode].screen[1].h = 288;
         break;
-    case 15:
+    case LAYOUT_MODE_T15:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 144;
         myvideo.layout.mode[mode].screen[0].w = 256;
@@ -6160,7 +6353,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 384;
         myvideo.layout.mode[mode].screen[1].h = 288;
         break;
-    case 16:
+    case LAYOUT_MODE_T16:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 26;
         myvideo.layout.mode[mode].screen[0].w = 427;
@@ -6170,7 +6363,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 427;
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
-    case 17:
+    case LAYOUT_MODE_T17:
         myvideo.layout.mode[mode].screen[0].x = 320;
         myvideo.layout.mode[mode].screen[0].y = 26;
         myvideo.layout.mode[mode].screen[0].w = 427;
@@ -6180,7 +6373,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 427;
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
-    case 18:
+    case LAYOUT_MODE_T18:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 480;
@@ -6190,7 +6383,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
-    case 19:
+    case LAYOUT_MODE_T19:
         myvideo.layout.mode[mode].screen[0].x = 320;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 480;
@@ -6199,6 +6392,16 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 0;
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 320;
+        break;
+    case LAYOUT_MODE_OV:
+        myvideo.layout.mode[mode].screen[0].x = myconfig.layout.overlay.lcd[0].x;
+        myvideo.layout.mode[mode].screen[0].y = myconfig.layout.overlay.lcd[0].y;
+        myvideo.layout.mode[mode].screen[0].w = myconfig.layout.overlay.lcd[0].w;
+        myvideo.layout.mode[mode].screen[0].h = myconfig.layout.overlay.lcd[0].h;
+        myvideo.layout.mode[mode].screen[1].x = myconfig.layout.overlay.lcd[1].x;
+        myvideo.layout.mode[mode].screen[1].y = myconfig.layout.overlay.lcd[1].y;
+        myvideo.layout.mode[mode].screen[1].w = myconfig.layout.overlay.lcd[1].w;
+        myvideo.layout.mode[mode].screen[1].h = myconfig.layout.overlay.lcd[1].h;
         break;
     }
 
@@ -6272,7 +6475,7 @@ TEST(sdl2_video, free_layout_mode)
 }
 #endif
 
-static int enum_layout_bg_file(void)
+static int enum_bg_file(void)
 {
     int cc = 0;
     int mode = 0;
@@ -6322,9 +6525,9 @@ static int enum_layout_bg_file(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, enum_layout_bg_file)
+TEST(sdl2_video, enum_bg_file)
 {
-    TEST_ASSERT_EQUAL_INT(0, enum_layout_bg_file());
+    TEST_ASSERT_EQUAL_INT(0, enum_bg_file());
 }
 #endif
 
@@ -6350,11 +6553,18 @@ static int init_device(void)
     debug("total menu images=%d\n", myconfig.menu.max);
 
     enum_lang_file();
-    enum_layout_bg_file();
+    enum_bg_file();
 
     load_lang_file();
     load_menu_res();
     load_touch_pen();
+
+    myvideo.layout.overlay.max = get_total_file_count(OVERLAY_PATH);
+    if (myconfig.layout.overlay.sel >= myvideo.layout.overlay.max) {
+        myconfig.layout.overlay.sel = 0;
+    }
+    add_layout_mode(LAYOUT_MODE_OV, 0, NULL);
+    load_overlay_file();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
@@ -6549,6 +6759,7 @@ TEST(sdl2_video, set_disp_mode)
 
 static int quit_device(void)
 {
+    int cc = 0;
     void *r = NULL;
 
     debug("call %s()\n", __func__);
@@ -6587,6 +6798,16 @@ static int quit_device(void)
         myvideo.cvt = NULL;
     }
 
+    if (myvideo.layout.overlay.bg) {
+        SDL_FreeSurface(myvideo.layout.overlay.bg);
+        myvideo.layout.overlay.bg = NULL;
+    }
+
+    for (cc = 0; cc < 2; cc++) {
+        if (myvideo.layout.overlay.mask[cc]) {
+            SDL_FreeSurface(myvideo.layout.overlay.mask[cc]);
+        }
+    }
     return 0;
 }
 
@@ -6770,6 +6991,11 @@ typedef enum {
     MENU_SWIN_POS,
     MENU_LAYOUT_ATL,
     MENU_OVERLAY,
+    MENU_OVERLAY_LCD,
+    MENU_OVERLAY_LCD_X,
+    MENU_OVERLAY_LCD_Y,
+    MENU_OVERLAY_LCD_W,
+    MENU_OVERLAY_LCD_H,
     MENU_ROTATE_KEY,
     MENU_BIND_HOTKEY,
     MENU_SWAP_L1L2,
@@ -6810,6 +7036,11 @@ static const char *MENU_LIST_STR[] = {
     "  Position",
     "Layout Alt.",
     "Overlay",
+    "  LCD",
+    "    X",
+    "    Y",
+    "    Width",
+    "    Height",
     "Rotate Key",
     "Bind Hotkey",
     "Swap L1-L2",
@@ -7244,8 +7475,11 @@ TEST(sdl2_video, draw_small_block_win)
 }
 #endif
 
-static int apply_sdl2_menu_setting(int cur_sel, int right_key)
+static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
+    int add = is_lr ? 50 : 1;
+    int ov_idx = myvideo.layout.overlay.idx;
+
     debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
 
     switch(cur_sel) {
@@ -7345,9 +7579,97 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key)
         }
         break;
     case MENU_OVERLAY:
+        if (myvideo.layout.overlay.max > 0) {
+            if (right_key) {
+                if (myvideo.layout.overlay.max && myconfig.layout.overlay.sel < (myvideo.layout.overlay.max - 1)) {
+                    myconfig.layout.overlay.sel += 1;
+                }
+            }
+            else {
+                if (myconfig.layout.overlay.sel > 0) {
+                    myconfig.layout.overlay.sel -= 1;
+                }
+            }
+        }
+        break;
+    case MENU_OVERLAY_LCD:
         if (right_key) {
+            myvideo.layout.overlay.idx = 1;
         }
         else {
+            myvideo.layout.overlay.idx = 0;
+        }
+        break;
+    case MENU_OVERLAY_LCD_X:
+        if (right_key) {
+            if (myconfig.layout.overlay.lcd[ov_idx].x < (SCREEN_W - add)) {
+                myconfig.layout.overlay.lcd[ov_idx].x += add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].x = SCREEN_W - 1;
+            }
+        }
+        else {
+            if (myconfig.layout.overlay.lcd[ov_idx].x >= add) {
+                myconfig.layout.overlay.lcd[ov_idx].x -= add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].x = 0;
+            }
+        }
+        break;
+    case MENU_OVERLAY_LCD_Y:
+        if (right_key) {
+            if (myconfig.layout.overlay.lcd[ov_idx].y < (SCREEN_H - add)) {
+                myconfig.layout.overlay.lcd[ov_idx].y += add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].y  = SCREEN_H - 1;
+            }
+        }
+        else {
+            if (myconfig.layout.overlay.lcd[ov_idx].y >= add) {
+                myconfig.layout.overlay.lcd[ov_idx].y -= add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].y = 0;
+            }
+        }
+        break;
+    case MENU_OVERLAY_LCD_W:
+        if (right_key) {
+            if (myconfig.layout.overlay.lcd[ov_idx].w <= (SCREEN_W - add)) {
+                myconfig.layout.overlay.lcd[ov_idx].w += add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].w = SCREEN_W;
+            }
+        }
+        else {
+            if (myconfig.layout.overlay.lcd[ov_idx].w > add) {
+                myconfig.layout.overlay.lcd[ov_idx].w -= add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].w = 1;
+            }
+        }
+        break;
+    case MENU_OVERLAY_LCD_H:
+        if (right_key) {
+            if (myconfig.layout.overlay.lcd[ov_idx].h <= (SCREEN_H - add)) {
+                myconfig.layout.overlay.lcd[ov_idx].h += add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].h = SCREEN_H;
+            }
+        }
+        else {
+            if (myconfig.layout.overlay.lcd[ov_idx].h > add) {
+                myconfig.layout.overlay.lcd[ov_idx].h -= add;
+            }
+            else {
+                myconfig.layout.overlay.lcd[ov_idx].h = 1;
+            }
         }
         break;
     case MENU_ROTATE_KEY:
@@ -7521,6 +7843,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     const int SY = 107;
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
+    char tmp[MAX_PATH] = { 0 };
 
     debug("call %s(cur_sel=%d, cc=%d, idx=%d, sx=%d)\n", __func__, cur_sel, cc, idx, sx);
 
@@ -7581,6 +7904,28 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "[%d]   %s", myconfig.layout.mode.alt, LAYOUT_MODE_STR0[myconfig.layout.mode.alt]);
         break;
     case MENU_OVERLAY:
+        if (myvideo.layout.overlay.max > 0) {
+            get_file_name_by_index(OVERLAY_PATH, myconfig.layout.overlay.sel, tmp, 0);
+        }
+        else {
+            strcpy(tmp, l10n("None"));
+        }
+        sprintf(buf, "%s", tmp);
+        break;
+    case MENU_OVERLAY_LCD:
+        sprintf(buf, "%d", myvideo.layout.overlay.idx);
+        break;
+    case MENU_OVERLAY_LCD_X:
+        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].x);
+        break;
+    case MENU_OVERLAY_LCD_Y:
+        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].y);
+        break;
+    case MENU_OVERLAY_LCD_W:
+        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].w);
+        break;
+    case MENU_OVERLAY_LCD_H:
+        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].h);
         break;
     case MENU_ROTATE_KEY:
         sprintf(buf, "[%d]   ", myconfig.layout.mode.alt);
@@ -7678,7 +8023,6 @@ static int process_sdl2_setting(int key)
     int sx = 0;
     int s0 = 0;
     int s1 = 0;
-    int ov = -1;
     int idx = 0;
     int mode = -1;
     uint32_t col0 = 0;
@@ -7699,10 +8043,16 @@ static int process_sdl2_setting(int key)
         }
         break;
     case KEY_BIT_LEFT:
-        apply_sdl2_menu_setting(cur_sel, 0);
+        apply_sdl2_menu_setting(cur_sel, 0, 0);
         break;
     case KEY_BIT_RIGHT:
-        apply_sdl2_menu_setting(cur_sel, 1);
+        apply_sdl2_menu_setting(cur_sel, 1, 0);
+        break;
+    case KEY_BIT_L1:
+        apply_sdl2_menu_setting(cur_sel, 0, 1);
+        break;
+    case KEY_BIT_R1:
+        apply_sdl2_menu_setting(cur_sel, 1, 1);
         break;
     case KEY_BIT_B:
         if (pre_lang != myconfig.lang) {
@@ -7722,6 +8072,9 @@ static int process_sdl2_setting(int key)
         }
 #endif
 
+        add_layout_mode(LAYOUT_MODE_OV, 0, NULL);
+        load_overlay_file();
+
         myvideo.menu.sdl2.enable = 0;
 
 #if defined(PANDORA)
@@ -7737,9 +8090,6 @@ static int process_sdl2_setting(int key)
     }
     else if (cur_sel == MENU_LAYOUT_ATL) {
         mode = myconfig.layout.mode.alt;
-    }
-    else if (cur_sel == MENU_OVERLAY) {
-        ov = myconfig.layout.mode.alt;
     }
 
     if (myvideo.menu.sdl2.bg && myvideo.cvt) {
@@ -7860,6 +8210,9 @@ static int process_sdl2_setting(int key)
             }
             break;
 #endif
+        case MENU_OVERLAY:
+            col1 = (myvideo.layout.overlay.max > 0) ? MENU_COLOR_UNSEL : MENU_COLOR_DIS;
+            break;
         default:
             break;
         }

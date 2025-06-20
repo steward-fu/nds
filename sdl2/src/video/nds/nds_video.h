@@ -459,6 +459,13 @@ typedef struct {
         int max_mode;
         layout_mode_t mode[MAX_LAYOUT_MODE];
 
+        struct {
+            int max;
+            int idx;
+            SDL_Surface *bg;
+            SDL_Surface *mask[2];
+        } overlay;
+
 #if defined(TRIMUI)
         int pre_mode;
         int restore;
@@ -473,10 +480,6 @@ typedef struct {
         int running;
         pthread_t id;
     } thread;
-
-    struct {
-        SDL_Surface *img;
-    } overlay;
 } nds_video;
 
 void update_wayland_res(int, int);

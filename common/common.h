@@ -10,13 +10,14 @@
 #define NDS_Hx2     (NDS_H << 1)
 #define NDS_DEBUG   "NDS_DEBUG_LOG"
 
-#define RES_PATH    "res"
-#define BG_PATH     RES_PATH"/bg"
-#define PEN_PATH    RES_PATH"/pen"
-#define LANG_PATH   RES_PATH"/lang"
-#define MENU_PATH   RES_PATH"/menu"
-#define CFG_FILE    RES_PATH"/nds.cfg"
-#define FONT_FILE   RES_PATH"/font/font.ttf"
+#define RES_PATH        "res"
+#define BG_PATH         RES_PATH"/bg"
+#define PEN_PATH        RES_PATH"/pen"
+#define LANG_PATH       RES_PATH"/lang"
+#define MENU_PATH       RES_PATH"/menu"
+#define CFG_FILE        RES_PATH"/nds.cfg"
+#define FONT_FILE       RES_PATH"/font/font.ttf"
+#define OVERLAY_PATH    RES_PATH"/overlay"
 
 #define BIOS_PATH                   "system/"
 #define NDS_FIRMWARE_FILE           "nds_firmware.bin"
@@ -61,6 +62,7 @@
 #define LAYOUT_MODE_T17 17
 #define LAYOUT_MODE_T18 18
 #define LAYOUT_MODE_T19 19
+#define LAYOUT_MODE_OV  20
 
 #define NDS_ALPHA_MAX   9
 #define MAX_PATH        255
@@ -140,6 +142,17 @@ typedef struct {
         struct {
             int sel;
         } bg;
+
+        struct {
+            int sel;
+
+            struct {
+                int x;
+                int y;
+                int w;
+                int h;
+            } lcd[2];
+        } overlay;
 
         struct {
             int pos;
