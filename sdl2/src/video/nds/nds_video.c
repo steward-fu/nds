@@ -153,11 +153,23 @@ const char *vert_shader_src =
 const char *frag_shader_src =
     "precision mediump float;                                       \n"
     "varying vec2 frag_tex_coord;                                   \n"
+    "uniform int frag_enable_overlay;                               \n"
     "uniform float frag_alpha;                                      \n"
     "uniform sampler2D frag_tex_main;                               \n"
+    "uniform sampler2D frag_tex_overlay;                            \n"
     "void main()                                                    \n"
     "{                                                              \n"
-    "    vec3 tex = texture2D(frag_tex_main, frag_tex_coord).bgr;   \n"
+    "    vec3 tex;                                                  \n"
+    "    if (frag_enable_overlay > 0) {                             \n"
+    "        tex = mix(                                             \n"
+    "            texture2D(frag_tex_main, frag_tex_coord),          \n"
+    "            texture2D(frag_tex_overlay, frag_tex_coord),       \n"
+    "            texture2D(frag_tex_overlay, frag_tex_coord).a      \n"
+    "        ).bgr;                                                 \n"
+    "   }                                                           \n"
+    "   else {                                                      \n"
+    "       tex = texture2D(frag_tex_main, frag_tex_coord).bgr;     \n"
+    "   }                                                           \n"
     "    gl_FragColor = vec4(tex, frag_alpha);                      \n"
     "}                                                              \n";
 #endif
@@ -2603,7 +2615,9 @@ static void* video_handler(void *param)
     myvideo.egl.vert.tex_pos = glGetAttribLocation(myvideo.egl.object, "vert_tex_pos");
     myvideo.egl.vert.tex_coord = glGetAttribLocation(myvideo.egl.object, "vert_tex_coord");
     myvideo.egl.frag.tex_main = glGetUniformLocation(myvideo.egl.object, "frag_tex_main");
+    myvideo.egl.frag.tex_overlay = glGetUniformLocation(myvideo.egl.object, "frag_tex_overlay");
     myvideo.egl.frag.alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
+    myvideo.egl.frag.enable_overlay = glGetUniformLocation(myvideo.egl.object, "frag_enable_overlay");
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
@@ -2617,7 +2631,9 @@ static void* video_handler(void *param)
     glEnableVertexAttribArray(myvideo.egl.vert.tex_pos);
     glEnableVertexAttribArray(myvideo.egl.vert.tex_coord);
     glUniform1i(myvideo.egl.frag.tex_main, 0);
+    glUniform1i(myvideo.egl.frag.tex_overlay, 1);
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
+    glUniform1i(myvideo.egl.frag.enable_overlay, 0);
 #endif
 
 #if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2626,8 +2642,9 @@ static void* video_handler(void *param)
 
     debug("call %s()++\n", __func__);
 
-#if defined(FLIP)
-    myvideo.overlay.img = IMG_Load("/mnt/SDCARD/Emu/drastic/res/overlay/grid.png");
+#if defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+    //myvideo.overlay.img = IMG_Load("/mnt/SDCARD/Emu/drastic/res/overlay/grid.png");
+    myvideo.overlay.img = IMG_Load("/home/defaultuser/Data/nds/drastic/res/overlay/grid.png");
     debug("overlay img=%p\n", myvideo.overlay.img);
 #endif
 
@@ -3870,8 +3887,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         fg_vertices[16] = fg_vertices[1];
     }
 
-    glUniform1i(myvideo.egl.frag.enable_overlay, (myconfig.layout.mode.sel == LAYOUT_MODE_T3) ? 1 : 0);
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T3) {
+    glUniform1i(myvideo.egl.frag.enable_overlay, 0);
+    if (!myvideo.menu.sdl2.enable &&
+        !myvideo.menu.drastic.enable &&
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T3))
+    {
+        glUniform1i(myvideo.egl.frag.enable_overlay, 1);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -3986,6 +4007,31 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glUniform1i(myvideo.egl.frag.enable_overlay, 0);
+#if !defined(XT894)
+    if (!myvideo.menu.sdl2.enable &&
+        !myvideo.menu.drastic.enable &&
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T6))
+    {
+        glUniform1i(myvideo.egl.frag.enable_overlay, 1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA,
+            myvideo.overlay.img->w,
+            myvideo.overlay.img->h,
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            myvideo.overlay.img->pixels
+        );
+    }
+#endif
 
     if (id == TEXTURE_TMP) {
         id = TEXTURE_LCD0;
@@ -5917,6 +5963,32 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+
+        m = 2.0;
+        mode = 5;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].w = 0;
+        myvideo.layout.mode[mode].screen[1].h = 0;
+
+        mode = 6;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - 640) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 480) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = 640;
+        myvideo.layout.mode[mode].screen[0].h = 480;
+        myvideo.layout.mode[mode].screen[1].w = 0;
+        myvideo.layout.mode[mode].screen[1].h = 0;
+
+        m = 2.8125;
+        mode = 7;
+        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+        myvideo.layout.mode[mode].screen[1].w = 0;
+        myvideo.layout.mode[mode].screen[1].h = 0;
 
         myvideo.layout.max_mode = mode;
 #else
