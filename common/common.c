@@ -177,14 +177,14 @@ int reset_config(void)
     myconfig.layout.swin.border = DEF_SWIN_BORDER;
     myconfig.pen.speed = DEF_PEN_SPEED;
     myconfig.fast_forward = DEF_FAST_FORWARD;
-    myconfig.layout.overlay.lcd[0].x = 0;
-    myconfig.layout.overlay.lcd[0].y = 0;
-    myconfig.layout.overlay.lcd[0].w = LAYOUT_BG_W;
-    myconfig.layout.overlay.lcd[0].h = LAYOUT_BG_H;
-    myconfig.layout.overlay.lcd[1].x = 0;
-    myconfig.layout.overlay.lcd[1].y = 0;
-    myconfig.layout.overlay.lcd[1].w = 0;
-    myconfig.layout.overlay.lcd[1].h = 0;
+    myconfig.layout.cust.lcd[0].x = 0;
+    myconfig.layout.cust.lcd[0].y = 0;
+    myconfig.layout.cust.lcd[0].w = LAYOUT_BG_W;
+    myconfig.layout.cust.lcd[0].h = LAYOUT_BG_H;
+    myconfig.layout.cust.lcd[1].x = 0;
+    myconfig.layout.cust.lcd[1].y = 0;
+    myconfig.layout.cust.lcd[1].w = 0;
+    myconfig.layout.cust.lcd[1].h = 0;
 
 #if defined(A30) || defined(FLIP) || defined(UT)
     myconfig.joy.dzone = DEF_JOY_DZONE;

@@ -42,27 +42,28 @@
 #define LAYOUT_BG_W     640
 #define LAYOUT_BG_H     480
 
-#define LAYOUT_MODE_T0  0
-#define LAYOUT_MODE_T1  1
-#define LAYOUT_MODE_T2  2
-#define LAYOUT_MODE_T3  3
-#define LAYOUT_MODE_T4  4
-#define LAYOUT_MODE_T5  5
-#define LAYOUT_MODE_T6  6
-#define LAYOUT_MODE_T7  7
-#define LAYOUT_MODE_T8  8
-#define LAYOUT_MODE_T9  9
-#define LAYOUT_MODE_T10 10
-#define LAYOUT_MODE_T11 11
-#define LAYOUT_MODE_T12 12
-#define LAYOUT_MODE_T13 13
-#define LAYOUT_MODE_T14 14
-#define LAYOUT_MODE_T15 15
-#define LAYOUT_MODE_T16 16
-#define LAYOUT_MODE_T17 17
-#define LAYOUT_MODE_T18 18
-#define LAYOUT_MODE_T19 19
-#define LAYOUT_MODE_OV  20
+#define LAYOUT_MODE_T0      0
+#define LAYOUT_MODE_T1      1
+#define LAYOUT_MODE_T2      2
+#define LAYOUT_MODE_T3      3
+#define LAYOUT_MODE_T4      4
+#define LAYOUT_MODE_T5      5
+#define LAYOUT_MODE_T6      6
+#define LAYOUT_MODE_T7      7
+#define LAYOUT_MODE_T8      8
+#define LAYOUT_MODE_T9      9
+#define LAYOUT_MODE_T10     10
+#define LAYOUT_MODE_T11     11
+#define LAYOUT_MODE_T12     12
+#define LAYOUT_MODE_T13     13
+#define LAYOUT_MODE_T14     14
+#define LAYOUT_MODE_T15     15
+#define LAYOUT_MODE_T16     16
+#define LAYOUT_MODE_T17     17
+#define LAYOUT_MODE_T18     18
+#define LAYOUT_MODE_T19     19
+#define LAYOUT_MODE_CUST    20
+#define LAYOUT_MODE_MAX     21
 
 #define NDS_ALPHA_MAX   9
 #define MAX_PATH        255
@@ -101,6 +102,13 @@ typedef enum {
     PEN_RB = 3,
     PEN_CP = 4
 } pen_type_t;
+
+typedef enum {
+    OVERLAY_APPLY_MODE_BOTH = 0,
+    OVERLAY_APPLY_MODE_LCD0,
+    OVERLAY_APPLY_MODE_LCD1,
+    OVERLAY_APPLY_MODE_MAX
+} overlay_apply_mode_t;
 
 typedef enum {
     FILTER_BLUR = 0,
@@ -145,6 +153,13 @@ typedef struct {
 
         struct {
             int sel;
+            int enable;
+            int cur_sel_layout;
+            overlay_apply_mode_t apply[LAYOUT_MODE_MAX];
+        } overlay;
+
+        struct {
+            int sel;
 
             struct {
                 int x;
@@ -152,7 +167,7 @@ typedef struct {
                 int w;
                 int h;
             } lcd[2];
-        } overlay;
+        } cust;
 
         struct {
             int pos;

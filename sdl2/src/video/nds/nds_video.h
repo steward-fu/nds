@@ -461,7 +461,7 @@ typedef struct {
 
         struct {
             int max;
-            int idx;
+            //int idx;
             SDL_Surface *bg;
             SDL_Surface *mask[2];
 
