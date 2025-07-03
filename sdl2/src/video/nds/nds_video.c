@@ -106,6 +106,7 @@ static int init_video(_THIS);
 static int free_menu_res(void);
 static int load_lang_file(void);
 static int load_layout_bg(void);
+static int load_overlay_file(void);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
@@ -1790,6 +1791,8 @@ static int process_screen(void)
         }
         else if (cur_layout_mode != myconfig.layout.mode.sel) {
             show_info = 50;
+            load_overlay_file();
+
             if (myconfig.layout.mode.sel == LAYOUT_MODE_CUST) {
                 sprintf(buf, " %s: %s ", l10n("LAYOUT MODE"), l10n("CUST"));
             }
@@ -2984,8 +2987,8 @@ static int load_overlay_file(void)
 
             srt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].w;
             srt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].h;
-            srt.x = SCREEN_W - (myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].x + srt.w);
-            srt.y = SCREEN_H - (myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].y + srt.h);
+            srt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].x;
+            srt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].y;
 
             myvideo.layout.overlay.mask[cc] = SDL_CreateRGBSurface(
                 SDL_SWSURFACE,
@@ -2998,14 +3001,6 @@ static int load_overlay_file(void)
                 0xff000000
             );
 
-            debug("mask[%d]=%d,%d,%d,%d\n",
-                cc,
-                srt.x,
-                srt.y,
-                srt.w,
-                srt.h
-                );
-
             drt.x = 0;
             drt.y = 0;
             drt.w = srt.w;
@@ -3016,6 +3011,18 @@ static int load_overlay_file(void)
                 &srt,
                 myvideo.layout.overlay.mask[cc],
                 &drt
+            );
+
+            printf("overlay[%d]=(src:%d,%d,%d,%d) (drt:%d,%d,%d,%d)\n",
+                cc,
+                srt.x,
+                srt.y,
+                srt.w,
+                srt.h,
+                drt.x,
+                drt.y,
+                drt.w,
+                drt.h
             );
         }
         SDL_FreeSurface(tmp);
@@ -4089,7 +4096,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         !myvideo.menu.sdl2.enable &&
         !myvideo.menu.drastic.enable &&
         myvideo.layout.overlay.bg &&
-        myconfig.layout.overlay.enable)
+        myconfig.layout.overlay.enable &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_T16) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_T17) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_T18) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_T19))
     {
         int apply = myconfig.layout.overlay.apply[myconfig.layout.mode.sel];
 
