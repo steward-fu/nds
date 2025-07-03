@@ -2227,6 +2227,7 @@ TEST(sdl2_video, prehook_cb_update_screen)
 }
 #endif
 
+#if defined(NDS_ARM64)
 static void prehook_cb_print_string_ext(
     char *p,
     unsigned long fg,
@@ -2240,6 +2241,7 @@ static void prehook_cb_print_string_ext(
 {
     debug("call %s(p=\'%s\', fg=0x%08lx, bg=0x%08lx, x=%03d, y=%03d)\n", __func__, p, fg, bg, x, y);
 }
+#endif
 
 static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
@@ -2861,7 +2863,7 @@ static int get_total_file_count(const char *folder)
     int cnt = 0;
     DIR *d = NULL;
     struct dirent *dir = NULL;
-    char buf[MAX_PATH] = { 0 };
+    char buf[MAX_PATH + 32] = { 0 };
 
     debug("call %s()\n", __func__);
 
@@ -4087,24 +4089,31 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         !myvideo.menu.sdl2.enable &&
         !myvideo.menu.drastic.enable &&
         myvideo.layout.overlay.bg &&
-        (myconfig.layout.mode.sel == LAYOUT_MODE_CUST))
+        myconfig.layout.overlay.enable)
     {
-        glUniform1i(myvideo.egl.frag.enable_overlay, 1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA,
-            myvideo.layout.overlay.mask[tex]->w,
-            myvideo.layout.overlay.mask[tex]->h,
-            0,
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            myvideo.layout.overlay.mask[tex]->pixels
-        );
+        int apply = myconfig.layout.overlay.apply[myconfig.layout.mode.sel];
+
+        if ((apply == OVERLAY_APPLY_MODE_BOTH) ||
+            ((apply == OVERLAY_APPLY_MODE_LCD0) && (tex == TEXTURE_LCD0)) ||
+            ((apply == OVERLAY_APPLY_MODE_LCD1) && (tex == TEXTURE_LCD1)))
+        {
+            glUniform1i(myvideo.egl.frag.enable_overlay, 1);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGBA,
+                myvideo.layout.overlay.mask[tex]->w,
+                myvideo.layout.overlay.mask[tex]->h,
+                0,
+                GL_RGBA,
+                GL_UNSIGNED_BYTE,
+                myvideo.layout.overlay.mask[tex]->pixels
+            );
+        }
     }
 
     if (tex == TEXTURE_TMP) {
@@ -6968,7 +6977,8 @@ static const char *JOY_CUST_KEY_STR[] = {
 static const char *LAYOUT_OV_MODE_STR[] = {
     "LCD0 & LCD1",
     "LCD0",
-    "LCD1"
+    "LCD1",
+    "None"
 };
 
 static int lang_next(void)
@@ -7527,7 +7537,7 @@ TEST(sdl2_video, draw_small_block_win)
 
 static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
-    int add = is_lr ? 50 : 1;
+    //int add = is_lr ? 50 : 1;
 
     debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
 
@@ -8384,8 +8394,8 @@ static int process_sdl2_setting(int key)
     else if (cur_sel == MENU_LAYOUT_ATL) {
         mode = myconfig.layout.mode.alt;
     }
-    else if (cur_sel == MENU_OVERLAY_LAYOUT) {
-        mode = myconfig.layout.overlay.cur_sel_layout, myvideo.cvt;
+    else if ((cur_sel == MENU_OVERLAY_LAYOUT) || (cur_sel == MENU_OVERLAY_APPLY)) {
+        mode = myconfig.layout.overlay.cur_sel_layout;
     }
     draw_small_block_win(450, 360, mode, myvideo.cvt);
 
