@@ -1,6 +1,9 @@
 CPU=CPU頻率
-Overlay=遮罩圖片
-OVERLAY=遮罩圖片
+Overlay=使用遮罩
+OVERLAY=使用遮罩
+  Image=  圖片
+  Layout=  佈局
+  Apply On=  套用
 Layout Mode=顯示組合
 LAYOUT MODE=顯示組合
   Alpha=小視窗透明度

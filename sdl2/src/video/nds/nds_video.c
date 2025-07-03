@@ -8221,7 +8221,6 @@ static int process_sdl2_setting(int key)
         col1 = col0 = (cur_sel == cc) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL;
         switch (cc) {
         case MENU_SWIN_ALPHA:
-            sx = 20;
             if ((cur_sel == MENU_SWIN_ALPHA) &&
                 ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
                 (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
@@ -8240,7 +8239,6 @@ static int process_sdl2_setting(int key)
             }
             break;
         case MENU_SWIN_BORDER:
-            sx = 20;
             if ((cur_sel == MENU_SWIN_BORDER) &&
                 (myconfig.layout.swin.alpha > 0) &&
                 ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
@@ -8261,7 +8259,6 @@ static int process_sdl2_setting(int key)
             }
             break;
         case MENU_SWIN_POS:
-            sx = 20;
             if ((cur_sel == MENU_SWIN_POS) &&
                 ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
                 (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
