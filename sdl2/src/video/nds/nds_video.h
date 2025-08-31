@@ -15,7 +15,7 @@
 #include <linux/omapfb.h>
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
 #include <wayland-client.h>
 #include <wayland-egl.h>
 #endif
@@ -276,7 +276,7 @@ typedef struct {
         char *trans[MAX_LANG_LINE];
     } lang;
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
     struct {
         struct wl_shell *shell;
         struct wl_region *region;
@@ -296,7 +296,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
     struct {
         EGLConfig config;
         EGLDisplay display;

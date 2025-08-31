@@ -50,7 +50,7 @@ int read_file(const char *fpath, void *buf, int len)
     debug("call %s()\n", __func__);
 
     if (!fpath || !buf) {
-        error("invalid parameters(0x%x, 0x%x)\n", fpath, buf);
+        error("invalid parameters(%p, %p)\n", fpath, buf);
         return -1;
     }
 
@@ -91,7 +91,7 @@ int write_file(const char *path, const void *buf, int len)
     debug("call %s(path=%s, buf=%p, len=%d)\n", __func__, path, buf, len);
 
     if (!path || !buf) {
-        error("invalid parameters(0x%x, 0x%x)\n", path, buf);
+        error("invalid parameters(%p, %p)\n", path, buf);
         return -1;
     }
 

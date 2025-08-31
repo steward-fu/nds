@@ -392,7 +392,7 @@ typedef struct _cust_key_t {
 typedef struct {
     int fd;
 
-#if defined(PANDORA)
+#if defined(PANDORA) || defined(UT)
     int kb_fd;
 #endif
 

@@ -574,7 +574,7 @@ TEST(alsa, set_auto_state)
 
 static int init_queue(queue_t *q, size_t s)
 {
-    debug("call %s(q=%p, s=%d)\n", __func__, q, s);
+    debug("call %s(q=%p, s=%ld)\n", __func__, q, s);
 
     if (!q) {
         error("q is null\n");
@@ -714,7 +714,7 @@ static int put_queue(queue_t *q, uint8_t *buf, size_t size)
     int tmp = 0;
     int avai = 0;
 
-    debug("call %s(q=%p, buf=%p, size=%d)\n", __func__, q, buf, size);
+    debug("call %s(q=%p, buf=%p, size=%ld)\n", __func__, q, buf, size);
 
     if (!q || !buf) {
         error("invalid parameters\n");
@@ -791,7 +791,7 @@ static size_t get_queue(queue_t *q, uint8_t *buf, size_t len)
     int avai = 0;
     int size = len;
 
-    debug("call %s(q=%p, buf=%p, max=%d)\n", __func__, q, buf, len);
+    debug("call %s(q=%p, buf=%p, max=%ld)\n", __func__, q, buf, len);
 
     if (!q || !buf) {
         error("invalid parameters\n");
@@ -1150,7 +1150,7 @@ TEST(alsa, snd_pcm_prepare)
 
 snd_pcm_sframes_t snd_pcm_readi(snd_pcm_t *pcm, void *buf, snd_pcm_uframes_t size)
 {
-    debug("call %s(pcm=%p, buf=%p, size=%d)\n", __func__, pcm, buf, size);
+    debug("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
 
     return 0;
 }
@@ -1470,7 +1470,7 @@ TEST(alsa, snd_pcm_sw_params_malloc)
 
 snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframes_t size)
 {
-    debug("call %s(pcm=%p, buf=%p, size=%d)\n", __func__, pcm, buf, size);
+    debug("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
 
 #if defined(UT)
     return size;

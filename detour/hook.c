@@ -106,7 +106,7 @@ static int32_t prehook_cb_load_state_index(void *system, uint32_t index, uint16_
     }
 
     if (!system || !d0 || !d1) {
-        error("invalid parameters(0x%x, 0x%x, 0x%x)\n", system, d0, d1);
+        error("invalid parameters(%p, %p, %p)\n", system, d0, d1);
         return -1;
     }
 
@@ -114,7 +114,7 @@ static int32_t prehook_cb_load_state_index(void *system, uint32_t index, uint16_
     return 0;
 #endif
 
-    sprintf(buf, "%s/%s_%d.dss", state_path, myhook.var.system.gamecard_name, index);
+    sprintf(buf, "%s/%s_%d.dss", state_path, (const char *)myhook.var.system.gamecard_name, index);
     pfn((void*)myhook.var.system.base, buf, d0, d1, shot_only);
 }
 
@@ -139,7 +139,7 @@ static int32_t prehook_cb_save_state_index(void *system, uint32_t index, uint16_
     }
 
     if (!system || !d0 || !d1) {
-        error("invalid parameters(0x%x, 0x%x, 0x%x)\n", system, d0, d1);
+        error("invalid parameters(%p, %p, %p)\n", system, d0, d1);
         return -1;
     }
 
@@ -147,7 +147,7 @@ static int32_t prehook_cb_save_state_index(void *system, uint32_t index, uint16_
     return 0;
 #endif
 
-    sprintf(buf, "%s_%d.dss", myhook.var.system.gamecard_name, index);
+    sprintf(buf, "%s_%d.dss", (const char *)myhook.var.system.gamecard_name, index);
     pfn((void*)myhook.var.system.base, state_path, buf, d0, d1);
 }
 
@@ -181,7 +181,7 @@ static void prehook_cb_initialize_backup(backup_struct *backup, backup_type_enum
     if (path && path[0]) {
         data_file_name = malloc(MAX_PATH);
         memset(data_file_name, 0, MAX_PATH);
-        sprintf(data_file_name, "%s/%s.dsv", state_path, myhook.var.system.gamecard_name);
+        sprintf(data_file_name, "%s/%s.dsv", state_path, (const char *)myhook.var.system.gamecard_name);
         debug("new state path=\"%s\"\n", data_file_name);
     }
 
@@ -314,7 +314,7 @@ int save_state(int slot)
 
     do {
         if (!d0 || !d1) {
-            error("invalid d0 or d1\n", __func__);
+            error("invalid d0 or d1\n");
             break;
         }
 
@@ -341,7 +341,7 @@ int save_state(int slot)
             }
 
             r = 0;
-            sprintf(buf, "%s_%d.dss", myhook.var.system.gamecard_name, slot);
+            sprintf(buf, "%s_%d.dss", (const char *)myhook.var.system.gamecard_name, slot);
             pfn((void*)myhook.var.system.base, state_path, buf, d0, d1);
         }
     } while(0);
@@ -397,7 +397,7 @@ int load_state(int slot)
             return -1;
         }
 
-        sprintf(buf, "%s/%s_%d.dss", state_path, myhook.var.system.gamecard_name, slot);
+        sprintf(buf, "%s/%s_%d.dss", state_path, (const char *)myhook.var.system.gamecard_name, slot);
         pfn((void*)myhook.var.system.base, buf, 0, 0, 0);
     }
 
@@ -449,7 +449,7 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     uint8_t src[LEN] = { 0 };
     uint8_t dst[LEN] = { 0x42, 0x00, 0x00, 0x58, 0x40, 0x00, 0x1f, 0xd6 };
 
-    debug("call %s(pos=0x%x, pfn=%p)\n", __func__, pos, pfn);
+    debug("call %s(pos=0x%lx, pfn=0x%lx)\n", __func__, pos, pfn);
 
     snprintf(buf, sizeof(buf), "/tmp/%s", DRASTIC64);
     debug("patch the target file (\"%s\")\n", buf);
@@ -473,12 +473,12 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     dst[14] = (uint8_t)(pfn >> 48);
     dst[15] = (uint8_t)(pfn >> 56);
 
-    debug("org 0x%04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+    debug("org 0x%04lx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
         pos,
         src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7],
         src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
     );
-    debug("new 0x%04llx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+    debug("new 0x%04lx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
         pos,
         dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7],
         dst[9], dst[9], dst[10], dst[11], dst[12], dst[13], dst[14], dst[15]
@@ -487,7 +487,7 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     if (memcmp(src, dst, LEN)) {
         fseek(fp, pos, SEEK_SET);
         len = fwrite(dst, 1, LEN, fp);
-        debug("patched drastic64 at 0x%llx successfully\n", pos);
+        debug("patched drastic64 at 0x%lx successfully\n", pos);
     }
     else {
         r = 0;
@@ -660,7 +660,7 @@ TEST(detour, init_table)
 
 static int prehook_cb_puts(const char *s)
 {
-    printf(s);
+    printf("%s", s);
 }
 
 static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
@@ -677,7 +677,7 @@ static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
 #if defined(UT)
 TEST(detour, prehook_cb_printf_chk)
 {
-    TEST_ASSERT_EQUAL_INT(0, prehook_cb_printf_chk());
+    TEST_ASSERT_EQUAL_INT(0, prehook_cb_printf_chk(0, NULL));
 }
 #endif
 
@@ -685,7 +685,7 @@ int init_hook(const char *home, size_t page, const char *path)
 {
     page_size = page;
 
-    debug("call %s(home=\"%s\", page=%d, path=\"%s\")\n", __func__, home, page, path);
+    debug("call %s(home=\"%s\", page=%ld, path=\"%s\")\n", __func__, home, page, path);
 
     strncpy(home_path, home, sizeof(home_path));
     init_table();
@@ -716,9 +716,9 @@ TEST(detour, init_hook)
 {
     const char *path = "/tmp";
 
-    TEST_ASSERT_EQUAL_INT(0, init_hook(0, NULL));
+    TEST_ASSERT_EQUAL_INT(0, init_hook(NULL, 0, NULL));
     TEST_ASSERT_EQUAL_INT(0, is_state_hooked);
-    TEST_ASSERT_EQUAL_INT(0, init_hook(0, path));
+    TEST_ASSERT_EQUAL_INT(0, init_hook(NULL, 0, path));
     TEST_ASSERT_EQUAL_INT(1, is_state_hooked);
 }
 #endif
