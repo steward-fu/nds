@@ -81,9 +81,22 @@
 #define DEF_JOY_DZONE       25
 
 extern int enable_debug_log;
-#define LOG_FILE            "mynds.log"
-#define debug(...)          do { if (enable_debug_log) { printf("[DEBUG] "); printf(__VA_ARGS__); } } while(0);
-#define error(...)          do { if (enable_debug_log) { printf("[ERROR] "); printf(__VA_ARGS__); } } while(0);
+
+#define LOG_FILE  "mynds.log"
+
+#define debug(...) do {         \
+    if (enable_debug_log) {     \
+        printf("[DEBUG] ");     \
+        printf(__VA_ARGS__);    \
+    }                           \
+} while(0);
+
+#define error(...) do {         \
+    if (enable_debug_log) {     \
+        printf("[ERROR] ");     \
+        printf(__VA_ARGS__);    \
+    }                           \
+} while(0);
 
 typedef enum {
     TEXTURE_LCD0 = 0,

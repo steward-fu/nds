@@ -48,7 +48,9 @@ endif
 .PHONY: cfg
 cfg:
 	mkdir -p drastic/lib
+ifneq ($(MOD),ut)
 	cp -a assets/$(MOD)/* drastic/ || true
+endif
 
 ifeq ($(wildcard sdl2/Makefile),)
 	cd sdl2 && ./autogen.sh && MOD=$(MOD) ./configure $(SDL2_CFG) --host=$(HOST)

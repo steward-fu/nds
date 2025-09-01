@@ -667,6 +667,10 @@ static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
 {
     va_list args = { 0 };
 
+    if (fmt == NULL) {
+        return -1;
+    }
+
     va_start(args, fmt);
     vprintf(fmt, args);
     va_end(args);
@@ -677,7 +681,8 @@ static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
 #if defined(UT)
 TEST(detour, prehook_cb_printf_chk)
 {
-    TEST_ASSERT_EQUAL_INT(0, prehook_cb_printf_chk(0, NULL));
+    TEST_ASSERT_EQUAL_INT(0, prehook_cb_printf_chk(0, "%d", 100));
+    TEST_ASSERT_EQUAL_INT(-1, prehook_cb_printf_chk(0, NULL));
 }
 #endif
 
@@ -686,6 +691,10 @@ int init_hook(const char *home, size_t page, const char *path)
     page_size = page;
 
     debug("call %s(home=\"%s\", page=%ld, path=\"%s\")\n", __func__, home, page, path);
+
+    if (home == NULL) {
+        return -1;
+    }
 
     strncpy(home_path, home, sizeof(home_path));
     init_table();

@@ -8,6 +8,7 @@ CFLAGS  += -I../ut/extras/memory/src
 CFLAGS  += -I../ut/extras/fixture/src
 CFLAGS  += -fsanitize=leak
 CFLAGS  += -fsanitize=address
+CFLAGS  += -ggdb
 
 LDFLAGS += -lasan
 LDFLAGS += -lubsan

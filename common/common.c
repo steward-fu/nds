@@ -27,7 +27,6 @@
 #include "drastic_bios_arm9.h"
 
 int enable_debug_log = 0;
-
 nds_config myconfig = { 0 };
 
 #if defined(UT)
@@ -42,21 +41,21 @@ TEST_TEAR_DOWN(common)
 }
 #endif
 
-int read_file(const char *fpath, void *buf, int len)
+int read_file(const char *path, void *buf, int len)
 {
     int r = 0;
     int fd = -1;
 
-    debug("call %s()\n", __func__);
+    debug("call %s(path=%p, buf=%p, len=%d)\n", __func__, path, buf, len);
 
-    if (!fpath || !buf) {
-        error("invalid parameters(%p, %p)\n", fpath, buf);
+    if (!path || !buf || !len) {
+        error("invalid input\n");
         return -1;
     }
 
-    fd = open(fpath, O_RDONLY);
+    fd = open(path, O_RDONLY);
     if (fd < 0) {
-        error("failed to open \"%s\"\n", fpath);
+        error("failed to open \"%s\"\n", path);
         return -1;
     }
 
@@ -88,10 +87,10 @@ int write_file(const char *path, const void *buf, int len)
     int r = 0;
     int fd = -1;
 
-    debug("call %s(path=%s, buf=%p, len=%d)\n", __func__, path, buf, len);
+    debug("call %s(path=%p, buf=%p, len=%d)\n", __func__, path, buf, len);
 
     if (!path || !buf) {
-        error("invalid parameters(%p, %p)\n", path, buf);
+        error("invalid input\n");
         return -1;
     }
 
@@ -128,7 +127,12 @@ int write_log(const char *msg, const char *fmt, ...)
     static int need_init = 1;
 
     FILE *file = fopen(LOG_FILE, need_init ? "w" : "a+");
+
     if (NULL == file) {
+        return -1;
+    }
+
+    if (!msg || !fmt) {
         return -1;
     }
 
@@ -161,6 +165,7 @@ int write_log(const char *msg, const char *fmt, ...)
 #if defined(UT)
 TEST(common, write_log)
 {
+    TEST_ASSERT_EQUAL_INT(-1, write_log(NULL, NULL));
     TEST_ASSERT_EQUAL_INT(0, write_log("[TEST]", "123"));
     unlink(LOG_FILE);
 }
@@ -171,6 +176,7 @@ int reset_config(void)
     debug("call %s()\n", __func__);
 
     memset(&myconfig, 0, sizeof(myconfig));
+
     myconfig.magic = REL_VER;
     myconfig.layout.mode.sel = DEF_LAYOUT_MODE;
     myconfig.layout.swin.alpha = DEF_SWIN_ALPHA;
@@ -199,13 +205,14 @@ int reset_config(void)
     myconfig.rjoy.cust_key[2] = 6;
     myconfig.rjoy.cust_key[3] = 7;
 #endif
+
     return 0;
 }
 
 #if defined(UT)
 TEST(common, reset_config)
 {
-    myconfig.fast_forward = 123;
+    myconfig.fast_forward = 100;
     TEST_ASSERT_EQUAL_INT(0, reset_config());
     TEST_ASSERT_EQUAL_INT(DEF_FAST_FORWARD, myconfig.fast_forward);
 }
@@ -213,33 +220,36 @@ TEST(common, reset_config)
 
 int load_config(const char *path)
 {
-    int r = 0;
+    int err = 0;
     struct stat st = { 0 };
     char buf[MAX_PATH] = { 0 };
     const char *debug = NULL;
 
-    debug = getenv(NDS_DEBUG);
+    debug("call %s()\n", __func__);
 
     enable_debug_log = 0;
+    debug = getenv(NDS_DEBUG);
+
+    // export NDS_DEBU_LOG=1
     if (debug && !strcmp(debug, "1")) {
         enable_debug_log = 1;
     }
 
-    debug("call %s(enable_debug_log=%d)\n", __func__, enable_debug_log);
+    debug("enable_debug_log=%d\n", enable_debug_log);
 
     strncpy(buf, path, sizeof(buf));
     strcat(buf, CFG_FILE);
-    debug("cfg=\"%s\"\n", buf);
+    debug("config=\"%s\"\n", buf);
 
     if (read_file(buf, &myconfig, sizeof(myconfig)) < 0) {
-        r = 1;
+        err = 1;
         reset_config();
     }
 
     if (myconfig.magic != REL_VER) {
-        error("reset config due to invalid nds.cfg\n");
+        error("reset config due to invalid magic number\n");
 
-        r = 1;
+        err = 1;
         reset_config();
     }
 
@@ -248,80 +258,88 @@ int load_config(const char *path)
         debug("created \"%s\" folder\n", myconfig.state_path);
     }
 
-    return r;
+    return err;
 }
 
 #if defined(UT)
 TEST(common, load_config)
 {
-    #define P "/tmp/"
+    #define MYDIR "/tmp/"
 
     myconfig.fast_forward = DEF_FAST_FORWARD + 10;
-    mkdir(P RES_PATH, 0755);
-    unlink(P CFG_FILE);
-    rmdir(P RES_PATH);
-    TEST_ASSERT_EQUAL_INT(1, load_config(P));
+    mkdir(MYDIR RES_PATH, 0755);
+    unlink(MYDIR CFG_FILE);
+    rmdir(MYDIR RES_PATH);
+    TEST_ASSERT_EQUAL_INT(1, load_config(MYDIR));
     TEST_ASSERT_EQUAL_INT(DEF_FAST_FORWARD, myconfig.fast_forward);
 }
 #endif
 
 int update_config(const char *path)
 {
-    int r = 0;
+    int ret = 0;
     char buf[MAX_PATH] = { 0 };
 
     debug("call %s()\n", __func__);
 
     strncpy(buf, path, sizeof(buf));
     strcat(buf, CFG_FILE);
-    debug("cfg=\"%s\"\n", buf);
+    debug("config=\"%s\"\n", buf);
 
-    r = write_file(buf, &myconfig, sizeof(myconfig));
-    if (r != sizeof(myconfig)) {
-        error("failed to update config(r=%d)\n", r);
+    ret = write_file(buf, &myconfig, sizeof(myconfig));
+    if (ret != sizeof(myconfig)) {
+        error("failed to update config(ret=%d)\n", ret);
     }
-    return r;
+
+    return ret;
 }
 
 #if defined(UT)
 TEST(common, update_config)
 {
-    #define P "/tmp/"
+    #define MYDIR "/tmp/"
 
-    mkdir(P RES_PATH, 0755);
+    mkdir(MYDIR RES_PATH, 0755);
     myconfig.fast_forward = 123;
-    TEST_ASSERT_EQUAL_INT(sizeof(myconfig), update_config(P));
+    TEST_ASSERT_EQUAL_INT(sizeof(myconfig), update_config(MYDIR));
+
     myconfig.fast_forward = 0;
-    TEST_ASSERT_EQUAL_INT(0, load_config(P));
+    TEST_ASSERT_EQUAL_INT(0, load_config(MYDIR));
     TEST_ASSERT_EQUAL_INT(123, myconfig.fast_forward);
-    unlink(P CFG_FILE);
-    rmdir(P RES_PATH);
+
+    unlink(MYDIR CFG_FILE);
+    rmdir(MYDIR RES_PATH);
 }
 #endif
 
 int drop_bios_files(const char *path)
 {
-    int r = 0;
+    int ret = 0;
     char buf[MAX_PATH] = { 0 };
 
-    debug("call %s()\n", __func__);
+    debug("call %s(path=%p)\n", __func__, path);
+
+    if (!path) {
+        error("invalid input\n");
+        return -1;
+    }
 
     sprintf(buf, "%s" DRASTIC_BIOS_ARM7_FILE, path);
-    r += write_file(buf, drastic_bios_arm7, sizeof(drastic_bios_arm7));
+    ret += write_file(buf, drastic_bios_arm7, sizeof(drastic_bios_arm7));
 
     sprintf(buf, "%s" DRASTIC_BIOS_ARM9_FILE, path);
-    r += write_file(buf, drastic_bios_arm9, sizeof(drastic_bios_arm9));
+    ret += write_file(buf, drastic_bios_arm9, sizeof(drastic_bios_arm9));
 
     sprintf(buf, "%s" NDS_BIOS_ARM7_FILE, path);
-    r += write_file(buf, nds_bios_arm7, sizeof(nds_bios_arm7));
+    ret += write_file(buf, nds_bios_arm7, sizeof(nds_bios_arm7));
 
     sprintf(buf, "%s" NDS_BIOS_ARM9_FILE, path);
-    r += write_file(buf, nds_bios_arm9, sizeof(nds_bios_arm9));
+    ret += write_file(buf, nds_bios_arm9, sizeof(nds_bios_arm9));
 
     sprintf(buf, "%s" NDS_FIRMWARE_FILE, path);
-    r += write_file(buf, nds_firmware, sizeof(nds_firmware));
+    ret += write_file(buf, nds_firmware, sizeof(nds_firmware));
 
-    return r;
+    return ret;
 }
 
 #if defined(UT)
@@ -330,14 +348,23 @@ TEST(common, drop_bios_files)
     #define VALID_PATH    "/tmp/"
     #define INVALID_PATH  "/XXX/XXXX/"
 
+    int len = 0;
+
+    len += sizeof(drastic_bios_arm7);
+    len += sizeof(drastic_bios_arm9);
+    len += sizeof(nds_bios_arm7);
+    len += sizeof(nds_bios_arm9);
+    len += sizeof(nds_firmware);
     mkdir(VALID_PATH "/" BIOS_PATH, 0755);
-    TEST_ASSERT_EQUAL_INT(303104, drop_bios_files(VALID_PATH BIOS_PATH));
+
+    TEST_ASSERT_EQUAL_INT(len, drop_bios_files(VALID_PATH BIOS_PATH));
     TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH BIOS_PATH "/" DRASTIC_BIOS_ARM7_FILE, F_OK));
     TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH BIOS_PATH "/" DRASTIC_BIOS_ARM9_FILE, F_OK));
     TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH BIOS_PATH "/" NDS_BIOS_ARM7_FILE, F_OK));
     TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH BIOS_PATH "/" NDS_BIOS_ARM9_FILE, F_OK));
     TEST_ASSERT_EQUAL_INT(0, access(VALID_PATH BIOS_PATH "/" NDS_FIRMWARE_FILE, F_OK));
     TEST_ASSERT_EQUAL_INT(-5, drop_bios_files(INVALID_PATH));
+
     unlink(VALID_PATH BIOS_PATH "/" DRASTIC_BIOS_ARM7_FILE);
     unlink(VALID_PATH BIOS_PATH "/" DRASTIC_BIOS_ARM9_FILE);
     unlink(VALID_PATH BIOS_PATH "/" NDS_BIOS_ARM7_FILE);
@@ -349,24 +376,25 @@ TEST(common, drop_bios_files)
 
 int get_path_by_idx(const char *path, int idx, char *buf)
 {
-    int r = -1;
-    int count = 0;
+    int cc = 0;
+    int ret = -1;
     DIR *d = NULL;
     struct dirent *dir = NULL;
 
     debug("call %s(path=%p, idx=%d, buf=%p)\n", __func__, path, idx, buf);
 
     if (!path) {
-        error("path is null\n");
-        return r;
+        error("invalid input\n");
+        return ret;
     }
 
     d = opendir(path);
     if (!d) {
         error("failed to open dir \"%s\"\n", path);
-        return r;
+        return ret;
     }
 
+    buf[0] = 0;
     while ((dir = readdir(d)) != NULL) {
         if (strcmp(dir->d_name, ".") == 0) {
             continue;
@@ -380,16 +408,18 @@ int get_path_by_idx(const char *path, int idx, char *buf)
             continue;
         }
 
-        if (count == idx) {
-            r = 0;
-            snprintf(buf, MAX_PATH, "%s/%s", path, dir->d_name) ? 0 : 1;
+        if (cc == idx) {
+            ret = 0;
+            snprintf(buf, MAX_PATH, "%s/%s", path, dir->d_name);
             break;
         }
-        count+= 1;
+        cc += 1;
     }
     closedir(d);
 
-    return r;
+    debug("path=\"%s\"\n", buf);
+
+    return ret;
 }
 
 #if defined(UT)
@@ -405,74 +435,98 @@ TEST(common, get_path_by_idx)
 
 int get_dir_cnt(const char *path)
 {
+    int cc = 0;
     DIR *d = NULL;
-    int count = 0;
     struct dirent *dir = NULL;
 
-    debug("call %s(path=\"%s\")\n", __func__, path);
+    debug("call %s(path=%p)\n", __func__, path);
+
+    if (!path) {
+        error("invalid input\n");
+        return -1;
+    }
 
     d = opendir(path);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (dir->d_type != DT_DIR) {
-                continue;
-            }
-            if (strcmp(dir->d_name, ".") == 0) {
-                continue;
-            }
-            if (strcmp(dir->d_name, "..") == 0) {
-                continue;
-            }
-            count += 1;
-        }
-        closedir(d);
+    if (!d) {
+        error("failed to open \"%s\"\n", path);
+        return -1;
     }
-    debug("file count=%d\n", count);
 
-    return count;
+    while ((dir = readdir(d)) != NULL) {
+        if (strcmp(dir->d_name, ".") == 0) {
+            continue;
+        }
+
+        if (strcmp(dir->d_name, "..") == 0) {
+            continue;
+        }
+
+        if (dir->d_type != DT_DIR) {
+            continue;
+        }
+
+        cc += 1;
+    }
+    closedir(d);
+
+    debug("dir count=%d\n", cc);
+
+    return cc;
 }
 
 #if defined(UT)
 TEST(common, get_dir_cnt)
 {
-    TEST_ASSERT_EQUAL_INT(0, get_dir_cnt("/XXX"));
+    TEST_ASSERT_EQUAL_INT(-1, get_dir_cnt("/XXX"));
     TEST_ASSERT_EQUAL_INT(4, get_dir_cnt("."));
 }
 #endif
 
 int get_file_cnt(const char *path)
 {
+    int cc = 0;
     DIR *d = NULL;
-    int count = 0;
     struct dirent *dir = NULL;
 
-    debug("call %s(path=\"%s\")\n", __func__, path);
+    debug("call %s(path=%p)\n", __func__, path);
+
+    if (!path) {
+        error("invalid input\n");
+        return -1;
+    }
 
     d = opendir(path);
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            if (dir->d_type == DT_DIR) {
-                continue;
-            }
-            if (strcmp(dir->d_name, ".") == 0) {
-                continue;
-            }
-            if (strcmp(dir->d_name, "..") == 0) {
-                continue;
-            }
-            count += 1;
-        }
-        closedir(d);
+    if (!d) {
+        error("failed to open \"%s\"\n", path);
+        return -1;
     }
-    debug("file count=%d\n", count);
 
-    return count;
+    while ((dir = readdir(d)) != NULL) {
+        if (strcmp(dir->d_name, ".") == 0) {
+            continue;
+        }
+
+        if (strcmp(dir->d_name, "..") == 0) {
+            continue;
+        }
+
+        if (dir->d_type == DT_DIR) {
+            continue;
+        }
+
+        cc += 1;
+    }
+    closedir(d);
+
+    debug("file count=%d\n", cc);
+
+    return cc;
 }
 
 #if defined(UT)
 TEST(common, get_file_cnt)
 {
-    TEST_ASSERT_EQUAL_INT(0, get_file_cnt("/XXX"));
+    TEST_ASSERT_EQUAL_INT(-1, get_file_cnt("/XXX"));
     TEST_ASSERT_EQUAL_INT(4, get_file_cnt("src"));
 }
 #endif

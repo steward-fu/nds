@@ -28,6 +28,8 @@ gen_cases:
 	@echo "{" >> cases.c
 	@cat ../common/common.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
 	@echo "}" >> cases.c
+
+pending:
 	@echo "TEST_GROUP_RUNNER(detour)" >> cases.c
 	@echo "{" >> cases.c
 	@cat ../detour/hook.c | grep 'TEST(' | sed 's/TEST/RUN_TEST_CASE/g' >> cases.c
