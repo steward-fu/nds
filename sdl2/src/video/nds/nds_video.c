@@ -6640,35 +6640,35 @@ static int init_device(void)
 
 #if !defined(NDS_ARM64)
     debug("hook prehook_cb_malloc\n");
-    r |= add_prehook_cb(myhook.fun.malloc,  prehook_cb_malloc);
+    r |= add_prehook(myhook.fun.malloc,  prehook_cb_malloc);
     debug("hook prehook_cb_realloc\n");
-    r |= add_prehook_cb(myhook.fun.realloc, prehook_cb_realloc);
+    r |= add_prehook(myhook.fun.realloc, prehook_cb_realloc);
     debug("hook prehook_cb_free\n");
-    r |= add_prehook_cb(myhook.fun.free,    prehook_cb_free);
+    r |= add_prehook(myhook.fun.free,    prehook_cb_free);
 #endif
 
     debug("hook prehook_cb_select_quit\n");
-    r |= add_prehook_cb(myhook.fun.select_quit, prehook_cb_select_quit);
+    r |= add_prehook(myhook.fun.select_quit, prehook_cb_select_quit);
     debug("hook prehook_cb_print_string\n");
-    r |= add_prehook_cb(myhook.fun.print_string, prehook_cb_print_string);
+    r |= add_prehook(myhook.fun.print_string, prehook_cb_print_string);
 
 #if defined(NDS_ARM64)
     debug("hook prehook_cb_print_string_ext\n");
-    r |= add_prehook_cb(myhook.fun.print_string_ext, prehook_cb_print_string_ext);
+    r |= add_prehook(myhook.fun.print_string_ext, prehook_cb_print_string_ext);
 #endif
 
     debug("hook prehook_cb_update_screen\n");
-    r |= add_prehook_cb(myhook.fun.update_screen, prehook_cb_update_screen);
+    r |= add_prehook(myhook.fun.update_screen, prehook_cb_update_screen);
     debug("hook prehook_cb_blit_screen_menu\n");
-    r |= add_prehook_cb(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
+    r |= add_prehook(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
     debug("hook prehook_cb_platform_get_input\n");
-    r |= add_prehook_cb(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
+    r |= add_prehook(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
 
 #if !defined(NDS_ARM64)
     debug("hook prehook_cb_savestate_pre\n");
-    r |= add_prehook_cb(myhook.fun.savestate_pre, prehook_cb_savestate_pre);
+    r |= add_prehook(myhook.fun.savestate_pre, prehook_cb_savestate_pre);
     debug("hook prehook_cb_savestate_post\n");
-    r |= add_prehook_cb(myhook.fun.savestate_post, prehook_cb_savestate_post);
+    r |= add_prehook(myhook.fun.savestate_post, prehook_cb_savestate_post);
 #endif
 
 #if defined(NDS_ARM64)
@@ -8179,7 +8179,7 @@ static int process_sdl2_setting(int key)
         }
 
         if (pre_fast != myconfig.fast_forward) {
-            fast_forward(myconfig.fast_forward);
+            set_fast_forward(myconfig.fast_forward);
             pre_fast = myconfig.fast_forward;
         }
 

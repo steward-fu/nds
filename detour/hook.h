@@ -291,12 +291,12 @@ typedef void (*nds_config_setup_input_map)(void *);
 
 int init_hook(const char *, size_t, const char *);
 int quit_hook(void);
-int add_prehook_cb(void *, void *);
+int add_prehook(void *, void *);
 int quit_drastic(void);
 int load_state(int slot);
 int save_state(int slot);
-int fast_forward(uint8_t v);
-int unlock_protected_area(void *);
+int set_fast_forward(uint8_t v);
+int unlock_area(const void *);
 void render_polygon_setup_perspective_steps(void);
 
 #endif

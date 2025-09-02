@@ -911,7 +911,7 @@ static int handle_hotkey(void)
 
         if (pre_fast != myconfig.fast_forward) {
             pre_fast = myconfig.fast_forward;
-            fast_forward(myconfig.fast_forward);
+            set_fast_forward(myconfig.fast_forward);
         }
         set_key_bit(KEY_BIT_FAST, 1);
 #endif

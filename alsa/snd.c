@@ -1334,7 +1334,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     pa_threaded_mainloop_unlock(pa.mainloop);
 #endif
 
-    add_prehook_cb((void *)myhook.fun.spu_adpcm_decode_block, adpcm_decode_block);
+    add_prehook((void *)myhook.fun.spu_adpcm_decode_block, adpcm_decode_block);
 
     pcm_ready = 1;
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);

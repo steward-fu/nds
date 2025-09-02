@@ -27,6 +27,7 @@ static int is_state_hooked = 0;
 static size_t page_size = 4096;
 static char home_path[MAX_PATH] = { 0 };
 static char state_path[MAX_PATH] = { 0 };
+
 static int init_table(void);
 
 #if defined(UT)
@@ -42,14 +43,14 @@ TEST_TEAR_DOWN(detour)
 }
 #endif
 
-int unlock_protected_area(void *p)
+int unlock_area(const void *p)
 {
     int r = -1;
 
     debug("call %s(p=%p)\n", __func__, p);
 
     if (!p) {
-        error("invalid pointer\n");
+        error("invalid input\n");
         return r;
     }
 
@@ -64,19 +65,19 @@ int unlock_protected_area(void *p)
 }
 
 #if defined(UT)
-TEST(detour, unlock_protected_area)
+TEST(detour, unlock_area)
 {
-    TEST_ASSERT_EQUAL_INT(-1, unlock_protected_area(NULL));
-    TEST_ASSERT_EQUAL_INT(0, unlock_protected_area((void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(-1, unlock_area(NULL));
+    TEST_ASSERT_EQUAL_INT(0, unlock_area((const void *)0xdead));
 }
 #endif
 
-int fast_forward(uint8_t v)
+int set_fast_forward(uint8_t v)
 {
     uint32_t *ff = (uint32_t*)CODE_FAST_FORWARD;
 
     // 0xe3a03006
-    unlock_protected_area((void *)CODE_FAST_FORWARD);
+    unlock_area((void *)CODE_FAST_FORWARD);
 
 #if defined(UT)
     return 0;
@@ -87,26 +88,73 @@ int fast_forward(uint8_t v)
 }
 
 #if defined(UT)
-TEST(detour, fast_forward)
+TEST(detour, set_fast_forward)
 {
-    TEST_ASSERT_EQUAL_INT(0, fast_forward(0));
+    TEST_ASSERT_EQUAL_INT(0, set_fast_forward(0));
 }
 #endif
 
-static int32_t prehook_cb_load_state_index(void *system, uint32_t index, uint16_t *d0, uint16_t *d1, uint32_t shot_only)
+static int prehook_puts(const char *s)
+{
+    debug("call %s(s=%p)\n", __func__, s);
+
+    if (!s) {
+        error("invalid input\n");
+        return -1;
+    }
+
+    return printf("%s", s);
+}
+
+#if defined(UT)
+TEST(detour, prehook_puts)
+{
+    TEST_ASSERT_EQUAL_INT(-1, prehook_puts(NULL));
+    TEST_ASSERT_EQUAL_INT(0, !!prehook_puts(""));
+    TEST_ASSERT_EQUAL_INT(1, !!prehook_puts("test"));
+}
+#endif
+
+static int prehook_printf_chk(int flag, const char *fmt, ...)
+{
+    va_list args = { 0 };
+
+    debug("call %s(flag=%d, fmt=%p)\n", __func__, flag, fmt);
+
+    if (!fmt) {
+        error("invalid input\n");
+        return -1;
+    }
+
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(detour, prehook_printf_chk)
+{
+    TEST_ASSERT_EQUAL_INT(0, prehook_printf_chk(0, "%d", 100));
+    TEST_ASSERT_EQUAL_INT(-1, prehook_printf_chk(0, NULL));
+}
+#endif
+
+static int32_t prehook_load_state_index(
+    void *system,
+    uint32_t index,
+    uint16_t *d0,
+    uint16_t *d1,
+    uint32_t shot_only)
 {
     char buf[MAX_PATH] = { 0 };
     nds_load_state pfn = (nds_load_state)myhook.fun.load_state;
 
     debug("call %s(pfn=%p)\n", __func__, pfn);
 
-    if (!pfn) {
-        error("invalid pfn\n");
-        return -1;
-    }
-
-    if (!system || !d0 || !d1) {
-        error("invalid parameters(%p, %p, %p)\n", system, d0, d1);
+    if (!pfn || !system || !d0 || !d1) {
+        error("invalid input\n");
         return -1;
     }
 
@@ -114,32 +162,39 @@ static int32_t prehook_cb_load_state_index(void *system, uint32_t index, uint16_
     return 0;
 #endif
 
-    sprintf(buf, "%s/%s_%d.dss", state_path, (const char *)myhook.var.system.gamecard_name, index);
-    pfn((void*)myhook.var.system.base, buf, d0, d1, shot_only);
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%s/%s_%d.dss",
+        state_path,
+        (const char *)myhook.var.system.gamecard_name,
+        index
+    );
+
+    pfn((void *)myhook.var.system.base, buf, d0, d1, shot_only);
 }
 
 #if defined(UT)
-TEST(detour, prehook_cb_load_state_index)
+TEST(detour, prehook_load_state_index)
 {
-    TEST_ASSERT_EQUAL_INT(-1, prehook_cb_load_state_index(NULL, 0, NULL, NULL, 0));
-    TEST_ASSERT_EQUAL_INT(0, prehook_cb_load_state_index((void *)0xdead, 0, (void *)0xdead, (void *)0xdead, 0));
+    TEST_ASSERT_EQUAL_INT(-1, prehook_load_state_index(NULL, 0, NULL, NULL, 0));
+
+    TEST_ASSERT_EQUAL_INT(
+        0,
+        prehook_load_state_index((void *)0xdead, 0, (void *)0xdead, (void *)0xdead, 0)
+    );
 }
 #endif
 
-static int32_t prehook_cb_save_state_index(void *system, uint32_t index, uint16_t *d0, uint16_t *d1)
+static int32_t prehook_save_state_index(void *system, uint32_t index, uint16_t *d0, uint16_t *d1)
 {
     char buf[MAX_PATH] = { 0 };
     nds_save_state pfn = (nds_save_state)myhook.fun.save_state;
 
     debug("call %s(pfn=%p)\n", __func__, pfn);
 
-    if (!pfn) {
-        error("invalid pfn\n");
-        return -1;
-    }
-
-    if (!system || !d0 || !d1) {
-        error("invalid parameters(%p, %p, %p)\n", system, d0, d1);
+    if (!pfn || !system || !d0 || !d1) {
+        error("invalid input\n");
         return -1;
     }
 
@@ -147,19 +202,27 @@ static int32_t prehook_cb_save_state_index(void *system, uint32_t index, uint16_
     return 0;
 #endif
 
-    sprintf(buf, "%s_%d.dss", (const char *)myhook.var.system.gamecard_name, index);
-    pfn((void*)myhook.var.system.base, state_path, buf, d0, d1);
+    snprintf(buf, sizeof(buf), "%s_%d.dss", (const char *)myhook.var.system.gamecard_name, index);
+    pfn((void *)myhook.var.system.base, state_path, buf, d0, d1);
 }
 
 #if defined(UT)
-TEST(detour, prehook_cb_save_state_index)
+TEST(detour, prehook_save_state_index)
 {
-    TEST_ASSERT_EQUAL_INT(-1, prehook_cb_save_state_index(NULL, 0, NULL, NULL));
-    TEST_ASSERT_EQUAL_INT(0, prehook_cb_save_state_index((void *)0xdead, 0, (void *)0xdead, (void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(-1, prehook_save_state_index(NULL, 0, NULL, NULL));
+    TEST_ASSERT_EQUAL_INT(
+        0,
+        prehook_save_state_index((void *)0xdead, 0, (void *)0xdead, (void *)0xdead)
+    );
 }
 #endif
 
-static void prehook_cb_initialize_backup(backup_struct *backup, backup_type_enum backup_type, uint8_t *data, uint32_t size, char *path)
+static void prehook_initialize_backup(
+    backup_struct *backup,
+    backup_type_enum backup_type,
+    uint8_t *data,
+    uint32_t size,
+    char *path)
 {
     char *data_file_name = NULL;
     FILE *__stream = NULL;
@@ -181,7 +244,14 @@ static void prehook_cb_initialize_backup(backup_struct *backup, backup_type_enum
     if (path && path[0]) {
         data_file_name = malloc(MAX_PATH);
         memset(data_file_name, 0, MAX_PATH);
-        sprintf(data_file_name, "%s/%s.dsv", state_path, (const char *)myhook.var.system.gamecard_name);
+        snprintf(
+            data_file_name,
+            MAX_PATH,
+            "%s/%s.dsv",
+            state_path,
+            (const char *)myhook.var.system.gamecard_name
+        );
+
         debug("new state path=\"%s\"\n", data_file_name);
     }
 
@@ -254,18 +324,32 @@ static void prehook_cb_initialize_backup(backup_struct *backup, backup_type_enum
 
                 if (uVar2 < size) {
                     uVar3 = uVar2 - 0x400 & ~((int)(uVar2 - 0x400) >> 0x1f);
-                    pvVar4 = memmem(data + uVar3, uVar2 - uVar3, (const void *)myhook.var.desmume_footer_str, 0x52);
+                    pvVar4 = memmem(
+                        data + uVar3,
+                        uVar2 - uVar3,
+                        (const void *)myhook.var.desmume_footer_str,
+                        0x52
+                    );
 
                     if (pvVar4 != (void *)0x0) {
                         uVar2 = (intptr_t)pvVar4 - (intptr_t)data;
                         debug("found DeSmuME footer at %d. Truncating in %s\n", uVar2, __func__);
                     }
                     uVar3 = uVar2 >> 0xe;
-                    error("backup file less than full size (should be %d, loaded %d) in %s\n", size, uVar2, __func__);
+                    error(
+                        "backup file less than full size (should be %d, loaded %d) in %s\n",
+                        size,
+                        uVar2,
+                        __func__
+                    );
 
                     memset(data + uVar2, size - uVar2, 0xff);
                     memset(backup, 0, uVar3 * 4);
-                    memset(backup->dirty_page_bitmap + uVar3, 0xff, ((size + 0x3fff >> 0xe) - uVar3) * 4);
+                    memset(
+                        backup->dirty_page_bitmap + uVar3,
+                        0xff,
+                        ((size + 0x3fff >> 0xe) - uVar3) * 4
+                    );
                 }
                 else {
                     memset(backup, 0, size + 0x3fff >> 0xe);
@@ -283,9 +367,9 @@ static void prehook_cb_initialize_backup(backup_struct *backup, backup_type_enum
 }
 
 #if defined(UT)
-TEST(detour, prehook_cb_initialize_backup)
+TEST(detour, prehook_initialize_backup)
 {
-    prehook_cb_initialize_backup(NULL, 0, NULL, 0, NULL);
+    prehook_initialize_backup(NULL, 0, NULL, 0, NULL);
     TEST_PASS();
 }
 #endif
@@ -314,7 +398,7 @@ int save_state(int slot)
 
     do {
         if (!d0 || !d1) {
-            error("invalid d0 or d1\n");
+            error("invalid buffer\n");
             break;
         }
 
@@ -341,8 +425,15 @@ int save_state(int slot)
             }
 
             r = 0;
-            sprintf(buf, "%s_%d.dss", (const char *)myhook.var.system.gamecard_name, slot);
-            pfn((void*)myhook.var.system.base, state_path, buf, d0, d1);
+            snprintf(
+                buf,
+                sizeof(buf),
+                "%s_%d.dss",
+                (const char *)myhook.var.system.gamecard_name,
+                slot
+            );
+
+            pfn((void *)myhook.var.system.base, state_path, buf, d0, d1);
         }
     } while(0);
 
@@ -387,7 +478,7 @@ int load_state(int slot)
             return -1;
         }
 
-        pfn((void*)myhook.var.system.base, slot, 0, 0, 0);
+        pfn((void *)myhook.var.system.base, slot, 0, 0, 0);
     }
     else {
         nds_load_state pfn = (nds_load_state)myhook.fun.load_state;
@@ -397,8 +488,16 @@ int load_state(int slot)
             return -1;
         }
 
-        sprintf(buf, "%s/%s_%d.dss", state_path, (const char *)myhook.var.system.gamecard_name, slot);
-        pfn((void*)myhook.var.system.base, buf, 0, 0, 0);
+        snprintf(
+            buf,
+            sizeof(buf),
+            "%s/%s_%d.dss",
+            state_path,
+            (const char *)myhook.var.system.gamecard_name,
+            slot
+        );
+
+        pfn((void *)myhook.var.system.base, buf, 0, 0, 0);
     }
 
     return 0;
@@ -424,7 +523,7 @@ int quit_drastic(void)
     }
 
 #if !defined(UT)
-    pfn((void*)myhook.var.system.base);
+    pfn((void *)myhook.var.system.base);
 #endif
 
     return 0;
@@ -439,8 +538,8 @@ TEST(detour, quit_drastic)
 
 static int patch_drastic64(uint64_t pos, uint64_t pfn)
 {
-    #define LEN       16
-    #define DRASTIC64 "drastic64"
+    #define LEN         16
+    #define DRASTIC64   "drastic64"
 
     int r = -1;
     int len = 0;
@@ -473,12 +572,20 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     dst[14] = (uint8_t)(pfn >> 48);
     dst[15] = (uint8_t)(pfn >> 56);
 
-    debug("org 0x%04lx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+    debug("org 0x%04lx: "
+        "%02x %02x %02x %02x "
+        "%02x %02x %02x %02x "
+        "%02x %02x %02x %02x "
+        "%02x %02x %02x %02x\n",
         pos,
         src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7],
         src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
     );
-    debug("new 0x%04lx: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+    debug("new 0x%04lx: "
+        "%02x %02x %02x %02x "
+        "%02x %02x %02x %02x "
+        "%02x %02x %02x %02x "
+        "%02x %02x %02x %02x\n",
         pos,
         dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7],
         dst[9], dst[9], dst[10], dst[11], dst[12], dst[13], dst[14], dst[15]
@@ -505,7 +612,7 @@ TEST(detour, patch_drastic64)
 }
 #endif
 
-int add_prehook_cb(void *org, void *cb)
+int add_prehook(void *org, void *cb)
 {
     int r = -1;
 
@@ -523,7 +630,7 @@ int add_prehook_cb(void *org, void *cb)
 #if defined(NDS_ARM64)
     r = patch_drastic64((uintptr_t)org, (uintptr_t)cb);
 #else
-    if (unlock_protected_area(org) >= 0) {
+    if (unlock_area(org) >= 0) {
         uintptr_t c = (uintptr_t)cb;
         volatile uint8_t *m = (uint8_t *)(intptr_t)org;
 
@@ -543,10 +650,10 @@ int add_prehook_cb(void *org, void *cb)
 }
 
 #if defined(UT)
-TEST(detour, add_prehook_cb)
+TEST(detour, add_prehook)
 {
-    TEST_ASSERT_EQUAL_INT(-1, add_prehook_cb(0, 0));
-    TEST_ASSERT_EQUAL_INT(0, add_prehook_cb((void *)0xdead, (void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(-1, add_prehook(0, 0));
+    TEST_ASSERT_EQUAL_INT(0, add_prehook((void *)0xdead, (void *)0xdead));
 }
 #endif
 
@@ -658,41 +765,14 @@ TEST(detour, init_table)
 }
 #endif
 
-static int prehook_cb_puts(const char *s)
-{
-    printf("%s", s);
-}
-
-static int prehook_cb_printf_chk(int flag, const char *fmt, ...)
-{
-    va_list args = { 0 };
-
-    if (fmt == NULL) {
-        return -1;
-    }
-
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(detour, prehook_cb_printf_chk)
-{
-    TEST_ASSERT_EQUAL_INT(0, prehook_cb_printf_chk(0, "%d", 100));
-    TEST_ASSERT_EQUAL_INT(-1, prehook_cb_printf_chk(0, NULL));
-}
-#endif
-
 int init_hook(const char *home, size_t page, const char *path)
 {
     page_size = page;
 
-    debug("call %s(home=\"%s\", page=%ld, path=\"%s\")\n", __func__, home, page, path);
+    debug("call %s(home=%p, page=%ld, path=\"%s\")\n", __func__, home, page, path);
 
-    if (home == NULL) {
+    if (!home || !page) {
+        error("invalid input");
         return -1;
     }
 
@@ -702,16 +782,16 @@ int init_hook(const char *home, size_t page, const char *path)
     is_state_hooked = 0;
     if (path && path[0]) {
         is_state_hooked = 1;
-        strcpy(state_path, path);
+        strncpy(state_path, path, sizeof(state_path));
         debug("new state path=\"%s\"\n", path);
 
-        add_prehook_cb((void *)myhook.fun.load_state_index,  (void *)prehook_cb_load_state_index);
-        add_prehook_cb((void *)myhook.fun.save_state_index,  (void *)prehook_cb_save_state_index);
-        add_prehook_cb((void *)myhook.fun.initialize_backup, (void *)prehook_cb_initialize_backup);
+        add_prehook((void *)myhook.fun.load_state_index,  (void *)prehook_load_state_index);
+        add_prehook((void *)myhook.fun.save_state_index,  (void *)prehook_save_state_index);
+        add_prehook((void *)myhook.fun.initialize_backup, (void *)prehook_initialize_backup);
     }
 
 #if !defined(NDS_ARM64)
-    add_prehook_cb(
+    add_prehook(
         (void *)myhook.fun.render_polygon_setup_perspective_steps,
         render_polygon_setup_perspective_steps
     );
@@ -725,10 +805,11 @@ TEST(detour, init_hook)
 {
     const char *path = "/tmp";
 
-    TEST_ASSERT_EQUAL_INT(0, init_hook(NULL, 0, NULL));
+    TEST_ASSERT_EQUAL_INT(-1, init_hook(NULL, 0, NULL));
     TEST_ASSERT_EQUAL_INT(0, is_state_hooked);
-    TEST_ASSERT_EQUAL_INT(0, init_hook(NULL, 0, path));
+    TEST_ASSERT_EQUAL_INT(0, init_hook(path, 4096, path));
     TEST_ASSERT_EQUAL_INT(1, is_state_hooked);
+    TEST_ASSERT_EQUAL_INT(0, strcmp(path, state_path));
 }
 #endif
 
