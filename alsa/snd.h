@@ -35,23 +35,11 @@
 #define JSON_VOL_KEY        "vol"
 #endif
 
-#if defined(MINI)
-#endif
-
-typedef struct {
-    int size;
-    int rsize;
-    int wsize;
-    uint8_t *buf;
-    pthread_mutex_t lock;
-} queue_t;
-
-int set_half_vol(int);
-int set_auto_state(int, int);
-int inc_a30_vol(void);
-int dec_a30_vol(void);
-int inc_mini_vol(void);
-int dec_mini_vol(void);
+int set_autostate(int, int);
+int a30_inc_vol(void);
+int a30_dec_vol(void);
+int mini_inc_vol(void);
+int mini_dec_vol(void);
 
 #endif
 

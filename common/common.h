@@ -216,6 +216,10 @@ typedef struct {
 #endif
 } nds_config;
 
+#if defined(UT) || defined(QX1050)
+#define neon_memcpy memcpy
+#endif
+
 int load_config(const char *);
 int update_config(const char *);
 

@@ -38,56 +38,68 @@
 #include "hook.h"
 #include "common.h"
 
-#if defined(MINI)
+#if defined(MINI) || defined(UT)
 #include "mi_ao.h"
 #include "mi_sys.h"
 #include "mi_common_datatype.h"
 #endif
 
-extern nds_hook myhook;
-
-static queue_t queue = { 0 };
-static pthread_t thread = { 0 };
+typedef struct {
+    int size;
+    int rsize;
+    int wsize;
+    uint8_t *buf;
+    pthread_mutex_t lock;
+} queue_t;
 
 #if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
-typedef struct {
+struct mypulse_t {
     pa_threaded_mainloop *mainloop;
     pa_context *context;
     pa_mainloop_api *api;
     pa_stream *stream;
     pa_sample_spec spec;
     pa_buffer_attr attr;
-} pa_t;
-
-static pa_t pa = { 0 };
+} mypulse = { 0 };
 #endif
 
-#if defined(MINI)
-    static MI_AO_CHN AoChn = 0;
-    static MI_AUDIO_DEV AoDevId = 0;
-    static MI_AUDIO_Attr_t stSetAttr = {0};
-    static MI_AUDIO_Attr_t stGetAttr = {0};
+#if defined(MINI) || defined(UT)
+struct {
+    MI_AO_CHN ch;
+    MI_AUDIO_DEV id;
+    MI_AUDIO_Attr_t sattr;
+    MI_AUDIO_Attr_t gattr;
+} myao = { 0 };
 #endif
+
+struct mypcm_t {
+    int ready;
+    int len;
+    uint8_t *buf;
+} mypcm = { 0 };
 
 #if defined(A30) || defined(BRICK)
-    static int vol_base = 100;
-    static int vol_mul = 1;
-    static int mem_fd = -1;
-    static uint8_t *mem_ptr = NULL;
-    static uint32_t *vol_ptr = NULL;
+static int vol_base = 100;
+static int vol_mul = 1;
+static int mem_fd = -1;
+static uint8_t *mem_ptr = NULL;
+static uint32_t *vol_ptr = NULL;
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(UT) || defined(BRICK)
-    static int dsp_fd = -1;
+static int dsp_fd = -1;
 #endif
 
-static int half_vol = 0;
-static int auto_slot = 0;
-static int auto_state = 1;
+extern nds_hook myhook;
+
+struct autostate {
+    int slot;
+    int enable;
+} autostate = { 0, 1 };
+
 static int cur_vol = 0;
-static int pcm_ready = 0;
-static int pcm_buf_len = 0;
-static uint8_t *pcm_buf = NULL;
+static queue_t queue = { 0 };
+static pthread_t thread = { 0 };
 
 static int init_queue(queue_t *, size_t);
 static int quit_queue(queue_t *);
@@ -106,7 +118,49 @@ TEST_TEAR_DOWN(alsa)
 }
 #endif
 
-void adpcm_decode_block(spu_channel_struct *channel)
+#if defined(UT)
+MI_S32 MI_AO_Enable(MI_AUDIO_DEV AoDevId)
+{
+    return 0;
+}
+
+MI_S32 MI_AO_EnableChn(MI_AUDIO_DEV AoDevId, MI_AO_CHN AoChn)
+{
+    return 0;
+}
+
+MI_S32 MI_AO_GetPubAttr(MI_AUDIO_DEV AoDevId, MI_AUDIO_Attr_t *pstAttr)
+{
+    return 0;
+}
+
+MI_S32 MI_SYS_SetChnOutputPortDepth(MI_SYS_ChnPort_t *pstChnPort , MI_U32 u32UserFrameDepth , MI_U32 u32BufQueueDepth)
+{
+    return 0;
+}
+
+MI_S32 MI_AO_SetPubAttr(MI_AUDIO_DEV AoDevId, MI_AUDIO_Attr_t *pstAttr)
+{
+    return 0;
+}
+
+MI_S32 MI_AO_DisableChn(MI_AUDIO_DEV AoDevId, MI_AO_CHN AoChn)
+{
+    return 0;
+}
+
+MI_S32 MI_AO_SendFrame(MI_AUDIO_DEV AoDevId, MI_AO_CHN AoChn, MI_AUDIO_Frame_t *pstData, MI_S32 s32MilliSec)
+{
+    return 0;
+}
+
+MI_S32 MI_AO_Disable(MI_AUDIO_DEV AoDevId)
+{
+    return 0;
+}
+#endif
+
+void prehook_adpcm_decode_block(spu_channel_struct *channel)
 {
     uint32_t uVar1 = 0;
     uint32_t uVar2 = 0;
@@ -124,13 +178,13 @@ void adpcm_decode_block(spu_channel_struct *channel)
     int16_t *adpcm_step_table = NULL;
     int8_t *adpcm_index_step_table = NULL;
 
-    debug("call %s()\n", __func__);
+    debug("call %s(channel=%p)\n", __func__, channel);
 
     adpcm_step_table = (int16_t *)myhook.var.adpcm.step_table;
     adpcm_index_step_table = (int8_t *)myhook.var.adpcm.index_step_table;
     do {
         if (!channel) {
-            error("invalid channel\n");
+            error("invalid input\n");
             break;
         }
 
@@ -184,15 +238,15 @@ void adpcm_decode_block(spu_channel_struct *channel)
 }
 
 #if defined(UT)
-TEST(alsa, adpcm_decode_block)
+TEST(alsa, prehook_adpcm_decode_block)
 {
-    adpcm_decode_block(NULL);
+    prehook_adpcm_decode_block(NULL);
     TEST_PASS();
 }
 #endif
 
 #if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
-static void context_state_cb(pa_context *context, void *userdata)
+static void pulse_context_state(pa_context *context, void *userdata)
 {
     debug("call %s()\n", __func__);
 
@@ -201,7 +255,7 @@ static void context_state_cb(pa_context *context, void *userdata)
         case PA_CONTEXT_READY:
         case PA_CONTEXT_TERMINATED:
         case PA_CONTEXT_FAILED:
-            pa_threaded_mainloop_signal(pa.mainloop, 0);
+            pa_threaded_mainloop_signal(mypulse.mainloop, 0);
             break;
         case PA_CONTEXT_UNCONNECTED:
         case PA_CONTEXT_CONNECTING:
@@ -213,23 +267,23 @@ static void context_state_cb(pa_context *context, void *userdata)
 }
 
 #if defined(UT)
-TEST(alsa, context_state_cb)
+TEST(alsa, pulse_context_state)
 {
-    context_state_cb(NULL, NULL);
+    pulse_context_state(NULL, NULL);
     TEST_PASS();
 }
 #endif
 
-static void stream_state_cb(pa_stream *stream, void *userdata)
+static void pulse_stream_state(pa_stream *stream, void *userdata)
 {
-    debug("call %s()\n", __func__);
+    debug("call %s(stream=%p, userdat=%p)\n", __func__, stream, userdata);
 
     if (stream) {
         switch (pa_stream_get_state(stream)) {
         case PA_STREAM_READY:
         case PA_STREAM_FAILED:
         case PA_STREAM_TERMINATED:
-            pa_threaded_mainloop_signal(pa.mainloop, 0);
+            pa_threaded_mainloop_signal(mypulse.mainloop, 0);
             break;
         case PA_STREAM_UNCONNECTED:
         case PA_STREAM_CREATING:
@@ -239,73 +293,57 @@ static void stream_state_cb(pa_stream *stream, void *userdata)
 }
 
 #if defined(UT)
-TEST(alsa, stream_state_cb)
+TEST(alsa, pulse_stream_state)
 {
-    stream_state_cb(NULL, NULL);
+    pulse_stream_state(NULL, NULL);
     TEST_PASS();
 }
 #endif
 
-static void stream_latency_update_cb(pa_stream *stream, void *userdata)
+static void pulse_stream_latency_update(pa_stream *stream, void *userdata)
 {
-    debug("call %s()\n", __func__);
+    debug("call %s(stream=%p, userdata=%p)\n", __func__, stream, userdata);
 
     if (stream) {
-        pa_threaded_mainloop_signal(pa.mainloop, 0);
+        pa_threaded_mainloop_signal(mypulse.mainloop, 0);
     }
 }
 
 #if defined(UT)
-TEST(alsa, stream_latency_update_cb)
+TEST(alsa, pulse_stream_latency_update)
 {
-    stream_latency_update_cb(NULL, NULL);
+    pulse_stream_latency_update(NULL, NULL);
     TEST_PASS();
 }
 #endif
 
-static void stream_request_cb(pa_stream *stream, size_t length, void *userdata)
+static void pulse_stream_request(pa_stream *stream, size_t length, void *userdata)
 {
     debug("call %s()\n", __func__);
 
     if (stream) {
-        pa_threaded_mainloop_signal(pa.mainloop, 0);
+        pa_threaded_mainloop_signal(mypulse.mainloop, 0);
     }
 }
 
 #if defined(UT)
-TEST(alsa, stream_request_cb)
+TEST(alsa, pulse_stream_request)
 {
-    stream_request_cb(NULL, 0, NULL);
+    pulse_stream_request(NULL, 0, NULL);
     TEST_PASS();
 }
 #endif
-#endif
-
-#if defined(PANDORA) || defined(UT)
-int snd_lib_error_set_handler(int handler)
-{
-    debug("call %s()\n", __func__);
-
-    return 0;
-}
-#endif
-
-#if defined(UT)
-TEST(alsa, snd_lib_error_set_handler)
-{
-    TEST_ASSERT_EQUAL_INT(0, snd_lib_error_set_handler(0));
-}
 #endif
 
 #if defined(MINI) || defined(UT)
-static int set_mini_vol_raw(int v, int add)
+static int mini_set_vol_raw(int vol, int add)
 {
     int fd = -1;
     int buf2[2] = { 0 };
     int prev_value = 0;
     uint64_t buf1[] = { sizeof(buf2), (uintptr_t)buf2 };
 
-    debug("call %s(v=%d, add=%d)\n", __func__, v, add);
+    debug("call %s(v=%d, add=%d)\n", __func__, vol, add);
 
     fd = open(SND_DEV, O_RDWR);
     if (fd < 0) {
@@ -317,50 +355,49 @@ static int set_mini_vol_raw(int v, int add)
     prev_value = buf2[1];
 
     if (add) {
-        v = prev_value + add;
+        vol = prev_value + add;
     }
     else {
-        v += MIN_RAW_VALUE;
+        vol += MIN_RAW_VALUE;
     }
 
-    if (v > MAX_RAW_VALUE) {
-        v = MAX_RAW_VALUE;
+    if (vol > MAX_RAW_VALUE) {
+        vol = MAX_RAW_VALUE;
     }
-    else if (v < MIN_RAW_VALUE) {
-        v = MIN_RAW_VALUE;
+    else if (vol < MIN_RAW_VALUE) {
+        vol = MIN_RAW_VALUE;
     }
 
-    if (v == prev_value) {
+    if (vol == prev_value) {
         close(fd);
         return prev_value;
     }
 
-    buf2[1] = v;
+    buf2[1] = vol;
     ioctl(fd, MI_AO_SETVOLUME, buf1);
-    if ((prev_value <= MIN_RAW_VALUE) && (v > MIN_RAW_VALUE)) {
+    if ((prev_value <= MIN_RAW_VALUE) && (vol > MIN_RAW_VALUE)) {
         buf2[1] = 0;
         ioctl(fd, MI_AO_SETMUTE, buf1);
     }
-    else if ((prev_value > MIN_RAW_VALUE) && (v <= MIN_RAW_VALUE)) {
+    else if ((prev_value > MIN_RAW_VALUE) && (vol <= MIN_RAW_VALUE)) {
         buf2[1] = 1;
         ioctl(fd, MI_AO_SETMUTE, buf1);
     }
     close(fd);
 
-    return v;
+    return vol;
 }
 
 #if defined(UT)
-TEST(alsa, set_mini_vol_raw)
+TEST(alsa, mini_set_vol_raw)
 {
-    TEST_ASSERT_EQUAL_INT(0, set_mini_vol_raw(0, 0));
+    TEST_ASSERT_EQUAL_INT(0, mini_set_vol_raw(0, 0));
 }
 #endif
 
-static int set_mini_vol(int v)
+static int mini_set_vol(int v)
 {
     int raw = 0;
-    int div = half_vol ? 2 : 1;
 
     debug("call %s(v=%d)\n", __func__, v);
 
@@ -375,47 +412,50 @@ static int set_mini_vol(int v)
         raw = round(48 * log10(1 + v));
     }
 
-    set_mini_vol_raw(raw / div, 0);
+    mini_set_vol_raw(raw, 0);
+
     return v;
 }
 
 #if defined(UT)
-TEST(alsa, set_mini_vol)
+TEST(alsa, mini_set_vol)
 {
-    TEST_ASSERT_EQUAL_INT(MAX_VOL, set_mini_vol(MAX_VOL + 1));
-    TEST_ASSERT_EQUAL_INT(1, set_mini_vol(1));
-    TEST_ASSERT_EQUAL_INT(0, set_mini_vol(-1));
+    TEST_ASSERT_EQUAL_INT(MAX_VOL, mini_set_vol(MAX_VOL + 1));
+    TEST_ASSERT_EQUAL_INT(1, mini_set_vol(1));
+    TEST_ASSERT_EQUAL_INT(0, mini_set_vol(-1));
 }
 #endif
 
-int inc_mini_vol(void)
+int mini_inc_vol(void)
 {
     debug("call %s()\n", __func__);
 
     if (cur_vol < MAX_VOL) {
-        cur_vol+= 1;
-        set_mini_vol(cur_vol);
+        cur_vol += 1;
+        mini_set_vol(cur_vol);
     }
+
     return cur_vol;
 }
 
 #if defined(UT)
-TEST(alsa, inc_mini_vol)
+TEST(alsa, mini_inc_vol)
 {
     cur_vol = 0;
-    TEST_ASSERT_EQUAL_INT(1, inc_mini_vol());
+    TEST_ASSERT_EQUAL_INT(1, mini_inc_vol());
+
     cur_vol = MAX_VOL;
-    TEST_ASSERT_EQUAL_INT(MAX_VOL, inc_mini_vol());
+    TEST_ASSERT_EQUAL_INT(MAX_VOL, mini_inc_vol());
 }
 #endif
 
-int dec_mini_vol(void)
+int mini_dec_vol(void)
 {
     debug("call %s()\n", __func__);
 
     if (cur_vol > 0) {
-        cur_vol-= 1;
-        set_mini_vol(cur_vol);
+        cur_vol -= 1;
+        mini_set_vol(cur_vol);
     }
 
     return cur_vol;
@@ -423,17 +463,18 @@ int dec_mini_vol(void)
 #endif
 
 #if defined(UT)
-TEST(alsa, dec_mini_vol)
+TEST(alsa, mini_dec_vol)
 {
     cur_vol = 0;
-    TEST_ASSERT_EQUAL_INT(0, dec_mini_vol());
+    TEST_ASSERT_EQUAL_INT(0, mini_dec_vol());
+
     cur_vol = 1;
-    TEST_ASSERT_EQUAL_INT(0, dec_mini_vol());
+    TEST_ASSERT_EQUAL_INT(0, mini_dec_vol());
 }
 #endif
 
 #if defined(A30) || defined(UT)
-int inc_a30_vol(void)
+int a30_inc_vol(void)
 {
     debug("call %s()\n", __func__);
 
@@ -449,16 +490,17 @@ int inc_a30_vol(void)
 }
 
 #if defined(UT)
-TEST(alsa, inc_a30_vol)
+TEST(alsa, a30_inc_vol)
 {
     cur_vol = 0;
-    TEST_ASSERT_EQUAL_INT(1, inc_a30_vol());
+    TEST_ASSERT_EQUAL_INT(1, a30_inc_vol());
+
     cur_vol = MAX_VOL;
-    TEST_ASSERT_EQUAL_INT(MAX_VOL, inc_a30_vol());
+    TEST_ASSERT_EQUAL_INT(MAX_VOL, a30_inc_vol());
 }
 #endif
 
-int dec_a30_vol(void)
+int a30_dec_vol(void)
 {
     debug("call %s()\n", __func__);
 
@@ -479,12 +521,13 @@ int dec_a30_vol(void)
 }
 
 #if defined(UT)
-TEST(alsa, dec_a30_vol)
+TEST(alsa, a30_dec_vol)
 {
     cur_vol = 0;
-    TEST_ASSERT_EQUAL_INT(0, dec_a30_vol());
+    TEST_ASSERT_EQUAL_INT(0, a30_dec_vol());
+
     cur_vol = 10;
-    TEST_ASSERT_EQUAL_INT(9, dec_a30_vol());
+    TEST_ASSERT_EQUAL_INT(9, a30_dec_vol());
 }
 #endif
 #endif
@@ -533,42 +576,24 @@ TEST(alsa, open_dsp)
 }
 #endif
 
-int set_half_vol(int v)
+int set_autostate(int enable, int slot)
 {
-    debug("call %s(v=%d)\n", __func__, v);
+    debug("call %s(enable=%d, slot=%d)\n", __func__, enable, slot);
 
-    half_vol = v ? 1 : 0;
+    autostate.slot = slot;
+    autostate.enable = enable;
     return 0;
 }
 
 #if defined(UT)
-TEST(alsa, set_half_vol)
+TEST(alsa, set_autostate)
 {
-    TEST_ASSERT_EQUAL_INT(0, set_half_vol(0));
-    TEST_ASSERT_EQUAL_INT(0, half_vol);
-    TEST_ASSERT_EQUAL_INT(0, set_half_vol(1));
-    TEST_ASSERT_EQUAL_INT(1, half_vol);
-}
-#endif
-
-int set_auto_state(int enable, int slot)
-{
-    debug("call %s(enable_auto_state=%d, slot=%d)\n", __func__, enable, slot);
-
-    auto_slot = slot;
-    auto_state = enable;
-    return 0;
-}
-
-#if defined(UT)
-TEST(alsa, set_auto_state)
-{
-    TEST_ASSERT_EQUAL_INT(0, set_auto_state(0, 0));
-    TEST_ASSERT_EQUAL_INT(0, auto_state);
-    TEST_ASSERT_EQUAL_INT(0, auto_slot);
-    TEST_ASSERT_EQUAL_INT(0, set_auto_state(1, 10));
-    TEST_ASSERT_EQUAL_INT(1, auto_state);
-    TEST_ASSERT_EQUAL_INT(10, auto_slot);
+    TEST_ASSERT_EQUAL_INT(0, set_autostate(0, 0));
+    TEST_ASSERT_EQUAL_INT(0, autostate.enable);
+    TEST_ASSERT_EQUAL_INT(0, autostate.slot);
+    TEST_ASSERT_EQUAL_INT(0, set_autostate(1, 10));
+    TEST_ASSERT_EQUAL_INT(1, autostate.enable);
+    TEST_ASSERT_EQUAL_INT(10, autostate.slot);
 }
 #endif
 
@@ -641,7 +666,7 @@ static int get_available_rsize(queue_t *q)
     debug("call %s(q=%p)\n", __func__, q);
 
     if (!q) {
-        error("q is null\n");
+        error("queue is null\n");
         return -1;
     }
 
@@ -651,6 +676,7 @@ static int get_available_rsize(queue_t *q)
     else if(q->rsize < q->wsize) {
         return q->wsize - q->rsize;
     }
+
     return (q->size - q->rsize) + q->wsize;
 }
 
@@ -677,7 +703,7 @@ static int get_available_wsize(queue_t *q)
     debug("call %s(q=%p)\n", __func__, q);
 
     if (!q) {
-        error("q is null\n");
+        error("queue is null\n");
         return -1;
     }
 
@@ -687,6 +713,7 @@ static int get_available_wsize(queue_t *q)
     else if (q->wsize < q->rsize) {
         return q->rsize - q->wsize;
     }
+
     return (q->size - q->wsize) + q->rsize;
 }
 
@@ -737,23 +764,12 @@ static int put_queue(queue_t *q, uint8_t *buf, size_t size)
             tmp = q->size - q->wsize;
             size-= tmp;
 
-#if defined(UT) || defined(QX1050)
-            memcpy(&q->buf[q->wsize], buf, tmp);
-            memcpy(q->buf, &buf[tmp], size);
-#else
             neon_memcpy(&q->buf[q->wsize], buf, tmp);
             neon_memcpy(q->buf, &buf[tmp], size);
-#endif
-
             q->wsize = size;
         }
         else {
-#if defined(UT) || defined(QX1050)
-            memcpy(&q->buf[q->wsize], buf, size);
-#else
             neon_memcpy(&q->buf[q->wsize], buf, size);
-#endif
-
             q->wsize += size;
         }
     }
@@ -814,23 +830,12 @@ static size_t get_queue(queue_t *q, uint8_t *buf, size_t len)
             tmp = q->size - q->rsize;
             size-= tmp;
 
-#if defined(UT) || defined(QX1050)
-            memcpy(buf, &q->buf[q->rsize], tmp);
-            memcpy(&buf[tmp], q->buf, size);
-#else
             neon_memcpy(buf, &q->buf[q->rsize], tmp);
             neon_memcpy(&buf[tmp], q->buf, size);
-#endif
-
             q->rsize = size;
         }
         else {
-#if defined(UT) || defined(QX1050)
-            memcpy(buf, &q->buf[q->rsize], size);
-#else
             neon_memcpy(buf, &q->buf[q->rsize], size);
-#endif
-
             q->rsize += size;
         }
     }
@@ -864,7 +869,7 @@ TEST(alsa, get_queue)
 
 static void* audio_handler(void *id)
 {
-#if defined(MINI)
+#if defined(MINI) || defined(UT)
     MI_AUDIO_Frame_t frame = { 0 };
 #endif
 
@@ -874,40 +879,40 @@ static void* audio_handler(void *id)
 
     int r = 0;
     int idx = 0;
-    int len = pcm_buf_len;
+    int len = mypcm.len;
 
     debug("call %s()++\n", __func__);
 
 #if defined(UT)
-    pcm_ready = 0;
+    mypcm.ready = 0;
 #endif
 
-    while (pcm_ready) {
-        r = get_queue(&queue, &pcm_buf[idx], len);
+    while (mypcm.ready) {
+        r = get_queue(&queue, &mypcm.buf[idx], len);
         if (r > 0) {
             idx+= r;
             len-= r;
             if (len == 0) {
                 idx = 0;
-                len = pcm_buf_len;
-#if defined(MINI)
-                frame.eBitwidth = stGetAttr.eBitwidth;
-                frame.eSoundmode = stGetAttr.eSoundmode;
-                frame.u32Len = pcm_buf_len;
-                frame.apVirAddr[0] = pcm_buf;
+                len = mypcm.len;
+#if defined(MINI) || defined(UT)
+                frame.eBitwidth = myao.gattr.eBitwidth;
+                frame.eSoundmode = myao.gattr.eSoundmode;
+                frame.u32Len = mypcm.len;
+                frame.apVirAddr[0] = mypcm.buf;
                 frame.apVirAddr[1] = NULL;
-                MI_AO_SendFrame(AoDevId, AoChn, &frame, 1);
+                MI_AO_SendFrame(myao.id, myao.ch, &frame, 1);
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
-                write(dsp_fd, pcm_buf, pcm_buf_len);
+                write(dsp_fd, mypcm.buf, mypcm.len);
 #endif
 
 #if defined(QX1000) || defined(XT894) || defined(XT897)
-                if (pa.mainloop) {
-                    pa_threaded_mainloop_lock(pa.mainloop);
-                    pa_stream_write(pa.stream, pcm_buf, pcm_buf_len, NULL, 0, PA_SEEK_RELATIVE);
-                    pa_threaded_mainloop_unlock(pa.mainloop);
+                if (mypulse.mainloop) {
+                    pa_threaded_mainloop_lock(mypulse.mainloop);
+                    pa_stream_write(mypulse.stream, mypcm.buf, mypcm.len, NULL, 0, PA_SEEK_RELATIVE);
+                    pa_threaded_mainloop_unlock(mypulse.mainloop);
                 }
 #endif
             }
@@ -1178,7 +1183,7 @@ TEST(alsa, snd_pcm_recover)
 
 int snd_pcm_start(snd_pcm_t *pcm)
 {
-#if defined(MINI)
+#if defined(MINI) || defined(UT)
     MI_S32 miret = 0;
     MI_SYS_ChnPort_t stAoChn0OutputPort0 = { 0 };
 #endif
@@ -1203,12 +1208,12 @@ int snd_pcm_start(snd_pcm_t *pcm)
     }
     memset(queue.buf, 0, DEF_QUEUE_SIZE);
 
-    pcm_buf_len = SND_SAMPLES * 2 * SND_CHANNELS;
-    pcm_buf = malloc(pcm_buf_len);
-    if (pcm_buf == NULL) {
+    mypcm.len = SND_SAMPLES * 2 * SND_CHANNELS;
+    mypcm.buf = malloc(mypcm.len);
+    if (mypcm.buf == NULL) {
         return -1;
     }
-    memset(pcm_buf, 0, pcm_buf_len);
+    memset(mypcm.buf, 0, mypcm.len);
 
 #if defined(MINI) || defined(A30)
     jfile = json_object_from_file(JSON_APP_FILE);
@@ -1221,45 +1226,45 @@ int snd_pcm_start(snd_pcm_t *pcm)
     }
 #endif
 
-#if defined(MINI)
-    stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
-    stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
-    stSetAttr.u32FrmNum = 6;
-    stSetAttr.u32PtNumPerFrm = SND_SAMPLES;
-    stSetAttr.u32ChnCnt = SND_CHANNELS;
-    stSetAttr.eSoundmode = (SND_CHANNELS == 2) ? E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
-    stSetAttr.eSamplerate = (MI_AUDIO_SampleRate_e)SND_FREQ;
+#if defined(MINI) ||defined(UT)
+    myao.sattr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
+    myao.sattr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
+    myao.sattr.u32FrmNum = 6;
+    myao.sattr.u32PtNumPerFrm = SND_SAMPLES;
+    myao.sattr.u32ChnCnt = SND_CHANNELS;
+    myao.sattr.eSoundmode = (SND_CHANNELS == 2) ? E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
+    myao.sattr.eSamplerate = (MI_AUDIO_SampleRate_e)SND_FREQ;
 
-    miret = MI_AO_SetPubAttr(AoDevId, &stSetAttr);
+    miret = MI_AO_SetPubAttr(myao.id, &myao.sattr);
     if(miret != MI_SUCCESS) {
         error("failed to set PubAttr\n");
         return -1;
     }
 
-    miret = MI_AO_GetPubAttr(AoDevId, &stGetAttr);
+    miret = MI_AO_GetPubAttr(myao.id, &myao.gattr);
     if(miret != MI_SUCCESS) {
         error("failed to get PubAttr\n");
         return -1;
     }
 
-    miret = MI_AO_Enable(AoDevId);
+    miret = MI_AO_Enable(myao.id);
     if(miret != MI_SUCCESS) {
         error("failed to enable AO\n");
         return -1;
     }
 
-    miret = MI_AO_EnableChn(AoDevId, AoChn);
+    miret = MI_AO_EnableChn(myao.id, myao.ch);
     if(miret != MI_SUCCESS) {
         error("failed to enable Channel\n");
         return -1;
     }
 
     stAoChn0OutputPort0.eModId = E_MI_MODULE_ID_AO;
-    stAoChn0OutputPort0.u32DevId = AoDevId;
-    stAoChn0OutputPort0.u32ChnId = AoChn;
+    stAoChn0OutputPort0.u32DevId = myao.id;
+    stAoChn0OutputPort0.u32ChnId = myao.ch;
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
-    set_mini_vol(cur_vol);
+    mini_set_vol(cur_vol);
 #endif
 
 #if defined(A30)
@@ -1289,54 +1294,54 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #endif
 
 #if defined(QX1000) || defined(XT894) || defined(XT897)
-    pa.mainloop = pa_threaded_mainloop_new();
-    if (pa.mainloop == NULL) {
+    mypulse.mainloop = pa_threaded_mainloop_new();
+    if (mypulse.mainloop == NULL) {
         error("failed to open PulseAudio device\n");
         return -1;
     }
 
-    pa.api = pa_threaded_mainloop_get_api(pa.mainloop);
-    pa.context = pa_context_new(pa.api, "DraStic");
-    pa_context_set_state_callback(pa.context, context_state_cb, &pa);
-    pa_context_connect(pa.context, NULL, 0, NULL);
-    pa_threaded_mainloop_lock(pa.mainloop);
-    pa_threaded_mainloop_start(pa.mainloop);
+    mypulse.api = pa_threaded_mainloop_get_api(mypulse.mainloop);
+    mypulse.context = pa_context_new(mypulse.api, "DraStic");
+    pa_context_set_state_callback(mypulse.context, pulse_context_state, &pa);
+    pa_context_connect(mypulse.context, NULL, 0, NULL);
+    pa_threaded_mainloop_lock(mypulse.mainloop);
+    pa_threaded_mainloop_start(mypulse.mainloop);
 
-    while (pa_context_get_state(pa.context) != PA_CONTEXT_READY) {
-        pa_threaded_mainloop_wait(pa.mainloop);
+    while (pa_context_get_state(mypulse.context) != PA_CONTEXT_READY) {
+        pa_threaded_mainloop_wait(mypulse.mainloop);
     }
 
-    pa.spec.format = PA_SAMPLE_S16LE;
-    pa.spec.channels = SND_CHANNELS;
-    pa.spec.rate = SND_FREQ;
-    pa.attr.tlength = pa_bytes_per_second(&pa.spec) / 5;
-    pa.attr.maxlength = pa.attr.tlength * 3;
-    pa.attr.minreq = pa.attr.tlength / 3;
-    pa.attr.prebuf = pa.attr.tlength;
+    mypulse.spec.format = PA_SAMPLE_S16LE;
+    mypulse.spec.channels = SND_CHANNELS;
+    mypulse.spec.rate = SND_FREQ;
+    mypulse.attr.tlength = pa_bytes_per_second(&mypulse.spec) / 5;
+    mypulse.attr.maxlength = mypulse.attr.tlength * 3;
+    mypulse.attr.minreq = mypulse.attr.tlength / 3;
+    mypulse.attr.prebuf = mypulse.attr.tlength;
 
-    pa.stream = pa_stream_new(pa.context, "NDS", &pa.spec, NULL);
-    pa_stream_set_state_callback(pa.stream, stream_state_cb, &pa);
-    pa_stream_set_write_callback(pa.stream, stream_request_cb, &pa);
-    pa_stream_set_latency_update_callback(pa.stream, stream_latency_update_cb, &pa);
+    mypulse.stream = pa_stream_new(mypulse.context, "NDS", &mypulse.spec, NULL);
+    pa_stream_set_state_callback(mypulse.stream, pulse_stream_state, &pa);
+    pa_stream_set_write_callback(mypulse.stream, pulse_stream_request, &pa);
+    pa_stream_set_latency_update_callback(mypulse.stream, pulse_stream_latency_update, &pa);
     pa_stream_connect_playback(
-        pa.stream,
+        mypulse.stream,
         NULL,
-        &pa.attr, 
+        &mypulse.attr, 
         PA_STREAM_ADJUST_LATENCY | PA_STREAM_INTERPOLATE_TIMING | PA_STREAM_AUTO_TIMING_UPDATE,
         NULL,
         NULL
     );
     
-    while (pa_context_get_state(pa.context) != PA_CONTEXT_READY) {
-        pa_threaded_mainloop_wait(pa.mainloop);
+    while (pa_context_get_state(mypulse.context) != PA_CONTEXT_READY) {
+        pa_threaded_mainloop_wait(mypulse.mainloop);
     }
 
-    pa_threaded_mainloop_unlock(pa.mainloop);
+    pa_threaded_mainloop_unlock(mypulse.mainloop);
 #endif
 
-    add_prehook((void *)myhook.fun.spu_adpcm_decode_block, adpcm_decode_block);
+    add_prehook((void *)myhook.fun.spu_adpcm_decode_block, prehook_adpcm_decode_block);
 
-    pcm_ready = 1;
+    mypcm.ready = 1;
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);
 
     return 0;
@@ -1355,21 +1360,21 @@ int snd_pcm_close(snd_pcm_t *pcm)
 
     debug("call %s(pcm=%p)\n", __func__, pcm);
 
-    if (auto_state > 0) {
-        save_state(auto_slot);
+    if (autostate.enable > 0) {
+        save_state(autostate.slot);
     }
 
-    pcm_ready = 0;
+    mypcm.ready = 0;
     pthread_join(thread, &r);
-    if (pcm_buf) {
-        free(pcm_buf);
-        pcm_buf = NULL;
+    if (mypcm.buf) {
+        free(mypcm.buf);
+        mypcm.buf = NULL;
     }
     quit_queue(&queue);
 
-#if defined(MINI)
-    MI_AO_DisableChn(AoDevId, AoChn);
-    MI_AO_Disable(AoDevId);
+#if defined(MINI) || defined(UT)
+    MI_AO_DisableChn(myao.id, myao.ch);
+    MI_AO_Disable(myao.id);
 #endif
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
@@ -1380,21 +1385,21 @@ int snd_pcm_close(snd_pcm_t *pcm)
 #endif
 
 #if defined(QX1000) || defined(XT894) || defined(XT897)
-    if (pa.mainloop) {
-        pa_threaded_mainloop_stop(pa.mainloop);
+    if (mypulse.mainloop) {
+        pa_threaded_mainloop_stop(mypulse.mainloop);
     }
-    if (pa.stream) {
-        pa_stream_unref(pa.stream);
-        pa.stream = NULL;
+    if (mypulse.stream) {
+        pa_stream_unref(mypulse.stream);
+        mypulse.stream = NULL;
     }
-    if (pa.context) {
-        pa_context_disconnect(pa.context);
-        pa_context_unref(pa.context);
-        pa.context = NULL;
+    if (mypulse.context) {
+        pa_context_disconnect(mypulse.context);
+        pa_context_unref(mypulse.context);
+        mypulse.context = NULL;
     }
-    if (pa.mainloop) {
-        pa_threaded_mainloop_stop(pa.mainloop);
-        pa.mainloop = NULL;
+    if (mypulse.mainloop) {
+        pa_threaded_mainloop_stop(mypulse.mainloop);
+        mypulse.mainloop = NULL;
     }
 #endif
 
@@ -1476,7 +1481,7 @@ snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframe
     return size;
 #endif
 
-    if ((size > 1) && (size != pcm_buf_len)) {
+    if ((size > 1) && (size != mypcm.len)) {
         put_queue(&queue, (uint8_t*)buf, size * 2 * SND_CHANNELS);
     }
     return size;

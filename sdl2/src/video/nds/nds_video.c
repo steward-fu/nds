@@ -6616,7 +6616,6 @@ static int init_device(void)
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
-    //set_half_vol(myconfig.half_vol);
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)

@@ -9,6 +9,7 @@ CFLAGS  += -I../ut/extras/fixture/src
 CFLAGS  += -fsanitize=leak
 CFLAGS  += -fsanitize=address
 CFLAGS  += -ggdb
+CFLAGS  += -I../inc/mini
 
 LDFLAGS += -lasan
 LDFLAGS += -lubsan
