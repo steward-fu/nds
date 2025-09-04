@@ -921,7 +921,8 @@ static void* audio_handler(void *id)
         else {
             if (chk_cnt == 0) {
                 char buf[MAX_PATH] = { 0 };
-                FILE *fd = popen("amixer get \'DACL Mixer AIF1DA0L\' | grep \"Mono: Playback \\[off\\]\" | wc -l", "r");
+                FILE *fd = popen("amixer get \'DACL Mixer AIF1DA0L\' | "
+                    "grep \"Mono: Playback \\[off\\]\" | wc -l", "r");
 
                 if (fd) {
                     fgets(buf, sizeof(buf), fd);
@@ -1024,7 +1025,10 @@ TEST(alsa, snd_pcm_hw_params_malloc)
 }
 #endif
 
-int snd_pcm_hw_params_set_access(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_access_t _access)
+int snd_pcm_hw_params_set_access(
+    snd_pcm_t *pcm,
+    snd_pcm_hw_params_t *params,
+    snd_pcm_access_t _access)
 {
     debug("call %s()\n", __func__);
 
@@ -1037,7 +1041,10 @@ TEST(alsa, snd_pcm_hw_params_set_access)
 }
 #endif
 
-int snd_pcm_hw_params_set_buffer_size_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val)
+int snd_pcm_hw_params_set_buffer_size_near(
+    snd_pcm_t *pcm,
+    snd_pcm_hw_params_t *params,
+    snd_pcm_uframes_t *val)
 {
     debug("call %s()\n", __func__);
 
@@ -1085,7 +1092,11 @@ TEST(alsa, snd_pcm_hw_params_set_format)
 }
 #endif
 
-int snd_pcm_hw_params_set_period_size_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val, int *dir)
+int snd_pcm_hw_params_set_period_size_near(
+    snd_pcm_t *pcm,
+    snd_pcm_hw_params_t *params,
+    snd_pcm_uframes_t *val,
+    int *dir)
 {
     debug("call %s()\n", __func__);
 
@@ -1103,7 +1114,8 @@ TEST(alsa, snd_pcm_hw_params_set_period_size_near)
 }
 #endif
 
-int snd_pcm_hw_params_set_rate_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir)
+int snd_pcm_hw_params_set_rate_near(
+    snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir)
 {
     debug("call %s(pcm=%p, params=%p, val=%p, dir=%p)\n", __func__, pcm, params, val, dir);
 
