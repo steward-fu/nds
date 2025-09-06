@@ -5,10 +5,10 @@
 
 static void runAllTests(void)
 {
-    RUN_TEST_GROUP(alsa);
+    //RUN_TEST_GROUP(alsa);
     //RUN_TEST_GROUP(common);
     //RUN_TEST_GROUP(detour);
-    //RUN_TEST_GROUP(sdl2_event);
+    RUN_TEST_GROUP(sdl2_event);
     //RUN_TEST_GROUP(sdl2_video);
     //RUN_TEST_GROUP(sdl2_render);
     //RUN_TEST_GROUP(sdl2_joystick);

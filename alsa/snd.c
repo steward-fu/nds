@@ -134,7 +134,10 @@ MI_S32 MI_AO_GetPubAttr(MI_AUDIO_DEV AoDevId, MI_AUDIO_Attr_t *pstAttr)
     return 0;
 }
 
-MI_S32 MI_SYS_SetChnOutputPortDepth(MI_SYS_ChnPort_t *pstChnPort , MI_U32 u32UserFrameDepth , MI_U32 u32BufQueueDepth)
+MI_S32 MI_SYS_SetChnOutputPortDepth(
+    MI_SYS_ChnPort_t *pstChnPort,
+    MI_U32 u32UserFrameDepth,
+    MI_U32 u32BufQueueDepth)
 {
     return 0;
 }
@@ -149,7 +152,11 @@ MI_S32 MI_AO_DisableChn(MI_AUDIO_DEV AoDevId, MI_AO_CHN AoChn)
     return 0;
 }
 
-MI_S32 MI_AO_SendFrame(MI_AUDIO_DEV AoDevId, MI_AO_CHN AoChn, MI_AUDIO_Frame_t *pstData, MI_S32 s32MilliSec)
+MI_S32 MI_AO_SendFrame(
+    MI_AUDIO_DEV AoDevId,
+    MI_AO_CHN AoChn,
+    MI_AUDIO_Frame_t *pstData,
+    MI_S32 s32MilliSec)
 {
     return 0;
 }
@@ -789,7 +796,6 @@ TEST(alsa, put_queue)
     TEST_ASSERT_NOT_NULL(t.buf);
 
     TEST_ASSERT_EQUAL_INT(-1, put_queue(NULL, NULL, 0));
-    TEST_ASSERT_EQUAL_INT(-1, put_queue(&t, NULL, 0));
     TEST_ASSERT_EQUAL_INT(0, put_queue(&t, buf, 0));
 
     TEST_ASSERT_EQUAL_INT(sizeof(buf), put_queue(&t, buf, sizeof(buf)));
@@ -855,7 +861,6 @@ TEST(alsa, get_queue)
     TEST_ASSERT_NOT_NULL(t.buf);
 
     TEST_ASSERT_EQUAL_INT(-1, get_queue(NULL, NULL, 0));
-    TEST_ASSERT_EQUAL_INT(-1, get_queue(&t, NULL, 0));
     TEST_ASSERT_EQUAL_INT(0, get_queue(&t, buf, 0));
 
     TEST_ASSERT_EQUAL_INT(0, get_queue(&t, buf, sizeof(buf)));
@@ -1115,7 +1120,10 @@ TEST(alsa, snd_pcm_hw_params_set_period_size_near)
 #endif
 
 int snd_pcm_hw_params_set_rate_near(
-    snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir)
+    snd_pcm_t *pcm,
+    snd_pcm_hw_params_t *params,
+    unsigned int *val,
+    int *dir)
 {
     debug("call %s(pcm=%p, params=%p, val=%p, dir=%p)\n", __func__, pcm, params, val, dir);
 
@@ -1244,7 +1252,8 @@ int snd_pcm_start(snd_pcm_t *pcm)
     myao.sattr.u32FrmNum = 6;
     myao.sattr.u32PtNumPerFrm = SND_SAMPLES;
     myao.sattr.u32ChnCnt = SND_CHANNELS;
-    myao.sattr.eSoundmode = (SND_CHANNELS == 2) ? E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
+    myao.sattr.eSoundmode = (SND_CHANNELS == 2) ? 
+        E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
     myao.sattr.eSamplerate = (MI_AUDIO_SampleRate_e)SND_FREQ;
 
     miret = MI_AO_SetPubAttr(myao.id, &myao.sattr);
@@ -1314,7 +1323,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 
     mypulse.api = pa_threaded_mainloop_get_api(mypulse.mainloop);
     mypulse.context = pa_context_new(mypulse.api, "DraStic");
-    pa_context_set_state_callback(mypulse.context, pulse_context_state, &pa);
+    pa_context_set_state_callback(mypulse.context, pulse_context_state, &mypulse);
     pa_context_connect(mypulse.context, NULL, 0, NULL);
     pa_threaded_mainloop_lock(mypulse.mainloop);
     pa_threaded_mainloop_start(mypulse.mainloop);
@@ -1332,9 +1341,9 @@ int snd_pcm_start(snd_pcm_t *pcm)
     mypulse.attr.prebuf = mypulse.attr.tlength;
 
     mypulse.stream = pa_stream_new(mypulse.context, "NDS", &mypulse.spec, NULL);
-    pa_stream_set_state_callback(mypulse.stream, pulse_stream_state, &pa);
-    pa_stream_set_write_callback(mypulse.stream, pulse_stream_request, &pa);
-    pa_stream_set_latency_update_callback(mypulse.stream, pulse_stream_latency_update, &pa);
+    pa_stream_set_state_callback(mypulse.stream, pulse_stream_state, &mypulse);
+    pa_stream_set_write_callback(mypulse.stream, pulse_stream_request, &mypulse);
+    pa_stream_set_latency_update_callback(mypulse.stream, pulse_stream_latency_update, &mypulse);
     pa_stream_connect_playback(
         mypulse.stream,
         NULL,

@@ -42,28 +42,30 @@
 #define LAYOUT_BG_W     640
 #define LAYOUT_BG_H     480
 
-#define LAYOUT_MODE_T0      0
-#define LAYOUT_MODE_T1      1
-#define LAYOUT_MODE_T2      2
-#define LAYOUT_MODE_T3      3
-#define LAYOUT_MODE_T4      4
-#define LAYOUT_MODE_T5      5
-#define LAYOUT_MODE_T6      6
-#define LAYOUT_MODE_T7      7
-#define LAYOUT_MODE_T8      8
-#define LAYOUT_MODE_T9      9
-#define LAYOUT_MODE_T10     10
-#define LAYOUT_MODE_T11     11
-#define LAYOUT_MODE_T12     12
-#define LAYOUT_MODE_T13     13
-#define LAYOUT_MODE_T14     14
-#define LAYOUT_MODE_T15     15
-#define LAYOUT_MODE_T16     16
-#define LAYOUT_MODE_T17     17
-#define LAYOUT_MODE_T18     18
-#define LAYOUT_MODE_T19     19
-#define LAYOUT_MODE_CUST    20
-#define LAYOUT_MODE_MAX     21
+enum layout_mode_t {
+    LAYOUT_MODE_T0,      // 0
+    LAYOUT_MODE_T1,      // 1
+    LAYOUT_MODE_T2,      // 2
+    LAYOUT_MODE_T3,      // 3
+    LAYOUT_MODE_T4,      // 4
+    LAYOUT_MODE_T5,      // 5
+    LAYOUT_MODE_T6,      // 6
+    LAYOUT_MODE_T7,      // 7
+    LAYOUT_MODE_T8,      // 8
+    LAYOUT_MODE_T9,      // 9
+    LAYOUT_MODE_T10,     // 10
+    LAYOUT_MODE_T11,     // 11
+    LAYOUT_MODE_T12,     // 12
+    LAYOUT_MODE_T13,     // 13
+    LAYOUT_MODE_T14,     // 14
+    LAYOUT_MODE_T15,     // 15
+    LAYOUT_MODE_B0,      // 16
+    LAYOUT_MODE_B1,      // 17
+    LAYOUT_MODE_B2,      // 18
+    LAYOUT_MODE_B3,      // 19
+    LAYOUT_MODE_CUST,    // 20
+    LAYOUT_MODE_MAX,     // 21
+};
 
 #define NDS_ALPHA_MAX   9
 #define MAX_PATH        255

@@ -1897,10 +1897,10 @@ static int process_screen(void)
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
-        if ((myconfig.layout.mode.sel == LAYOUT_MODE_T16) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_T17) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_T18) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_T19))
+        if ((myconfig.layout.mode.sel == LAYOUT_MODE_B0) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_B1) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_B2) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_B3))
         {
             drt.x = (drt.x == 0) ? 320 : 0;
         }
@@ -2020,12 +2020,12 @@ static int process_screen(void)
 
     if (show_info > 0) {
         switch (myconfig.layout.mode.sel) {
-        case LAYOUT_MODE_T16:
-        case LAYOUT_MODE_T18:
+        case LAYOUT_MODE_B0:
+        case LAYOUT_MODE_B2:
             draw_info(NULL, buf, 0, 0, col_fg, col_bg);
             break;
-        case LAYOUT_MODE_T17:
-        case LAYOUT_MODE_T19:
+        case LAYOUT_MODE_B1:
+        case LAYOUT_MODE_B3:
             draw_info(
                 NULL,
                 buf,
@@ -4051,7 +4051,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(A30) || defined(FLIP)
-    if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T17) || (myconfig.layout.mode.sel == LAYOUT_MODE_T19))) {
+    if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_B1) || (myconfig.layout.mode.sel == LAYOUT_MODE_B3))) {
         fg_vertices[5] = (((float)drt.x / w) - 0.5) * 2.0;
         fg_vertices[6] = (((float)drt.y / h) - 0.5) * -2.0;
 
@@ -4064,7 +4064,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         fg_vertices[0] = fg_vertices[15];
         fg_vertices[1] = fg_vertices[6];
     }
-    else if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_T16) || (myconfig.layout.mode.sel == LAYOUT_MODE_T18))) {
+    else if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_B0) || (myconfig.layout.mode.sel == LAYOUT_MODE_B2))) {
         fg_vertices[15] = (((float)drt.x / w) - 0.5) * 2.0;
         fg_vertices[16] = (((float)drt.y / h) - 0.5) * -2.0;
 
@@ -4097,10 +4097,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         !myvideo.menu.drastic.enable &&
         myvideo.layout.overlay.bg &&
         myconfig.layout.overlay.enable &&
-        (myconfig.layout.mode.sel != LAYOUT_MODE_T16) &&
-        (myconfig.layout.mode.sel != LAYOUT_MODE_T17) &&
-        (myconfig.layout.mode.sel != LAYOUT_MODE_T18) &&
-        (myconfig.layout.mode.sel != LAYOUT_MODE_T19))
+        (myconfig.layout.mode.sel != LAYOUT_MODE_B0) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_B1) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_B2) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_B3))
     {
         int apply = myconfig.layout.overlay.apply[myconfig.layout.mode.sel];
 
@@ -6399,7 +6399,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 384;
         myvideo.layout.mode[mode].screen[1].h = 288;
         break;
-    case LAYOUT_MODE_T16:
+    case LAYOUT_MODE_B0:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 26;
         myvideo.layout.mode[mode].screen[0].w = 427;
@@ -6409,7 +6409,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 427;
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
-    case LAYOUT_MODE_T17:
+    case LAYOUT_MODE_B1:
         myvideo.layout.mode[mode].screen[0].x = 320;
         myvideo.layout.mode[mode].screen[0].y = 26;
         myvideo.layout.mode[mode].screen[0].w = 427;
@@ -6419,7 +6419,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 427;
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
-    case LAYOUT_MODE_T18:
+    case LAYOUT_MODE_B2:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 480;
@@ -6429,7 +6429,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 320;
         break;
-    case LAYOUT_MODE_T19:
+    case LAYOUT_MODE_B3:
         myvideo.layout.mode[mode].screen[0].x = 320;
         myvideo.layout.mode[mode].screen[0].y = 0;
         myvideo.layout.mode[mode].screen[0].w = 480;
@@ -6505,8 +6505,8 @@ static int free_layout_mode(void)
     add_layout_mode(LAYOUT_MODE_T0, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T1, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T3, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_T18, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_T19, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_B2, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_B3, 0, NULL);
 #endif
 
     return 0;
@@ -6661,7 +6661,7 @@ static int init_device(void)
     debug("hook prehook_cb_blit_screen_menu\n");
     r |= add_prehook(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
     debug("hook prehook_cb_platform_get_input\n");
-    r |= add_prehook(myhook.fun.platform_get_input, prehook_cb_platform_get_input);
+    r |= add_prehook(myhook.fun.platform_get_input, prehook_platform_get_input);
 
 #if !defined(NDS_ARM64)
     debug("hook prehook_cb_savestate_pre\n");
@@ -7454,7 +7454,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T16:
+    case LAYOUT_MODE_B0:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7473,7 +7473,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T17:
+    case LAYOUT_MODE_B1:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7492,7 +7492,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
         break;
-    case LAYOUT_MODE_T18:
+    case LAYOUT_MODE_B2:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7511,7 +7511,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy;
         SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T19:
+    case LAYOUT_MODE_B3:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;

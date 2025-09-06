@@ -377,7 +377,7 @@
 #define NDS_KEY_BIT_SWAP        0x0400000
 #define NDS_KEY_BIT_SCREEN_V    0x0800000
 #define NDS_KEY_BIT_SCREEN_H    0x1000000
-#define NDS_KEY_BIT_MENU        0x40000
+#define NDS_KEY_BIT_MENU        0x0040000
 #define NDS_KEY_BIT_QUIT        0x4000000
 
 #if defined(TRIMUI) || defined(UT)
@@ -452,7 +452,7 @@ typedef struct {
 void init_event(void);
 void quit_event(void);
 void pump_event(_THIS);
-void prehook_cb_platform_get_input(uintptr_t);
+void prehook_platform_get_input(uintptr_t);
 
 #endif
 
