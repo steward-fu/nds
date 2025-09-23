@@ -3989,6 +3989,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     float w = WL_WIN_H;
     float h = WL_WIN_W;
+    int is_pixel_filter = 1;
 #endif
 
     debug("call %s(tex=%d, pixels=%p, pitch=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d))\n",
@@ -4199,31 +4200,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     fg_vertices[16] = fg_vertices[1];
 
     if (myconfig.filter == FILTER_PIXEL) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        is_pixel_filter = 1;
     }
     else {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        is_pixel_filter = 0;
     }
-
-#if defined(XT894) || defined(XT897)
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T4) {
-        switch (id) {
-        case TEXTURE_LCD0:
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            break;
-        case TEXTURE_LCD1:
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            break;
-        }
-    }
-#endif
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glUniform1i(myvideo.egl.frag.enable_overlay, 0);
 #if !defined(XT894)
@@ -4236,6 +4217,9 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
@@ -4252,9 +4236,39 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     if (id == TEXTURE_TMP) {
         id = TEXTURE_LCD0;
+#if !defined(XT894)
+        is_pixel_filter = 0;
+#endif
+    }
+
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_T4) {
+        switch (id) {
+        case TEXTURE_LCD0:
+            is_pixel_filter = 1;
+#if defined(XT894)
+            is_pixel_filter = 0;
+#endif
+            break;
+        case TEXTURE_LCD1:
+            is_pixel_filter = 0;
+#if defined(XT894)
+            is_pixel_filter = 1;
+#endif
+            break;
+        }
+    }
+
+    if (is_pixel_filter) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    else {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     if ((myconfig.layout.mode.sel <= LAYOUT_MODE_T1) &&
         (id == TEXTURE_LCD1))
@@ -6194,6 +6208,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
 
         m = 2.0;
         mode = 4;
+#if defined(XT897)
         myvideo.layout.mode[mode].screen[0].x = NDS_W * m;
         myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 336) / 2.0;
         myvideo.layout.mode[mode].screen[0].w = 448;
@@ -6202,6 +6217,16 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
         myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
         myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+#else
+        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 336) / 2.0;
+        myvideo.layout.mode[mode].screen[1].w = 448;
+        myvideo.layout.mode[mode].screen[1].h = 336;
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+#endif
 
         m = 2.0;
         mode = 5;

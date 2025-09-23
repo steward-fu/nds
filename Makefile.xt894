@@ -21,4 +21,4 @@ include Makefile.mk
 
 .PHONY: cp
 cp:
-	cp -a drastic/lib/* ~/Games/nds/lib/
+	cp -a drastic/lib/* ~/Game/xt894/nds/lib/
