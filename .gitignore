@@ -5,7 +5,16 @@ drastic/system/nds_bios_arm7.bin
 drastic/system/nds_bios_arm9.bin
 drastic/system/nds_firmware.bin
 drastic/drastic64
+drastic/config/drastic.cf2
+drastic/launch.sh
+drastic/lib/
 
+sdl2/Makefile
+sdl2/Makefile.rules
+sdl2/build/
+sdl2/config.status
+sdl2/libtool
+sdl2/sdl2-config
 sdl2/configure
 sdl2/config.log
 sdl2/include/SDL_config.h
@@ -13,3 +22,9 @@ sdl2/include/SDL_revision.h
 sdl2/sdl2-config.cmake
 sdl2/sdl2.pc
 sdl2/test/configure
+	
+alsa/libasound.so.2
+
+common/libcommon.so
+
+detour/libdtr.so
