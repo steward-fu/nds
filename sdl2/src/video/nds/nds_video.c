@@ -2036,7 +2036,11 @@ static int process_screen(void)
             );
             break;
         default:
+#if defined(XT894) || defined(XT897)
+            draw_info(NULL, buf, 0, 0, col_fg, col_bg);
+#else
             draw_info(NULL, buf, SCREEN_W - get_font_width(buf), 0, col_fg, col_bg);
+#endif
             break;
         }
         show_info -= 1;
