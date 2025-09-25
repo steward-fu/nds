@@ -95,7 +95,7 @@ extern nds_hook myhook;
 struct autostate {
     int slot;
     int enable;
-} autostate = { 0, 1 };
+} autostate = { 10, 0 };
 
 static int cur_vol = 0;
 static queue_t queue = { 0 };
