@@ -6644,7 +6644,7 @@ static int init_device(void)
     load_overlay_file();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
-    //set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
+    set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
@@ -7065,7 +7065,7 @@ TEST(sdl2_video, lang_prev)
 
 typedef enum {
     MENU_LANG = 0,
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     MENU_CPU_CORE,
 #endif
     MENU_LAYOUT_MODE,
@@ -7116,7 +7116,7 @@ typedef enum {
 
 static const char *MENU_LIST_STR[] = {
     "Language",
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     "CPU Core",
 #endif
     "Layout Mode",
@@ -7586,7 +7586,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             lang_prev();
         }
         break;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     case MENU_CPU_CORE:
         if (right_key) {
             if (myconfig.cpu_core < MAX_CPU_CORE) {
@@ -7996,7 +7996,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     case MENU_LANG:
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     case MENU_CPU_CORE:
         sprintf(buf, "%d", myconfig.cpu_core);
         break;
@@ -8161,7 +8161,7 @@ static int process_sdl2_setting(int key)
     static int cur_sel = 0;
     static int pre_fast = 0;
     static int pre_lang = 0;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
     static int pre_cpu_core = 0;
 #endif
 
@@ -8211,7 +8211,7 @@ static int process_sdl2_setting(int key)
             pre_fast = myconfig.fast_forward;
         }
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
         if (pre_cpu_core != myconfig.cpu_core) {
             set_cpu_core(myconfig.cpu_core);
             pre_cpu_core = myconfig.cpu_core;
