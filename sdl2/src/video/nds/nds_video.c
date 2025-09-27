@@ -152,7 +152,7 @@ const char *vert_shader_src =
     "}                                                              \n";
 
 const char *frag_shader_src =
-    "precision mediump float;                                       \n"
+    "precision highp float;                                         \n"
     "varying vec2 frag_tex_coord;                                   \n"
     "uniform int frag_enable_overlay;                               \n"
     "uniform float frag_alpha;                                      \n"
@@ -7165,13 +7165,13 @@ static const char *MENU_LIST_STR[] = {
 #endif
 };
 
-static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
+static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
 {
     SDL_Rect rt = { 0 };
 
-    debug("call %s(sx=%d, sy=%d, mode=%d)\n", __func__, sx, sy, mode);
+    debug("call %s(sx=%d, sy=%d, mode=%d, surf=%p)\n", __func__, sx, sy, mode, surf);
 
-    if (!d) {
+    if (!surf) {
         error("d is null\n");
         return -1;
     }
@@ -7182,7 +7182,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
        
         rt.w = 34;
         rt.h = 26;
@@ -7204,14 +7204,23 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
             rt.y = (sy + 96) - rt.h;
             break;
         }
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
+        SDL_FillRect(
+            surf,
+            &rt,
+            SDL_MapRGB(
+                surf->format,
+                0x00,
+                0x00,
+                (30 * myconfig.layout.swin.alpha)
+            )
+        );
         break;
     case LAYOUT_MODE_T1:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
        
         rt.w = 51;
         rt.h = 38;
@@ -7233,331 +7242,340 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *d)
             rt.y = (sy + 96) - rt.h;
             break;
         }
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, (30 * myconfig.layout.swin.alpha)));
+        SDL_FillRect(
+            surf,
+            &rt,
+            SDL_MapRGB(
+                surf->format,
+                0x00,
+                0x00,
+                (30 * myconfig.layout.swin.alpha)
+            )
+        );
         break;
     case LAYOUT_MODE_T2:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 102;
         rt.h = 76;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         break;
     case LAYOUT_MODE_T3:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         break;
     case LAYOUT_MODE_T4:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 51;
         rt.h = 38;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + ((96 - (rt.h * 2)) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 51;
         rt.h = 38;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T5:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 64;
         rt.h = 48;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + ((96 - (rt.h * 2)) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 64;
         rt.h = 48;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T6:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 51;
         rt.h = 38;
         rt.x = sx + ((128 - (rt.w * 2)) / 2);
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 51;
         rt.h = 38;
         rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T7:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 64;
         rt.h = 48;
         rt.x = sx + ((128 - (rt.w * 2)) / 2);
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 64;
         rt.h = 48;
         rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T8:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 96;
         rt.h = 72;
         rt.x = sx;
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 32;
         rt.h = 24;
         rt.x = sx + (128 - rt.w);
         rt.y = sy + (96 - rt.h);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T9:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 77;
         rt.h = 58;
         rt.x = sx;
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 51;
         rt.h = 38;
         rt.x = sx + (128 - rt.w);
         rt.y = sy + (96 - rt.h);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T10:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 96;
         rt.h = 72;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 32;
         rt.h = 24;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + (96 - rt.h);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T11:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 102;
         rt.h = 77;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 26;
         rt.h = 19;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + (96 - rt.h);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T12:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 102;
         rt.h = 77;
         rt.x = sx + (128 - rt.w);
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 26;
         rt.h = 19;
         rt.x = sx;
         rt.y = sy + (96 - rt.h);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T13:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 102;
         rt.h = 77;
         rt.x = sx;
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 26;
         rt.h = 19;
         rt.x = sx + (128 - rt.w);
         rt.y = sy + (96 - rt.h);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T14:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 77;
         rt.h = 58;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 51;
         rt.h = 38;
         rt.x = sx + ((128 - rt.w) / 2);
         rt.y = sy + (96 - rt.h);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_T15:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 77;
         rt.h = 58;
         rt.x = sx;
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 51;
         rt.h = 38;
         rt.x = sx + (128 - rt.w);
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_B0:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 64;
         rt.h = 85;
         rt.x = sx;
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         
         rt.w = 64;
         rt.h = 85;
         rt.x = sx + (128 - rt.w);
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_B1:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
 
         rt.w = 64;
         rt.h = 85;
         rt.x = sx;
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
 
         rt.w = 64;
         rt.h = 85;
         rt.x = sx + (128 - rt.w);
         rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         break;
     case LAYOUT_MODE_B2:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
 
         rt.w = 64;
         rt.h = 96;
         rt.x = sx;
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
 
         rt.w = 64;
         rt.h = 96;
         rt.x = sx + (128 - rt.w);
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
     case LAYOUT_MODE_B3:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x80, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
 
         rt.w = 64;
         rt.h = 96;
         rt.x = sx;
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x00, 0x00, 0x80));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
 
         rt.w = 64;
         rt.h = 96;
         rt.x = sx + (128 - rt.w);
         rt.y = sy;
-        SDL_FillRect(d, &rt, SDL_MapRGB(d->format, 0x80, 0x00, 0x00));
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         break;
     }
     
