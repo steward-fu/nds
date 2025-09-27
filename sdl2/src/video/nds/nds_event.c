@@ -847,7 +847,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(A30) || defined(TRIMUI)
+#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(A30) || defined(TRIMUI)
         enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 

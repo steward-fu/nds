@@ -2508,6 +2508,13 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
     fi
 
+    if test x$MOD = xgkdmini; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKDMINI"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
+
+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
+    fi
+
     if test x$MOD = xbrick; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DBRICK"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
@@ -3824,42 +3831,17 @@ case "$host" in
         esac
 
         case "$MOD" in
-            *ut*)
-                CheckNDSVideo
-                ;;
-            *mini*)
-                CheckNDSVideo
-                ;;
-            *a30*)
-                CheckNDSVideo
-                ;;
-            *flip*)
-                CheckNDSVideo
-                ;;
-            *trimui*)
-                CheckNDSVideo
-                ;;
-            *pandora*)
-                CheckNDSVideo
-                ;;
-            *qx1000*)
-                CheckNDSVideo
-                ;;
-            *qx1050*)
-                CheckNDSVideo
-                ;;
-            *gkd2*)
-                CheckNDSVideo
-                ;;
-            *brick*)
-                CheckNDSVideo
-                ;;
-            *xt897*)
-                CheckNDSVideo
-                ;;
-            *xt894*)
-                CheckNDSVideo
-                ;;
+            *ut*)       CheckNDSVideo ;;
+            *mini*)     CheckNDSVideo ;;
+            *flip*)     CheckNDSVideo ;;
+            *trimui*)   CheckNDSVideo ;;
+            *qx1000*)   CheckNDSVideo ;;
+            *qx1050*)   CheckNDSVideo ;;
+            *gkd2*)     CheckNDSVideo ;;
+            *gkdmini*)  CheckNDSVideo ;;
+            *brick*)    CheckNDSVideo ;;
+            *xt897*)    CheckNDSVideo ;;
+            *xt894*)    CheckNDSVideo ;;
             *)
                 CheckVisibilityHidden
                 ;;

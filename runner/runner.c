@@ -323,12 +323,12 @@ static void* runner_handler(void *param)
             rt.h = ((float)rt.h) * 1.6;
 #endif
 
-            if ((myrunner.shm.buf->layout == LAYOUT_MODE_OV) && (myrunner.shm.buf->overlay.reload)) {
+            if ((myrunner.shm.buf->layout == LAYOUT_MODE_CUST) && (myrunner.shm.buf->overlay.reload)) {
                 load_overlay_file(myrunner.shm.buf->overlay.image, myrunner.shm.buf->overlay.lcd);
                 myrunner.shm.buf->overlay.reload = 0;
             }
 
-            if ((myrunner.shm.buf->layout == LAYOUT_MODE_T17) || (myrunner.shm.buf->layout == LAYOUT_MODE_T19)) {
+            if ((myrunner.shm.buf->layout == LAYOUT_MODE_B1) || (myrunner.shm.buf->layout == LAYOUT_MODE_B3)) {
                 fg_vertices[5] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[6] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 
@@ -341,7 +341,7 @@ static void* runner_handler(void *param)
                 fg_vertices[0] = fg_vertices[15];
                 fg_vertices[1] = fg_vertices[6];
             }
-            else if ((myrunner.shm.buf->layout == LAYOUT_MODE_T16) || (myrunner.shm.buf->layout == LAYOUT_MODE_T18)) {
+            else if ((myrunner.shm.buf->layout == LAYOUT_MODE_B0) || (myrunner.shm.buf->layout == LAYOUT_MODE_B2)) {
                 fg_vertices[15] = ((((float)rt.x) / (float)R_LCD_W) - 0.5) * 2.0;
                 fg_vertices[16] = ((((float)rt.y) / (float)R_LCD_H) - 0.5) * -2.0;
 

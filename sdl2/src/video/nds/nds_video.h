@@ -58,7 +58,7 @@
 #include "trimui.h"
 #endif
 
-#if defined(GKD2) || defined(BRICK) || defined(UT)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(UT)
 #include "runner.h"
 #endif
 
@@ -180,6 +180,13 @@ typedef enum {
 #endif
 
 #if defined(GKD2)
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define INIT_CPU_CORE   2
+#define MAX_CPU_CORE    4
+#endif
+
+#if defined(GKDMINI)
 #define SCREEN_W        640
 #define SCREEN_H        480
 #define INIT_CPU_CORE   2
@@ -354,7 +361,7 @@ typedef struct {
     int sar_fd;
 #endif
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     struct {
         int fd;
         shm_buf_t *buf;
@@ -393,7 +400,7 @@ typedef struct {
         struct fb_var_screeninfo var_info;
         struct fb_fix_screeninfo fix_info;
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         void *virt_addr;
 #endif
 
@@ -465,7 +472,7 @@ typedef struct {
             SDL_Surface *bg;
             SDL_Surface *mask[2];
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
             int reload;
 #endif
         } overlay;

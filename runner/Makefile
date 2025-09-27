@@ -5,6 +5,13 @@ LDFLAGS += -DGKD2
 CFLAGS  += -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/SDL2
 endif
 
+ifeq ($(MOD),gkdmini)
+export CROSS=aarch64-linux-
+export PATH=/opt/flip/bin:$(shell echo $$PATH)
+LDFLAGS += -DGKDMINI
+CFLAGS  += -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/SDL2
+endif
+
 ifeq ($(MOD),brick)
 export CROSS=aarch64-linux-gnu-
 export PATH=/opt/brick/bin:$(shell echo $$PATH)

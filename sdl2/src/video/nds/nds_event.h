@@ -27,6 +27,8 @@
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(GKD2)
 #define INPUT_DEV   "/dev/input/event2"
+#elif defined(GKDMINI)
+#define INPUT_DEV   "/dev/input/event2"
 #elif defined(BRICK)
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(TRIMUI)
@@ -321,6 +323,27 @@
 #define DEV_KEY_CODE_START      315
 #define DEV_KEY_CODE_SELECT     314
 #define DEV_KEY_CODE_MENU       704
+#define DEV_KEY_CODE_POWER      -1
+#define DEV_KEY_CODE_VOL_UP     -1
+#define DEV_KEY_CODE_VOL_DOWN   -1
+#endif
+
+#if defined(GKDMINI)
+#define DEV_KEY_CODE_UP         544
+#define DEV_KEY_CODE_DOWN       545
+#define DEV_KEY_CODE_LEFT       546
+#define DEV_KEY_CODE_RIGHT      547
+#define DEV_KEY_CODE_A          305
+#define DEV_KEY_CODE_B          304
+#define DEV_KEY_CODE_X          307
+#define DEV_KEY_CODE_Y          308
+#define DEV_KEY_CODE_L1         310
+#define DEV_KEY_CODE_R1         311
+#define DEV_KEY_CODE_L2         312
+#define DEV_KEY_CODE_R2         313
+#define DEV_KEY_CODE_START      315
+#define DEV_KEY_CODE_SELECT     314
+#define DEV_KEY_CODE_MENU       316
 #define DEV_KEY_CODE_POWER      -1
 #define DEV_KEY_CODE_VOL_UP     -1
 #define DEV_KEY_CODE_VOL_DOWN   -1

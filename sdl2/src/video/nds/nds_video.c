@@ -19,7 +19,7 @@
 #include <sys/ioctl.h>
 #include <json-c/json.h>
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -66,6 +66,11 @@
 #if defined(GKD2)
 #include "hex_gkd2_hotkey_cn.h"
 #include "hex_gkd2_hotkey_en.h"
+#endif
+
+#if defined(GKDMINI)
+#include "hex_gkdmini_hotkey_cn.h"
+#include "hex_gkdmini_hotkey_en.h"
 #endif
 
 #if defined(A30)
@@ -344,7 +349,7 @@ static int free_lcd_mem(void)
     return 0;
 }
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897)
 static int get_cpu_core(int idx)
 {
     FILE *fd = NULL;
@@ -799,7 +804,7 @@ static int draw_drastic_menu_main(void)
             pfn((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50;
                 rt.w = NDS_W;
@@ -811,7 +816,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50 + NDS_H;
                 rt.w = NDS_W;
@@ -1693,7 +1698,7 @@ int handle_drastic_menu(void)
     default:
         return 0;
     }
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
 
@@ -1885,7 +1890,7 @@ static int process_screen(void)
         drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].h;
         debug("mode=%d, drt=%d,%d,%d,%d\n", myconfig.layout.mode.sel, drt.x, drt.y, drt.w, drt.h);
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         switch (myconfig.layout.mode.sel) {
         case LAYOUT_MODE_T0:
         case LAYOUT_MODE_T1:
@@ -1896,7 +1901,7 @@ static int process_screen(void)
         }
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         if ((myconfig.layout.mode.sel == LAYOUT_MODE_B0) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_B1) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_B2) ||
@@ -1930,7 +1935,7 @@ static int process_screen(void)
 #endif
         }
 
-#if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2)
+#if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
             ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
@@ -1957,7 +1962,7 @@ static int process_screen(void)
             }
         }
 
-#if !defined(BRICK) && !defined(GKD2)
+#if !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         if (myconfig.filter == FILTER_PIXEL) {
@@ -1979,7 +1984,7 @@ static int process_screen(void)
 #endif
             flush_lcd(idx, pixels, srt, drt, pitch);
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
             switch (myconfig.layout.mode.sel) {
             case LAYOUT_MODE_T0:
             case LAYOUT_MODE_T1:
@@ -1987,7 +1992,7 @@ static int process_screen(void)
                 drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].y;
                 drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].w;
                 drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].h;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
                     drt.x = SCREEN_W - drt.w;
@@ -2219,7 +2224,7 @@ static void prehook_cb_update_screen(void)
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         myvideo.menu.drastic.enable = 0;
 #endif
         myvideo.lcd.update = 1;
@@ -2650,7 +2655,7 @@ static void* video_handler(void *param)
     glUniform1i(myvideo.egl.frag.enable_overlay, 0);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     alloc_lcd_mem();
 #endif
 
@@ -2665,7 +2670,7 @@ static void* video_handler(void *param)
 #endif
 
     while (myvideo.thread.running) {
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
             if (myvideo.menu.update) {
                 int pre_mode = myconfig.layout.mode.sel;
@@ -2765,7 +2770,7 @@ static void* video_handler(void *param)
     wl_display_disconnect(myvideo.wl.display);
 #endif
 
-#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(A30) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     free_lcd_mem();
 #endif
 
@@ -2957,6 +2962,10 @@ static int load_overlay_file(void)
 
     debug("call %s(sel=%d, max=%d)\n", __func__, myconfig.layout.overlay.sel, myvideo.layout.overlay.max);
 
+#if !defined(MINI)
+    return 0;
+#endif
+
     if (myvideo.layout.overlay.bg) {
         SDL_FreeSurface(myvideo.layout.overlay.bg);
         myvideo.layout.overlay.bg = NULL;
@@ -2975,7 +2984,7 @@ static int load_overlay_file(void)
 
         debug("load overlay from \"%s\"\n", buf);
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         strcpy(myvideo.shm.buf->overlay.image, buf);
         myvideo.layout.overlay.reload = 1;
 #endif
@@ -3034,7 +3043,7 @@ static int load_overlay_file(void)
         debug("overlay image=%p\n", myvideo.layout.overlay.bg);
     }
     else {
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         myvideo.shm.buf->overlay.image[0] = 0;
         myvideo.layout.overlay.reload = 1;
 #endif
@@ -3213,7 +3222,7 @@ TEST(sdl2_video, resize_disp)
 }
 #endif
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
 static int init_lcd(void)
 {
     debug("call %s()\n", __func__);
@@ -3981,7 +3990,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     int is_rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
@@ -4004,7 +4013,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         return -1;
     }
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     debug("myvideo.shm.buf=%p\n", myvideo.shm.buf);
     if (myvideo.shm.buf == MAP_FAILED) {
         error("myvideo.shm.buf is NULL\n");
@@ -5377,7 +5386,7 @@ static int flip_lcd(void)
     int r = 0;
 #endif
 
-#if defined(GKD2) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     myvideo.shm.buf->cmd = SHM_CMD_FLIP;
     debug("send SHM_CMD_FLIP\n");
 
@@ -5964,7 +5973,7 @@ static int load_layout_bg(void)
 
     if (myvideo.layout.bg) {
 #if !defined(TRIMUI)
-#if defined(MINI) || defined(BRICK) || defined(GKD2) || defined(PANDORA)
+#if defined(MINI) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA)
         SDL_Rect drt = { 0, 0, SCREEN_W, SCREEN_H };
 
         flush_lcd(
@@ -6647,7 +6656,7 @@ static int init_device(void)
     set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897)
     if (myconfig.cpu_core <= 0) {
         myconfig.cpu_core = INIT_CPU_CORE;
     }
@@ -7065,7 +7074,7 @@ TEST(sdl2_video, lang_prev)
 
 typedef enum {
     MENU_LANG = 0,
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     MENU_CPU_CORE,
 #endif
     MENU_LAYOUT_MODE,
@@ -7116,7 +7125,7 @@ typedef enum {
 
 static const char *MENU_LIST_STR[] = {
     "Language",
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     "CPU Core",
 #endif
     "Layout Mode",
@@ -7604,7 +7613,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             lang_prev();
         }
         break;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     case MENU_CPU_CORE:
         if (right_key) {
             if (myconfig.cpu_core < MAX_CPU_CORE) {
@@ -8014,7 +8023,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     case MENU_LANG:
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     case MENU_CPU_CORE:
         sprintf(buf, "%d", myconfig.cpu_core);
         break;
@@ -8179,7 +8188,7 @@ static int process_sdl2_setting(int key)
     static int cur_sel = 0;
     static int pre_fast = 0;
     static int pre_lang = 0;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     static int pre_cpu_core = 0;
 #endif
 
@@ -8229,7 +8238,7 @@ static int process_sdl2_setting(int key)
             pre_fast = myconfig.fast_forward;
         }
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         if (pre_cpu_core != myconfig.cpu_core) {
             set_cpu_core(myconfig.cpu_core);
             pre_cpu_core = myconfig.cpu_core;
@@ -8450,7 +8459,7 @@ static int process_sdl2_setting(int key)
     }
     draw_small_block_win(450, 360, mode, myvideo.cvt);
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
@@ -8468,7 +8477,7 @@ TEST(sdl2_video, process_sdl2_setting)
 }
 #endif
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(TRIMUI)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI)
 static int show_hotkey(int key)
 {
     int is_cn = 0;
@@ -8513,6 +8522,11 @@ static int show_hotkey(int key)
         src_size = is_cn ? sizeof(hex_gkd2_hotkey_cn) : sizeof(hex_gkd2_hotkey_en);
 #endif
 
+#if defined(GKDMINI)
+        src_ptr = is_cn ? hex_gkdmini_hotkey_cn : hex_gkdmini_hotkey_en;
+        src_size = is_cn ? sizeof(hex_gkdmini_hotkey_cn) : sizeof(hex_gkdmini_hotkey_en);
+#endif
+
 #if defined(A30)
         src_ptr = is_cn ? hex_a30_hotkey_cn : hex_a30_hotkey_en;
         src_size = is_cn ? sizeof(hex_a30_hotkey_cn) : sizeof(hex_a30_hotkey_en);
@@ -8534,7 +8548,7 @@ static int show_hotkey(int key)
         SDL_FreeSurface(png);
     }
 
-#if defined(FLIP) || defined(GKD2) || defined(BRICK) || defined(A30)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(A30)
     myvideo.menu.update = 1;
 #else
     flush_lcd(TEXTURE_TMP, myvideo.cvt->pixels, myvideo.cvt->clip_rect, myvideo.cvt->clip_rect, myvideo.cvt->pitch);
@@ -8553,7 +8567,7 @@ int handle_sdl2_menu(int key)
     switch (myvideo.menu.sdl2.type) {
     case MENU_TYPE_SDL2:
         return process_sdl2_setting(key);
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(TRIMUI)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI)
     case MENU_TYPE_SHOW_HOTKEY:
         return show_hotkey(key);
 #endif
