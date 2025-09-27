@@ -1,0 +1,35 @@
+shaders = 5
+
+shader0 = ../../stock.slang
+alias0 = hqx_refpass
+shader1 = shaders/pass1.slang
+shader2 = shaders/hq2x.slang
+
+filter_linear1 = false
+scale_type1 = source
+scale1 = 1.0
+
+filter_linear2 = false
+scale_type2 = source
+scale2 = 2.0
+
+shader3 = ../../interpolation/shaders/bicubic/bicubic-y.slang
+filter_linear3 = false
+scale_type_y3 = viewport
+scale_type_x3 = source
+scale3 = 1.0
+
+shader4 = ../../interpolation/shaders/bicubic/bicubic-x.slang
+filter_linear4 = false
+scale_type4 = viewport
+
+wrap_mode2 = "clamp_to_edge"
+wrap_mode3 = "clamp_to_edge"
+wrap_mode4 = "clamp_to_edge"
+srgb_framebuffer2 = "true"
+srgb_framebuffer3 = "true"
+
+
+textures = LUT
+LUT = resources/hq2x.png
+LUT_linear = false

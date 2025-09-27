@@ -1,0 +1,4 @@
+#reference "GameboyAdvance.slangp"
+
+DO_GLOBAL_SHZO = "1.000000"
+DO_BG_IMAGE = "1.000000"

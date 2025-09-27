@@ -1,0 +1,4 @@
+shaders = "2"
+feedback_pass = "0"
+shader0 = "shaders/crt-consumer/linearize.slang"
+shader1 = "shaders/fake-crt-geom.slang"
