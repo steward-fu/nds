@@ -310,22 +310,17 @@ typedef struct {
         EGLContext context;
         EGLSurface surface;
 
-        GLuint object;
+        GLuint program;
         GLuint texture[TEXTURE_MAX];
 
         struct {
-            GLuint shader;
             GLint tex_pos;
             GLint tex_coord;
         } vert;
 
         struct {
-            GLuint shader;
             GLint alpha;
-            GLint tex_main;
-            GLint tex_overlay;
-            GLint enable_overlay;
-            GLint shader_type;
+            GLint tex_sample;
             struct {
                 GLint w;
                 GLint h;
