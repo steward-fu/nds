@@ -1,0 +1,13 @@
+precision highp float;
+
+varying vec2 frag_tex_coord;
+uniform float frag_alpha;
+uniform float frag_screen_w;
+uniform float frag_screen_h;
+uniform sampler2D frag_tex_sample;
+
+void main()
+{
+    vec3 tex = texture2D(frag_tex_sample, frag_tex_coord).bgr;
+    gl_FragColor = vec4(tex, frag_alpha);
+}

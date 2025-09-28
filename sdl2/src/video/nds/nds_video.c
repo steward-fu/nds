@@ -117,7 +117,8 @@ static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
 static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
-static int load_shader_file(const char *name);
+static int load_shader_file(const char *);
+static int get_file_name_by_index(const char *, int, char *, int);
 
 #if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
 GLfloat bg_vertices[] = {
@@ -138,14 +139,6 @@ GLushort vert_indices[] = {
     0, 1, 2, 0, 2, 3
 };
 #endif
-
-static const char *SHADER_STR[] = {
-    "none",
-    "lcd1x",
-    "lcd1x_nds",
-    "lcd3x",
-    "retro-v2"
-};
 
 const char *def_vert_src =
 "   attribute vec4 vert_tex_pos;                                            \n"
@@ -2377,6 +2370,7 @@ TEST(sdl2_video, strip_newline_char)
 static void* video_handler(void *param)
 {
     int cur_shader = 0;
+    char tmp[MAX_PATH] = { 0 };
 
 #if defined(FLIP)
     EGLint surf_cfg[] = {
@@ -2552,7 +2546,8 @@ static void* video_handler(void *param)
         }
         else if (myconfig.shader != cur_shader) {
             cur_shader = myconfig.shader;
-            load_shader_file(SHADER_STR[myconfig.shader]);
+            get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0);
+            load_shader_file(tmp);
         }
 
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
@@ -2902,16 +2897,18 @@ static int get_file_name_by_index(const char *folder, int idx, char *buf, int fu
     int r = -1;
     int cnt = 0;
     DIR *d = NULL;
+    char tmp[MAX_PATH] = { 0 };
     struct dirent *dir = NULL;
 
     debug("call %s()\n", __func__);
 
-    sprintf(buf, "%s%s", myvideo.home, folder);
-    debug("enum folder=\"%s\"\n", buf);
+    buf[0] = 0;
+    sprintf(tmp, "%s%s", myvideo.home, folder);
+    debug("enum folder=\"%s\"\n", tmp);
 
-    d = opendir(buf);
+    d = opendir(tmp);
     if (!d) {
-        error("failed to open dir \"%s\"\n", buf);
+        error("failed to open dir \"%s\"\n", tmp);
         return r;
     }
 
@@ -3108,6 +3105,24 @@ TEST(sdl2_video, enum_lang_file)
     TEST_ASSERT_EQUAL_INT(0, init_device());
     //TEST_ASSERT_EQUAL_INT(3, enum_lang_file());
     TEST_ASSERT_EQUAL_INT(0, quit_device());
+}
+#endif
+
+static int get_shader_cnt(void)
+{
+    char buf[MAX_PATH + 32] = { 0 };
+
+    debug("call %s()\n", __func__);
+
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, SHADER_PATH);
+    debug("shader folder=\"%s\"\n", buf);
+
+    return get_file_cnt(buf);
+}
+
+#if defined(UT)
+TEST(sdl2_video, get_shader_cnt)
+{
 }
 #endif
 
@@ -7544,6 +7559,11 @@ TEST(sdl2_video, draw_small_block_win)
 static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
     //int add = is_lr ? 50 : 1;
+    int max_shader_count = get_shader_cnt();
+
+    if (myconfig.shader >= max_shader_count) {
+        myconfig.shader = 0;
+    }
 
     debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
 
@@ -7738,7 +7758,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 #endif
     case MENU_SHADER:
         if (right_key) {
-            if (myconfig.shader < (SHADER_TYPE_MAX - 1)) {
+            if (max_shader_count && (myconfig.shader < (max_shader_count - 1))) {
                 myconfig.shader += 1;
             }
         }
@@ -7919,6 +7939,7 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     const int SY = 107;
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
+    char tmp[MAX_PATH] = { 0 };
 
     debug("call %s(cur_sel=%d, cc=%d, idx=%d, sx=%d)\n", __func__, cur_sel, cc, idx, sx);
 
@@ -8015,7 +8036,12 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         break;
 #endif
     case MENU_SHADER:
-        sprintf(buf, "%s", SHADER_STR[myconfig.shader]);
+        if (get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0) >= 0) {
+            sprintf(buf, "%s", tmp);
+        }
+        else {
+            strcpy(buf, "none");
+        }
         break;
     case MENU_ROTATE_KEY:
         sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
