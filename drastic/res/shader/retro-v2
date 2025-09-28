@@ -1,0 +1,31 @@
+precision highp float;
+
+uniform float frag_alpha;
+uniform float frag_screen_w;
+uniform float frag_screen_h;
+varying vec2 frag_tex_coord;
+uniform sampler2D frag_tex_sample;
+
+#define PI 3.141592654
+
+void main()
+{
+    const float RETRO_GAMMA_IN = 2.20;
+    const float RETRO_GAMMA_OUT = 2.20;
+    const float RETRO_PIXEL_SIZE = 0.84;
+    const float RETRO_COLOR_BOOST = 1.0;
+    const float GAMMA_OUT = (1.0 / RETRO_GAMMA_OUT);
+
+    float w = frag_screen_w;
+    float h = frag_screen_h;
+
+    vec3 tex = texture2D(frag_tex_sample, frag_tex_coord * 1.0001).bgr;
+    vec3 E = pow(tex.xyz, vec3(RETRO_GAMMA_IN));
+    vec2 fp = fract(frag_tex_coord * 1.0001 * vec2(w, h));
+    vec2 ps = vec2(w, h) * vec2(1.0 / w, 1.0 / h);
+    vec2 f = clamp(clamp(fp + 0.5 * ps, 0.0, 1.0) - RETRO_PIXEL_SIZE, vec2(0.0), ps) / ps;
+    float max_coord = max(f.x, f.y);
+    vec3 res = mix(E * (1.04 + fp.x * fp.y), E * 0.36, max_coord);
+
+    gl_FragColor = vec4(clamp(pow(RETRO_COLOR_BOOST * res, vec3(GAMMA_OUT)), 0.0, 1.0 ), 1.0);
+}
