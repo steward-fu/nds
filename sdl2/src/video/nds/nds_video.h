@@ -325,6 +325,11 @@ typedef struct {
             GLint tex_main;
             GLint tex_overlay;
             GLint enable_overlay;
+            GLint shader_type;
+            struct {
+                GLint w;
+                GLint h;
+            } screen;
         } frag;
 
 #if !defined(QX1050) && !defined(QX1000) && !defined(XT894) && !defined(XT897)

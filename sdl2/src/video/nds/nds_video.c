@@ -138,113 +138,126 @@ GLushort vert_indices[] = {
 };
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
 const char *vert_shader_src =
-    "attribute vec4 vert_tex_pos;                                   \n"
-    "attribute vec2 vert_tex_coord;                                 \n"
-    "attribute float vert_alpha;                                    \n"
-    "varying vec2 frag_tex_coord;                                   \n"
-    "void main()                                                    \n"
-    "{                                                              \n"
-    "    const float angle = 270.0 * (3.1415 * 2.0) / 360.0;        \n"
-    "    mat4 rot = mat4(                                           \n"
-    "        cos(angle), -sin(angle), 0.0, 0.0,                     \n"
-    "        sin(angle),  cos(angle), 0.0, 0.0,                     \n"
-    "               0.0,         0.0, 1.0, 0.0,                     \n"
-    "               0.0,         0.0, 0.0, 1.0);                    \n"
-    "    gl_Position = vert_tex_pos * rot;                          \n"
-    "    frag_tex_coord = vert_tex_coord;                           \n"
-    "}                                                              \n";
+"   attribute vec4 vert_tex_pos;                                            \n"
+"   attribute vec2 vert_tex_coord;                                          \n"
+"   attribute float vert_alpha;                                             \n"
+"   varying vec2 frag_tex_coord;                                            \n"
 
-const char *frag_shader_src =
-    "precision highp float;                                         \n"
-    "varying vec2 frag_tex_coord;                                   \n"
-    "uniform int frag_enable_overlay;                               \n"
-    "uniform float frag_alpha;                                      \n"
-    "uniform sampler2D frag_tex_main;                               \n"
-    "uniform sampler2D frag_tex_overlay;                            \n"
-    "void main()                                                    \n"
-    "{                                                              \n"
-    "    vec3 tex;                                                  \n"
-    "    if (frag_enable_overlay > 0) {                             \n"
-    "        tex = mix(                                             \n"
-    "            texture2D(frag_tex_main, frag_tex_coord),          \n"
-    "            texture2D(frag_tex_overlay, frag_tex_coord),       \n"
-    "            texture2D(frag_tex_overlay, frag_tex_coord).a      \n"
-    "        ).bgr;                                                 \n"
-    "   }                                                           \n"
-    "   else {                                                      \n"
-    "       tex = texture2D(frag_tex_main, frag_tex_coord).bgr;     \n"
-    "   }                                                           \n"
-    "    gl_FragColor = vec4(tex, frag_alpha);                      \n"
-    "}                                                              \n";
+"   void main()                                                             \n"
+"   {                                                                       \n"
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+"       const float angle = 270.0 * (3.1415 * 2.0) / 360.0;                 \n"
+"       mat4 rot = mat4(                                                    \n"
+"           cos(angle), -sin(angle), 0.0, 0.0,                              \n"
+"           sin(angle),  cos(angle), 0.0, 0.0,                              \n"
+"                  0.0,         0.0, 1.0, 0.0,                              \n"
+"                  0.0,         0.0, 0.0, 1.0);                             \n"
+"       gl_Position = vert_tex_pos * rot;                                   \n"
+"       frag_tex_coord = vert_tex_coord;                                    \n"
 #endif
 
 #if defined(FLIP)
-const char *vert_shader_src =
-    "attribute vec4 vert_tex_pos;                                   \n"
-    "attribute vec2 vert_tex_coord;                                 \n"
-    "attribute float vert_alpha;                                    \n"
-    "varying vec2 frag_tex_coord;                                   \n"
-    "void main()                                                    \n"
-    "{                                                              \n"
-    "    gl_Position = vert_tex_pos;                                \n"
-    "    frag_tex_coord = vert_tex_coord;                           \n"
-    "}                                                              \n";
-    
-const char *frag_shader_src =
-    "precision mediump float;                                       \n"
-    "varying vec2 frag_tex_coord;                                   \n"
-    "uniform int frag_enable_overlay;                               \n"
-    "uniform float frag_alpha;                                      \n"
-    "uniform sampler2D frag_tex_main;                               \n"
-    "uniform sampler2D frag_tex_overlay;                            \n"
-    "void main()                                                    \n"
-    "{                                                              \n"
-    "    vec3 tex;                                                  \n"
-    "    if (frag_enable_overlay > 0) {                             \n"
-    "        tex = mix(                                             \n"
-    "            texture2D(frag_tex_main, frag_tex_coord),          \n"
-    "            texture2D(frag_tex_overlay, frag_tex_coord),       \n"
-    "            texture2D(frag_tex_overlay, frag_tex_coord).a      \n"
-    "        ).bgr;                                                 \n"
-    "   }                                                           \n"
-    "   else {                                                      \n"
-    "       tex = texture2D(frag_tex_main, frag_tex_coord).bgr;     \n"
-    "   }                                                           \n"
-    "    gl_FragColor = vec4(tex, frag_alpha);                      \n"
-    "}                                                              \n";
+"       gl_Position = vert_tex_pos;                                         \n"
+"       frag_tex_coord = vert_tex_coord;                                    \n"
 #endif
 
 #if defined(A30)
-const char *vert_shader_src =
-    "attribute vec4 vert_tex_pos;                                   \n"
-    "attribute vec2 vert_tex_coord;                                 \n"
-    "attribute float vert_alpha;                                    \n"
-    "varying vec2 frag_tex_coord;                                   \n"
-    "void main()                                                    \n"
-    "{                                                              \n"
-    "    const float angle = 90.0 * (3.1415 * 2.0) / 360.0;         \n"
-    "    mat4 rot = mat4(                                           \n"
-    "        cos(angle), -sin(angle), 0.0, 0.0,                     \n"
-    "        sin(angle),  cos(angle), 0.0, 0.0,                     \n"
-    "               0.0,         0.0, 1.0, 0.0,                     \n"
-    "               0.0,         0.0, 0.0, 1.0);                    \n"
-    "    gl_Position = vert_tex_pos * rot;                          \n"
-    "    frag_tex_coord = vert_tex_coord;                           \n"
-    "}                                                              \n";
+"       const float angle = 90.0 * (3.1415 * 2.0) / 360.0;                  \n"
+"       mat4 rot = mat4(                                                    \n"
+"           cos(angle), -sin(angle), 0.0, 0.0,                              \n"
+"           sin(angle),  cos(angle), 0.0, 0.0,                              \n"
+"                  0.0,         0.0, 1.0, 0.0,                              \n"
+"                  0.0,         0.0, 0.0, 1.0);                             \n"
+"       gl_Position = vert_tex_pos * rot;                                   \n"
+"       frag_tex_coord = vert_tex_coord;                                    \n"
+#endif
+"}                                                                          \n";
 
 const char *frag_shader_src =
-    "precision mediump float;                                       \n"
-    "varying vec2 frag_tex_coord;                                   \n"
-    "uniform float frag_alpha;                                      \n"
-    "uniform sampler2D frag_tex_main;                               \n"
-    "void main()                                                    \n"
-    "{                                                              \n"
-    "    vec3 tex = texture2D(frag_tex_main, frag_tex_coord).bgr;   \n"
-    "    gl_FragColor = vec4(tex, frag_alpha);                      \n"
-    "}                                                              \n";
+#if defined(FLIP) || defined(A30)
+"   precision mediump float;                                                \n"
+#else
+"   precision highp float;                                                  \n"
 #endif
+
+"   varying vec2 frag_tex_coord;                                            \n"
+"   uniform int frag_enable_overlay;                                        \n"
+"   uniform int frag_shader_type;                                           \n"
+"   uniform float frag_alpha;                                               \n"
+"   uniform float frag_screen_w;                                            \n"
+"   uniform float frag_screen_h;                                            \n"
+"   uniform sampler2D frag_tex_main;                                        \n"
+"   uniform sampler2D frag_tex_overlay;                                     \n"
+
+"   #define PI 3.141592654                                                  \n"
+"   #define SHADER_TYPE_NONE        0                                       \n"
+"   #define SHADER_TYPE_LCD3X       1                                       \n"
+"   #define SHADER_TYPE_LCD1X_NDS   2                                       \n"
+
+"   void main()                                                             \n"
+"   {                                                                       \n"
+"       vec3 tex;                                                           \n"
+#if 0
+"       if (frag_enable_overlay > 0) {                                      \n"
+"           tex = mix(                                                      \n"
+"               texture2D(frag_tex_main, frag_tex_coord),                   \n"
+"               texture2D(frag_tex_overlay, frag_tex_coord),                \n"
+"               texture2D(frag_tex_overlay, frag_tex_coord).a               \n"
+"           ).bgr;                                                          \n"
+"       }                                                                   \n"
+#endif
+
+"       tex = texture2D(frag_tex_main, frag_tex_coord).bgr;                 \n"
+
+"       int type = frag_shader_type;                                        \n"
+"       if (type == SHADER_TYPE_NONE) {                                     \n"
+"           gl_FragColor = vec4(tex, frag_alpha);                           \n"
+"       }                                                                   \n"
+
+"       if (type == SHADER_TYPE_LCD3X) {                                    \n"
+"           float w = frag_screen_w;                                        \n"
+"           float h = frag_screen_h;                                        \n"
+"           vec2 omega = vec2(3.14159) * vec2(2.0) * vec2(w, h);            \n"
+"           vec3 offsets = vec3(3.14159) *                                  \n"
+"               vec3(1.0/2.0, 1.0/2.0 - 2.0/3.0, 1.0/2.0 - 4.0/3.0);        \n"
+"           vec2 angle = frag_tex_coord * omega;                            \n"
+"           float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);           \n"
+"           vec3 xfactors = (4.0 + sin(angle.x + offsets)) / (4.0 + 1.0);   \n"
+"           vec3 color = yfactor * xfactors * tex;                          \n"
+"           gl_FragColor = vec4(color.x, color.y, color.z, frag_alpha);     \n"
+"       }                                                                   \n"
+
+"       if (type == SHADER_TYPE_LCD1X_NDS) {                                \n"
+"           const float CC_LUM = 0.89;                                      \n"
+"           const float CC_R = 0.87;                                        \n"
+"           const float CC_G = 0.645;                                       \n"
+"           const float CC_B = 0.73;                                        \n"
+"           const float CC_RG = 0.10;                                       \n"
+"           const float CC_RB = 0.10;                                       \n"
+"           const float CC_GR = 0.255;                                      \n"
+"           const float CC_GB = 0.17;                                       \n"
+"           const float CC_BR = -0.125;                                     \n"
+"           const float CC_BG = 0.255;                                      \n"
+"           const float GAMMA = 1.91;                                       \n"
+"           const float INV_GAMMA = 1.0 / 1.91;                             \n"
+
+"           float w = frag_screen_w;                                        \n"
+"           float h = frag_screen_h;                                        \n"
+"           vec2 pixel = frag_tex_coord * vec2(w, h);                       \n"
+"           vec2 angle = 2.0 * PI * ((pixel * h * (1.0 / h)) - 0.25);       \n"
+"           float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);           \n"
+"           float xfactor = (4.0 + sin(angle.x)) / (4.0 + 1.0);             \n"
+"           tex.rgb = pow(tex.rgb, vec3(GAMMA));                            \n"
+"           tex.rgb = mat3(CC_R,  CC_RG, CC_RB,                             \n"
+"                      CC_GR, CC_G,  CC_GB,                                 \n"
+"                      CC_BR, CC_BG, CC_B) * (tex.rgb * CC_LUM);            \n"
+"           tex.rgb = clamp(pow(tex.rgb, vec3(INV_GAMMA)), 0.0, 1.0);       \n"
+"           tex.rgb = yfactor * xfactor * tex.rgb;                          \n"
+"           gl_FragColor = vec4(tex.rgb, frag_alpha);                       \n"
+"       }                                                                   \n"
+
+"   }                                                                       \n";
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
 EGLint egl_cfg[] = {
@@ -2495,7 +2508,10 @@ static void* video_handler(void *param)
     myvideo.egl.frag.tex_main = glGetUniformLocation(myvideo.egl.object, "frag_tex_main");
     myvideo.egl.frag.tex_overlay = glGetUniformLocation(myvideo.egl.object, "frag_tex_overlay");
     myvideo.egl.frag.alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
+    myvideo.egl.frag.screen.w = glGetUniformLocation(myvideo.egl.object, "frag_screen_w");
+    myvideo.egl.frag.screen.h = glGetUniformLocation(myvideo.egl.object, "frag_screen_h");
     myvideo.egl.frag.enable_overlay = glGetUniformLocation(myvideo.egl.object, "frag_enable_overlay");
+    myvideo.egl.frag.shader_type = glGetUniformLocation(myvideo.egl.object, "frag_shader_type");
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
 
@@ -2518,7 +2534,10 @@ static void* video_handler(void *param)
     glUniform1i(myvideo.egl.frag.tex_main, 0);
     glUniform1i(myvideo.egl.frag.tex_overlay, 1);
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
+    glUniform1f(myvideo.egl.frag.screen.w, 640.0);
+    glUniform1f(myvideo.egl.frag.screen.h, 480.0);
     glUniform1i(myvideo.egl.frag.enable_overlay, 0);
+    glUniform1i(myvideo.egl.frag.shader_type, 0);
 #endif
 
 #if defined(A30)
@@ -2568,6 +2587,9 @@ static void* video_handler(void *param)
     myvideo.egl.vert.tex_coord = glGetAttribLocation(myvideo.egl.object, "vert_tex_coord");
     myvideo.egl.frag.tex_main = glGetUniformLocation(myvideo.egl.object, "frag_tex_main");
     myvideo.egl.frag.alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
+    myvideo.egl.frag.screen.w = glGetUniformLocation(myvideo.egl.object, "frag_screen_w");
+    myvideo.egl.frag.screen.h = glGetUniformLocation(myvideo.egl.object, "frag_screen_h");
+    myvideo.egl.frag.shader_type = glGetUniformLocation(myvideo.egl.object, "frag_shader_type");
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_LCD0]);
@@ -2582,6 +2604,9 @@ static void* video_handler(void *param)
     glEnableVertexAttribArray(myvideo.egl.vert.tex_coord);
     glUniform1i(myvideo.egl.frag.tex_main, 0);
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
+    glUniform1f(myvideo.egl.frag.screen.w, 640.0);
+    glUniform1f(myvideo.egl.frag.screen.h, 480.0);
+    glUniform1i(myvideo.egl.frag.shader_type, 0);
 #endif
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2636,7 +2661,10 @@ static void* video_handler(void *param)
     myvideo.egl.frag.tex_main = glGetUniformLocation(myvideo.egl.object, "frag_tex_main");
     myvideo.egl.frag.tex_overlay = glGetUniformLocation(myvideo.egl.object, "frag_tex_overlay");
     myvideo.egl.frag.alpha = glGetUniformLocation(myvideo.egl.object, "frag_alpha");
+    myvideo.egl.frag.screen.w = glGetUniformLocation(myvideo.egl.object, "frag_screen_w");
+    myvideo.egl.frag.screen.h = glGetUniformLocation(myvideo.egl.object, "frag_screen_h");
     myvideo.egl.frag.enable_overlay = glGetUniformLocation(myvideo.egl.object, "frag_enable_overlay");
+    myvideo.egl.frag.shader_type = glGetUniformLocation(myvideo.egl.object, "frag_shader_type");
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glGenTextures(TEXTURE_MAX, myvideo.egl.texture);
@@ -2652,7 +2680,10 @@ static void* video_handler(void *param)
     glUniform1i(myvideo.egl.frag.tex_main, 0);
     glUniform1i(myvideo.egl.frag.tex_overlay, 1);
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
+    glUniform1f(myvideo.egl.frag.screen.w, 640.0);
+    glUniform1f(myvideo.egl.frag.screen.h, 480.0);
     glUniform1i(myvideo.egl.frag.enable_overlay, 0);
+    glUniform1i(myvideo.egl.frag.shader_type, 0);
 #endif
 
 #if defined(FLIP) || defined(A30) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -4219,39 +4250,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         is_pixel_filter = 0;
     }
 
-    glUniform1i(myvideo.egl.frag.enable_overlay, 0);
-#if !defined(XT894)
-    if (!myvideo.menu.sdl2.enable &&
-        !myvideo.menu.drastic.enable &&
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T6))
-    {
-        glUniform1i(myvideo.egl.frag.enable_overlay, 1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA,
-            myvideo.layout.overlay.bg->w,
-            myvideo.layout.overlay.bg->h,
-            0,
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            myvideo.layout.overlay.bg->pixels
-        );
-    }
-#endif
-
     if (id == TEXTURE_TMP) {
         id = TEXTURE_LCD0;
-#if !defined(XT894)
-        is_pixel_filter = 0;
-#endif
     }
 
     if (myconfig.layout.mode.sel == LAYOUT_MODE_T4) {
@@ -4269,6 +4269,15 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
             break;
         }
+    }
+
+    if (myvideo.menu.sdl2.enable || myvideo.menu.drastic.enable) {
+        glUniform1i(myvideo.egl.frag.shader_type, SHADER_TYPE_NONE);
+    }
+    else {
+        glUniform1i(myvideo.egl.frag.shader_type, myconfig.shader);
+        glUniform1f(myvideo.egl.frag.screen.w, drt.h);
+        glUniform1f(myvideo.egl.frag.screen.h, drt.w);
     }
 
     if (is_pixel_filter) {
@@ -7019,13 +7028,6 @@ static const char *JOY_CUST_KEY_STR[] = {
 };
 #endif
 
-static const char *LAYOUT_OV_MODE_STR[] = {
-    "LCD0 & LCD1",
-    "LCD0",
-    "LCD1",
-    "None"
-};
-
 static int lang_next(void)
 {
     int cc = 0;
@@ -7074,18 +7076,22 @@ TEST(sdl2_video, lang_prev)
 
 typedef enum {
     MENU_LANG = 0,
+
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     MENU_CPU_CORE,
 #endif
+
+    MENU_SHADER,
     MENU_LAYOUT_MODE,
     MENU_SWIN_ALPHA,
     MENU_SWIN_BORDER,
     MENU_SWIN_POS,
     MENU_LAYOUT_ATL,
-    MENU_OVERLAY_ENABLE,
-    MENU_OVERLAY_IMAGE,
-    MENU_OVERLAY_LAYOUT,
-    MENU_OVERLAY_APPLY,
+
+#if defined(MINI)
+    MENU_OVERLAY,
+#endif
+
 #if 0
     MENU_CUST_IMG,
     MENU_CUST_LCD,
@@ -7094,6 +7100,7 @@ typedef enum {
     MENU_CUST_LCD_W,
     MENU_CUST_LCD_H,
 #endif
+
     MENU_ROTATE_KEY,
     MENU_BIND_HOTKEY,
     MENU_SWAP_L1L2,
@@ -7123,54 +7130,65 @@ typedef enum {
     MENU_LAST,
 } menu_list_t;
 
+static const char *MENU_SHADER_STR[] = {
+    "NONE",
+    "LCD3X",
+    "LCD1X_NDS"
+};
+
 static const char *MENU_LIST_STR[] = {
-    "Language",
+    "LANGUAGE",
+
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     "CPU Core",
 #endif
-    "Layout Mode",
-    "  Alpha",
-    "  Border",
-    "  Position",
-    "Layout Alt.",
-    "Overlay",
-    "  Image",
-    "  Layout",
-    "  Apply On",
+
+    "SHADER",
+    "LAYOUT MODE",
+    "  ALPHA",
+    "  BORDER",
+    "  POSITION",
+    "  ALT. MODE",
+
+#if defined(MINI)
+    "OVERLAY",
+#endif
+
 #if 0
-    "Cust. Layout",
-    "  Image",
+    "CUST. LAYOUT",
+    "  IMAGE",
     "  LCD",
     "    X",
     "    Y",
-    "    Width",
-    "    Height",
+    "    WIDTH",
+    "    HEIGHT",
 #endif
-    "Rotate Key",
-    "Bind Hotkey",
-    "Swap L1-L2",
-    "Swap R1-R2",
-    "Pen Speed",
-    "Show Cursor",
-    "Fast Forward",
+
+    "ROTATE KEY",
+    "BIND HOTKEY",
+    "SWAP L1-L2",
+    "SWAP R1-R2",
+    "PEN SPEED",
+    "SHOW CURSOR",
+    "FAST FORWARD",
 #if defined(A30) || defined(FLIP)
-    "L Joy Mode",
-    "  Joy Up",
-    "  Joy Down",
-    "  Joy Left",
-    "  Joy Right",
-    "L Joy Dead Zone",
+    "L JOY MODE",
+    "  JOY UP",
+    "  JOY DOWN",
+    "  JOY LEFT",
+    "  JOY RIGHT",
+    "L JOY DEAD ZONE",
 #endif
 #if defined(FLIP)
-    "R Joy Mode",
-    "  Joy Up",
-    "  Joy Down",
-    "  Joy Left",
-    "  Joy Right",
-    "R Joy Dead Zone",
+    "R JOY MODE",
+    "  JOY UP",
+    "  JOY DOWN",
+    "  JOY LEFT",
+    "  JOY RIGHT",
+    "R JOY DEAD ZONE",
 #endif
 #if defined(MINI) || defined(A30) || defined(FLIP)
-    "Low Battery Status",
+    "LOW BATTERY STATUS",
 #endif
 };
 
@@ -7700,7 +7718,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-    case MENU_OVERLAY_ENABLE:
+#if defined(MINI)
+    case MENU_OVERLAY:
         if (right_key) {
             myconfig.layout.overlay.enable = 1;
         }
@@ -7708,50 +7727,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             myconfig.layout.overlay.enable = 0;
         }
         break;
-    case MENU_OVERLAY_IMAGE:
-        if (myconfig.layout.overlay.enable) {
-            if (myvideo.layout.overlay.max > 0) {
-                if (right_key) {
-                    if (myconfig.layout.overlay.sel < (myvideo.layout.overlay.max - 1)) {
-                        myconfig.layout.overlay.sel += 1;
-                    }
-                }
-                else {
-                    if (myconfig.layout.overlay.sel > 0) {
-                        myconfig.layout.overlay.sel -= 1;
-                    }
-                }
-            }
-        }
-        break;
-    case MENU_OVERLAY_LAYOUT:
-        if (myconfig.layout.overlay.enable) {
-            if (right_key) {
-                if (myconfig.layout.overlay.cur_sel_layout < myvideo.layout.max_mode) {
-                    myconfig.layout.overlay.cur_sel_layout += 1;
-                }
-            }
-            else {
-                if (myconfig.layout.overlay.cur_sel_layout > 0) {
-                    myconfig.layout.overlay.cur_sel_layout -= 1;
-                }
-            }
-        }
-        break;
-    case MENU_OVERLAY_APPLY:
-        if (myconfig.layout.overlay.enable) {
-            if (right_key) {
-                if (myconfig.layout.overlay.apply[myconfig.layout.overlay.cur_sel_layout] < (OVERLAY_APPLY_MODE_MAX - 1)) {
-                    myconfig.layout.overlay.apply[myconfig.layout.overlay.cur_sel_layout] += 1;
-                }
-            }
-            else {
-                if (myconfig.layout.overlay.apply[myconfig.layout.overlay.cur_sel_layout] > 0) {
-                    myconfig.layout.overlay.apply[myconfig.layout.overlay.cur_sel_layout] -= 1;
-                }
-            }
-        }
-        break;
+#endif
+
 #if 0
     case MENU_CUST_LCD:
         if (right_key) {
@@ -7834,6 +7811,18 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
 #endif
+    case MENU_SHADER:
+        if (right_key) {
+            if (myconfig.shader < (SHADER_TYPE_MAX - 1)) {
+                myconfig.shader += 1;
+            }
+        }
+        else {
+            if (myconfig.shader > 0) {
+                myconfig.shader -= 1;
+            }
+        }
+        break;
     case MENU_ROTATE_KEY:
         if (right_key) {
             if (myconfig.keys_rotate < 2) {
@@ -8005,7 +7994,6 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     const int SY = 107;
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
-    char tmp[MAX_PATH] = { 0 };
 
     debug("call %s(cur_sel=%d, cc=%d, idx=%d, sx=%d)\n", __func__, cur_sel, cc, idx, sx);
 
@@ -8065,7 +8053,8 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     case MENU_LAYOUT_ATL:
         sprintf(buf, "[%d]   %s", myconfig.layout.mode.alt, LAYOUT_MODE_STR0[myconfig.layout.mode.alt]);
         break;
-    case MENU_OVERLAY_ENABLE:
+#if defined(MINI)
+    case MENU_OVERLAY:
         sprintf(buf, "[%d]   ", myconfig.layout.mode.alt);
         sx = get_font_width(buf);
         sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode.alt]);
@@ -8081,21 +8070,8 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sx = 0;
         sprintf(buf, "%s", l10n((myconfig.layout.overlay.enable > 0 )? "Yes" : "No"));
         break;
-    case MENU_OVERLAY_IMAGE:
-        if (myvideo.layout.overlay.max > 0) {
-            get_file_name_by_index(OVERLAY_PATH, myconfig.layout.overlay.sel, tmp, 0);
-        }
-        else {
-            strcpy(tmp, l10n("None"));
-        }
-        sprintf(buf, "%s", tmp);
-        break;
-    case MENU_OVERLAY_LAYOUT:
-        sprintf(buf, "T%d", myconfig.layout.overlay.cur_sel_layout);
-        break;
-    case MENU_OVERLAY_APPLY:
-        sprintf(buf, "%s", LAYOUT_OV_MODE_STR[myconfig.layout.overlay.apply[myconfig.layout.overlay.cur_sel_layout]]);
-        break;
+#endif
+
 #if 0
     case MENU_CUST_LCD:
         sprintf(buf, "%d", myvideo.layout.overlay.idx);
@@ -8113,6 +8089,9 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].h);
         break;
 #endif
+    case MENU_SHADER:
+        sprintf(buf, "%s", MENU_SHADER_STR[myconfig.shader]);
+        break;
     case MENU_ROTATE_KEY:
         sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
         break;
@@ -8373,14 +8352,6 @@ static int process_sdl2_setting(int key)
             }
             break;
 #endif
-        case MENU_OVERLAY_LAYOUT:
-        case MENU_OVERLAY_APPLY:
-            col1 = myconfig.layout.overlay.enable ? MENU_COLOR_UNSEL : MENU_COLOR_DIS;
-            break;
-        case MENU_OVERLAY_IMAGE:
-            col1 = (myvideo.layout.overlay.max > 0) ? MENU_COLOR_UNSEL : MENU_COLOR_DIS;
-            col1 = myconfig.layout.overlay.enable ? MENU_COLOR_UNSEL : MENU_COLOR_DIS;
-            break;
         default:
             break;
         }
@@ -8400,7 +8371,7 @@ static int process_sdl2_setting(int key)
             rt.y = SY + (myvideo.menu.line_h * idx) - 2;
             rt.h = FONT_SIZE + 3;
 
-            if ((cc == MENU_SWIN_ALPHA) || (cc == MENU_OVERLAY_ENABLE)) {
+            if (cc == MENU_SWIN_ALPHA) {
                 rt.w -= 121;
             }
             if (col1 == MENU_COLOR_DIS) {
@@ -8453,9 +8424,6 @@ static int process_sdl2_setting(int key)
     }
     else if (cur_sel == MENU_LAYOUT_ATL) {
         mode = myconfig.layout.mode.alt;
-    }
-    else if ((cur_sel == MENU_OVERLAY_LAYOUT) || (cur_sel == MENU_OVERLAY_APPLY)) {
-        mode = myconfig.layout.overlay.cur_sel_layout;
     }
     draw_small_block_win(450, 360, mode, myvideo.cvt);
 
