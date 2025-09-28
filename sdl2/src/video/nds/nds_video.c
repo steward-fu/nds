@@ -192,9 +192,10 @@ const char *frag_shader_src =
 
 "   #define PI 3.141592654                                                  \n"
 "   #define SHADER_TYPE_NONE        0                                       \n"
-"   #define SHADER_TYPE_LCD3X       1                                       \n"
-"   #define SHADER_TYPE_LCD1X       2                                       \n"
-"   #define SHADER_TYPE_LCD1X_NDS   3                                       \n"
+"   #define SHADER_TYPE_LCD1X       1                                       \n"
+"   #define SHADER_TYPE_LCD1X_NDS   2                                       \n"
+"   #define SHADER_TYPE_LCD3X       3                                       \n"
+"   #define SHADER_TYPE_RETRO_V2    4                                       \n"
 
 "   void main()                                                             \n"
 "   {                                                                       \n"
@@ -215,17 +216,6 @@ const char *frag_shader_src =
 
 "       if (type == SHADER_TYPE_NONE) {                                     \n"
 "           gl_FragColor = vec4(tex, frag_alpha);                           \n"
-"       }                                                                   \n"
-
-"       if (type == SHADER_TYPE_LCD3X) {                                    \n"
-"           vec2 omega = vec2(3.14159) * vec2(2.0) * vec2(w, h);            \n"
-"           vec3 offsets = vec3(3.14159) *                                  \n"
-"               vec3(1.0/2.0, 1.0/2.0 - 2.0/3.0, 1.0/2.0 - 4.0/3.0);        \n"
-"           vec2 angle = frag_tex_coord * omega;                            \n"
-"           float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);           \n"
-"           vec3 xfactors = (4.0 + sin(angle.x + offsets)) / (4.0 + 1.0);   \n"
-"           vec3 color = yfactor * xfactors * tex;                          \n"
-"           gl_FragColor = vec4(color.x, color.y, color.z, frag_alpha);     \n"
 "       }                                                                   \n"
 
 "       if (type == SHADER_TYPE_LCD1X) {                                    \n"
@@ -250,7 +240,6 @@ const char *frag_shader_src =
 "           const float CC_BG = 0.255;                                      \n"
 "           const float GAMMA = 1.91;                                       \n"
 "           const float INV_GAMMA = 1.0 / 1.91;                             \n"
-
 "           vec2 pixel = frag_tex_coord * vec2(w, h);                       \n"
 "           vec2 angle = 2.0 * PI * ((pixel * h * (1.0 / h)) - 0.25);       \n"
 "           float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);           \n"
@@ -264,6 +253,34 @@ const char *frag_shader_src =
 "           gl_FragColor = vec4(tex.rgb, frag_alpha);                       \n"
 "       }                                                                   \n"
 
+"       if (type == SHADER_TYPE_LCD3X) {                                    \n"
+"           vec2 omega = vec2(3.14159) * vec2(2.0) * vec2(w, h);            \n"
+"           vec3 offsets = vec3(3.14159) *                                  \n"
+"               vec3(1.0/2.0, 1.0/2.0 - 2.0/3.0, 1.0/2.0 - 4.0/3.0);        \n"
+"           vec2 angle = frag_tex_coord * omega;                            \n"
+"           float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);           \n"
+"           vec3 xfactors = (4.0 + sin(angle.x + offsets)) / (4.0 + 1.0);   \n"
+"           vec3 color = yfactor * xfactors * tex;                          \n"
+"           gl_FragColor = vec4(color.x, color.y, color.z, frag_alpha);     \n"
+"       }                                                                   \n"
+
+"       if (type == SHADER_TYPE_RETRO_V2) {                                 \n"
+"           const float RETRO_GAMMA_IN = 2.20;                              \n"
+"           const float RETRO_GAMMA_OUT = 2.20;                             \n"
+"           const float RETRO_PIXEL_SIZE = 0.84;                            \n"
+"           const float RETRO_COLOR_BOOST = 1.0;                            \n"
+"           const float GAMMA_OUT = (1.0 / RETRO_GAMMA_OUT);                \n"
+"           tex = texture2D(frag_tex_main, frag_tex_coord * 1.0001).bgr;    \n"
+"           vec3 E = pow(tex.xyz, vec3(RETRO_GAMMA_IN));                    \n"
+"           vec2 fp = fract(frag_tex_coord * 1.0001 * vec2(w, h));          \n"
+"           vec2 ps = vec2(w, h) * vec2(1.0 / w, 1.0 / h);                  \n"
+"           vec2 f = clamp(clamp(fp + 0.5 * ps, 0.0, 1.0) -                 \n"
+"               RETRO_PIXEL_SIZE, vec2(0.0), ps) / ps;                      \n"
+"           float max_coord = max(f.x, f.y);                                \n"
+"           vec3 res = mix(E * (1.04 + fp.x * fp.y), E * 0.36, max_coord);  \n"
+"           gl_FragColor = vec4(clamp(pow(RETRO_COLOR_BOOST * res,          \n"
+"               vec3(GAMMA_OUT)), 0.0, 1.0 ), 1.0);                         \n"
+"       }                                                                   \n"
 "   }                                                                       \n";
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -7139,9 +7156,10 @@ typedef enum {
 
 static const char *MENU_SHADER_STR[] = {
     "NONE",
-    "LCD3X",
     "LCD1X",
-    "LCD1X_NDS"
+    "LCD1X_NDS",
+    "LCD3X",
+    "RETRO-V2"
 };
 
 static const char *MENU_LIST_STR[] = {
