@@ -15,9 +15,11 @@
 #define PEN_PATH        RES_PATH"/pen"
 #define LANG_PATH       RES_PATH"/lang"
 #define MENU_PATH       RES_PATH"/menu"
+#define OVERLAY_PATH    RES_PATH"/overlay"
+#define SHADER_PATH     RES_PATH"/shader"
+
 #define CFG_FILE        RES_PATH"/nds.cfg"
 #define FONT_FILE       RES_PATH"/font/font.ttf"
-#define OVERLAY_PATH    RES_PATH"/overlay"
 
 #define BIOS_PATH                   "system/"
 #define NDS_FIRMWARE_FILE           "nds_firmware.bin"
@@ -39,8 +41,8 @@
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
 
-#define LAYOUT_BG_W     640
-#define LAYOUT_BG_H     480
+#define LAYOUT_BG_W 640
+#define LAYOUT_BG_H 480
 
 enum layout_mode_t {
     LAYOUT_MODE_T0,      // 0
@@ -250,6 +252,7 @@ int drop_bios_files(const char *);
 int get_dir_cnt(const char *);
 int get_file_cnt(const char *);
 int get_path_by_idx(const char *, int, char *);
+uint64_t get_tick_count_ms(void);
 
 #endif
 
