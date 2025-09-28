@@ -1,0 +1,107 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#pragma parameter EQ_THRESH2 "Eq Limit Vertical" 0.01 0.0 1.0 0.01
+#pragma parameter DIFF_THRESH2 "Diff Limit Vertical" 0.06 0.0 1.0 0.01
+#ifdef PARAMETER_UNIFORM
+uniform float EQ_THRESH2;
+uniform float DIFF_THRESH2;
+#else
+#define EQ_THRESH2 0.01
+#define DIFF_THRESH2 0.06
+#endif
+// END PARAMETERS //
+
+/*
+   Hyllian's Deposterize Shader - Pass1
+   
+   Copyright (C) 2011/2016 Hyllian/Jararaca - sergiogdb@gmail.com
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+*/
+
+#define EQ   EQ_THRESH2
+#define DF  DIFF_THRESH2
+
+float3 df3(float3 c1, float3 c2)
+{
+	return abs(c1 - c2);
+}
+
+bool3 eq3(float3 A, float3 B)
+{
+	return (df3(A, B) <= float3(EQ,EQ,EQ));
+}
+
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float4 t1       : TEXCOORD1;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+
+	float2 ps = float2(1.0/COMPAT_texture_size.x, 1.0/COMPAT_texture_size.y);
+	float dx = ps.x;
+	float dy = ps.y;
+
+	OUT.texCoord = texCoord * 1.0001;
+	OUT.t1 = texCoord.xyyy + float4(   0, -dy, 0,  dy); //  B  E  H
+
+	return OUT;
+}
+
+
+/*    FRAGMENT SHADER    */
+float4 deposterize_pass1(float4 t1, float2 texCoord, COMPAT_Texture2D(decal))
+{
+	float3 res;
+
+	float3 B  = COMPAT_Sample(decal, t1.xy).rgb;
+	float3 E  = COMPAT_Sample(decal, t1.xz).rgb;
+	float3 H  = COMPAT_Sample(decal, t1.xw).rgb;
+
+	res = ((!eq3(B, H)) && ((df3(E, H) <= float3(DF, DF, DF)) && (eq3(B, E)) || (df3(B, E) <= float3(DF, DF, DF)) && (eq3(E, H)))) ? 0.5*(B+H) : E;
+
+	return float4(res, 1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return deposterize_pass1(VOUT.t1, VOUT.texCoord, decal);
+}
+COMPAT_END

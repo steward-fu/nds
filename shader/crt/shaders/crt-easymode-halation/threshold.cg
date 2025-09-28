@@ -1,0 +1,42 @@
+#include "../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+INITIALIZE_PASSPREV(3, 0)
+
+struct out_vertex
+{
+  float4 position : COMPAT_POS;
+  float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+    OUT.position = mul(modelViewProj, position);
+    OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+float4 threshold(COMPAT_Texture2D(s0), float2 texCoord, COMPAT_Texture2D(PASSPREV3))
+{
+    float3 diff = saturate(COMPAT_SamplePoint(s0, texCoord).rgb - PASSPREV_Sample(3, texCoord).rgb);
+
+    return float4(diff, 1.0);
+}
+
+float4 main_fragment(uniform prev PASSPREV3, COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return threshold(decal, VOUT.texCoord, PASSPREV_texture(3));
+}
+COMPAT_END

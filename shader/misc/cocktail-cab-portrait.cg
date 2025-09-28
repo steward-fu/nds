@@ -1,0 +1,62 @@
+#pragma parameter height "CocktailTable Image Height" 1.99 -3.0 3.0 0.01
+#pragma parameter width "CocktailTable Image Width" 0.8 -5.0 5.0 0.05
+#pragma parameter location "CocktailTable Image Location" -0.235 -2.0 2.0 0.005
+#pragma parameter zoom "CocktailTable Zoom" 0.51 -2.0 5.0 0.01
+#ifdef PARAMETER_UNIFORM
+uniform float height;
+uniform float width;
+uniform float location;
+uniform float zoom;
+#else
+#define height 1.99
+#define width 0.8
+#define location -0.235
+#define zoom 0.51
+#endif
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float2 t1       : TEXCOORD1;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	float4x4 RotationMatrix = float4x4( height, 0.0, 0.0, 0.0,
+         0.0, width, 0.0, 0.0,
+         0.0, 0.0, 1.0, 0.0,
+         0.0, 0.0, 0.0, 1.0 );
+	OUT.position = mul(mul(modelViewProj, position), RotationMatrix);
+	float2 shift = 0.5 * COMPAT_video_size / COMPAT_texture_size;
+	OUT.texCoord = ((texCoord-shift) / zoom) + shift;
+	OUT.t1 = (mul((texCoord-shift) , float2x2(-1.0, 0.0, 0.0, -1.0)) / zoom) + shift;
+	
+	return OUT;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+   return COMPAT_Sample(decal, VOUT.texCoord + float2(0.0, location)) + COMPAT_Sample(decal, VOUT.t1 + float2(0.0, location));
+}
+COMPAT_END

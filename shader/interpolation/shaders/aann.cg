@@ -1,0 +1,118 @@
+// AntiAliased Nearest Neighbor
+// by jimbo1qaz and wareya
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+#define NOT(fl) (1-fl)
+#define YES(fl) fl
+
+float4 vpow(float4 n, float e)
+{
+    return float4(pow(n.x, e), pow(n.y, e), pow(n.z, e), pow(n.w, e));
+}
+
+float4 getLQV(float3 mine) {
+    return float4
+    ( mine.r
+    , mine.g
+    , mine.b
+    ,(mine.r + mine.g + mine.b)/3);
+}
+
+float3 fromLQV(float4 mine) {
+    float f = mine.w/(mine.r + mine.g + mine.b)*3;
+    return float3(mine.rgb)*f;
+}
+
+float3 percent(float ssize, float tsize, float coord) {
+    float minfull = (coord*tsize - 0.5) /tsize*ssize;
+    float maxfull = (coord*tsize + 0.5) /tsize*ssize;
+
+    float realfull = floor(maxfull);
+
+    if (minfull > realfull) {
+        return float3(1, (realfull+0.5)/ssize, (realfull+0.5)/ssize);
+    }
+
+    return float3(
+            (maxfull - realfull) / (maxfull - minfull),
+            (realfull-0.5) / ssize,
+            (realfull+0.5) / ssize
+        );
+}
+
+float4 aann(float2 texture_size, float2 output_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+    float cheapsrgb = 2.1;
+    float gamma = 3.0;
+    float3 xstuff = percent(texture_size.x, output_size.x, texCoord.x);
+    float3 ystuff = percent(texture_size.y, output_size.y, texCoord.y);
+
+    float xkeep = xstuff[0];
+    float ykeep = ystuff[0];
+    
+    // get points to interpolate across, in linear rgb
+    float4 a = getLQV(vpow(COMPAT_SamplePoint(decal,float2(xstuff[1],ystuff[1])), cheapsrgb).rgb);
+    float4 b = getLQV(vpow(COMPAT_SamplePoint(decal,float2(xstuff[2],ystuff[1])), cheapsrgb).rgb);
+    float4 c = getLQV(vpow(COMPAT_SamplePoint(decal,float2(xstuff[1],ystuff[2])), cheapsrgb).rgb);
+    float4 d = getLQV(vpow(COMPAT_SamplePoint(decal,float2(xstuff[2],ystuff[2])), cheapsrgb).rgb);
+    
+    // use perceptual gamma for luminance component
+    a.w = pow(a.w, 1/gamma);
+    b.w = pow(b.w, 1/gamma);
+    c.w = pow(c.w, 1/gamma);
+    d.w = pow(d.w, 1/gamma);
+    
+    // interpolate
+    float4 gammaLQVresult =
+        NOT(xkeep)*NOT(ykeep)*a +
+        YES(xkeep)*NOT(ykeep)*b +
+        NOT(xkeep)*YES(ykeep)*c +
+        YES(xkeep)*YES(ykeep)*d;
+    
+    // change luminance gamma back to linear
+    float4 LQVresult = gammaLQVresult;
+    LQVresult.w = pow(gammaLQVresult.w, gamma);
+    
+    // convert back to srgb; lqv -> lrgb -> srgb
+    float4 c1 = vpow(float4(fromLQV(LQVresult), 1), 1/cheapsrgb);
+      return c1;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return aann(COMPAT_texture_size, COMPAT_output_size, VOUT.texCoord, decal);
+}
+COMPAT_END

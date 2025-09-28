@@ -1,0 +1,67 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+/*
+   Author: Themaister
+   License: Public domain
+*/
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#endif
+	out_vertex OUT;
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+float4 neon_variation_1(float2 texture_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+   float2 texsize = texture_size;
+   const float scale_factor = 1.0;
+   float2 delta = 0.5 / (texsize * scale_factor);
+   float dx = delta.x;
+   float dy = delta.y;
+
+   float3 c00 = COMPAT_Sample(decal, texCoord + float2(-dx, -dy)).xyz;
+   float3 c01 = COMPAT_Sample(decal, texCoord + float2(-dx, 0)).xyz;
+   float3 c02 = COMPAT_Sample(decal, texCoord + float2(-dx, dy)).xyz;
+   float3 c10 = COMPAT_Sample(decal, texCoord + float2(0, -dy)).xyz;
+   float3 c11 = COMPAT_Sample(decal, texCoord + float2(0, 0)).xyz;
+   float3 c12 = COMPAT_Sample(decal, texCoord + float2(0, dy)).xyz;
+   float3 c20 = COMPAT_Sample(decal, texCoord + float2(dx, -dy)).xyz;
+   float3 c21 = COMPAT_Sample(decal, texCoord + float2(dx, 0)).xyz;
+   float3 c22 = COMPAT_Sample(decal, texCoord + float2(dx, dy)).xyz;
+
+   float3 first = lerp(c00, c20, frac(scale_factor * texCoord.x * texsize.x + 0.5));
+   float3 second = lerp(c02, c22, frac(scale_factor * texCoord.x * texsize.x + 0.5));
+
+   float3 mid_horiz = lerp(c01, c21, frac(scale_factor * texCoord.x * texsize.x + 0.5));
+   float3 mid_vert = lerp(c10, c12, frac(scale_factor * texCoord.y * texsize.y + 0.5));
+
+   float3 res = lerp(first, second, frac(scale_factor * texCoord.y * texsize.y + 0.5));
+   return float4(0.28 * (res + mid_horiz + mid_vert) + 4.7 * abs(res - lerp(mid_horiz, mid_vert, 0.5)), 1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return neon_variation_1(COMPAT_texture_size, VOUT.texCoord, decal);
+}
+COMPAT_END

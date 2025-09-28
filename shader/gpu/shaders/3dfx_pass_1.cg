@@ -1,0 +1,98 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+*/
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+// "LeiFX" shader - Pixel filtering process
+// 
+// 	Copyright (C) 2013-2014 leilei
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+
+#define		FILTCAP		0.04	// filtered pixel should not exceed this 
+#define		FILTCAPG	(FILTCAP / 2)
+
+#define		LEIFX_PIXELWIDTH	0.50f
+
+float4 _3dfx_pass_1(float2 texture_size, float2 video_size, float2 output_size, COMPAT_Texture2D(decal), float2 coord)
+{
+	float4 final = COMPAT_Sample(decal, coord);
+	float2 pixel;
+
+	pixel.x = 1 / texture_size.x;
+	pixel.y = 1 / texture_size.y;
+
+	float3 pixel1 = COMPAT_Sample(decal, coord + float2((pixel.x), 0)).rgb;
+	float3 pixel2 = COMPAT_Sample(decal, coord + float2(-pixel.x, 0)).rgb;
+	float3 pixelblend;
+
+	// New filter
+	{
+		float3 pixeldiff;
+		float3 pixelmake;		
+		float3 pixeldiffleft;
+
+		pixelmake.rgb = 0;
+		pixeldiff.rgb = pixel2.rgb - final.rgb;
+
+		pixeldiffleft.rgb = pixel1.rgb - final.rgb;
+
+		if (pixeldiff.r > FILTCAP) 		pixeldiff.r = FILTCAP;
+		if (pixeldiff.g > FILTCAPG) 		pixeldiff.g = FILTCAPG;
+		if (pixeldiff.b > FILTCAP) 		pixeldiff.b = FILTCAP;
+
+		if (pixeldiff.r < -FILTCAP) 		pixeldiff.r = -FILTCAP;
+		if (pixeldiff.g < -FILTCAPG) 		pixeldiff.g = -FILTCAPG;
+		if (pixeldiff.b < -FILTCAP) 		pixeldiff.b = -FILTCAP;
+
+		if (pixeldiffleft.r > FILTCAP) 		pixeldiffleft.r = FILTCAP;
+		if (pixeldiffleft.g > FILTCAPG) 	pixeldiffleft.g = FILTCAPG;
+		if (pixeldiffleft.b > FILTCAP) 		pixeldiffleft.b = FILTCAP;
+
+		if (pixeldiffleft.r < -FILTCAP) 	pixeldiffleft.r = -FILTCAP;
+		if (pixeldiffleft.g < -FILTCAPG) 	pixeldiffleft.g = -FILTCAPG;
+		if (pixeldiffleft.b < -FILTCAP) 	pixeldiffleft.b = -FILTCAP;
+
+		pixelmake.rgb = (pixeldiff.rgb / 4) + (pixeldiffleft.rgb / 16);
+		final.rgb = (final.rgb + pixelmake.rgb);
+	}	
+
+	return final;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return _3dfx_pass_1(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, decal, VOUT.texCoord);
+}
+COMPAT_END

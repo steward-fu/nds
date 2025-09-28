@@ -1,0 +1,83 @@
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+#define FXAA_REDUCE_MIN (1.0/256.0)
+#define FXAA_REDUCE_MUL (1.0/8.0)
+#define FXAA_SPAN_MAX 8.0
+#define FXAA_SUBPIX_SHIFT (1.0/8.0)
+
+struct out_vertex
+{
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+	float4 position : COMPAT_POS;
+	float4 vpos : TEXCOORD1;
+	float2 texCoord : TEXCOORD0;
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+    OUT.vpos = OUT.position;
+	OUT.texCoord = texCoord;
+	return OUT;
+}
+
+float4 fxaa(float2 texture_size, float2 video_size, float2 output_size, COMPAT_Texture2D(decal), float2 texCoord, float4 vpos)
+{
+    //yes Cg is THIS retarded, passing position as texturecoord
+	vpos /= vpos.w;
+	
+	float2 inverse_resolution=1/video_size.xy;
+	float4 coords;
+	coords.xy = texCoord;
+	coords.zw = coords.xy - (inverse_resolution.xy * (0.5 + FXAA_SUBPIX_SHIFT));
+    float3 rgbNW = COMPAT_SamplePoint(decal, (texCoord + float2(-1.0,-1.0)) * inverse_resolution).xyz;
+    float3 rgbNE = COMPAT_SamplePoint(decal, (texCoord + float2(1.0,-1.0)) * inverse_resolution).xyz;
+    float3 rgbSW = COMPAT_SamplePoint(decal, (texCoord + float2(-1.0,1.0)) * inverse_resolution).xyz;
+    float3 rgbSE = COMPAT_SamplePoint(decal, (texCoord + float2(1.0,1.0)) * inverse_resolution).xyz;
+    float3  rgbM  = COMPAT_SamplePoint(decal,  texCoord ).xyz;
+    float3  luma = float3(0.299, 0.587, 0.114);
+	float lumaNW = dot(rgbNW, luma);
+	float lumaNE = dot(rgbNE, luma);
+	float lumaSW = dot(rgbSW, luma);
+	float lumaSE = dot(rgbSE, luma);
+	float lumaM  = dot(rgbM,  luma);
+	float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+	float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE))); 
+	float2 dir;
+    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
+	float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL),FXAA_REDUCE_MIN);
+	float rcpDirMin = 1.0/(min(abs(dir.x), abs(dir.y)) + dirReduce);
+	dir = min(float2( FXAA_SPAN_MAX,  FXAA_SPAN_MAX),max(float2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),dir * rcpDirMin)) * inverse_resolution;
+	
+	float3 rgbA = 0.5 * (COMPAT_SamplePoint(decal,   texCoord + dir * (1.0/3.0 - 0.5)).xyz + 
+	COMPAT_SamplePoint(decal,   texCoord  + dir * (2.0/3.0 - 0.5)).xyz);
+    float3 rgbB = rgbA * 0.5 + 0.25 * (COMPAT_SamplePoint(decal,  texCoord  * inverse_resolution + dir *  - 0.5).xyz 
+	+ COMPAT_SamplePoint(decal,  texCoord + dir * 0.5).xyz);
+	float lumaB = dot(rgbB, luma);
+	float4 final;
+	if((lumaB < lumaMin) || (lumaB > lumaMax)) {
+      final = float4(rgbA,1.0);
+	} else {
+      final = float4(rgbB,1.0);
+	}
+
+	return final;
+	
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return fxaa(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, decal, VOUT.texCoord, VOUT.vpos);
+}

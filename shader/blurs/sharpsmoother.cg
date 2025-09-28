@@ -1,0 +1,118 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+*/
+
+#pragma parameter max_w   "Max filter weight"  0.10  0.00 0.20 0.01
+#pragma parameter min_w   "Min filter weight" -0.07 -0.15 0.05 0.01
+#pragma parameter smoot   "Smoothing strength" 0.55  0.00 1.50 0.01
+#pragma parameter lumad   "Effects smoothing"  0.30  0.10 5.00 0.10
+#pragma parameter mtric   "The metric we use"  0.70  0.10 2.00 0.10
+#ifdef PARAMETER_UNIFORM
+uniform float max_w;
+uniform float min_w;
+uniform float smoot;
+uniform float lumad;
+uniform float mtric;
+#else 
+#define max_w    0.10
+#define min_w   -0.07
+#define smoot    0.55
+#define lumad    0.30
+#define mtric    0.70
+#endif
+
+/*
+   Sharpsmoother shader
+   
+   Copyright (C) 2005-2017 guest(r) - guest.r@gmail.com
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+const static float3 dt = float3(1.0, 1.0, 1.0);
+
+float wt(float3 A, float3 B)
+{	
+	return clamp(smoot - ((6.0+lumad)/pow(3.0,mtric))*pow(dot(pow(abs(A-B),float3(1.0/mtric, 1.0/mtric, 1.0/mtric)),dt),mtric)/(dot(A+B,dt)+lumad), min_w, max_w);
+}
+
+struct out_vertex {
+	float4 position : POSITION;
+	float2 texCoord : TEXCOORD0;
+	float4 t1 : TEXCOORD1;
+	float4 t2 : TEXCOORD2;
+	float4 t3 : TEXCOORD3;
+	float4 t4 : TEXCOORD4;
+};
+
+/*    VERTEX_SHADER    */
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#endif
+	out_vertex OUT;
+	float x = 1.0 * (1.0 / COMPAT_texture_size.x);
+	float y = 1.0 * (1.0 / COMPAT_texture_size.y);
+	float2 dg1 = float2( x, y);
+	float2 dg2 = float2(-x, y);
+	float2 dx = float2(x, 0.0);
+	float2 dy = float2(0.0, y);
+
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	OUT.t1 = float4(texCoord-dg1,texCoord-dy);
+	OUT.t2 = float4(texCoord-dg2,texCoord+dx);
+	OUT.t3 = float4(texCoord+dg1,texCoord+dy);
+	OUT.t4 = float4(texCoord+dg2,texCoord-dx);
+
+	return OUT;
+}
+
+float4 sharpsmoother(float2 texture_size, float2 video_size, float2 output_size, COMPAT_Texture2D(decal), float2 texCoord,
+	float4 t1, float4 t2, float4 t3, float4 t4)
+ {
+
+   float3 c00 = COMPAT_SamplePoint(decal, t1.xy).xyz; 
+   float3 c10 = COMPAT_SamplePoint(decal, t1.zw).xyz; 
+   float3 c20 = COMPAT_SamplePoint(decal, t2.xy).xyz; 
+   float3 c01 = COMPAT_SamplePoint(decal, t4.zw).xyz; 
+   float3 c11 = COMPAT_SamplePoint(decal, texCoord).xyz; 
+   float3 c21 = COMPAT_SamplePoint(decal, t2.zw).xyz; 
+   float3 c02 = COMPAT_SamplePoint(decal, t4.xy).xyz; 
+   float3 c12 = COMPAT_SamplePoint(decal, t3.zw).xyz; 
+   float3 c22 = COMPAT_SamplePoint(decal, t3.xy).xyz;
+       
+   float w10 = wt(c11,c10); float w21 = wt(c11,c21);
+   float w12 = wt(c11,c12); float w01 = wt(c11,c01);
+   float w00 = wt(c11,c00)*0.75; float w22 = wt(c11,c22)*0.75;
+   float w20 = wt(c11,c20)*0.75; float w02 = wt(c11,c02)*0.75;
+
+   return float4(w10*c10+w21*c21+w12*c12+w01*c01+w00*c00+w22*c22+w20*c20+w02*c02+(1.0-w10-w21-w12-w01-w00-w22-w20-w02)*c11, 1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return sharpsmoother(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, decal, VOUT.texCoord,
+		VOUT.t1, VOUT.t2, VOUT.t3, VOUT.t4);
+}
+COMPAT_END

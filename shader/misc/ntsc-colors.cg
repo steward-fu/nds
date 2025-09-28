@@ -1,0 +1,49 @@
+#pragma parameter intensity "NTSC Intensity" 1.0 0.0 1.0 0.05
+#ifdef PARAMETER_UNIFORM
+uniform float intensity;
+#else
+#define intensity 1.0
+#endif
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+#include "colorspace-tools.h"
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	float3 color = COMPAT_Sample(decal, VOUT.texCoord).rgb;
+	color = lerp(color.rgb, NTSCtoSRGB(color.rgb), intensity);
+	return float4(color, 1.0);
+}

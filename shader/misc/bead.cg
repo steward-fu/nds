@@ -1,0 +1,89 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+/*
+   Author: Themaister
+   License: Public domain
+*/
+
+#pragma parameter BEAD_HIGH "Bead High" 0.35 0.0 1.0 0.01
+#pragma parameter BEAD_LOW  "Bead Low"  0.2  0.0 1.0 0.01
+#ifdef PARAMETER_UNIFORM
+uniform float BEAD_HIGH;
+uniform float BEAD_LOW;
+#else
+#define BEAD_HIGH 0.35
+#define BEAD_LOW  0.2
+#endif
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float2 pixel_no : TEXCOORD1;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	OUT.pixel_no = texCoord * COMPAT_texture_size;
+	
+	return OUT;
+}
+
+float dist(float2 coord, float2 source)
+{
+   float2 delta = coord - source;
+   return sqrt(dot(delta, delta));
+}
+
+float rolloff(float len)
+{
+   return exp(-6.0 * len);
+}
+
+float3 lookup(float2 pixel_no, float3 color)
+{
+   float delta = dist(frac(pixel_no), float2(0.5, 0.5));
+
+   if (delta > BEAD_LOW && delta < BEAD_HIGH)
+      return color;
+   else if (delta >= BEAD_HIGH)
+      return color * rolloff(delta - BEAD_HIGH);
+   else if (delta <= BEAD_LOW)
+      return color * rolloff(BEAD_LOW - delta);
+   else
+      return float3(0.0, 0.0, 0.0);
+}
+
+#define TEX(coord) COMPAT_Sample(decal, coord).rgb
+
+float4 bead(float2 pixel_no, float2 texCoord, COMPAT_Texture2D(decal))
+{
+   float3 mid_color = lookup(pixel_no, TEX(texCoord));
+   return float4(mid_color, 1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return bead(VOUT.pixel_no, VOUT.texCoord, decal);
+}
+COMPAT_END

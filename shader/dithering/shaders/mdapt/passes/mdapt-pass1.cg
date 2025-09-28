@@ -1,0 +1,93 @@
+/*
+   Merge Dithering and Pseudo Transparency Shader v2.8 - Pass 1
+   by Sp00kyFox, 2014
+
+   Preparing checkerboard patterns.
+
+*/
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#define TEX(dx,dy) COMPAT_Sample(decal, texCoord+float2((dx),(dy))*t1)
+
+
+float and(float a, float b){
+	return min(a,b);
+}
+
+float and(float a, float b, float c){
+	return min(a, min(b,c));
+}
+
+float or(float a, float b){
+	return max(a,b);
+}
+
+float or(float a, float b, float c, float d, float e){
+	return max(a, max(b, max(c, max(d,e))));
+}
+
+#include "../../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float2 t1       : TEXCOORD1;
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#endif
+	out_vertex OUT;
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	OUT.t1 = 1.0 / COMPAT_texture_size;
+	
+	return OUT;
+}
+
+/*    FRAGMENT SHADER    */
+float2 mdapt_pass1(float2 texCoord, float2 t1, COMPAT_Texture2D(decal))
+{
+	/*
+		UL U UR
+		L  C R
+		DL D DR
+	*/
+
+	float3 C = TEX( 0, 0).xyz;
+	float3 L = TEX(-1, 0).xyz;
+	float3 R = TEX( 1, 0).xyz;
+	float3 D = TEX( 0, 1).xyz;
+	float3 U = TEX( 0,-1).xyz;
+	
+	float UL = TEX(-1,-1).z;
+	float UR = TEX( 1,-1).z;
+	float DL = TEX(-1, 1).z;
+	float DR = TEX( 1, 1).z;
+
+	// Checkerboard Pattern Completion
+	float prCB = or(C.z,
+		and(L.z, R.z, or(U.x, D.x)),
+		and(U.z, D.z, or(L.y, R.y)),
+		and(C.x, or(and(UL, UR), and(DL, DR))),
+		and(C.y, or(and(UL, DL), and(UR, DR))));
+
+	return float2(C.x, prCB);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return float4(mdapt_pass1(VOUT.texCoord, VOUT.t1, decal), 1.0, 1.0);
+}
+COMPAT_END

@@ -1,0 +1,52 @@
+#include "../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+  float4 position : COMPAT_POS;
+  float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+#include "blur_params.inc"
+
+#define kernel(x) exp(-GLOW_FALLOFF * (x) * (x))
+
+float4 blur_horiz(float2 tex, COMPAT_Texture2D(s0), float2 texture_size)
+{
+   float3 col = float3(0.0, 0.0, 0.0);
+   float dx = 1.0 / texture_size.x;
+
+   float k_total = 0.0;
+   for (int i = -TAPS; i <= TAPS; i++)
+   {
+      float k = kernel(i);
+      k_total += k;
+      col += k * COMPAT_SamplePoint(s0, tex + float2(float(i) * dx, 0.0)).rgb;
+   }
+   return float4(col / k_total, 1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return blur_horiz(VOUT.texCoord, decal, COMPAT_texture_size);
+}
+COMPAT_END

@@ -1,0 +1,87 @@
+/*
+   Genesis Dithering and Pseudo Transparency Shader v1.3 - Pass 0
+   by Sp00kyFox, 2014
+
+   Neighbor anaylsis via dot product of the difference vectors.
+
+*/
+
+#pragma parameter MODE "GDAPT Monochrome Analysis"	0.0 0.0 1.0 1.0
+#pragma parameter PWR  "GDAPT Color Metric Exp"		2.0 0.0 10.0 0.1
+
+#ifdef PARAMETER_UNIFORM
+	uniform float MODE, PWR;
+#else
+	#define MODE 0.0
+	#define PWR 2.0
+#endif
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#define dot(x,y) saturate(dot(x,y))	// NVIDIA Fix
+#define TEX(dx,dy) COMPAT_Sample(decal, texCoord+float2((dx),(dy))*t1).xyz
+
+// Reference: http://www.compuphase.com/cmetric.htm
+float eq(float3 A, float3 B)
+{
+	float3 diff = A-B;
+	float  ravg = (A.x + B.x) * 0.5;
+
+	diff *= diff * float3(2.0 + ravg, 4.0, 3.0 - ravg);
+	
+	return pow( smoothstep(3.0, 0.0, sqrt(diff.x + diff.y + diff.z)), PWR );
+}
+
+#include "../../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float2 t1       : TEXCOORD1;
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#endif
+	out_vertex OUT;
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	OUT.t1 = 1.0 / COMPAT_texture_size;
+	
+	return OUT;
+}
+
+/*    FRAGMENT SHADER    */
+float4 gdapt_pass0(float2 texCoord, float2 t1, COMPAT_Texture2D(decal))
+{
+	float3 C = TEX( 0, 0).rgb;
+	float3 L = TEX(-1, 0).rgb;
+	float3 R = TEX( 1, 0).rgb;
+
+	float tag = 0.0;
+
+	if(MODE){
+		tag = all(L == R) && any(C != L);
+	}
+	else{
+		tag = dot(normalize(C-L), normalize(C-R)) * eq(L,R);
+	}
+
+	return float4(C, tag);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return gdapt_pass0(VOUT.texCoord, VOUT.t1, decal);
+}
+COMPAT_END

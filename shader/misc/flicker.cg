@@ -1,0 +1,62 @@
+#pragma parameter percent "Flicker Bright %" 0.0 0.0 1.0 0.05
+
+#ifdef PARAMETER_UNIFORM
+uniform float percent;
+#else
+#define percent 0.0
+#endif
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+/*
+   Flicker shader based on interlacing.cg
+   Author: hunterk
+   License: Public domain
+   
+   Note: This shader is for testing video synchronization with a 30Hz flicker applied to the image.
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+   float4 res = COMPAT_Sample(decal, VOUT.texCoord);
+   float y = 0.0;
+
+   // flicker every other frame
+   y = VOUT.texCoord.y + COMPAT_frame_count;
+
+   if (fmod(y, 2.0) > 0.99999) return res;
+   else
+      return float4(percent,percent,percent,percent) * res;
+}

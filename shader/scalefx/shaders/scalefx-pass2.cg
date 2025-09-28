@@ -1,0 +1,173 @@
+/*
+	ScaleFX - Pass 2
+	by Sp00kyFox, 2017-03-01
+
+Filter:	Nearest
+Scale:	1x
+
+ScaleFX is an edge interpolation algorithm specialized in pixel art. It was
+originally intended as an improvement upon Scale3x but became a new filter in
+its own right.
+ScaleFX interpolates edges up to level 6 and makes smooth transitions between
+different slopes. The filtered picture will only consist of colours present
+in the original.
+
+Pass 2 resolves ambiguous configurations of corner candidates at pixel junctions.
+
+
+
+Copyright (c) 2016 Sp00kyFox - ScaleFX@web.de
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+*/
+
+
+// corner dominance at junctions
+float4 dom(float3 x, float3 y, float3 z, float3 w){
+	return 2 * float4(x.y, y.y, z.y, w.y) - (float4(x.x, y.x, z.x, w.x) + float4(x.z, y.z, z.z, w.z));
+}
+
+// necessary but not sufficient junction condition for orthogonal edges
+bool clear(float2 crn, float2 a, float2 b){
+	return (crn.x >= max(min(a.x, a.y), min(b.x, b.y))) && (crn.y >= max(min(a.x, b.y), min(b.x, a.y)));
+}
+
+
+struct input
+{
+	float2 video_size;
+	float2 texture_size;
+	float2 output_size;
+};
+
+struct prev
+{
+	float2 texture_size;
+	float2 tex_coord;
+	sampler2D texture;
+};
+
+struct out_vertex {
+	float4 position : POSITION;
+	float2 texCoord : TEXCOORD0;
+	float4 t1 : TEXCOORD1;
+	float4 t2 : TEXCOORD2;
+	float4 t3 : TEXCOORD3;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+/*    VERTEX_SHADER    */
+out_vertex main_vertex
+(
+	float4 position	: POSITION,
+	float2 texCoord : TEXCOORD0,
+	float4 color : COLOR,
+
+   	uniform float4x4 modelViewProj,
+	uniform input IN,
+	prev PASSPREV2
+)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+
+	OUT.position = mul(modelViewProj, position);
+
+	float2 ps = 1.0/IN.texture_size;
+	float dx = ps.x, dy = ps.y;
+
+	OUT.texCoord = texCoord;
+	OUT.t1 = texCoord.xxxy + float4(  -dx,   0, dx,  -dy);	// A, B, C
+	OUT.t2 = texCoord.xxxy + float4(  -dx,   0, dx,    0);	// D, E, F
+	OUT.t3 = texCoord.xxxy + float4(  -dx,   0, dx,   dy);	// G, H, I
+
+	return OUT;
+}
+
+
+float4 main_fragment(in out_vertex VAR, uniform sampler2D decal : TEXUNIT0, uniform input IN, prev PASSPREV2) : COLOR
+{
+
+	/*	grid		metric		pattern
+
+		A B C		x y z		x y
+		D E F		  o w		w z
+		G H I
+	*/
+
+
+	// metric data
+	float4 A = tex2D(PASSPREV2.texture, VAR.t1.xw), B = tex2D(PASSPREV2.texture, VAR.t1.yw);
+	float4 D = tex2D(PASSPREV2.texture, VAR.t2.xw), E = tex2D(PASSPREV2.texture, VAR.t2.yw), F = tex2D(PASSPREV2.texture, VAR.t2.zw);
+	float4 G = tex2D(PASSPREV2.texture, VAR.t3.xw), H = tex2D(PASSPREV2.texture, VAR.t3.yw), I = tex2D(PASSPREV2.texture, VAR.t3.zw);
+
+	// strength data
+	float4 As = tex2D(decal, VAR.t1.xw), Bs = tex2D(decal, VAR.t1.yw), Cs = tex2D(decal, VAR.t1.zw);
+	float4 Ds = tex2D(decal, VAR.t2.xw), Es = tex2D(decal, VAR.t2.yw), Fs = tex2D(decal, VAR.t2.zw);
+	float4 Gs = tex2D(decal, VAR.t3.xw), Hs = tex2D(decal, VAR.t3.yw), Is = tex2D(decal, VAR.t3.zw);
+
+	// strength & dominance junctions
+	float4 jSx = float4(As.z, Bs.w, Es.x, Ds.y), jDx = dom(As.yzw, Bs.zwx, Es.wxy, Ds.xyz);
+	float4 jSy = float4(Bs.z, Cs.w, Fs.x, Es.y), jDy = dom(Bs.yzw, Cs.zwx, Fs.wxy, Es.xyz);
+	float4 jSz = float4(Es.z, Fs.w, Is.x, Hs.y), jDz = dom(Es.yzw, Fs.zwx, Is.wxy, Hs.xyz);
+	float4 jSw = float4(Ds.z, Es.w, Hs.x, Gs.y), jDw = dom(Ds.yzw, Es.zwx, Hs.wxy, Gs.xyz);
+
+
+	// majority vote for ambiguous dominance junctions
+	bool4 jx = jDx > 0 && (jDx.yzwx <= 0 && jDx.wxyz <= 0 || jDx + jDx.zwxy > jDx.yzwx + jDx.wxyz);
+	bool4 jy = jDy > 0 && (jDy.yzwx <= 0 && jDy.wxyz <= 0 || jDy + jDy.zwxy > jDy.yzwx + jDy.wxyz);
+	bool4 jz = jDz > 0 && (jDz.yzwx <= 0 && jDz.wxyz <= 0 || jDz + jDz.zwxy > jDz.yzwx + jDz.wxyz);
+	bool4 jw = jDw > 0 && (jDw.yzwx <= 0 && jDw.wxyz <= 0 || jDw + jDw.zwxy > jDw.yzwx + jDw.wxyz);
+
+	// inject strength without creating new contradictions
+	bool4 res;
+	res.x = jx.z || !(jx.y || jx.w) && jSx.z != 0 && (jx.x || jSx.x + jSx.z > jSx.y + jSx.w);
+	res.y = jy.w || !(jy.z || jy.x) && jSy.w != 0 && (jy.y || jSy.y + jSy.w > jSy.x + jSy.z);
+	res.z = jz.x || !(jz.w || jz.y) && jSz.x != 0 && (jz.z || jSz.x + jSz.z > jSz.y + jSz.w);
+	res.w = jw.y || !(jw.x || jw.z) && jSw.y != 0 && (jw.w || jSw.y + jSw.w > jSw.x + jSw.z);
+
+	// single pixel & end of line detection
+	res = res && (bool4(jx.z, jy.w, jz.x, jw.y) || !(res.wxyz && res.yzwx));	
+
+
+	// output
+
+	bool4 clr;
+	clr.x = clear(float2(D.z, E.x), float2(D.w, E.y), float2(A.w, D.y));
+	clr.y = clear(float2(F.x, E.z), float2(E.w, E.y), float2(B.w, F.y));
+	clr.z = clear(float2(H.z, I.x), float2(E.w, H.y), float2(H.w, I.y));
+	clr.w = clear(float2(H.x, G.z), float2(D.w, H.y), float2(G.w, G.y));
+
+	float4 h = float4(min(D.w, A.w), min(E.w, B.w), min(E.w, H.w), min(D.w, G.w));
+	float4 v = float4(min(E.y, D.y), min(E.y, F.y), min(H.y, I.y), min(H.y, G.y));
+
+	bool4 or   = h + float4(D.w, E.w, E.w, D.w) > v + float4(E.y, E.y, H.y, H.y);	// orientation
+	bool4 hori = h < v && clr;	// horizontal edges
+	bool4 vert = h > v && clr;	// vertical edges
+
+	return (float4(res) + 2 * float4(hori) + 4 * float4(vert) + 8 * float4(or)) / 15;
+}

@@ -1,0 +1,112 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+// VERTEX SHADER //
+
+#include "../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+#define round(x) floor( (x) + 0.5 )
+#define gamma 2.2
+#define TEX2D(c) pow(COMPAT_SamplePoint(decal, (c)), float4(gamma))
+
+#pragma parameter GRID_STRENGTH "LCD Grid Strength" 0.05 0.00 1.00 0.01
+#ifdef PARAMETER_UNIFORM
+uniform float GRID_STRENGTH;
+#else
+#define GRID_STRENGTH 0.05
+#endif
+
+float intsmear_func(float z)
+{
+  float z2 = z*z;
+  float z4 = z2*z2;
+  float z8 = z4*z4;
+  return z - 2.0/3.0*z*z2 - 1.0/5.0*z*z4 + 4.0/7.0*z*z2*z4 - 1.0/9.0*z*z8
+    - 2.0/11.0*z*z2*z8 + 1.0/13.0*z*z4*z8;
+}
+float intsmear(float x, float dx)
+{
+  const float d = 1.5;
+  float zl = clamp((x-dx)/d,-1.0,1.0);
+  float zh = clamp((x+dx)/d,-1.0,1.0);
+  return d * ( intsmear_func(zh) - intsmear_func(zl) )/(2.0*dx);
+}
+
+// FRAGMENT SHADER //
+
+float4 lcd_grid(float2 texture_size, float2 video_size, float2 output_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+  float2 texelSize = 1.0 / texture_size;
+  float2 subtexelSize = texelSize / float2(3.0,1.0);
+  float2 range;
+  range = video_size / (output_size * texture_size);
+ // range.y = video_size / (output_size * texture_size);
+
+  float left   = texCoord.x - texelSize.x*0.5;
+  float top    = texCoord.y + range.y;
+  float right  = texCoord.x + texelSize.x*0.5;
+  float bottom = texCoord.y - range.y;
+
+  float4 lcol, rcol;
+  float subpix = mod(texCoord.x/subtexelSize.x+1.5,3.0);
+  float rsubpix = range.x/subtexelSize.x;
+  lcol = float4(intsmear(subpix+1.0,rsubpix),intsmear(subpix    ,rsubpix),
+	      intsmear(subpix-1.0,rsubpix),0.0);
+  rcol = float4(intsmear(subpix-2.0,rsubpix),intsmear(subpix-3.0,rsubpix),
+	      intsmear(subpix-4.0,rsubpix),0.0);
+
+  float4 topLeftColor     = TEX2D((floor(float2(left, top)     / texelSize) + 0.5) * texelSize) * lcol;
+  float4 bottomRightColor = TEX2D((floor(float2(right, bottom) / texelSize) + 0.5) * texelSize) * rcol;
+  float4 bottomLeftColor  = TEX2D((floor(float2(left, bottom)  / texelSize) + 0.5) * texelSize) * lcol;
+  float4 topRightColor    = TEX2D((floor(float2(right, top)    / texelSize) + 0.5) * texelSize) * rcol;
+
+  float2 border = round(texCoord.st/subtexelSize);
+  float2 bordert = clamp((border+float2(0.0,+GRID_STRENGTH)) * subtexelSize,
+		       float2(left, bottom), float2(right, top));
+  float2 borderb = clamp((border+float2(0.0,-GRID_STRENGTH)) * subtexelSize,
+		       float2(left, bottom), float2(right, top));
+  float totalArea = 2.0 * range.y;
+
+  float4 averageColor;
+  averageColor  = ((top - bordert.y)    / totalArea) * topLeftColor;
+  averageColor += ((borderb.y - bottom) / totalArea) * bottomRightColor;
+  averageColor += ((borderb.y - bottom) / totalArea) * bottomLeftColor;
+  averageColor += ((top - bordert.y)    / totalArea) * topRightColor;
+
+   return pow(averageColor,float4(1.0/gamma));   
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return lcd_grid(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, VOUT.texCoord, decal);
+}
+COMPAT_END

@@ -1,0 +1,192 @@
+///////////////
+//	TV-out tweaks	
+//	Author: aliaspider - aliaspider@gmail.com
+//	License: GPLv3      
+////////////////////////////////////////////////////////
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+// this shader is meant to be used when running
+// an emulator on a real CRT-TV @240p or @480i
+////////////////////////////////////////////////////////
+// Basic settings:
+
+// signal resolution
+// higher = sharper 
+#pragma parameter TVOUT_RESOLUTION "TVOut Signal Resolution" 256.0 0.0 1024.0 32.0 // default, minimum, maximum, optional step
+
+// simulate a composite connection instead of RGB
+#pragma parameter TVOUT_COMPOSITE_CONNECTION "TVOut Composite Enable" 0.0 0.0 1.0 1.0
+
+// use TV video color range (16-235) 
+// instead of PC full range (0-255)
+#pragma parameter TVOUT_TV_COLOR_LEVELS "TVOut TV Color Levels Enable" 0.0 0.0 1.0 1.0
+////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////
+// Advanced settings:
+//
+// these values will be used instead 
+// if COMPOSITE_CONNECTION is defined
+// to simulate different signal resolutions(bandwidth)
+// for luma (Y) and chroma ( I and Q )
+// this is just an approximation
+// and will only simulate the low bandwidth anspect of
+// composite signal, not the crosstalk between luma and chroma
+// Y = 4MHz I=1.3MHz Q=0.4MHz
+#pragma parameter TVOUT_RESOLUTION_Y "TVOut Luma (Y) Resolution" 256.0 0.0 1024.0 32.0
+#pragma parameter TVOUT_RESOLUTION_I "TVOut Chroma (I) Resolution" 83.2 0.0 256.0 8.0
+#pragma parameter TVOUT_RESOLUTION_Q "TVOut Chroma (Q) Resolution" 25.6 0.0 256.0 8.0
+
+// formula is MHz=resolution*15750Hz
+// 15750Hz being the horizontal Frequency of NTSC
+// (=262.5*60Hz)
+////////////////////////////////////////////////////////
+
+#ifdef PARAMETER_UNIFORM // If the shader implementation understands #pragma parameters, this is defined.
+uniform float TVOUT_RESOLUTION;
+uniform float TVOUT_COMPOSITE_CONNECTION;
+uniform float TVOUT_TV_COLOR_LEVELS;
+uniform float TVOUT_RESOLUTION_Y;
+uniform float TVOUT_RESOLUTION_I;
+uniform float TVOUT_RESOLUTION_Q;
+#else
+// Fallbacks if parameters are not supported.
+#define TVOUT_RESOLUTION 256.0 // Default
+#define TVOUT_COMPOSITE_CONNECTION 0
+#define TVOUT_TV_COLOR_LEVELS 0
+#define TVOUT_RESOLUTION_Y 256.0
+#define TVOUT_RESOLUTION_I 83.2
+#define TVOUT_RESOLUTION_Q 25.6
+#endif
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+static const float3x3 RGB_to_YIQ = float3x3(
+         0.299,0.587,0.114, 
+		 0.595716,-0.274453,-0.321263,
+		 0.211456,-0.522591, 0.311135);
+static const float3x3 YIQ_to_RGB = float3x3(
+         1.0,0.9563,0.6210, 
+		 1.0,-0.2721,-0.6474,
+		 1.0,-1.1070, 1.7046);
+
+static const float pi = 3.14159265358;
+
+float L(float C)
+{
+	return clamp((C - 16.5 / 256.0) * 256.0 / (236.0 - 16.0), 0.0, 1.0);
+}
+
+float LCHR(float C)
+{
+	return clamp((C - 16.5 / 256.0) * 256.0 / (240.0 - 16.0), 0.0, 1.0);
+}
+
+float STU(float x, float b)
+{
+	float d = pi * b * min(abs(x) + 0.5, 1.0 / b);
+	float e = pi * b * min(max(abs(x) - 0.5, -1.0 / b), 1.0 / b);
+	return ((d + sin(d) - e - sin(e)) / (2.0 * pi));
+}
+
+float3 LEVELS(float3 c0)
+{
+   if (TVOUT_TV_COLOR_LEVELS)
+   {
+      if (TVOUT_COMPOSITE_CONNECTION)
+         return float3(L(c0.x), LCHR(c0.y), LCHR(c0.z));
+      else
+         return float3(L(c0.x),    L(c0.y),    L(c0.z));
+   }
+   else
+      return c0;
+}
+
+float4 tv_out_tweaks(float2 texture_size, float2 video_size, float2 texCoord, COMPAT_Texture2D(tex))
+{
+   float3 tempColor = float3(0.0, 0.0, 0.0);
+   float offset	= frac((texCoord.x * texture_size.x) - 0.5);
+   float oneT = 1.0/texture_size.x;
+   float oneI = 1.0/video_size.x;
+
+   float X;
+   float3 c;
+   
+   if (TVOUT_COMPOSITE_CONNECTION)
+	{
+		X = offset-(-1);
+		c = mul(RGB_to_YIQ,LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += float3((c.x*STU(X,(TVOUT_RESOLUTION_Y*oneI))),(c.y*STU(X,(TVOUT_RESOLUTION_I*oneI))),(c.z*STU(X,(TVOUT_RESOLUTION_Q*oneI))));
+		
+		X = offset-(0);
+		c = mul(RGB_to_YIQ,LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += float3((c.x*STU(X,(TVOUT_RESOLUTION_Y*oneI))),(c.y*STU(X,(TVOUT_RESOLUTION_I*oneI))),(c.z*STU(X,(TVOUT_RESOLUTION_Q*oneI))));
+		
+		X = offset-(1);
+		c = mul(RGB_to_YIQ,LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += float3((c.x*STU(X,(TVOUT_RESOLUTION_Y*oneI))),(c.y*STU(X,(TVOUT_RESOLUTION_I*oneI))),(c.z*STU(X,(TVOUT_RESOLUTION_Q*oneI))));
+		
+		X = offset-(2);
+		c = mul(RGB_to_YIQ,LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += float3((c.x*STU(X,(TVOUT_RESOLUTION_Y*oneI))),(c.y*STU(X,(TVOUT_RESOLUTION_I*oneI))),(c.z*STU(X,(TVOUT_RESOLUTION_Q*oneI))));
+	}
+	else
+	{
+		X = offset-(-1);
+		c = (LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += (c*STU(X,(TVOUT_RESOLUTION*oneI)));
+		
+		X = offset-(0);
+		c = (LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += (c*STU(X,(TVOUT_RESOLUTION*oneI)));
+		
+		X = offset-(1);
+		c = (LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += (c*STU(X,(TVOUT_RESOLUTION*oneI)));
+		
+		X = offset-(2);
+		c = (LEVELS(COMPAT_Sample(tex, float2(texCoord.x - X*oneT,texCoord.y)).xyz));
+		tempColor += (c*STU(X,(TVOUT_RESOLUTION*oneI)));
+	}
+
+   tempColor = (TVOUT_COMPOSITE_CONNECTION) ? mul(YIQ_to_RGB,tempColor) : tempColor;
+	  
+   return float4(tempColor, 1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return tv_out_tweaks(COMPAT_texture_size, COMPAT_video_size, VOUT.texCoord, decal);
+}
+COMPAT_END

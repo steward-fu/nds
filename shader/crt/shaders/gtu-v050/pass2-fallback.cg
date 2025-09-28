@@ -1,0 +1,104 @@
+////////////////////////////////////////////////////////
+// GTU version 0.50
+// Author: aliaspider - aliaspider@gmail.com
+// License: GPLv3
+////////////////////////////////////////////////////////
+
+#pragma parameter signalResolution "Signal Resolution Y" 256.0 16.0 1024.0 16.0
+#pragma parameter signalResolutionI "Signal Resolution I" 83.0 1.0 350.0 2.0
+#pragma parameter signalResolutionQ "Signal Resolution Q" 25.0 1.0 350.0 2.0
+#ifdef PARAMETER_UNIFORM
+uniform float signalResolution;
+uniform float signalResolutionI;
+uniform float signalResolutionQ;
+#endif
+
+#include "config.h"
+#include "../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+
+	return OUT;
+}
+
+#define YIQ_to_RGB   transpose(float3x3( 1.0 , 1.0  , 1.0 , 0.9563 , -0.2721 , -1.1070 , 0.6210 , -0.6474 , 1.7046 ))
+#define pi        3.14159265358
+
+float d(float x, float b)
+{
+	return pi*b*min(abs(x)+0.5,1.0/b);
+}
+
+float e(float x, float b)
+{
+	return (pi*b*min(max(abs(x)-0.5,-1.0/b),1.0/b));
+}
+
+float STU(float x, float b)
+{
+	return ((d(x,b)+sin(d(x,b))-e(x,b)-sin(e(x,b)))/(2.0*pi));
+}
+
+float4 pass_2(float2 texture_size, float2 video_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+   float offset   = frac((texCoord.x * texture_size.x) - 0.5);
+   float3   tempColor = float3(0,0,0);
+   float    X;
+   float3   c;
+   float range;
+   if (compositeConnection)
+      range=ceil(0.5+video_size.x/min(min(signalResolution,signalResolutionI),signalResolutionQ));
+   else
+      range=ceil(0.5+video_size.x/signalResolution);
+	  
+	  range = FIXNUM;
+
+   float i;
+   if(compositeConnection){
+      for (i=-range;i<range+2.0;i++){
+         X = (offset-(i));
+		 c = COMPAT_Sample(decal, float2(texCoord.x - X/texture_size.x,texCoord.y)).rgb;
+		 tempColor += float3((c.x*STU(X,(signalResolution/video_size.x))),(c.y*STU(X,(signalResolutionI/video_size.x))),(c.z*STU(X,(signalResolutionQ/video_size.x))));
+      }
+   }
+   else{
+      for (i=-range;i<range+2.0;i++){
+         X = (offset-(i));
+		 c = COMPAT_Sample(decal, float2(texCoord.x - X/texture_size.x,texCoord.y)).rgb;
+		 tempColor += (c*STU(X,(signalResolution/video_size.x)));
+      }
+   }
+   if(compositeConnection)
+      tempColor=clamp(mul(YIQ_to_RGB,tempColor),0.0,1.0);
+   else
+      tempColor=clamp(tempColor,0.0,1.0);
+
+   return float4(tempColor,1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return pass_2(COMPAT_texture_size, COMPAT_video_size, VOUT.texCoord, decal);
+}
+COMPAT_END

@@ -1,0 +1,163 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+// VERTEX SHADER //
+
+#include "../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+#pragma parameter RSUBPIX_R "Colour of R subpixel: R" 1.0 0.0 1.0 0.01
+#pragma parameter RSUBPIX_G "Colour of R subpixel: G" 0.0 0.0 1.0 0.01
+#pragma parameter RSUBPIX_B "Colour of R subpixel: B" 0.0 0.0 1.0 0.01
+#pragma parameter GSUBPIX_R "Colour of G subpixel: R" 0.0 0.0 1.0 0.01
+#pragma parameter GSUBPIX_G "Colour of G subpixel: G" 1.0 0.0 1.0 0.01
+#pragma parameter GSUBPIX_B "Colour of G subpixel: B" 0.0 0.0 1.0 0.01
+#pragma parameter BSUBPIX_R "Colour of B subpixel: R" 0.0 0.0 1.0 0.01
+#pragma parameter BSUBPIX_G "Colour of B subpixel: G" 0.0 0.0 1.0 0.01
+#pragma parameter BSUBPIX_B "Colour of B subpixel: B" 1.0 0.0 1.0 0.01
+#pragma parameter gain      "Gain"                    1.0 0.5 2.0 0.05
+#pragma parameter gamma     "LCD Gamma"               3.0 0.5 5.0 0.1
+#pragma parameter blacklevel "Black level"            0.05 0.0 0.5 0.01
+#pragma parameter ambient   "Ambient"                 0.0 0.0 0.5 0.01
+#pragma parameter BGR       "BGR"                     0 0 1 1
+#ifdef PARAMETER_UNIFORM
+uniform float RSUBPIX_R;
+uniform float RSUBPIX_G;
+uniform float RSUBPIX_B;
+uniform float GSUBPIX_R;
+uniform float GSUBPIX_G;
+uniform float GSUBPIX_B;
+uniform float BSUBPIX_R;
+uniform float BSUBPIX_G;
+uniform float BSUBPIX_B;
+uniform float gain;
+uniform float gamma;
+uniform float blacklevel;
+uniform float ambient;
+uniform float BGR;
+#else
+#define RSUBPIX_R 1.0
+#define RSUBPIX_G 0.0
+#define RSUBPIX_B 0.0
+#define GSUBPIX_R 0.0
+#define GSUBPIX_G 1.0
+#define GSUBPIX_B 0.0
+#define BSUBPIX_R 0.0
+#define BSUBPIX_G 0.0
+#define BSUBPIX_B 1.0
+#define gain 1.0
+#define gamma 3.0
+#define blacklevel 0.05
+#define ambient 0.0
+#define BGR 0.0
+#endif
+
+#define outgamma 2.2
+
+#define fetch_offset(coord,offset) (pow(float3(gain) * texelFetchOffset(decal, (coord), 0, (offset)).rgb + blacklevel3, float3(gamma)) + ambient3)
+ 
+// integral of (1 - x^2 - x^4 + x^6)^2
+const float coeffs_x[] = { 1.0, -2.0/3.0, -1.0/5.0, 4.0/7.0, -1.0/9.0, -2.0/11.0, 1.0/13.0 };
+// integral of (1 - 2x^4 + x^6)^2
+const float coeffs_y[] = { 1.0,      0.0, -4.0/5.0, 2.0/7.0,  4.0/9.0, -4.0/11.0, 1.0/13.0 };
+float intsmear_func(float z, float coeffs[7])
+{
+  float z2 = z*z;
+  float zn = z;
+  float ret = 0.0;
+  for (int i = 0; i < 7; i++) {
+    ret += zn*coeffs[i];
+    zn *= z2;
+  }
+  return ret;
+}
+
+float intsmear(float x, float dx, float d, float coeffs[7])
+{
+  float zl = clamp((x-dx*0.5)/d,-1.0,1.0);
+  float zh = clamp((x+dx*0.5)/d,-1.0,1.0);
+  return d * ( intsmear_func(zh,coeffs) - intsmear_func(zl,coeffs) )/dx;
+}
+ 
+float4 lcd_grid_v2(float2 texture_size, float2 video_size, float2 output_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+  float2 texelSize = 1.0 / texture_size;
+  float2 range;
+  range = video_size / (output_size * texture_size);
+  float3 outgamma3 = float3(outgamma, outgamma, outgamma);
+  float3 cred   = pow(float3(RSUBPIX_R, RSUBPIX_G, RSUBPIX_B), outgamma3);
+  float3 cgreen = pow(float3(GSUBPIX_R, GSUBPIX_G, GSUBPIX_B), outgamma3);
+  float3 cblue  = pow(float3(BSUBPIX_R, BSUBPIX_G, BSUBPIX_B), outgamma3);
+ 
+  int2 tli = int2(floor(texCoord/texelSize-float2(0.4999, 0.4999)));
+ 
+  float3 lcol, rcol;
+  float subpix = (texCoord.x/texelSize.x - 0.4999 - float(tli.x))*3.0;
+  float rsubpix = range.x/texelSize.x * 3.0;
+  lcol = float3(intsmear(subpix+1.0,rsubpix, 1.5, coeffs_x),
+              intsmear(subpix    ,rsubpix, 1.5, coeffs_x),
+              intsmear(subpix-1.0,rsubpix, 1.5, coeffs_x));
+  rcol = float3(intsmear(subpix-2.0,rsubpix, 1.5, coeffs_x),
+              intsmear(subpix-3.0,rsubpix, 1.5, coeffs_x),
+              intsmear(subpix-4.0,rsubpix, 1.5, coeffs_x));
+  if (BGR > 0.5) {
+    lcol.rgb = lcol.bgr;
+    rcol.rgb = rcol.bgr;
+  }
+  float tcol, bcol;
+  subpix = texCoord.y/texelSize.y - 0.4999 - float(tli.y);
+  rsubpix = range.y/texelSize.y;
+  tcol = intsmear(subpix    ,rsubpix, 0.63, coeffs_y);
+  bcol = intsmear(subpix-1.0,rsubpix, 0.63, coeffs_y);
+  const float3 gain3 = float3(gain, gain, gain);
+  const float3 gamma3 = float3(gamma, gamma, gamma);
+  const float3 blacklevel3 = float3(blacklevel, blacklevel, blacklevel);
+  const float3 ambient3 = float3(ambient, ambient, ambient);
+  const float3 tcol3 = float3(tcol, tcol, tcol);
+  const float3 bcol3 = float3(bcol, bcol, bcol);
+  const float3 topLeftColor     = ((pow(gain3 * COMPAT_SamplePoint(decal, texCoord - 0.25 * texelSize * int2(0,0)).rgb + blacklevel3, gamma3) + ambient3)) * lcol * tcol3;
+  const float3 bottomRightColor = ((pow(gain3 * COMPAT_SamplePoint(decal, texCoord - 0.25 * texelSize * int2(1,1)).rgb + blacklevel3, gamma3) + ambient3)) * rcol * bcol3;
+  const float3 bottomLeftColor  = ((pow(gain3 * COMPAT_SamplePoint(decal, texCoord - 0.25 * texelSize * int2(0,1)).rgb + blacklevel3, gamma3) + ambient3)) * lcol * bcol3;
+  const float3 topRightColor    = ((pow(gain3 * COMPAT_SamplePoint(decal, texCoord - 0.25 * texelSize * int2(1,0)).rgb + blacklevel3, gamma3) + ambient3)) * rcol * tcol3;
+ 
+  float3 averageColor = topLeftColor + bottomRightColor + bottomLeftColor + topRightColor;
+ 
+  averageColor = mul(averageColor, float3x3(cred, cgreen, cblue));
+  const float inv_outgamma = 1.0/outgamma;
+  const float3 inv_outgamma3 = float3(inv_outgamma, inv_outgamma, inv_outgamma);
+  return float4(pow(averageColor,inv_outgamma3),0.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return lcd_grid_v2(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, VOUT.texCoord, decal);
+}
+COMPAT_END

@@ -1,0 +1,87 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+/*
+   Scale2xPlus shader 
+
+   - Copyright (C) 2007 guest(r) - guest.r@gmail.com
+
+   - License: GNU-GPL  
+
+
+   The Scale2x algorithm:
+
+   - Scale2x Homepage: http://scale2x.sourceforge.net/
+
+   - Copyright (C) 2001, 2002, 2003, 2004 Andrea Mazzoleni 
+
+   - License: GNU-GPL  
+
+ */
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float4 t1       : TEXCOORD1;
+	float4 t2       : TEXCOORD2;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	float2 ps = float2(1.0/COMPAT_texture_size.x, 1.0/COMPAT_texture_size.y);
+	float dx = ps.x;
+	float dy = ps.y;
+
+	OUT.texCoord = texCoord;				// E
+	OUT.t1 = texCoord.xyxy + float4(  0,-dy,-dx,  0);	// B, D
+	OUT.t2 = texCoord.xyxy + float4( dx,  0,  0, dy);	// F, H	
+	
+	return OUT;
+}
+
+
+float4 scale2xplus(float2 texture_size, float4 t1, float4 t2, float2 texCoord, COMPAT_Texture2D(decal))
+{
+   float2 fp = frac(texCoord*texture_size);
+
+   // Reading the texels
+
+   float3 B = COMPAT_SamplePoint(decal, t1.xy).xyz;
+   float3 D = COMPAT_SamplePoint(decal, t1.zw).xyz;
+   float3 E = COMPAT_SamplePoint(decal, texCoord).xyz;
+   float3 F = COMPAT_SamplePoint(decal, t2.xy).xyz;
+   float3 H = COMPAT_SamplePoint(decal, t2.zw).xyz;
+
+   float3 E0 = D == B && B != H && D != F ? D : E;
+   float3 E1 = B == F && B != H && D != F ? F : E;
+   float3 E2 = D == H && B != H && D != F ? D : E;
+   float3 E3 = H == F && B != H && D != F ? F : E;
+
+   // Product interpolation
+   return float4((E3*fp.x+E2*(1-fp.x))*fp.y+(E1*fp.x+E0*(1-fp.x))*(1-fp.y),1);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return scale2xplus(COMPAT_texture_size, VOUT.t1, VOUT.t2, VOUT.texCoord, decal);
+}
+COMPAT_END

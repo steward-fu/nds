@@ -1,0 +1,75 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+// "LeiFX" shader - Gamma process
+// 
+// 	Copyright (C) 2013-2014 leilei
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+
+
+float mod2(float x, float y)
+{
+	return x - y * floor (x/y);
+}
+
+const float	GAMMA_LEVEL = 1.0;
+
+float4 _3dfx_pass_2(float2 texture_size, float2 video_size, float2 output_size, COMPAT_Texture2D(decal), float2 coord)
+{
+	float4 final = COMPAT_Sample(decal, coord);
+
+	float2 res;
+	res.x = texture_size.x;
+	res.y = texture_size.y;
+
+	// Gamma scanlines
+	// the Voodoo drivers usually supply a 1.3 gamma setting whether people liked it or not
+	// but it was enough to brainwash the competition for looking 'too dark'
+
+	final.r = pow(final.r, 1.0 / GAMMA_LEVEL);
+	final.g = pow(final.g, 1.0 / GAMMA_LEVEL);
+	final.b = pow(final.b, 1.0 / GAMMA_LEVEL);
+
+   return final;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return _3dfx_pass_2(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, decal, VOUT.texCoord);
+}
+COMPAT_END

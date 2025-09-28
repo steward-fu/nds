@@ -1,0 +1,69 @@
+#pragma parameter LUT_Size "LUT Size" 16.0 1.0 64.0 1.0
+#ifdef PARAMETER_UNIFORM
+uniform float LUT_Size;
+#else
+#define LUT_Size 16.0
+#endif
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform COMPAT_Texture2D(SamplerLUT) : TEXUNIT1;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+
+	return OUT;
+}
+
+// This shouldn't be necessary but it seems some undefined values can
+// creep in and each GPU vendor handles that differently. This keeps
+// all values within a safe range
+float4 mixfix(float4 a, float4 b, float c)
+{
+	return (a.z < 1.0) ? mix(a, b, c) : a;
+}
+
+float4 lut_palette(float2 texCoord, COMPAT_Texture2D(decal), COMPAT_Texture2D(SamplerLUT)) 
+{
+  
+	float4 imgColor = COMPAT_SamplePoint(decal, texCoord.xy);
+	float red = ( imgColor.r * (LUT_Size - 1.0) + 0.4999 ) / (LUT_Size * LUT_Size);
+	float green = ( imgColor.g * (LUT_Size - 1.0) + 0.4999 ) / LUT_Size;
+	float blue1 = (floor( imgColor.b  * (LUT_Size - 1.0) ) / LUT_Size) + red;
+	float blue2 = (ceil( imgColor.b  * (LUT_Size - 1.0) ) / LUT_Size) + red;
+	float mixer = clamp(max((imgColor.b - blue1) / (blue2 - blue1), 0.0), 0.0, 32.0);
+	float4 color1 = COMPAT_SamplePoint( SamplerLUT, float2( blue1, green ));
+	float4 color2 = COMPAT_SamplePoint( SamplerLUT, float2( blue2, green ));
+	return mixfix(color1, color2, mixer);//mix(color1, color2, mixer);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return lut_palette(VOUT.texCoord, decal, SamplerLUT);
+}
+COMPAT_END

@@ -1,0 +1,78 @@
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+	float4 position : COMPAT_POS;
+	float4 vpos : TEXCOORD1;
+	float2 texCoord : TEXCOORD0;
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+    OUT.vpos = OUT.position;
+	OUT.texCoord = texCoord;
+	return OUT;
+}
+
+struct deltas
+{
+   float2 UL, UR, DL, DR, M;
+};
+
+float4 fxaa_edge_detect(float2 texture_size, float2 video_size, float2 output_size, COMPAT_Texture2D(decal), float2 texCoord, float4 vpos)
+{
+    //yes Cg is THIS retarded, passing position as texturecoord
+	vpos /= vpos.w;
+	// get texel size   	
+	float2 ps = float2(0.9999/texture_size.x, 0.9999/texture_size.y);
+
+	deltas loc = { 
+      texCoord + float2(-ps.x, -ps.y),
+      texCoord + float2(ps.x, -ps.y),
+      texCoord + float2(-ps.x, ps.y),
+      texCoord + float2(ps.x, ps.y),
+	  texCoord
+   };
+
+   //read locations
+   float3 colUL = COMPAT_SamplePoint(decal, loc.UL).xyz;
+   float3 colUR= COMPAT_SamplePoint(decal, loc.UR).xyz;
+   float3 colDL = COMPAT_SamplePoint(decal, loc.DL).xyz;
+   float3 colDR = COMPAT_SamplePoint(decal, loc.DR).xyz;
+   float3 colM = COMPAT_SamplePoint(decal, loc.M).xyz;
+   //get luma vals/edge detection
+   float3 luma = float3(0.299, 0.587, 0.114);
+   float lumaUL = dot(colUL, luma);
+   float lumaUR = dot(colUR, luma);
+   float lumaDL = dot(colDL, luma);
+   float lumaDR = dot(colDR, luma);
+   float lumaM  = dot(colM,  luma);
+   float lumaMin = min(lumaM, min(min(lumaUL, lumaUR), min(lumaDL, lumaDR)));
+   float lumaMax = max(lumaM, max(max(lumaUL, lumaUR), max(lumaDL, lumaDR))); 
+   float2 dir;
+   dir.x = -((lumaUL + lumaUR) - (lumaDR + lumaDL));
+   dir.y =  ((lumaUR + lumaDR) - (lumaUL + lumaDL));
+   
+   float4 final = abs(dir.x) +abs(dir.y);
+
+	return final;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return fxaa_edge_detect(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, decal, VOUT.texCoord, VOUT.vpos);
+}
+COMPAT_END

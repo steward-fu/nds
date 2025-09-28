@@ -1,0 +1,160 @@
+/* COMPATIBILITY
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+/*
+   NEDI Shader  -  pass0
+
+// This file is a part of MPDN Extensions.
+// https://github.com/zachsaw/MPDN_Extensions
+//
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3.0 of the License, or (at your option) any later version.
+// 
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library.
+// 
+
+   Sources ported from this discussion thread:
+
+      http://forum.doom9.org/showthread.php?t=170727
+   
+   Ported by Hyllian - 2015.
+*/
+
+#define NEDI_WEIGHT 4.0
+#define NEDI_N 24.0
+#define NEDI_E 0.0
+#define NEDI_OFFSET 0.0
+
+#define ITERATIONS  3
+#define WGT   2
+
+#define width  (texture_size.x)
+#define height (texture_size.y)
+
+#define px (0.5 / (texture_size.x))
+#define py (0.5 / (texture_size.y))
+
+#define offset NEDI_OFFSET
+//#define offset 0.0
+
+#define Value(xy) (COMPAT_SamplePoint(decal,tex+float2(px,py)*(xy)).rgb)//-float4(0,0.5,0.5,0))
+
+#define Get(xy) (dot(Value(xy),float3(.2126, .7152, .0722))+offset)
+#define Get4(xy) (float2(Get(xy+WGT*dir[0])+Get(xy+WGT*dir[1]),Get(xy+WGT*dir[2])+Get(xy+WGT*dir[3])))
+
+#define sqr(x) (dot(x,x))
+#define I (float2x2(1,0,0,1))
+
+//Cramer's method
+float2 solve(float2x2 A,float2 b) { return float2(determinant(float2x2(b,A[1])),determinant(float2x2(A[0],b)))/determinant(A); }
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+
+	return OUT;
+}
+
+float4 nedi_pass0(float2 texture_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+	float2 tex = texCoord + float2(0.0, 0.25/texture_size.y);
+
+	float4 c0 = COMPAT_SamplePoint(decal,tex);
+
+	//Skip pixels on wrong grid
+	if (frac(tex.x*width)<0.5) return c0;
+
+/*
+                                         wind[1]              wind[2]
+-3                                                                 
+-2             dir        wind[0]            2                 1 
+-1              4           4          4                             4  
+ 0            1   2       1   2                   
+ 1              3           3                   3           3       
+ 2                                        1                       2
+ 3                                                                     
+*/
+/*
+                                         wind[1]              wind[2]
+-3                                            3                3   
+-2             dir        wind[0] 
+-1            0   3        0   3      0                                1
+ 0                                     
+ 1            2   1        2   1                  1        0    
+ 2
+ 3                                        2                        2   
+*/
+
+	//Define window and directions - original
+	float2 dir[4] = {{-1,-1},{1,1},{-1,1},{1,-1}};
+	float4x2 wind[4] = {{{-1,-1},{1,1},{-1,1},{1,-1}},{{-3,-1},{3,1},{-1,3},{1,-3}},{{-3,1},{3,-1},{1,3},{-1,-3}},{{-3,-3},{ 3,3},{-3, 3},{3,-3}}};
+
+	//Initialization
+	float2x2 R = 0;
+	float2 r = 0;
+
+        float m[4] = {NEDI_WEIGHT, 1.0, 1.0, 1.0};
+
+	//Calculate (local) autocorrelation coefficients
+	for (int k = 0; k<ITERATIONS; k+= 1){
+		float4 y = float4(Get(wind[k][0]),Get(wind[k][1]),Get(wind[k][2]),Get(wind[k][3]));
+		float4x2 C = float4x2(Get4(wind[k][0]),Get4(wind[k][1]),Get4(wind[k][2]),Get4(wind[k][3]));
+		R += mul(transpose(C),m[k]*C);
+		r += mul(y,m[k]*C);
+	}
+	
+	//Normalize
+	float n = NEDI_N;
+	R /= n; r /= n;
+
+	//Calculate a =  R^-1 . r
+	float e = NEDI_E;
+	float2 a = solve(R+e*e*I,r+e*e/2.0);
+
+	//Nomalize 'a' (prevents overshoot)
+	a = .25 + float2(.5,-.5)*clamp(a[0]-a[1],-1.0,1.0);
+
+	//Calculate result
+	float2x3 x = float2x3(Value(dir[0])+Value(dir[1]),Value(dir[2])+Value(dir[3]));
+	float3 c = mul(float1x2(a),x);
+	
+	return float4(c, 1.0);//+float4(0,0.5,0.5,0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return nedi_pass0(COMPAT_texture_size, VOUT.texCoord, decal);
+}
+COMPAT_END

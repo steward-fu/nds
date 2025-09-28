@@ -1,0 +1,74 @@
+/*
+   Author: Themaister
+   License: Public domain
+*/
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float2 omega    : TEXCOORD1;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	float2 texsize = COMPAT_texture_size;
+	float2 delta = 0.5 / texsize;
+	float dx = delta.x;
+	float dy = delta.y;
+
+	OUT.omega = float2(3.1415 * COMPAT_output_size.x * COMPAT_texture_size.x / COMPAT_video_size.x, 2.0 * 3.1415 * COMPAT_texture_size.y);
+	
+	return OUT;
+}
+
+#pragma parameter SCANLINE_BASE_BRIGHTNESS "Scanline Base Brightness" 0.95 0.0 1.0 0.01
+#pragma parameter SCANLINE_SINE_COMP_A "Scanline Sine Comp A" 0.05 0.0 0.10 0.01
+#pragma parameter SCANLINE_SINE_COMP_B "Scanline Sine Comp B" 0.15 0.0 1.0 0.05
+
+#ifdef PARAMETER_UNIFORM
+uniform float SCANLINE_BASE_BRIGHTNESS;
+uniform float SCANLINE_SINE_COMP_A;
+uniform float SCANLINE_SINE_COMP_B;
+#else
+#define SCANLINE_BASE_BRIGHTNESS 0.95
+#define SCANLINE_SINE_COMP_A 0.05
+#define SCANLINE_SINE_COMP_B 0.15
+#endif
+
+
+float4 scanline(float2 omega, float2 texCoord, COMPAT_Texture2D(decal))
+{
+	float2 sine_comp = float2(SCANLINE_SINE_COMP_A, SCANLINE_SINE_COMP_B);
+	float3 res = COMPAT_Sample(decal, texCoord).xyz;
+	float3 scanline = res * (SCANLINE_BASE_BRIGHTNESS + dot(sine_comp * sin(texCoord * omega), float2(1.0, 1.0)));
+	return float4(scanline.x, scanline.y, scanline.z, 1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return scanline(VOUT.omega, VOUT.texCoord, decal);
+}
+COMPAT_END

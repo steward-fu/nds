@@ -1,0 +1,75 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 tex_direct : TEXCOORD0;
+	float2 tex_0 : TEXCOORD1;
+	float2 tex_60 : TEXCOORD2;
+	float2 tex_120 : TEXCOORD3;
+	float2 tex_180 : TEXCOORD4;
+	float2 tex_240 : TEXCOORD5;
+	float2 tex_300 : TEXCOORD6;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	float2 one = 1.0 / COMPAT_texture_size;
+	float angle = COMPAT_frame_count / 20.0;
+	float scale = 1.0 + 0.2 * sin(0.5 * angle);
+	float2x2 rotate = scale * float2x2(
+		cos(angle),    sin(angle),
+		-sin(angle),   cos(angle)
+	);
+
+   OUT.tex_direct = texCoord;
+   OUT.tex_0 = texCoord + one * mul(rotate, float2(1.0, 0.0));
+   OUT.tex_60 = texCoord + one * mul(rotate, float2(0.5, 0.7));
+   OUT.tex_120 = texCoord + one * mul(rotate, float2(-0.5, 0.7));
+   OUT.tex_180 = texCoord + one * mul(rotate, float2(-1.0, 0.0));
+   OUT.tex_240 = texCoord + one * mul(rotate, float2(-0.5, -0.7));
+   OUT.tex_300 = texCoord + one * mul(rotate, float2(0.5, -0.7));
+	
+	return OUT;
+}
+
+float4 blinky(float2 tex_direct, float2 tex_0, float2 tex_60, float2 tex_120, float2 tex_180, float2 tex_240, float2 tex_300, COMPAT_Texture2D(decal))
+{
+   float4 tex_mid = COMPAT_Sample(decal, tex_direct);
+   float4 tex0 = COMPAT_Sample(decal, tex_0);
+   float4 tex60 = COMPAT_Sample(decal, tex_60);
+   float4 tex120 = COMPAT_Sample(decal, tex_120);
+   float4 tex180 = COMPAT_Sample(decal, tex_180);
+   float4 tex240 = COMPAT_Sample(decal, tex_240);
+   float4 tex300 = COMPAT_Sample(decal, tex_300);
+
+   float4 minimum = min(min(min(tex0, tex60), min(tex120, tex180)), min(tex240, tex300));
+   float4 maximum = max(max(max(tex0, tex60), max(tex120, tex180)), max(tex240, tex300));
+   float4 diff = 1.0 - exp(-(maximum - minimum));
+   return lerp(tex_mid, diff, 0.9);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return blinky(VOUT.tex_direct, VOUT.tex_0, VOUT.tex_60, VOUT.tex_120, VOUT.tex_180, VOUT.tex_240, VOUT.tex_300, decal);
+}
+COMPAT_END

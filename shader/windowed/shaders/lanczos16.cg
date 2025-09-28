@@ -1,0 +1,124 @@
+/* COMPATIBILITY 
+	- HLSL compilers
+	- Cg	compilers
+	- FX11 compilers
+*/
+
+/*
+
+	Copyright (C) 2007 guest(r) - guest.r@gmail.com
+
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program; if not, write to the Free Software
+	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+*/
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float4 t1		 : TEXCOORD1;
+	float4 t2		 : TEXCOORD2;
+	float4 t3		 : TEXCOORD3;
+	float4 t4		 : TEXCOORD4;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	float2 ps = 1.0/COMPAT_texture_size;
+	float dx = ps.x;
+	float dy = ps.y;
+
+	OUT.t1 = texCoord.xxyy + float4(	-dx,	 0.0,	 -dy,	 0.0);
+	OUT.t2 = texCoord.xxyy + float4(	 dx, 2.0*dx,	 -dy,	 0.0);
+	OUT.t3 = texCoord.xxyy + float4(	-dx,	 0.0,	  dy, 2.0*dy);
+	OUT.t4 = texCoord.xxyy + float4(	 dx, 2.0*dx,	  dy, 2.0*dy);
+	
+	return OUT;
+}
+
+const static float	floatpi	= 1.5707963267948966192313216916398;
+const static float	pi	= 3.1415926535897932384626433832795;
+
+float4 l(float4 x)
+{
+	float4 res;
+	float p = pi * floatpi;
+
+	res = (x==float4(0.0, 0.0, 0.0, 0.0)) ?  float4(p,p,p,p)  :  sin(x*floatpi)*sin(x*pi)/(x*x);
+
+	return res;
+}
+	  
+float4 lanczos16(float2 texture_size, float4 t1, float4 t2, float4 t3, float4 t4, float2 texCoord, COMPAT_Texture2D(decal))
+{
+	float4x3 pix;
+	float2 fract = frac(texCoord*texture_size);
+
+	// calculating texel weights
+
+	float4 abcd, pqrs;
+
+	abcd = l(float4(1+fract.x, fract.x, 1-fract.x, 2-fract.x));
+	pqrs = l(float4(1+fract.y, fract.y, 1-fract.y, 2-fract.y));
+
+	// reading the texels
+
+	float3 c00 = COMPAT_SamplePoint(decal, t1.xz).xyz;
+	float3 c10 = COMPAT_SamplePoint(decal, t1.yz).xyz;
+	float3 c20 = COMPAT_SamplePoint(decal, t2.xz).xyz;
+	float3 c30 = COMPAT_SamplePoint(decal, t2.yz).xyz;
+	float3 c01 = COMPAT_SamplePoint(decal, t1.xw).xyz;
+	float3 c11 = COMPAT_SamplePoint(decal, texCoord).xyz;
+	float3 c21 = COMPAT_SamplePoint(decal, t2.xw).xyz;
+	float3 c31 = COMPAT_SamplePoint(decal, t2.yw).xyz;
+	float3 c02 = COMPAT_SamplePoint(decal, t3.xz).xyz;
+	float3 c12 = COMPAT_SamplePoint(decal, t3.yz).xyz;
+	float3 c22 = COMPAT_SamplePoint(decal, t4.xz).xyz;
+	float3 c32 = COMPAT_SamplePoint(decal, t4.yz).xyz;
+	float3 c03 = COMPAT_SamplePoint(decal, t3.xw).xyz;
+	float3 c13 = COMPAT_SamplePoint(decal, t3.yw).xyz;
+	float3 c23 = COMPAT_SamplePoint(decal, t4.xw).xyz;
+	float3 c33 = COMPAT_SamplePoint(decal, t4.yw).xyz;
+
+	pix[0] = mul(abcd, float4x3(-c00, c10, c20, -c30));
+	pix[1] = mul(abcd, float4x3( c01, c11, c21,  c31));
+	pix[2] = mul(abcd, float4x3( c02, c12, c22,  c32));
+	pix[3] = mul(abcd, float4x3(-c03, c13, c23, -c33));
+
+	// final sum and weight normalization
+	return float4((mul(pqrs, pix))/((dot(abcd, 1)*dot(pqrs, 1))-2*(abcd.x+abcd.w)*(pqrs.x+pqrs.w)),1);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return lanczos16(COMPAT_texture_size, VOUT.t1, VOUT.t2, VOUT.t3, VOUT.t4, VOUT.texCoord, decal);
+}
+COMPAT_END

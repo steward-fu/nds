@@ -1,0 +1,89 @@
+/*
+   ShadX's Natural Vision Shader
+
+   Ported and tweaked by Hyllian - 2016
+   parameterized by Sp00kyFox
+
+*/
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+#pragma parameter GIN	"NaturalVision Gamma In"	2.2 0.0 10.0 0.05
+#pragma parameter GOUT	"NaturalVision Gamma Out"	2.2 0.0 10.0 0.05
+#pragma parameter Y	"NaturalVision Luminance"	1.1 0.0 10.0 0.01
+#pragma parameter I	"NaturalVision Orange-Cyan"	1.1 0.0 10.0 0.01
+#pragma parameter Q	"NaturalVision Magenta-Green"	1.1 0.0 10.0 0.01
+
+#ifdef PARAMETER_UNIFORM
+	uniform float GIN, GOUT, Y, I, Q;
+#else
+	#define GIN	2.2
+	#define GOUT	2.2
+	#define Y	1.1
+	#define I	1.1
+	#define Q	1.1	
+#endif
+
+
+const static float3x3 RGBtoYIQ = float3x3(0.299,     0.587,     0.114,
+					  0.595716, -0.274453, -0.321263,
+					  0.211456, -0.522591,  0.311135);
+
+const static float3x3 YIQtoRGB = float3x3(1,  0.95629572,  0.62102442,
+					  1, -0.27212210, -0.64738060,
+					  1, -1.10698902,  1.70461500);
+
+const static float3 YIQ_lo = float3(0, -0.595716, -0.522591);
+const static float3 YIQ_hi = float3(1,  0.595716,  0.522591);
+
+float3 natural_vision(float2 texCoord, COMPAT_Texture2D(decal))
+{
+	float3 c = COMPAT_Sample(decal, texCoord).xyz;
+
+	c = pow(c, GIN);
+	c = mul(RGBtoYIQ, c);
+	c = float3(pow(c.x,Y), c.y*I, c.z*Q);
+	c = clamp(c, YIQ_lo, YIQ_hi);
+	c = mul(YIQtoRGB, c);
+	c = pow(c, 1.0/GOUT);
+
+	return c;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return float4(natural_vision(VOUT.texCoord, decal), 1.0);
+}
+COMPAT_END

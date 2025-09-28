@@ -1,0 +1,80 @@
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+/*
+   Copyright (C) 2007 guest(r) - guest.r@gmail.com
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
+#include "../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+float4 two_xsal(float2 texture_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+	float2 texsize = texture_size;
+	float dx = pow(texsize.x, -1.0) * 0.25;
+	float dy = pow(texsize.y, -1.0) * 0.25;
+	float3 dt = float3(1.0, 1.0, 1.0);
+
+	float2 UL = texCoord + float2(-dx, -dy);
+	float2 UR = texCoord + float2(dx, -dy);
+	float2 DL = texCoord + float2(-dx, dy);
+	float2 DR = texCoord + float2(dx, dy);
+
+	float3 c00 = COMPAT_SamplePoint(decal, UL).xyz;
+	float3 c20 = COMPAT_SamplePoint(decal, UR).xyz;
+	float3 c02 = COMPAT_SamplePoint(decal, DL).xyz;
+	float3 c22 = COMPAT_SamplePoint(decal, DR).xyz;
+
+	float m1=dot(abs(c00-c22),dt)+0.001;
+	float m2=dot(abs(c02-c20),dt)+0.001;
+
+	return float4((m1*(c02+c20)+m2*(c22+c00))/(2.0*(m1+m2)),1.0);
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return two_xsal(COMPAT_texture_size, VOUT.texCoord, decal);
+}
+COMPAT_END

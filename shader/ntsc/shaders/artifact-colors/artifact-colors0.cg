@@ -1,0 +1,89 @@
+/*
+Adapted for RetroArch from Flyguy's "Apple II-Like Artifact Colors" from shadertoy:
+https://www.shadertoy.com/view/llyGzR
+
+"Colors created through NTSC artifacting on 4-bit patterns, similar to the Apple II's lo-res mode."
+*/
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+//#pragma parameter F_COL "F Col" 0.25 0.25 0.5 0.25
+#ifdef PARAMETER_UNIFORM
+uniform float F_COL;
+#else
+#define F_COL 0.25
+#endif
+
+#include "../../../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	OUT.position = mul(modelViewProj, position);
+	OUT.texCoord = texCoord;
+	
+	return OUT;
+}
+
+//Modulator
+
+//#define F_COL (1.0 / 4.0) // moved to parameter
+
+float3x3 rgb2yiq = float3x3(0.299, 0.596, 0.211,
+                    0.587,-0.274,-0.523,
+                    0.114,-0.322, 0.312);
+
+//Complex oscillator, Fo = Oscillator freq., Fs = Sample freq., n = Sample index
+float2 Oscillator(float Fo, float Fs, float n)
+{
+	float tau = atan(1.0)*8.0;
+    float phase = (tau*Fo*floor(n))/Fs;
+    return float2(cos(phase),sin(phase));
+}
+
+#define gl_FragCoord float2((texCoord.xy * float2(output_size.xy))*(texture_size.xy/video_size.xy))
+
+float4 artifact_colors0(float2 texture_size, float2 video_size, float2 output_size, float2 texCoord, COMPAT_Texture2D(decal))
+{
+    float Fs = texture_size.x;
+    float Fcol = Fs * F_COL;
+    float n = floor(gl_FragCoord.x);
+    
+    float3 cRGB = COMPAT_Sample(decal, texCoord.xy).rgb;
+    float3 cYIQ = mul(cRGB, rgb2yiq);
+    
+    float2 cOsc = Oscillator(Fcol, Fs, n);
+    
+    float sig = cYIQ.x + dot(cOsc, cYIQ.yz);
+
+   float4 final = float4(sig,0.,0.,0.);
+   
+   return final;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+	return artifact_colors0(COMPAT_texture_size, COMPAT_video_size, COMPAT_output_size, VOUT.texCoord, decal);
+}
+COMPAT_END

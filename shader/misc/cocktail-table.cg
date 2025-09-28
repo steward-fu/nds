@@ -1,0 +1,58 @@
+#pragma parameter height "CocktailTable Image Height" -1.145 -3.0 3.0 0.01
+#pragma parameter width "CocktailTable Image Width" 2.0 1.0 5.0 0.05
+#pragma parameter location "CocktailTable Image Location" 0.75 -2.0 2.0 0.005
+#ifdef PARAMETER_UNIFORM
+uniform float height;
+uniform float width;
+uniform float location;
+#else
+#define height -1.145
+#define width 2.0
+#define location 0.75
+#endif
+
+/* COMPATIBILITY 
+   - HLSL compilers
+   - Cg   compilers
+   - FX11 compilers
+*/
+
+#include "../compat_includes.inc"
+uniform COMPAT_Texture2D(decal) : TEXUNIT0;
+uniform float4x4 modelViewProj;
+
+struct out_vertex
+{
+	float4 position : COMPAT_POS;
+	float2 texCoord : TEXCOORD0;
+	float2 t1       : TEXCOORD1;
+#ifndef HLSL_4
+	float4 Color    : COLOR;
+#endif
+};
+
+out_vertex main_vertex(COMPAT_IN_VERTEX)
+{
+	out_vertex OUT;
+#ifdef HLSL_4
+	float4 position = VIN.position;
+	float2 texCoord = VIN.texCoord;
+#else
+	OUT.Color = color;
+#endif
+	float4x4 RotationMatrix = float4x4( height, 0.0, 0.0, 0.0,
+         0.0, width, 0.0, 0.0,
+         0.0, 0.0, 1.0, 0.0,
+         0.0, 0.0, 0.0, 1.0 );
+	OUT.position = mul(mul(modelViewProj, position), RotationMatrix);
+	OUT.texCoord = mul(position.xy , float2x2(0.0, 1.0, -1.0, 0.0)) + float2(location, -0.500);
+	OUT.t1 = -1.0 * (mul(position.xy , float2x2(0.0, 1.0, -1.0, 0.0)) + float2((1.0 - location), -0.500));
+	
+	return OUT;
+}
+
+float4 main_fragment(COMPAT_IN_FRAGMENT) : COMPAT_Output
+{
+   return float4(COMPAT_Sample(decal, VOUT.texCoord) + COMPAT_Sample(decal, VOUT.t1));
+}
+COMPAT_END
