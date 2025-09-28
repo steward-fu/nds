@@ -193,11 +193,11 @@ const char *frag_shader_src =
 "   #define PI 3.141592654                                                  \n"
 "   #define SHADER_TYPE_NONE        0                                       \n"
 "   #define SHADER_TYPE_LCD3X       1                                       \n"
-"   #define SHADER_TYPE_LCD1X_NDS   2                                       \n"
+"   #define SHADER_TYPE_LCD1X       2                                       \n"
+"   #define SHADER_TYPE_LCD1X_NDS   3                                       \n"
 
 "   void main()                                                             \n"
 "   {                                                                       \n"
-"       vec3 tex;                                                           \n"
 #if 0
 "       if (frag_enable_overlay > 0) {                                      \n"
 "           tex = mix(                                                      \n"
@@ -208,16 +208,16 @@ const char *frag_shader_src =
 "       }                                                                   \n"
 #endif
 
-"       tex = texture2D(frag_tex_main, frag_tex_coord).bgr;                 \n"
-
 "       int type = frag_shader_type;                                        \n"
+"       float w = frag_screen_w;                                            \n"
+"       float h = frag_screen_h;                                            \n"
+"       vec3 tex = texture2D(frag_tex_main, frag_tex_coord).bgr;            \n"
+
 "       if (type == SHADER_TYPE_NONE) {                                     \n"
 "           gl_FragColor = vec4(tex, frag_alpha);                           \n"
 "       }                                                                   \n"
 
 "       if (type == SHADER_TYPE_LCD3X) {                                    \n"
-"           float w = frag_screen_w;                                        \n"
-"           float h = frag_screen_h;                                        \n"
 "           vec2 omega = vec2(3.14159) * vec2(2.0) * vec2(w, h);            \n"
 "           vec3 offsets = vec3(3.14159) *                                  \n"
 "               vec3(1.0/2.0, 1.0/2.0 - 2.0/3.0, 1.0/2.0 - 4.0/3.0);        \n"
@@ -226,6 +226,15 @@ const char *frag_shader_src =
 "           vec3 xfactors = (4.0 + sin(angle.x + offsets)) / (4.0 + 1.0);   \n"
 "           vec3 color = yfactor * xfactors * tex;                          \n"
 "           gl_FragColor = vec4(color.x, color.y, color.z, frag_alpha);     \n"
+"       }                                                                   \n"
+
+"       if (type == SHADER_TYPE_LCD1X) {                                    \n"
+"           vec2 pixel = frag_tex_coord * vec2(w, h);                       \n"
+"           vec2 angle = 2.0 * PI * (pixel - 0.25);                         \n"
+"           float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);           \n"
+"           float xfactor = (4.0 + sin(angle.x)) / (4.0 + 1.0);             \n"
+"           tex.rgb = yfactor * xfactor * tex.rgb;                          \n"
+"           gl_FragColor = vec4(tex.rgb, frag_alpha);                       \n"
 "       }                                                                   \n"
 
 "       if (type == SHADER_TYPE_LCD1X_NDS) {                                \n"
@@ -242,8 +251,6 @@ const char *frag_shader_src =
 "           const float GAMMA = 1.91;                                       \n"
 "           const float INV_GAMMA = 1.0 / 1.91;                             \n"
 
-"           float w = frag_screen_w;                                        \n"
-"           float h = frag_screen_h;                                        \n"
 "           vec2 pixel = frag_tex_coord * vec2(w, h);                       \n"
 "           vec2 angle = 2.0 * PI * ((pixel * h * (1.0 / h)) - 0.25);       \n"
 "           float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);           \n"
@@ -7133,6 +7140,7 @@ typedef enum {
 static const char *MENU_SHADER_STR[] = {
     "NONE",
     "LCD3X",
+    "LCD1X",
     "LCD1X_NDS"
 };
 

@@ -70,6 +70,7 @@ enum layout_mode_t {
 enum shader_type_t {
     SHADER_TYPE_NONE,
     SHADER_TYPE_LCD3X,
+    SHADER_TYPE_LCD1X,
     SHADER_TYPE_LCD1X_NDS,
     SHADER_TYPE_MAX
 };
