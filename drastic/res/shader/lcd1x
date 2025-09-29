@@ -7,19 +7,23 @@ varying vec2 frag_tex_coord;
 uniform sampler2D frag_tex_sample;
 
 #define PI 3.141592654
+#define BRIGHTEN_SCANLINES 16.0
+#define BRIGHTEN_LCD 4.0
 
 void main()
 {
     float w = frag_screen_w;
     float h = frag_screen_h;
-    vec3 tex = texture2D(frag_tex_sample, frag_tex_coord).bgr;
 
-    vec2 pixel = frag_tex_coord * vec2(w, h);
-    vec2 angle = 2.0 * PI * (pixel - 0.25);
-    float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);
-    float xfactor = (4.0 + sin(angle.x)) / (4.0 + 1.0);
+    vec2 pixelCoord = frag_tex_coord * vec2(w, h);
+    vec2 angle = 2.0 * PI * (pixelCoord - 0.25);
 
-    tex.rgb = yfactor * xfactor * tex.rgb;
+    float yfactor = (BRIGHTEN_SCANLINES + sin(angle.y)) / (BRIGHTEN_SCANLINES + 1.0);
+    float xfactor = (BRIGHTEN_LCD + sin(angle.x)) / (BRIGHTEN_LCD + 1.0);
 
-    gl_FragColor = vec4(tex.rgb, frag_alpha);
+    vec3 colour = texture2D(frag_tex_sample, frag_tex_coord).bgr;
+
+    colour.rgb = yfactor * xfactor * colour.rgb;
+
+    gl_FragColor = vec4(colour.rgb, frag_alpha);
 }

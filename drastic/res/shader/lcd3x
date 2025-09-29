@@ -8,18 +8,25 @@ uniform sampler2D frag_tex_sample;
 
 #define PI 3.141592654
 
+#define brighten_scanlines 16.0
+#define brighten_lcd 4.0
+
 void main()
 {
     float w = frag_screen_w;
     float h = frag_screen_h;
-    vec3 tex = texture2D(frag_tex_sample, frag_tex_coord).bgr;
 
     vec2 omega = vec2(3.14159) * vec2(2.0) * vec2(w, h);
     vec3 offsets = vec3(3.14159) * vec3(1.0/2.0, 1.0/2.0 - 2.0/3.0, 1.0/2.0 - 4.0/3.0);
+
+    vec3 res = texture2D(frag_tex_sample, frag_tex_coord).zyx;
+
     vec2 angle = frag_tex_coord * omega;
-    float yfactor = (16.0 + sin(angle.y)) / (16.0 + 1.0);
-    vec3 xfactors = (4.0 + sin(angle.x + offsets)) / (4.0 + 1.0);
-    vec3 color = yfactor * xfactors * tex;
+
+    float yfactor = (brighten_scanlines + sin(angle.y)) / (brighten_scanlines + 1.0);
+    vec3 xfactors = (brighten_lcd + sin(angle.x + offsets)) / (brighten_lcd + 1.0);
+
+    vec3 color = yfactor * xfactors * res;
 
     gl_FragColor = vec4(color.x, color.y, color.z, frag_alpha);
 }
