@@ -1,8 +1,7 @@
 precision highp float;
 
 uniform float frag_alpha;
-uniform float frag_screen_w;
-uniform float frag_screen_h;
+uniform vec4 frag_screen;
 varying vec2 frag_tex_coord;
 uniform sampler2D frag_tex_sample;
 
@@ -17,13 +16,10 @@ void main()
 {
     const float GAMMA_OUT = (1.0 / RETRO_GAMMA_OUT);
 
-    float w = frag_screen_w;
-    float h = frag_screen_h;
+    vec3 E = pow(texture2D(frag_tex_sample, frag_tex_coord * 1.0001).zyx, vec3(RETRO_GAMMA_IN));
 
-    vec3 E = pow(texture2D(frag_tex_sample, frag_tex_coord).zyx, vec3(RETRO_GAMMA_IN));
-
-    vec2 fp = fract(frag_tex_coord * vec2(w, h));
-    vec2 ps = vec2(w, h) * vec2(1.0 / w, 1.0 / h);
+    vec2 fp = fract(frag_tex_coord * 1.0001 * frag_screen.xy);
+    vec2 ps = frag_screen.xy * frag_screen.zw;
 
     vec2 f = clamp(clamp(fp + 0.5 * ps, 0.0, 1.0) - RETRO_PIXEL_SIZE, vec2(0.0), ps) / ps;
 

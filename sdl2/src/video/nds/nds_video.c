@@ -179,9 +179,8 @@ const char *def_vert_src =
 const char *def_frag_src =
 "   precision highp float;                                                  \n"
 "   varying vec2 frag_tex_coord;                                            \n"
+"   uniform vec4 frag_screen;                                               \n"
 "   uniform float frag_alpha;                                               \n"
-"   uniform float frag_screen_w;                                            \n"
-"   uniform float frag_screen_h;                                            \n"
 "   uniform sampler2D frag_tex_sample;                                      \n"
 "   void main()                                                             \n"
 "   {                                                                       \n"
@@ -2455,8 +2454,7 @@ static void* video_handler(void *param)
 
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
     glUniform1i(myvideo.egl.frag.tex_sample, 0);
-    glUniform1f(myvideo.egl.frag.screen.w, LAYOUT_BG_W);
-    glUniform1f(myvideo.egl.frag.screen.h, LAYOUT_BG_H);
+    glUniform4f(myvideo.egl.frag.screen, LAYOUT_BG_W, LAYOUT_BG_H, 1.0 / LAYOUT_BG_W, 1.0 / LAYOUT_BG_H);
 #endif
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2518,8 +2516,7 @@ static void* video_handler(void *param)
 
     glUniform1i(myvideo.egl.frag.tex_sample, 0);
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
-    glUniform1f(myvideo.egl.frag.screen.w, LAYOUT_BG_W);
-    glUniform1f(myvideo.egl.frag.screen.h, LAYOUT_BG_H);
+    glUniform4f(myvideo.egl.frag.screen, LAYOUT_BG_W, LAYOUT_BG_H, 1.0 / LAYOUT_BG_W, 1.0 / LAYOUT_BG_H);
 #endif
 
 #if defined(FLIP) || defined(A30) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2784,8 +2781,7 @@ static int load_shader_file(const char *name)
         myvideo.egl.vert.tex_pos = glGetAttribLocation(myvideo.egl.program, "vert_tex_pos");
         myvideo.egl.vert.tex_coord = glGetAttribLocation(myvideo.egl.program, "vert_tex_coord");
         myvideo.egl.frag.alpha = glGetUniformLocation(myvideo.egl.program, "frag_alpha");
-        myvideo.egl.frag.screen.w = glGetUniformLocation(myvideo.egl.program, "frag_screen_w");
-        myvideo.egl.frag.screen.h = glGetUniformLocation(myvideo.egl.program, "frag_screen_h");
+        myvideo.egl.frag.screen = glGetUniformLocation(myvideo.egl.program, "frag_screen");
         myvideo.egl.frag.tex_sample = glGetUniformLocation(myvideo.egl.program, "frag_tex_sample");
     } while(0);
 
@@ -4245,9 +4241,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         }
     }
 
-    glUniform1f(myvideo.egl.frag.screen.w, drt.h);
-    glUniform1f(myvideo.egl.frag.screen.h, drt.w);
-
     if (is_pixel_filter) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -4259,6 +4252,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glUniform4f(myvideo.egl.frag.screen, drt.h, drt.w, 1.0 / drt.h, 1.0 / drt.w);
 
     if ((myconfig.layout.mode.sel <= LAYOUT_MODE_T1) &&
         (id == TEXTURE_LCD1))

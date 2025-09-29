@@ -1,8 +1,7 @@
 precision highp float;
 
 uniform float frag_alpha;
-uniform float frag_screen_w;
-uniform float frag_screen_h;
+uniform vec4 frag_screen;
 varying vec2 frag_tex_coord;
 uniform sampler2D frag_tex_sample;
 
@@ -13,10 +12,7 @@ uniform sampler2D frag_tex_sample;
 
 void main()
 {
-    float w = frag_screen_w;
-    float h = frag_screen_h;
-
-    vec2 omega = vec2(3.14159) * vec2(2.0) * vec2(w, h);
+    vec2 omega = vec2(3.14159) * vec2(2.0) * frag_screen.xy;
     vec3 offsets = vec3(3.14159) * vec3(1.0/2.0, 1.0/2.0 - 2.0/3.0, 1.0/2.0 - 4.0/3.0);
 
     vec3 res = texture2D(frag_tex_sample, frag_tex_coord).zyx;

@@ -1,8 +1,7 @@
 precision highp float;
 
 uniform float frag_alpha;
-uniform float frag_screen_w;
-uniform float frag_screen_h;
+uniform vec4 frag_screen;
 varying vec2 frag_tex_coord;
 uniform sampler2D frag_tex_sample;
 
@@ -15,24 +14,21 @@ uniform sampler2D frag_tex_sample;
 
 void main()
 {
-    float w = frag_screen_w;
-    float h = frag_screen_h;
-
 	vec2 p = (frag_tex_coord * 1.0001).xy;
 
-	p = p * vec2(w, h) + vec2(0.5, 0.5);
+	p = p * frag_screen.xy + vec2(0.5, 0.5);
 
 	vec2 i = floor(p);
 	vec2 f = p - i;
 	f = f * f * f * (f * (f * 6.0 - vec2(15.0, 15.0)) + vec2(10.0, 10.0));
 	p = i + f;
 
-	p = (p - vec2(0.5, 0.5)) * vec2(1.0 / w, 1.0 / h);
+	p = (p - vec2(0.5, 0.5)) * frag_screen.zw;
 
     vec3 E = pow(texture2D(frag_tex_sample, p).xyz, vec3(RETRO_GAMMA_IN));
 
-    vec2 fp = fract(p * vec2(w, h));
-    vec2 ps = vec2(w, h) * vec2(1.0 / w, 1.0 / h);
+    vec2 fp = fract(p * frag_screen.xy);
+    vec2 ps = frag_screen.xy * frag_screen.zw;
 
     vec2 fr = clamp(clamp(fp + 0.5 * ps, 0.0, 1.0) - RETRO_PIXEL_SIZE, vec2(0.0), ps) / ps;
 

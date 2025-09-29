@@ -2,8 +2,7 @@ precision highp float;
 
 varying vec2 frag_tex_coord;
 uniform float frag_alpha;
-uniform float frag_screen_w;
-uniform float frag_screen_h;
+uniform vec4 frag_screen;
 uniform sampler2D frag_tex_sample;
 
 void main()

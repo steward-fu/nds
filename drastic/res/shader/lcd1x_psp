@@ -1,8 +1,7 @@
 precision highp float;
 
 uniform float frag_alpha;
-uniform float frag_screen_w;
-uniform float frag_screen_h;
+uniform vec4 frag_screen;
 varying vec2 frag_tex_coord;
 uniform sampler2D frag_tex_sample;
 
@@ -26,12 +25,10 @@ uniform sampler2D frag_tex_sample;
 
 void main()
 {
-    float w = frag_screen_w;
-    float h = frag_screen_h;
     const float INV_DISPLAY_GAMMA = 1.0 / 2.2;
 
-    vec2 pixelCoord = frag_tex_coord * vec2(w, h);
-    vec2 angle = 2.0 * PI * ((pixelCoord * PSP_SCREEN_HEIGHT * (1.0 / h)) - 0.25);
+    vec2 pixelCoord = frag_tex_coord * frag_screen.xy;
+    vec2 angle = 2.0 * PI * ((pixelCoord * PSP_SCREEN_HEIGHT * frag_screen.w) - 0.25);
 
     float yfactor = (BRIGHTEN_SCANLINES + sin(angle.y)) / (BRIGHTEN_SCANLINES + 1.0);
     float xfactor = (BRIGHTEN_LCD + sin(angle.x)) / (BRIGHTEN_LCD + 1.0);
