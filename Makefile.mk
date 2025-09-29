@@ -71,6 +71,7 @@ clean:
 	rm -rf sdl2/Makefile
 	rm -rf sdl2/configure
 	rm -rf drastic/lib
+	rm -rf drastic/vol
 	rm -rf drastic/14nds
 	rm -rf drastic/run.sh
 	rm -rf drastic/runner

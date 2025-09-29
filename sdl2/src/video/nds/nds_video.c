@@ -2893,7 +2893,7 @@ static int get_file_name_by_index(const char *folder, int idx, char *buf, int fu
     int r = -1;
     int cnt = 0;
     DIR *d = NULL;
-    char tmp[MAX_PATH] = { 0 };
+    char tmp[MAX_PATH + 32] = { 0 };
     struct dirent *dir = NULL;
 
     debug("call %s()\n", __func__);
@@ -5863,8 +5863,13 @@ static int load_layout_bg(void)
         w = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].w;
         h = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].h;
         if ((w == 0) || (h == 0)) {
+#if defined(XT894) || defined(XT897)
+            w = WL_WIN_H;
+            h = WL_WIN_W;
+#else
             w = LAYOUT_BG_W;
             h = LAYOUT_BG_H;
+#endif
         }
         debug("bg image size=%dx%d\n", w, h);
 
@@ -5916,7 +5921,7 @@ static int load_layout_bg(void)
     }
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(PANDORA)
+#if defined(QX1050) || defined(QX1000) || defined(PANDORA)
     return 0;
 #endif
 
@@ -6078,145 +6083,146 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
 
 #if defined(QX1050) || defined(QX1000)
-        m = 5;
-        mode = 0;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_Wx2;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = NDS_Wx2;
-        myvideo.layout.mode[mode].screen[1].h = NDS_Hx2;
+    m = 5;
+    mode = 0;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_Wx2;
+    myvideo.layout.mode[mode].screen[1].y = 0;
+    myvideo.layout.mode[mode].screen[1].w = NDS_Wx2;
+    myvideo.layout.mode[mode].screen[1].h = NDS_Hx2;
 
-        m = 5.625;
-        mode = 1;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_Wx2;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = NDS_Wx2;
-        myvideo.layout.mode[mode].screen[1].h = NDS_Hx2;
+    m = 5.625;
+    mode = 1;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_Wx2;
+    myvideo.layout.mode[mode].screen[1].y = 0;
+    myvideo.layout.mode[mode].screen[1].w = NDS_Wx2;
+    myvideo.layout.mode[mode].screen[1].h = NDS_Hx2;
 
-        m = 4.21875;
-        mode = 2;
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+    m = 4.21875;
+    mode = 2;
+    myvideo.layout.mode[mode].screen[0].x = 0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
 
-        m = 4.0;
-        mode = 3;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_Wx2 * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = myvideo.layout.mode[mode].screen[0].x + myvideo.layout.mode[mode].screen[0].w;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+    m = 4.0;
+    mode = 3;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_Wx2 * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = myvideo.layout.mode[mode].screen[0].x + myvideo.layout.mode[mode].screen[0].w;
+    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
 
-        myvideo.layout.max_mode = mode;
+    myvideo.layout.max_mode = mode;
 #elif defined(XT894) || defined(XT897)
-        m = 2.0;
-        mode = 0;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 256;
-        myvideo.layout.mode[mode].screen[1].h = 192;
+    m = 2.0;
+    mode = 0;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
+    myvideo.layout.mode[mode].screen[1].y = 0;
+    myvideo.layout.mode[mode].screen[1].w = 256;
+    myvideo.layout.mode[mode].screen[1].h = 192;
 
-        m = 2.8125;
-        mode = 1;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 256;
-        myvideo.layout.mode[mode].screen[1].h = 192;
+    m = 2.8125;
+    mode = 1;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = 0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
+    myvideo.layout.mode[mode].screen[1].y = 0;
+    myvideo.layout.mode[mode].screen[1].w = 256;
+    myvideo.layout.mode[mode].screen[1].h = 192;
 
-        m = 2.8125;
-        mode = 2;
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 192) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = 256;
-        myvideo.layout.mode[mode].screen[1].h = 192;
+    m = 2.8125;
+    mode = 2;
+    myvideo.layout.mode[mode].screen[0].x = 0;
+    myvideo.layout.mode[mode].screen[0].y = 0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 192) / 2.0;
+    myvideo.layout.mode[mode].screen[1].w = 256;
+    myvideo.layout.mode[mode].screen[1].h = 192;
 
-        m = 1.8725;
-        mode = 3;
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+    m = 1.8725;
+    mode = 3;
+    myvideo.layout.mode[mode].screen[0].x = 27;
+    myvideo.layout.mode[mode].screen[0].y = 77;
+    myvideo.layout.mode[mode].screen[0].w = 469 - 27;
+    myvideo.layout.mode[mode].screen[0].h = 415 - 77;
+    myvideo.layout.mode[mode].screen[1].x = 493;
+    myvideo.layout.mode[mode].screen[1].y = 77;
+    myvideo.layout.mode[mode].screen[1].w = 935 - 493;
+    myvideo.layout.mode[mode].screen[1].h = 415 - 77;
+    strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
 
-        m = 2.0;
-        mode = 4;
+    m = 2.0;
+    mode = 4;
 #if defined(XT897)
-        myvideo.layout.mode[mode].screen[0].x = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 336) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = 448;
-        myvideo.layout.mode[mode].screen[0].h = 336;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[0].x = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 336) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = 448;
+    myvideo.layout.mode[mode].screen[0].h = 336;
+    myvideo.layout.mode[mode].screen[1].x = 0;
+    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
 #else
-        myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
-        myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 336) / 2.0;
-        myvideo.layout.mode[mode].screen[1].w = 448;
-        myvideo.layout.mode[mode].screen[1].h = 336;
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
+    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 336) / 2.0;
+    myvideo.layout.mode[mode].screen[1].w = 448;
+    myvideo.layout.mode[mode].screen[1].h = 336;
+    myvideo.layout.mode[mode].screen[0].x = 0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
 #endif
 
-        m = 2.0;
-        mode = 5;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].w = 0;
-        myvideo.layout.mode[mode].screen[1].h = 0;
+    m = 2.0;
+    mode = 5;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].w = 0;
+    myvideo.layout.mode[mode].screen[1].h = 0;
 
-        mode = 6;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - 640) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 480) / 2.0;
-        myvideo.layout.mode[mode].screen[0].w = 640;
-        myvideo.layout.mode[mode].screen[0].h = 480;
-        myvideo.layout.mode[mode].screen[1].w = 0;
-        myvideo.layout.mode[mode].screen[1].h = 0;
+    mode = 6;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - 640) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 480) / 2.0;
+    myvideo.layout.mode[mode].screen[0].w = 640;
+    myvideo.layout.mode[mode].screen[0].h = 480;
+    myvideo.layout.mode[mode].screen[1].w = 0;
+    myvideo.layout.mode[mode].screen[1].h = 0;
 
-        m = 2.8125;
-        mode = 7;
-        myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-        myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-        myvideo.layout.mode[mode].screen[1].w = 0;
-        myvideo.layout.mode[mode].screen[1].h = 0;
+    m = 2.8125;
+    mode = 7;
+    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
+    myvideo.layout.mode[mode].screen[0].y = 0;
+    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
+    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
+    myvideo.layout.mode[mode].screen[1].w = 0;
+    myvideo.layout.mode[mode].screen[1].h = 0;
 
-        myvideo.layout.max_mode = mode;
+    myvideo.layout.max_mode = mode;
 #else
     switch (mode) {
     case LAYOUT_MODE_T0:
@@ -6448,10 +6454,20 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     myvideo.layout.mode[mode].bg[cur_bg].path[0] = 0;
 
     if (fname && fname[0]) {
+#if defined(XT894) || defined(XT897)
+        myvideo.layout.mode[mode].bg[cur_bg].w = WL_WIN_H;
+        myvideo.layout.mode[mode].bg[cur_bg].h = WL_WIN_W;
+#else
+        strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
         myvideo.layout.mode[mode].bg[cur_bg].w = LAYOUT_BG_W;
         myvideo.layout.mode[mode].bg[cur_bg].h = LAYOUT_BG_H;
-        strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
-        debug("added bg img=\"%s\"(%dx%d)\n", fname, LAYOUT_BG_W, LAYOUT_BG_H);
+#endif
+        debug(
+            "added bg img=\"%s\"(%dx%d)\n",
+            fname,
+            myvideo.layout.mode[mode].bg[cur_bg].w,
+            myvideo.layout.mode[mode].bg[cur_bg].h
+        );
     }
 
     debug(
@@ -6546,6 +6562,7 @@ static int enum_bg_file(void)
             }
 
             mode = atoi(&dir->d_name[1]);
+            debug("mode=%d (\"%s\")\n", mode, dir->d_name);
             add_layout_mode(mode, cc, dir->d_name);
         }
         closedir(d);
