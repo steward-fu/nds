@@ -120,6 +120,58 @@ static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 static int load_shader_file(const char *);
 static int get_file_name_by_index(const char *, int, char *, int);
 
+static SDL_Rect def_layout_pos[LAYOUT_MODE_MAX][2] = {
+    // LAYOUT_MODE_T0
+    {{ 0, 0, 160, 120 }, { 0, 0, 640, 480 }},
+    // LAYOUT_MODE_T1
+    {{ 0, 0, 256, 192 }, { 0, 0, 640, 480 }},
+#if defined(TRIMUI)
+    // LAYOUT_MODE_T2
+    {{ 0, 0, 0, 0 }, { 32, 24, NDS_W, NDS_H }},
+    // LAYOUT_MODE_T3
+    {{ 0, 0, 0, 0 }, { 0, 0, SREEN_W, SCREEN_H }},
+#else
+    // LAYOUT_MODE_T2
+    {{ 0, 0, 0, 0 }, { 64, 48, 512, 384 }},
+    // LAYOUT_MODE_T3
+    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+#endif
+    // LAYOUT_MODE_T4
+    {{ 192, 48, 256, 192 }, { 192, 240, 256, 192 }},
+    // LAYOUT_MODE_T5
+    {{ 160, 0, 320, 240 }, { 160, 240, 320, 240 }},
+    // LAYOUT_MODE_T6
+    {{ 64, 144, 256, 192 }, { 320, 144, 256, 192 }},
+    //LAYOUT_MODE_T7
+    {{ 0, 120, 320, 240 }, { 320, 120, 320, 240 }},
+    // LAYOUT_MODE_T8
+    {{ 0, 0, 160, 120 }, { 160, 120, 480, 360 }},
+    // LAYOUT_MODE_T9
+    {{ 0, 0, 256, 192 }, { 256, 192, 384, 288 }},
+    // LAYOUT_MODE_T10
+    {{ 240, 0, 160, 120 }, { 80, 120, 480, 360 }},
+    // LAYOUT_MODE_T11
+    {{ 256, 0, 128, 96 }, { 64, 96, 512, 384 }},
+    // LAYOUT_MODE_T12
+    {{ 512, 0, 128, 96 }, { 0, 96, 512, 384 }},
+    // LAYOUT_MODE_T13
+    {{ 0, 0, 128, 96 }, { 128, 96, 512, 384 }},
+    // LAYOUT_MODE_T14
+    {{ 192, 0, 256, 192 }, { 128, 192, 384, 288 }},
+    // LAYOUT_MODE_T15
+    {{ 0, 144, 256, 192 }, { 256, 96, 384, 288 }},
+    // LAYOUT_MODE_B0
+    {{ 0, 26, 427, 320 }, { 320, 26, 427, 320 }},
+    // LAYOUT_MODE_B1
+    {{ 320, 26, 427, 320 }, { 0, 26, 427, 320 }},
+    // LAYOUT_MODE_B2
+    {{ 0, 0, 480, 320 }, { 320, 0, 480, 320 }},
+    // LAYOUT_MODE_B3
+    {{ 320, 0, 480, 320 }, { 0, 0, 480, 320 }},
+    // LAYOUT_MODE_CUST
+    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }}
+};
+
 #if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
 GLfloat bg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
@@ -1740,11 +1792,21 @@ static int process_screen(void)
             show_info = 50;
             load_overlay_file();
 
-            if (myconfig.layout.mode.sel == LAYOUT_MODE_CUST) {
-                sprintf(buf, " %s: %s ", l10n("LAYOUT MODE"), l10n("CUST"));
-            }
-            else {
+            if (myconfig.layout.mode.sel <= LAYOUT_MODE_T15) {
                 sprintf(buf, " %s: T%d ", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
+            }
+            else if ((myconfig.layout.mode.sel >= LAYOUT_MODE_B0) &&
+                (myconfig.layout.mode.sel <= LAYOUT_MODE_B3))
+            {
+                sprintf(
+                    buf,
+                    " %s: B%d ",
+                    l10n("LAYOUT MODE"),
+                    myconfig.layout.mode.sel - LAYOUT_MODE_B0
+                );
+            }
+            else if (myconfig.layout.mode.sel == LAYOUT_MODE_CUST) {
+                sprintf(buf, " %s: %s ", l10n("LAYOUT MODE"), l10n("CUST"));
             }
         }
         else if (cur_layout_bg != myconfig.layout.bg.sel) {
@@ -1832,7 +1894,7 @@ static int process_screen(void)
         drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].h;
         debug("mode=%d, drt=%d,%d,%d,%d\n", myconfig.layout.mode.sel, drt.x, drt.y, drt.w, drt.h);
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897)
         switch (myconfig.layout.mode.sel) {
         case LAYOUT_MODE_T0:
         case LAYOUT_MODE_T1:
@@ -1926,7 +1988,7 @@ static int process_screen(void)
 #endif
             flush_lcd(idx, pixels, srt, drt, pitch);
 
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897)
             switch (myconfig.layout.mode.sel) {
             case LAYOUT_MODE_T0:
             case LAYOUT_MODE_T1:
@@ -1954,7 +2016,13 @@ static int process_screen(void)
                     break;
                 }
 #endif
-                flush_lcd(TEXTURE_LCD0, (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)), srt, drt, pitch);
+                flush_lcd(
+                    TEXTURE_LCD0,
+                    (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)),
+                    srt,
+                    drt,
+                    pitch
+                );
                 break;
             }
 #endif
@@ -4003,7 +4071,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     float w = WL_WIN_H;
     float h = WL_WIN_W;
-    int is_pixel_filter = 1;
 #endif
 
     debug("call %s(tex=%d, pixels=%p, pitch=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d))\n",
@@ -4201,47 +4268,56 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         }
     }
 
-    fg_vertices[0] = (((float)drt.x / w) - 0.5) * 2.0;
-    fg_vertices[1] = (((float)drt.y / h) - 0.5) * -2.0;
+    if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
+        drt.x = 120;
+        drt.y = 0;
+        drt.w = 720;
+        drt.h = 540;
+    }
 
-    fg_vertices[5] = fg_vertices[0];
-    fg_vertices[6] = (((float)(drt.y + drt.h) / h) - 0.5) * -2.0;
+    glUniform4f(myvideo.egl.frag.screen, drt.h, drt.w, 1.0 / drt.h, 1.0 / drt.w);
 
-    fg_vertices[10] = (((float)(drt.x + drt.w) / w) - 0.5) * 2.0;
-    fg_vertices[11] = fg_vertices[6];
+    if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_B1) || (myconfig.layout.mode.sel == LAYOUT_MODE_B3))) {
+        fg_vertices[5] = (((float)drt.x / w) - 0.5) * 2.0;
+        fg_vertices[6] = (((float)drt.y / h) - 0.5) * -2.0;
 
-    fg_vertices[15] = fg_vertices[10];
-    fg_vertices[16] = fg_vertices[1];
+        fg_vertices[10] = fg_vertices[5];
+        fg_vertices[11] = (((float)(drt.y + drt.w) / h) - 0.5) * -2.0;
 
-    if (myconfig.filter == FILTER_PIXEL) {
-        is_pixel_filter = 1;
+        fg_vertices[15] = (((float)(drt.x + drt.h) / w) - 0.5) * 2.0;
+        fg_vertices[16] = fg_vertices[11];
+
+        fg_vertices[0] = fg_vertices[15];
+        fg_vertices[1] = fg_vertices[6];
+    }
+    else if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_B0) || (myconfig.layout.mode.sel == LAYOUT_MODE_B2))) {
+        fg_vertices[15] = (((float)drt.x / w) - 0.5) * 2.0;
+        fg_vertices[16] = (((float)drt.y / h) - 0.5) * -2.0;
+
+        fg_vertices[0] = fg_vertices[15];
+        fg_vertices[1] = (((float)(drt.y + drt.w) / h) - 0.5) * -2.0;
+
+        fg_vertices[5] = (((float)(drt.x + drt.h) / w) - 0.5) * 2.0;
+        fg_vertices[6] = fg_vertices[1];
+
+        fg_vertices[10] = fg_vertices[5];
+        fg_vertices[11] = fg_vertices[16];
     }
     else {
-        is_pixel_filter = 0;
+        fg_vertices[0] = (((float)drt.x / w) - 0.5) * 2.0;
+        fg_vertices[1] = (((float)drt.y / h) - 0.5) * -2.0;
+
+        fg_vertices[5] = fg_vertices[0];
+        fg_vertices[6] = (((float)(drt.y + drt.h) / h) - 0.5) * -2.0;
+
+        fg_vertices[10] = (((float)(drt.x + drt.w) / w) - 0.5) * 2.0;
+        fg_vertices[11] = fg_vertices[6];
+
+        fg_vertices[15] = fg_vertices[10];
+        fg_vertices[16] = fg_vertices[1];
     }
 
-    if (id == TEXTURE_TMP) {
-        id = TEXTURE_LCD0;
-    }
-
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T4) {
-        switch (id) {
-        case TEXTURE_LCD0:
-            is_pixel_filter = 1;
-#if defined(XT894)
-            is_pixel_filter = 0;
-#endif
-            break;
-        case TEXTURE_LCD1:
-            is_pixel_filter = 0;
-#if defined(XT894)
-            is_pixel_filter = 1;
-#endif
-            break;
-        }
-    }
-
-    if (is_pixel_filter) {
+    if (myconfig.filter == FILTER_PIXEL) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
@@ -4252,10 +4328,13 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glUniform4f(myvideo.egl.frag.screen, drt.h, drt.w, 1.0 / drt.h, 1.0 / drt.w);
 
-    if ((myconfig.layout.mode.sel <= LAYOUT_MODE_T1) &&
-        (id == TEXTURE_LCD1))
+    if (id == TEXTURE_TMP) {
+        id = TEXTURE_LCD0;
+    }
+
+    if ((!myvideo.menu.sdl2.enable && !myvideo.menu.drastic.enable) &&
+        (myconfig.layout.mode.sel <= LAYOUT_MODE_T1) && (id == TEXTURE_LCD0))
     {
         glUniform1f(myvideo.egl.frag.alpha, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -4299,9 +4378,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T3) &&
-        (id == TEXTURE_LCD1))
-    {
+    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T3) && (id == TEXTURE_LCD1)) {
         glUniform1f(myvideo.egl.frag.alpha, 0.0);
         glDisable(GL_BLEND);
     }
@@ -5392,7 +5469,15 @@ static int flip_lcd(void)
     myvideo.drm.pre_fb = myvideo.drm.fb;
 #endif
 
-    if (myvideo.layout.bg) {
+#if defined(XT894) || defined(XT897)
+    if ((myvideo.layout.bg) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_B2) &&
+        (myconfig.layout.mode.sel != LAYOUT_MODE_B3))
+    {
+#else
+    if (myvideo.layout.bg)
+    {
+#endif
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glVertexAttribPointer(
@@ -5862,14 +5947,15 @@ static int load_layout_bg(void)
         free_layout_bg();
         w = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].w;
         h = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].h;
-        if ((w == 0) || (h == 0)) {
+
 #if defined(XT894) || defined(XT897)
-            w = WL_WIN_H;
-            h = WL_WIN_W;
-#else
+        w = WL_WIN_H;
+        h = WL_WIN_W;
+#endif
+
+        if ((w == 0) || (h == 0)) {
             w = LAYOUT_BG_W;
             h = LAYOUT_BG_H;
-#endif
         }
         debug("bg image size=%dx%d\n", w, h);
 
@@ -5893,6 +5979,12 @@ static int load_layout_bg(void)
         );
 
         if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path[0]) {
+#if defined(XT894) || defined(XT897)
+            SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
+            SDL_Rect drt = { 0 };
+            SDL_Surface *scale = NULL;
+#endif
+
             snprintf(
                 buf,
                 sizeof(buf),
@@ -5911,6 +6003,39 @@ static int load_layout_bg(void)
 
             debug("loaded bg image from \"%s\"\n", buf);
             SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
+
+#if defined(XT894) || defined(XT897)
+            scale = SDL_CreateRGBSurface(SDL_SWSURFACE, 720, 540, 32, 0, 0, 0, 0);
+            if (scale) {
+                drt.w = 720;
+                drt.h = 540;
+                SDL_SoftStretch(myvideo.layout.bg, &srt, scale, &drt);
+
+                SDL_FillRect(
+                    myvideo.layout.bg,
+                    &myvideo.layout.bg->clip_rect,
+                    SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
+                );
+
+                srt.w = 720;
+                srt.h = 540;
+
+                drt.x = 120;
+                drt.y = 0;
+                SDL_BlitSurface(scale, &srt, myvideo.layout.bg, &drt);
+                SDL_FreeSurface(scale);
+            }
+            else {
+                error("failed to create scale surface for background\n");
+
+                SDL_FillRect(
+                    myvideo.layout.bg,
+                    &myvideo.layout.bg->clip_rect,
+                    SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
+                );
+            }
+#endif
+
             SDL_FreeSurface(t);
         }
     }
@@ -6076,8 +6201,10 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, int cur_bg, const char *fname)
 {
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
-    float m = 0.0;
+    float scale = 1.0;
+
+#if defined(XT894) || defined(XT897)
+    scale = 1.125;
 #endif
 
     debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
@@ -6122,327 +6249,109 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
     myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
     myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-    myvideo.layout.mode[mode].screen[1].x = myvideo.layout.mode[mode].screen[0].x + myvideo.layout.mode[mode].screen[0].w;
+    myvideo.layout.mode[mode].screen[1].x = 
+        myvideo.layout.mode[mode].screen[0].x + myvideo.layout.mode[mode].screen[0].w;
     myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
     myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
     myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
 
     myvideo.layout.max_mode = mode;
-#elif defined(XT894) || defined(XT897)
-    m = 2.0;
-    mode = 0;
-    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-    myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
-    myvideo.layout.mode[mode].screen[1].y = 0;
-    myvideo.layout.mode[mode].screen[1].w = 256;
-    myvideo.layout.mode[mode].screen[1].h = 192;
-
-    m = 2.8125;
-    mode = 1;
-    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[0].y = 0;
-    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-    myvideo.layout.mode[mode].screen[1].x = WL_WIN_H - NDS_W;
-    myvideo.layout.mode[mode].screen[1].y = 0;
-    myvideo.layout.mode[mode].screen[1].w = 256;
-    myvideo.layout.mode[mode].screen[1].h = 192;
-
-    m = 2.8125;
-    mode = 2;
-    myvideo.layout.mode[mode].screen[0].x = 0;
-    myvideo.layout.mode[mode].screen[0].y = 0;
-    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-    myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
-    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 192) / 2.0;
-    myvideo.layout.mode[mode].screen[1].w = 256;
-    myvideo.layout.mode[mode].screen[1].h = 192;
-
-    m = 1.8725;
-    mode = 3;
-    myvideo.layout.mode[mode].screen[0].x = 27;
-    myvideo.layout.mode[mode].screen[0].y = 77;
-    myvideo.layout.mode[mode].screen[0].w = 469 - 27;
-    myvideo.layout.mode[mode].screen[0].h = 415 - 77;
-    myvideo.layout.mode[mode].screen[1].x = 493;
-    myvideo.layout.mode[mode].screen[1].y = 77;
-    myvideo.layout.mode[mode].screen[1].w = 935 - 493;
-    myvideo.layout.mode[mode].screen[1].h = 415 - 77;
-    strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
-
-    m = 2.0;
-    mode = 4;
-#if defined(XT897)
-    myvideo.layout.mode[mode].screen[0].x = NDS_W * m;
-    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 336) / 2.0;
-    myvideo.layout.mode[mode].screen[0].w = 448;
-    myvideo.layout.mode[mode].screen[0].h = 336;
-    myvideo.layout.mode[mode].screen[1].x = 0;
-    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[1].w = NDS_W * m;
-    myvideo.layout.mode[mode].screen[1].h = NDS_H * m;
 #else
-    myvideo.layout.mode[mode].screen[1].x = NDS_W * m;
-    myvideo.layout.mode[mode].screen[1].y = (WL_WIN_W - 336) / 2.0;
-    myvideo.layout.mode[mode].screen[1].w = 448;
-    myvideo.layout.mode[mode].screen[1].h = 336;
-    myvideo.layout.mode[mode].screen[0].x = 0;
-    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-#endif
 
-    m = 2.0;
-    mode = 5;
-    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - (NDS_H * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-    myvideo.layout.mode[mode].screen[1].w = 0;
-    myvideo.layout.mode[mode].screen[1].h = 0;
+    memcpy(
+        myvideo.layout.mode[mode].screen,
+        def_layout_pos[mode],
+        sizeof(SDL_Rect) * 2
+    );
 
-    mode = 6;
-    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - 640) / 2.0;
-    myvideo.layout.mode[mode].screen[0].y = (WL_WIN_W - 480) / 2.0;
-    myvideo.layout.mode[mode].screen[0].w = 640;
-    myvideo.layout.mode[mode].screen[0].h = 480;
-    myvideo.layout.mode[mode].screen[1].w = 0;
-    myvideo.layout.mode[mode].screen[1].h = 0;
+#if defined(XT894) || defined(XT897)
+    myvideo.layout.mode[mode].screen[0].x *= scale;
+    myvideo.layout.mode[mode].screen[0].y *= scale;
+    myvideo.layout.mode[mode].screen[0].w *= scale;
+    myvideo.layout.mode[mode].screen[0].h *= scale;
 
-    m = 2.8125;
-    mode = 7;
-    myvideo.layout.mode[mode].screen[0].x = (WL_WIN_H - (NDS_W * m)) / 2.0;
-    myvideo.layout.mode[mode].screen[0].y = 0;
-    myvideo.layout.mode[mode].screen[0].w = NDS_W * m;
-    myvideo.layout.mode[mode].screen[0].h = NDS_H * m;
-    myvideo.layout.mode[mode].screen[1].w = 0;
-    myvideo.layout.mode[mode].screen[1].h = 0;
+    myvideo.layout.mode[mode].screen[1].x *= scale;
+    myvideo.layout.mode[mode].screen[1].y *= scale;
+    myvideo.layout.mode[mode].screen[1].w *= scale;
+    myvideo.layout.mode[mode].screen[1].h *= scale;
 
-    myvideo.layout.max_mode = mode;
-#else
     switch (mode) {
     case LAYOUT_MODE_T0:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 160;
-        myvideo.layout.mode[mode].screen[0].h = 120;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 640;
-        myvideo.layout.mode[mode].screen[1].h = 480;
-        break;
     case LAYOUT_MODE_T1:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 256;
-        myvideo.layout.mode[mode].screen[0].h = 192;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 640;
-        myvideo.layout.mode[mode].screen[1].h = 480;
+        myvideo.layout.mode[mode].screen[0].x = 120;
+        myvideo.layout.mode[mode].screen[1].x = 120;
         break;
-#if defined(TRIMUI)
-    case LAYOUT_MODE_T2:
-        myvideo.layout.mode[mode].screen[1].x = 32;
-        myvideo.layout.mode[mode].screen[1].y = 24;
-        myvideo.layout.mode[mode].screen[1].w = NDS_W;
-        myvideo.layout.mode[mode].screen[1].h = NDS_H;
-        break;
-    case LAYOUT_MODE_T3:
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = SCREEN_W;
-        myvideo.layout.mode[mode].screen[1].h = SCREEN_H;
-        break;
-#else
-    case LAYOUT_MODE_T2:
-        myvideo.layout.mode[mode].screen[1].x = 64;
-        myvideo.layout.mode[mode].screen[1].y = 48;
-        myvideo.layout.mode[mode].screen[1].w = 512;
-        myvideo.layout.mode[mode].screen[1].h = 384;
-        break;
-    case LAYOUT_MODE_T3:
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 640;
-        myvideo.layout.mode[mode].screen[1].h = 480;
-        break;
-#endif
-    case LAYOUT_MODE_T4:
-        myvideo.layout.mode[mode].screen[0].x = 192;
-        myvideo.layout.mode[mode].screen[0].y = 48;
-        myvideo.layout.mode[mode].screen[0].w = 256;
-        myvideo.layout.mode[mode].screen[0].h = 192;
-        myvideo.layout.mode[mode].screen[1].x = 192;
-        myvideo.layout.mode[mode].screen[1].y = 240;
-        myvideo.layout.mode[mode].screen[1].w = 256;
-        myvideo.layout.mode[mode].screen[1].h = 192;
-        break;
-    case LAYOUT_MODE_T5:
-        myvideo.layout.mode[mode].screen[0].x = 160;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 320;
-        myvideo.layout.mode[mode].screen[0].h = 240;
-        myvideo.layout.mode[mode].screen[1].x = 160;
-        myvideo.layout.mode[mode].screen[1].y = 240;
-        myvideo.layout.mode[mode].screen[1].w = 320;
-        myvideo.layout.mode[mode].screen[1].h = 240;
-        break;
-    case LAYOUT_MODE_T6:
-        myvideo.layout.mode[mode].screen[0].x = 64;
-        myvideo.layout.mode[mode].screen[0].y = 144;
-        myvideo.layout.mode[mode].screen[0].w = 256;
-        myvideo.layout.mode[mode].screen[0].h = 192;
-        myvideo.layout.mode[mode].screen[1].x = 320;
-        myvideo.layout.mode[mode].screen[1].y = 144;
-        myvideo.layout.mode[mode].screen[1].w = 256;
-        myvideo.layout.mode[mode].screen[1].h = 192;
-        break;
-    case LAYOUT_MODE_T7:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 120;
-        myvideo.layout.mode[mode].screen[0].w = 320;
-        myvideo.layout.mode[mode].screen[0].h = 240;
-        myvideo.layout.mode[mode].screen[1].x = 320;
-        myvideo.layout.mode[mode].screen[1].y = 120;
-        myvideo.layout.mode[mode].screen[1].w = 320;
-        myvideo.layout.mode[mode].screen[1].h = 240;
-        break;
-    case LAYOUT_MODE_T8:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 160;
-        myvideo.layout.mode[mode].screen[0].h = 120;
-        myvideo.layout.mode[mode].screen[1].x = 160;
-        myvideo.layout.mode[mode].screen[1].y = 120;
-        myvideo.layout.mode[mode].screen[1].w = 480;
-        myvideo.layout.mode[mode].screen[1].h = 360;
-        break;
-    case LAYOUT_MODE_T9:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 256;
-        myvideo.layout.mode[mode].screen[0].h = 192;
-        myvideo.layout.mode[mode].screen[1].x = 256;
-        myvideo.layout.mode[mode].screen[1].y = 192;
-        myvideo.layout.mode[mode].screen[1].w = 384;
-        myvideo.layout.mode[mode].screen[1].h = 288;
-        break;
-    case LAYOUT_MODE_T10:
-        myvideo.layout.mode[mode].screen[0].x = 240;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 160;
-        myvideo.layout.mode[mode].screen[0].h = 120;
-        myvideo.layout.mode[mode].screen[1].x = 80;
-        myvideo.layout.mode[mode].screen[1].y = 120;
-        myvideo.layout.mode[mode].screen[1].w = 480;
-        myvideo.layout.mode[mode].screen[1].h = 360;
-        break;
-    case LAYOUT_MODE_T11:
-        myvideo.layout.mode[mode].screen[0].x = 256;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 128;
-        myvideo.layout.mode[mode].screen[0].h = 96;
-        myvideo.layout.mode[mode].screen[1].x = 64;
-        myvideo.layout.mode[mode].screen[1].y = 96;
-        myvideo.layout.mode[mode].screen[1].w = 512;
-        myvideo.layout.mode[mode].screen[1].h = 384;
-        break;
-    case LAYOUT_MODE_T12:
-        myvideo.layout.mode[mode].screen[0].x = 512;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 128;
-        myvideo.layout.mode[mode].screen[0].h = 96;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = 96;
-        myvideo.layout.mode[mode].screen[1].w = 512;
-        myvideo.layout.mode[mode].screen[1].h = 384;
-        break;
-    case LAYOUT_MODE_T13:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 128;
-        myvideo.layout.mode[mode].screen[0].h = 96;
-        myvideo.layout.mode[mode].screen[1].x = 128;
-        myvideo.layout.mode[mode].screen[1].y = 96;
-        myvideo.layout.mode[mode].screen[1].w = 512;
-        myvideo.layout.mode[mode].screen[1].h = 384;
-        break;
-    case LAYOUT_MODE_T14:
-        myvideo.layout.mode[mode].screen[0].x = 192;
-        myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 256;
-        myvideo.layout.mode[mode].screen[0].h = 192;
-        myvideo.layout.mode[mode].screen[1].x = 128;
-        myvideo.layout.mode[mode].screen[1].y = 192;
-        myvideo.layout.mode[mode].screen[1].w = 384;
-        myvideo.layout.mode[mode].screen[1].h = 288;
-        break;
-    case LAYOUT_MODE_T15:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 144;
-        myvideo.layout.mode[mode].screen[0].w = 256;
-        myvideo.layout.mode[mode].screen[0].h = 192;
-        myvideo.layout.mode[mode].screen[1].x = 256;
-        myvideo.layout.mode[mode].screen[1].y = 96;
-        myvideo.layout.mode[mode].screen[1].w = 384;
-        myvideo.layout.mode[mode].screen[1].h = 288;
-        break;
+    // LAYOUT_MODE_B0
+    //{{ 0, 26, 427, 320 }, { 320, 26, 427, 320 }},
+    // LAYOUT_MODE_B1
+    //{{ 320, 26, 427, 320 }, { 0, 26, 427, 320 }},
+    // LAYOUT_MODE_B2
+    //{{ 0, 0, 480, 320 }, { 320, 0, 480, 320 }},
+    // LAYOUT_MODE_B3
+    //{{ 320, 0, 480, 320 }, { 0, 0, 480, 320 }},
     case LAYOUT_MODE_B0:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 26;
-        myvideo.layout.mode[mode].screen[0].w = 427;
-        myvideo.layout.mode[mode].screen[0].h = 320;
-        myvideo.layout.mode[mode].screen[1].x = 320;
-        myvideo.layout.mode[mode].screen[1].y = 26;
-        myvideo.layout.mode[mode].screen[1].w = 427;
-        myvideo.layout.mode[mode].screen[1].h = 320;
-        break;
-    case LAYOUT_MODE_B1:
-        myvideo.layout.mode[mode].screen[0].x = 320;
-        myvideo.layout.mode[mode].screen[0].y = 26;
-        myvideo.layout.mode[mode].screen[0].w = 427;
-        myvideo.layout.mode[mode].screen[0].h = 320;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[1].y = 26;
-        myvideo.layout.mode[mode].screen[1].w = 427;
-        myvideo.layout.mode[mode].screen[1].h = 320;
+        myvideo.layout.mode[mode].screen[0].x = 120;
+        myvideo.layout.mode[mode].screen[0].y = 30;
+        myvideo.layout.mode[mode].screen[0].w = 480;
+        myvideo.layout.mode[mode].screen[0].h = 360;
+
+        myvideo.layout.mode[mode].screen[1].x = 120 + 360;
+        myvideo.layout.mode[mode].screen[1].y = 30;
+        myvideo.layout.mode[mode].screen[1].w = 480;
+        myvideo.layout.mode[mode].screen[1].h = 360;
         break;
     case LAYOUT_MODE_B2:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 480;
-        myvideo.layout.mode[mode].screen[0].h = 320;
-        myvideo.layout.mode[mode].screen[1].x = 320;
+        myvideo.layout.mode[mode].screen[0].w = 540;
+        myvideo.layout.mode[mode].screen[0].h = 480;
+
+        myvideo.layout.mode[mode].screen[1].x = 480;
         myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = 540;
+        myvideo.layout.mode[mode].screen[1].h = 480;
+        break;
+    case LAYOUT_MODE_B1:
+        myvideo.layout.mode[mode].screen[0].x = 120 + 360;
+        myvideo.layout.mode[mode].screen[0].y = 30;
+        myvideo.layout.mode[mode].screen[0].w = 480;
+        myvideo.layout.mode[mode].screen[0].h = 360;
+
+        myvideo.layout.mode[mode].screen[1].x = 120;
+        myvideo.layout.mode[mode].screen[1].y = 30;
         myvideo.layout.mode[mode].screen[1].w = 480;
-        myvideo.layout.mode[mode].screen[1].h = 320;
+        myvideo.layout.mode[mode].screen[1].h = 360;
         break;
     case LAYOUT_MODE_B3:
-        myvideo.layout.mode[mode].screen[0].x = 320;
+        myvideo.layout.mode[mode].screen[0].x = 480;
         myvideo.layout.mode[mode].screen[0].y = 0;
-        myvideo.layout.mode[mode].screen[0].w = 480;
-        myvideo.layout.mode[mode].screen[0].h = 320;
+        myvideo.layout.mode[mode].screen[0].w = 540;
+        myvideo.layout.mode[mode].screen[0].h = 480;
+
         myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 0;
-        myvideo.layout.mode[mode].screen[1].w = 480;
-        myvideo.layout.mode[mode].screen[1].h = 320;
+        myvideo.layout.mode[mode].screen[1].w = 540;
+        myvideo.layout.mode[mode].screen[1].h = 480;
         break;
-    case LAYOUT_MODE_CUST:
-        myvideo.layout.mode[mode].screen[0].x = myconfig.layout.cust.lcd[0].x;
-        myvideo.layout.mode[mode].screen[0].y = myconfig.layout.cust.lcd[0].y;
-        myvideo.layout.mode[mode].screen[0].w = myconfig.layout.cust.lcd[0].w;
-        myvideo.layout.mode[mode].screen[0].h = myconfig.layout.cust.lcd[0].h;
-        myvideo.layout.mode[mode].screen[1].x = myconfig.layout.cust.lcd[1].x;
-        myvideo.layout.mode[mode].screen[1].y = myconfig.layout.cust.lcd[1].y;
-        myvideo.layout.mode[mode].screen[1].w = myconfig.layout.cust.lcd[1].w;
-        myvideo.layout.mode[mode].screen[1].h = myconfig.layout.cust.lcd[1].h;
+    default:
+        myvideo.layout.mode[mode].screen[0].x = 120 + (720 -
+            myvideo.layout.mode[mode].screen[0].x -
+            myvideo.layout.mode[mode].screen[0].w);
+
+        myvideo.layout.mode[mode].screen[0].y = 540 -
+            myvideo.layout.mode[mode].screen[0].y -
+            myvideo.layout.mode[mode].screen[0].h;
+
+        myvideo.layout.mode[mode].screen[1].x = 120 + (720 -
+            myvideo.layout.mode[mode].screen[1].x -
+            myvideo.layout.mode[mode].screen[1].w);
+
+        myvideo.layout.mode[mode].screen[1].y = 540 -
+            myvideo.layout.mode[mode].screen[1].y -
+            myvideo.layout.mode[mode].screen[1].h;
         break;
     }
+#endif
 
     if (mode > myvideo.layout.max_mode) {
         myvideo.layout.max_mode = mode;
@@ -6454,14 +6363,9 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     myvideo.layout.mode[mode].bg[cur_bg].path[0] = 0;
 
     if (fname && fname[0]) {
-#if defined(XT894) || defined(XT897)
-        myvideo.layout.mode[mode].bg[cur_bg].w = WL_WIN_H;
-        myvideo.layout.mode[mode].bg[cur_bg].h = WL_WIN_W;
-#else
         strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
         myvideo.layout.mode[mode].bg[cur_bg].w = LAYOUT_BG_W;
         myvideo.layout.mode[mode].bg[cur_bg].h = LAYOUT_BG_H;
-#endif
         debug(
             "added bg img=\"%s\"(%dx%d)\n",
             fname,
@@ -6504,7 +6408,7 @@ static int free_layout_mode(void)
     myvideo.layout.max_mode = 0;
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
 
-#if !defined(TRIMUI) && !defined(PANDORA) && !defined(QX1050) && !defined(QX1000) && !defined(XT894) && !defined(XT897)
+#if !defined(TRIMUI) && !defined(PANDORA) && !defined(QX1050) && !defined(QX1000)
     add_layout_mode(LAYOUT_MODE_T0, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T1, 0, NULL);
     add_layout_mode(LAYOUT_MODE_T3, 0, NULL);

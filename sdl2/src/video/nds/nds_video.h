@@ -243,12 +243,7 @@ typedef enum {
 } sdl2_menu_type_t;
 
 typedef struct {
-    struct {
-        int x;
-        int y;
-        int w;
-        int h;
-    } screen[2];
+    SDL_Rect screen[2];
 
     struct {
         int w;
