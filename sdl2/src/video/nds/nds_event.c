@@ -786,7 +786,7 @@ static int handle_hotkey(void)
         check_hotkey = 0;
     }
 
-#if defined(XT894) || defined(XT897)
+#if defined(MINI) || defined(TRIMUI) || defined(BRICK) || defined(XT894) || defined(XT897)
     if (check_hotkey && hit_hotkey(KEY_BIT_UP)) {
         myhook.use_mic ^= 1;
     }

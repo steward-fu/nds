@@ -3,6 +3,8 @@ MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
 export SDL_VIDEODRIVER=NDS
+export DRASTIC_MIC_EN=1
+export DRASTIC_MIC_NAME=NDS
 
 sv=`cat /proc/sys/vm/swappiness`
 com=`cat /sys/module/gpio_keys_polled/parameters/l2r2combokey`
