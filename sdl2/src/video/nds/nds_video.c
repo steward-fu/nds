@@ -1939,7 +1939,7 @@ static int process_screen(void)
 #endif
         }
 
-#if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI)
+#if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(XT894) || defined(XT897)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
             ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
@@ -1983,6 +1983,14 @@ static int process_screen(void)
 #endif
 
         if (need_update) {
+            int screen_w = SCREEN_W;
+            int screen_h = SCREEN_H;
+
+#if defined(XT894) || defined(XT897)
+            screen_w = WL_WIN_H;
+            screen_h = WL_WIN_W;
+#endif
+
 #if defined(MINI)
             MI_SYS_FlushInvCache(pixels, pitch * srt.h);
 #endif
@@ -1996,10 +2004,10 @@ static int process_screen(void)
                 drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].y;
                 drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].w;
                 drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].h;
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
-                    drt.x = SCREEN_W - drt.w;
+                    drt.x = screen_w - drt.w;
                     drt.y = 0;
                     break;
                 case 1:
@@ -2008,11 +2016,11 @@ static int process_screen(void)
                     break;
                 case 2:
                     drt.x = 0;
-                    drt.y = SCREEN_H - drt.h;
+                    drt.y = screen_h - drt.h;
                     break;
                 case 3:
-                    drt.x = SCREEN_W - drt.w;
-                    drt.y = SCREEN_H - drt.h;
+                    drt.x = screen_w - drt.w;
+                    drt.y = screen_h - drt.h;
                     break;
                 }
 #endif
@@ -6837,10 +6845,10 @@ static const char *LAYOUT_MODE_STR1[] = {
 };
 
 static const char *SWIN_POS_STR[] = {
-    "Top-Right",
-    "Top-Left",
-    "Bottom-Left",
-    "Bottom-Right"
+    "TOP-RIGHT",
+    "TOP-LEFT",
+    "BOTTOM-LEFT",
+    "BOTTOM-RIGHT"
 };
 
 static const char *ROTATE_KEY_STR[] = {
