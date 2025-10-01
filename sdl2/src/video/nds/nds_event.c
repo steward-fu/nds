@@ -786,6 +786,12 @@ static int handle_hotkey(void)
         check_hotkey = 0;
     }
 
+#if defined(XT894) || defined(XT897)
+    if (check_hotkey && hit_hotkey(KEY_BIT_UP)) {
+        myhook.use_mic ^= 1;
+    }
+#endif
+
     if (check_hotkey && hit_hotkey(KEY_BIT_DOWN)) {
         cur_hinge_status ^= 1;
         set_key_bit(KEY_BIT_HINGE, cur_hinge_status);

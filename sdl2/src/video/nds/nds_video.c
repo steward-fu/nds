@@ -1730,6 +1730,7 @@ TEST(sdl2_video, handle_drastic_menu)
 static int process_screen(void)
 {
     int idx = 0;
+    static int cur_mic = -1;
     static int autostate = 15;
     static int show_info = -1;
     static int cur_filter = -1;
@@ -1771,6 +1772,7 @@ static int process_screen(void)
     if ((cur_filter != myconfig.filter) ||
         (cur_layout_bg != myconfig.layout.bg.sel) ||
         (cur_layout_mode != myconfig.layout.mode.sel) ||
+        (cur_mic != myhook.use_mic) ||
         myvideo.lcd.status)
     {
         if (myvideo.lcd.status & NDS_STATE_SAVE) {
@@ -1824,11 +1826,16 @@ static int process_screen(void)
                 sprintf(buf, " %s: %s ", l10n("LAYOUT BG"), l10n("NONE"));
             }
         }
+        else if (cur_mic != myhook.use_mic) {
+            show_info = 50;
+            sprintf(buf, "MICPHONE %s", l10n(myhook.use_mic ? "ON" : "OFF"));
+        }
         else if (cur_filter != myconfig.filter) {
             show_info = 50;
             sprintf(buf, " %s ", l10n((myconfig.filter == FILTER_PIXEL) ? "PIXEL" : "BLUR"));
         }
 
+        cur_mic = myhook.use_mic;
         cur_filter = myconfig.filter;
         cur_layout_bg = myconfig.layout.bg.sel;
         cur_layout_mode = myconfig.layout.mode.sel;

@@ -202,6 +202,7 @@ typedef struct {
 typedef struct {
     fun_t fun;
     var_t var;
+    int use_mic;
 } nds_hook;
 
 typedef enum {

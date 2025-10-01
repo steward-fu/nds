@@ -36,10 +36,16 @@
 #endif
 
 int set_autostate(int, int);
+
+#if defined(A30)
 int a30_inc_vol(void);
 int a30_dec_vol(void);
+#endif
+
+#if defined(MINI)
 int mini_inc_vol(void);
 int mini_dec_vol(void);
+#endif
 
 #endif
 
