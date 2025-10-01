@@ -11,7 +11,7 @@
 #define NDS_DEBUG   "NDS_DEBUG_LOG"
 
 #define RES_PATH        "res"
-#define BG_PATH         RES_PATH"/bg_640x480"
+#define BG_PATH         RES_PATH"/bg"
 #define PEN_PATH        RES_PATH"/pen"
 #define LANG_PATH       RES_PATH"/lang"
 #define MENU_PATH       RES_PATH"/menu"
@@ -19,11 +19,6 @@
 #define SHADER_PATH     RES_PATH"/shader"
 #define CFG_FILE        RES_PATH"/nds.cfg"
 #define FONT_FILE       RES_PATH"/font/font.ttf"
-
-#if defined(XT894) || defined(XT897)
-#undef BG_PATH
-#define BG_PATH         RES_PATH"/bg_960x540"
-#endif
 
 #define BIOS_PATH                   "system/"
 #define NDS_FIRMWARE_FILE           "nds_firmware.bin"
