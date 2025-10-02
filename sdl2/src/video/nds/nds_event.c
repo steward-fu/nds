@@ -25,6 +25,7 @@
 #include "nds_event.h"
 
 nds_event myevent = { 0 };
+static touch_data_t tp[10] = { 0 };
 
 extern nds_joy myjoy;
 extern nds_hook myhook;
@@ -1462,10 +1463,107 @@ TEST(sdl2_event, handle_trimui_special_key)
 }
 #endif
 
+int handle_touch_event(int fd)
+{
+    static int tp_id = 0;
+    static int tp_valid = 0;
+    struct input_event ev = { 0 };
+
+#if defined(XT894) || defined(XT897)
+    const int screen_w = WL_WIN_H;
+    const int screen_h = WL_WIN_W;
+#endif
+
+#if defined(XT894) || defined(XT897)
+    float tp_max_x = 1000.0;
+    float tp_max_y = 1000.0;
+#endif
+
+#if defined(QX1000)
+    float tp_max_x = 2160.0;
+    float tp_max_y = 1080.0;
+#endif
+
+    debug("call %s(fd=%d)\n", __func__, fd);
+
+    if (fd < 0) {
+        error("invalid parameter\n");
+        return -1;
+    }
+
+#if defined(UT)
+    return 0;
+#endif
+
+    if (read(fd, &ev, sizeof(struct input_event)) <= 0) {
+        return 0;
+    }
+
+    debug("touch, type:%d, code:0x%x, value:%d\n", ev.type, ev.code, ev.value);
+    if (ev.type == EV_ABS) {
+        if (ev.code == ABS_MT_TRACKING_ID) {
+#if defined(XT894) || defined(XT897)
+            tp_valid = 1;
+            tp_id = ev.value;
+#endif
+
+#if defined(QX1000)
+            if (ev.value >= 0) {
+                tp_valid = 1;
+                tp_id = 0;
+            }
+            else {
+                tp_valid = 0;
+            }
+#endif
+        }
+        else if (ev.code == ABS_MT_POSITION_X) {
+            tp_valid = 1;
+            tp[tp_id].y = screen_h - (((float)ev.value / tp_max_y) * screen_h);
+        }
+        else if (ev.code == ABS_MT_POSITION_Y) {
+            tp_valid = 1;
+            tp[tp_id].x = ((float)ev.value / tp_max_x) * screen_w;
+        }
+        else if (ev.code == ABS_MT_PRESSURE) {
+            tp_valid = 1;
+            tp[tp_id].pressure = ev.value;
+        }
+    }
+    else if (ev.type == EV_SYN) {
+#if defined(XT894) || defined(XT897)
+        if ((ev.code == ABS_Z) && (ev.value == 0)) {
+#endif
+#if defined(QX1000)
+        if ((ev.code == 0) && (ev.value == 0)) {
+#endif
+            if (tp_valid) {
+                tp_valid = 0;
+                printf(
+                    "touch ID=%d, X=%d, Y=%d, Pressure=%d\n",
+                    tp_id,
+                    tp[tp_id].x,
+                    tp[tp_id].y,
+                    tp[tp_id].pressure
+                );
+            }
+        }
+    }
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, handle_touch_event)
+{
+}
+#endif
+
 int input_handler(void *data)
 {
     int rk = 0;
     int rj = 0;
+    int sleep_ms = 10000;
     struct input_event ev = {{ 0 }};
 
     debug("call %s()\n", __func__);
@@ -1479,6 +1577,7 @@ int input_handler(void *data)
 #endif
 
 #if defined(XT894) || defined(XT897)
+    sleep_ms = 100;
     myevent.tp_fd = open(TOUCH_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     myevent.pwr_fd = open(POWER_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 #endif
@@ -1545,11 +1644,13 @@ int input_handler(void *data)
             debug("code=%d, value=%d\n", ev.code, ev.value);
             update_key_bit(ev.code, ev.value);
         }
+
+        handle_touch_event(myevent.tp_fd);
 #endif
 
         SDL_SemPost(myevent.sem);
 
-        usleep(10000);
+        usleep(sleep_ms);
     }
     
     return 0;

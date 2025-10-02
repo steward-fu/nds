@@ -417,6 +417,12 @@ typedef struct _cust_key_t {
 #endif
 
 typedef struct {
+    int x;
+    int y;
+    int pressure;
+} touch_data_t;
+
+typedef struct {
     int fd;
 
 #if defined(XT894) || defined(XT897)
