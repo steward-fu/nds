@@ -23,8 +23,12 @@
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(XT897)
 #define INPUT_DEV   "/dev/input/event1"
+#define TOUCH_DEV   "/dev/input/event7"
+#define POWER_DEV   "/dev/input/event3"
 #elif defined(XT894)
 #define INPUT_DEV   "/dev/input/event3"
+#define TOUCH_DEV   "/dev/input/event4"
+#define POWER_DEV   "/dev/input/event2"
 #elif defined(GKD2)
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(GKDMINI)
@@ -166,7 +170,7 @@
 #define DEV_KEY_CODE_SELECT     51
 #define DEV_KEY_CODE_START      52
 #define DEV_KEY_CODE_MENU       57
-#define DEV_KEY_CODE_POWER      -1
+#define DEV_KEY_CODE_POWER      116
 #define DEV_KEY_CODE_VOL_UP     -1
 #define DEV_KEY_CODE_VOL_DOWN   -1
 
@@ -192,7 +196,7 @@
 #define DEV_KEY_CODE_SELECT     51
 #define DEV_KEY_CODE_START      52
 #define DEV_KEY_CODE_MENU       57
-#define DEV_KEY_CODE_POWER      -1
+#define DEV_KEY_CODE_POWER      116
 #define DEV_KEY_CODE_VOL_UP     -1
 #define DEV_KEY_CODE_VOL_DOWN   -1
 
@@ -415,6 +419,11 @@ typedef struct _cust_key_t {
 typedef struct {
     int fd;
 
+#if defined(XT894) || defined(XT897)
+    int tp_fd;
+    int pwr_fd;
+#endif
+
 #if defined(PANDORA) || defined(UT)
     int kb_fd;
 #endif
@@ -439,8 +448,6 @@ typedef struct {
         uint32_t start;
         uint32_t menu;
         uint32_t power;
-        uint32_t vol_up;
-        uint32_t vol_down;
         uint32_t save;
         uint32_t load;
         uint32_t fast;
@@ -458,7 +465,6 @@ typedef struct {
 
     input_struct input;
 
-    int vol;
     int mode;
     SDL_sem *sem;
 

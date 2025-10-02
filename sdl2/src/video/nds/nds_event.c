@@ -1064,17 +1064,9 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_QUIT, v);
     }
 
-#if defined(MINI) || defined(UT)
+#if defined(MINI) || defined(XT894) || defined(XT897) || defined(UT)
     if (c == myevent.keypad.power) {
-        set_key_bit(KEY_BIT_POWER, v);
-    }
-    if (c == myevent.keypad.vol_up) {
-        set_key_bit(KEY_BIT_VOLUP, v);
-        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
-    }
-    if (c == myevent.keypad.vol_down) {
-        set_key_bit(KEY_BIT_VOLDOWN, v);
-        myvideo.layout.redraw_bg = REDRAW_BG_CNT;
+        set_key_bit(KEY_BIT_QUIT, v);
     }
 #endif
 
@@ -1303,39 +1295,41 @@ TEST(sdl2_event, get_pandora_key_code)
 #endif
 #endif
 
-static int get_input_key_code(struct input_event *e)
+static int get_input_key_code(int fd, struct input_event *e)
 {
-    debug("call %s(e=%p)\n", __func__, e);
+    debug("call %s(fd=%d, event=%p)\n", __func__, fd, e);
 
-    if (myevent.fd < 0) {
-        error("invalid input handle\n");
+    if (fd < 0) {
+        error("invalid handle\n");
         return -1;
     }
 
     if (!e) {
-        error("e is null\n");
+        error("invalid parameter\n");
         return -1;
     }
 
-#if !defined(UT)
-    if (read(myevent.fd, e, sizeof(struct input_event)) == 0) {
+#if defined(UT)
+    return 0;
+#endif
+
+    if (read(fd, e, sizeof(struct input_event)) == 0) {
+        debug("no input event\n");
         return 0;
     }
-#endif
-    
+
     if ((e->type == EV_KEY) && (e->value != 2)) {
+        debug("got input event\n");
         return 1;
     }
 
+    debug("ignore input event\n");
     return 0;
 }
 
 #if defined(UT)
 TEST(sdl2_event, get_input_key_code)
 {
-    struct input_event e = {{ 0 }};
-
-    TEST_ASSERT_EQUAL_INT(0, get_input_key_code(&e));
 }
 #endif
 
@@ -1484,6 +1478,11 @@ int input_handler(void *data)
     }
 #endif
 
+#if defined(XT894) || defined(XT897)
+    myevent.tp_fd = open(TOUCH_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    myevent.pwr_fd = open(POWER_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+#endif
+
 #if defined(PANDORA)
     myevent.kb_fd = open(KEYPAD_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     if (myevent.kb_fd < 0) {
@@ -1520,7 +1519,7 @@ int input_handler(void *data)
 #elif defined(PANDORA) || defined(UT)
         rk = get_pandora_key_code(&ev);
 #else
-        rk = get_input_key_code(&ev);
+        rk = get_input_key_code(myevent.fd, &ev);
 #endif
 
         if (rk > 0) {
@@ -1538,6 +1537,14 @@ int input_handler(void *data)
 
 #if defined(TRIMUI) || defined(UT)
         handle_trimui_special_key();
+#endif
+
+#if defined(XT894) || defined(XT897)
+        rk = get_input_key_code(myevent.pwr_fd, &ev);
+        if (rk > 0) {
+            debug("code=%d, value=%d\n", ev.code, ev.value);
+            update_key_bit(ev.code, ev.value);
+        }
 #endif
 
         SDL_SemPost(myevent.sem);
@@ -1583,8 +1590,6 @@ void init_event(void)
     myevent.keypad.start = DEV_KEY_CODE_START;
     myevent.keypad.menu = DEV_KEY_CODE_MENU;
     myevent.keypad.power = DEV_KEY_CODE_POWER;
-    myevent.keypad.vol_up = DEV_KEY_CODE_VOL_UP;
-    myevent.keypad.vol_down = DEV_KEY_CODE_VOL_DOWN;
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(BRICK) || defined(PANDORA) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
@@ -1651,6 +1656,18 @@ void quit_event(void)
         close(myevent.fd);
         myevent.fd = -1;
     }
+
+#if defined(XT894) || defined(XT897)
+    if (myevent.tp_fd > 0) {
+        close(myevent.tp_fd);
+        myevent.tp_fd = -1;
+    }
+
+    if (myevent.pwr_fd > 0) {
+        close(myevent.pwr_fd);
+        myevent.pwr_fd = -1;
+    }
+#endif
 
 #if defined(PANDORA)
     if(myevent.kb_fd > 0) {
@@ -1737,7 +1754,7 @@ static int update_raw_input_statue(uint32_t kbit, int val)
     case KEY_BIT_SELECT:    b = NDS_KEY_BIT_SELECT; break;
     case KEY_BIT_START:     b = NDS_KEY_BIT_START;  break;
     case KEY_BIT_SWAP:      b = NDS_KEY_BIT_SWAP;   break;
-    case KEY_BIT_DRASTIC:     b = NDS_KEY_BIT_MENU;   break;
+    case KEY_BIT_DRASTIC:   b = NDS_KEY_BIT_MENU;   break;
     case KEY_BIT_QUIT:      b = NDS_KEY_BIT_QUIT;   break;
     case KEY_BIT_SAVE:      b = NDS_KEY_BIT_SAVE;   break;
     case KEY_BIT_LOAD:      b = NDS_KEY_BIT_LOAD;   break;
@@ -1799,6 +1816,7 @@ static int send_key_event(int raw_event)
             }
             else {
                 debug("send code[%d]=0x%04x, pressed=%d\n", cc, nds_key_code[cc], pressed);
+
 #if !defined(UT)
                 SDL_SendKeyboardKey(
                     pressed ? SDL_PRESSED : SDL_RELEASED,
