@@ -7602,6 +7602,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
 #endif
+
+#if !defined(MINI)
     case MENU_SHADER:
         if (right_key) {
             if (max_shader_count && (myconfig.shader < (max_shader_count - 1))) {
@@ -7614,6 +7616,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
+#endif
+
     case MENU_ROTATE_KEY:
         if (right_key) {
             if (myconfig.keys_rotate < 2) {
@@ -7780,7 +7784,10 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
     const int SY = 107;
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
+
+#if !defined(MINI)
     char tmp[MAX_PATH] = { 0 };
+#endif
 
     debug("call %s(cur_sel=%d, cc=%d, idx=%d, sx=%d)\n", __func__, cur_sel, cc, idx, sx);
 
@@ -7876,6 +7883,8 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].h);
         break;
 #endif
+
+#if !defined(MINI)
     case MENU_SHADER:
         if (get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0) >= 0) {
             sprintf(buf, "%s", tmp);
@@ -7884,6 +7893,8 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
             strcpy(buf, "none");
         }
         break;
+#endif
+
     case MENU_ROTATE_KEY:
         sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
         break;
