@@ -1463,6 +1463,33 @@ TEST(sdl2_event, handle_trimui_special_key)
 }
 #endif
 
+static int send_touch_axis(void)
+{
+#if !defined(UT)
+    int x = 0;
+    int y = 0;
+
+#endif
+
+    debug("call %s()\n", __func__);
+
+#if !defined(UT)
+    x = (myevent.touch.x * 160) / myevent.touch.max_x;
+    y = (myevent.touch.y * 120) / myevent.touch.max_y;
+
+    SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (*myhook.var.sdl.swap_screens ? 120 : 0));
+#endif
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_event, send_touch_axis)
+{
+    TEST_ASSERT_EQUAL_INT(0, send_touch_axis());
+}
+#endif
+
 int handle_touch_event(int fd)
 {
     static int tp_id = 0;
@@ -1538,14 +1565,103 @@ int handle_touch_event(int fd)
         if ((ev.code == 0) && (ev.value == 0)) {
 #endif
             if (tp_valid) {
+                int x = 0;
+                int y = 0;
+                int lcd = 0;
+                int update = 0;
+
                 tp_valid = 0;
-                printf(
+                debug(
                     "touch ID=%d, X=%d, Y=%d, Pressure=%d\n",
                     tp_id,
                     tp[tp_id].x,
                     tp[tp_id].y,
                     tp[tp_id].pressure
                 );
+
+                switch (myconfig.layout.mode.sel) {
+                case LAYOUT_MODE_T0:
+                case LAYOUT_MODE_T1:
+                case LAYOUT_MODE_T2:
+                case LAYOUT_MODE_T3:
+                case LAYOUT_MODE_T4:
+                    if (*myhook.var.sdl.swap_screens != 0) {
+                        break;
+                    }
+
+                    lcd = 1;
+                    update = 1;
+                    break;
+                default:
+                    update = 1;
+                    lcd = !(*myhook.var.sdl.swap_screens);
+                    break;
+                }
+
+                if (update) {
+
+                    switch (myconfig.layout.mode.sel) {
+                    case LAYOUT_MODE_B0:
+                    case LAYOUT_MODE_B2:
+                        x = tp[tp_id].x -
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].x;
+                        x = ((float)x /
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].h) * NDS_H;
+
+                        y = tp[tp_id].y -
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].y;
+                        y = ((float)y /
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].w) * NDS_W;
+
+                        myevent.touch.x = (NDS_H - y) + 60;
+                        myevent.touch.y = x;
+                        break;
+                    case LAYOUT_MODE_B1:
+                    case LAYOUT_MODE_B3:
+                        x = tp[tp_id].x -
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].x;
+                        x = ((float)x /
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].h) * NDS_H;
+
+                        y = tp[tp_id].y -
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].y;
+                        y = ((float)y /
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].w) * NDS_W;
+
+                        myevent.touch.x = y;
+                        myevent.touch.y = (NDS_W - x) - 60;
+                        break;
+                    default:
+                        x = tp[tp_id].x -
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].x;
+                        x = ((float)x /
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].w) * NDS_W;
+
+                        y = tp[tp_id].y -
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].y;
+                        y = ((float)y /
+                            myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].h) * NDS_H;
+
+                        myevent.touch.x = x;
+                        myevent.touch.y = y;
+                        break;
+                    }
+                    myevent.input.touch_status = 1;
+                    limit_touch_axis();
+
+                    debug("mode=%d, %d, %d (%d, %d, %d, %d)\n",
+                        myconfig.layout.mode.sel,
+                        myevent.touch.x,
+                        myevent.touch.y,
+                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].x,
+                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].y,
+                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].w,
+                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].h
+                    );
+                }
+            }
+            else {
+                myevent.input.touch_status = 0;
             }
         }
     }
@@ -2105,33 +2221,6 @@ TEST(sdl2_event, send_touch_key)
     myevent.keypad.cur_bits = (1 << KEY_BIT_R1);
     //TEST_ASSERT_EQUAL_INT(0, send_touch_key());
     TEST_ASSERT_EQUAL_INT(1, myevent.touch.slow_down);
-}
-#endif
-
-static int send_touch_axis(void)
-{
-#if !defined(UT)
-    int x = 0;
-    int y = 0;
-
-#endif
-
-    debug("call %s()\n", __func__);
-
-#if !defined(UT)
-    x = (myevent.touch.x * 160) / myevent.touch.max_x;
-    y = (myevent.touch.y * 120) / myevent.touch.max_y;
-
-    SDL_SendMouseMotion(myvideo.win, 0, 0, x + 80, y + (*myhook.var.sdl.swap_screens ? 120 : 0));
-#endif
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(sdl2_event, send_touch_axis)
-{
-    TEST_ASSERT_EQUAL_INT(0, send_touch_axis());
 }
 #endif
 
