@@ -25,9 +25,11 @@ echo 10 > /proc/sys/vm/swappiness
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 cd $MYDIR
+./vol&
 ./cpuclock 1500
 ./drastic "$1" > std.log 2>&1
 sync
+killall vol
 
 echo $sv > /proc/sys/vm/swappiness
 echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor

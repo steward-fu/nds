@@ -505,101 +505,6 @@ TEST(sdl2_video, cb_remove)
 #endif
 #endif
 
-#if defined(MINI)
-static int get_bat_val(void)
-{
-    int r = 0;
-    uint32_t v[2] = { 0 };
-    struct stat st = { 0 };
-    char buf[MAX_PATH] = { 0 };
-    const char *AXP = "/customer/app/axp_test";
-
-    if (stat (AXP, &st) == 0) {
-        // {"battery":99, "voltage":4254, "charging":3}
-        FILE *fd = popen(AXP, "r");
-
-        if (fd) {
-            fgets(buf, sizeof(buf), fd);
-            pclose(fd);
-            return (atoi(&buf[11]));
-        }
-        return 0;
-    }
-
-    if (myvideo.sar_fd < 0) {
-        return 0;
-    }
-
-    ioctl(myvideo.sar_fd, 0x6100, 0);
-    ioctl(myvideo.sar_fd, 0x6101, v);
-    r = 100 - (((BAT_MAX_VAL - v[1]) * 100) / (BAT_MAX_VAL - BAT_MIN_VAL));
-    if (r > 100) {
-        r = 100;
-    }
-    if (r < 0) {
-        r = 0;
-    }
-    return r;
-}
-#endif
-
-#if defined(A30)
-static int get_bat_val(void)
-{
-    static int maxv = 0;
-
-    int r = 0;
-    int curv = 0;
-    FILE *fd = NULL;
-    char buf[32] = { 0 };
-
-    if (maxv == 0) {
-        fd = popen(BAT_MAX_CMD, "r");
-        if (fd) {
-            fgets(buf, sizeof(buf), fd);
-            pclose(fd);
-            maxv = atoi(buf);
-        }
-    }
-
-    fd = popen(BAT_CUR_CMD, "r");
-    if (fd) {
-        fgets(buf, sizeof(buf), fd);
-        pclose(fd);
-        curv = atoi(buf);
-    }
-
-    r = 100 - (((maxv - curv) * 100) / 1200000);
-    if (r > 100) {
-        r = 100;
-    }
-    if (r < 0) {
-        r = 0;
-    }
-    return r;
-}
-#endif
-
-#if defined(FLIP)
-static int get_bat_val(void)
-{
-    int r = 0;
-    int curp = 0;
-    FILE *fd = NULL;
-    char buf[32] = { 0 };
-
-    fd = popen(BAT_CUR_CMD, "r");
-    if (fd) {
-        fgets(buf, sizeof(buf), fd);
-        pclose(fd);
-        curp = atoi(buf);
-    }
-
-    r = curp;
-    return r;
-}
-#endif
-
 static int get_current_menu_layer(void)
 {
     int cc = 0;
@@ -1734,6 +1639,7 @@ static int process_screen(void)
 {
     int idx = 0;
     static int cur_mic = -1;
+    static int cur_hinge = -1;
     static int autostate = 15;
     static int show_info = -1;
     static int cur_filter = -1;
@@ -1742,10 +1648,6 @@ static int process_screen(void)
     static int col_fg = 0xe0e000;
     static int col_bg = 0x000000;
     static char buf[MAX_PATH] = { 0 };
-
-#if defined(MINI) || defined(A30) || defined(FLIP)
-    static int chk_bat = BAT_CHK_CNT;
-#endif
 
     debug("call %s()\n", __func__);
 
@@ -1766,16 +1668,13 @@ static int process_screen(void)
     if (myvideo.menu.drastic.enable) {
         myvideo.menu.drastic.enable = 0;
         myvideo.layout.redraw_bg = REDRAW_BG_CNT;
-
-#if defined(PANDORA)
-        enable_fb_plane(FB_GAME);
-#endif
     }
 
     if ((cur_filter != myconfig.filter) ||
+        (cur_mic != myhook.use_mic) ||
+        (cur_hinge != myhook.use_hinge) ||
         (cur_layout_bg != myconfig.layout.bg.sel) ||
         (cur_layout_mode != myconfig.layout.mode.sel) ||
-        (cur_mic != myhook.use_mic) ||
         myvideo.lcd.status)
     {
         if (myvideo.lcd.status & NDS_STATE_SAVE) {
@@ -1831,7 +1730,11 @@ static int process_screen(void)
         }
         else if (cur_mic != myhook.use_mic) {
             show_info = 50;
-            sprintf(buf, "MICPHONE %s", l10n(myhook.use_mic ? "ON" : "OFF"));
+            sprintf(buf, "%s %s", l10n("MICPHONE"), l10n(myhook.use_mic ? "ON" : "OFF"));
+        }
+        else if (cur_hinge != myhook.use_hinge) {
+            show_info = 50;
+            sprintf(buf, "%s %s", l10n("HINGE"), l10n(myhook.use_hinge ? "ON" : "OFF"));
         }
         else if (cur_filter != myconfig.filter) {
             show_info = 50;
@@ -1839,6 +1742,7 @@ static int process_screen(void)
         }
 
         cur_mic = myhook.use_mic;
+        cur_hinge = myhook.use_hinge;
         cur_filter = myconfig.filter;
         cur_layout_bg = myconfig.layout.bg.sel;
         cur_layout_mode = myconfig.layout.mode.sel;
@@ -1852,27 +1756,6 @@ static int process_screen(void)
         myvideo.layout.redraw_bg = REDRAW_BG_CNT;
     }
         
-    if (myconfig.show_low_battery) {
-#if defined(MINI) || defined(A30) || defined(FLIP)
-        chk_bat -= 1;
-        if (chk_bat <= 0) {
-            int v = get_bat_val();
-
-            if (v <= 10) {
-                show_info = 50;
-                col_fg = 0xffffff;
-                col_bg = 0xff0000;
-                sprintf(buf, " %s %d%% ", l10n("BAT"), v);
-            }
-
-            chk_bat = BAT_CHK_CNT;
-            if (v <= 5) {
-                chk_bat >>= 1;
-            }
-        }
-#endif
-    }
-
     if (myvideo.layout.redraw_bg) {
         load_layout_bg();
         myvideo.layout.redraw_bg -= 1;
@@ -1915,7 +1798,7 @@ static int process_screen(void)
         }
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         if ((myconfig.layout.mode.sel == LAYOUT_MODE_B0) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_B1) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_B2) ||
@@ -1928,7 +1811,7 @@ static int process_screen(void)
             drt.x = (SCREEN_W - drt.x) - drt.w;
         }
 
-#if defined(A30) || defined(FLIP)
+#if defined(FLIP)
         if (show_pen && 
             ((myevent.mode == NDS_TOUCH_MODE) || 
             (myconfig.joy.show_cnt &&
@@ -1942,7 +1825,7 @@ static int process_screen(void)
 #endif
             draw_touch_pen(pixels, srt.w, pitch);
 
-#if defined(A30) || defined(FLIP)
+#if defined(FLIP)
             if (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_TOUCH)) {
                 myconfig.joy.show_cnt -= 1;
             }
@@ -2110,7 +1993,6 @@ static int process_screen(void)
 #if defined(UT)
 TEST(sdl2_video, process_screen)
 {
-    //TEST_ASSERT_EQUAL_INT(0, process_screen());
 }
 #endif
 
@@ -4091,7 +3973,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #if defined(MINI)
     int copy_mem = 1;
     MI_U16 fence = 0;
-    int is_rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
+    int rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
@@ -4167,7 +4049,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 #endif
 
-#if defined(A30) || defined(FLIP)
+#if defined(FLIP)
     if ((id != -1) && ((myconfig.layout.mode.sel == LAYOUT_MODE_B1) || (myconfig.layout.mode.sel == LAYOUT_MODE_B3))) {
         fg_vertices[5] = (((float)drt.x / w) - 0.5) * 2.0;
         fg_vertices[6] = (((float)drt.y / h) - 0.5) * -2.0;
@@ -4964,7 +4846,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                             break;
                         }
 
-                        if (is_rgb565) {
+                        if (rgb565) {
                             asm ("PLD [%0, #128]"::"r" (s1_565));
                             r1 = (s1_565[((y + ay) * srt.w) + x + ax] & 0xf800) >> 8;
                             g1 = (s1_565[((y + ay) * srt.w) + x + ax] & 0x07e0) >> 3;
@@ -5423,7 +5305,23 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     myvideo.gfx.opt.u32GlobalSrcConstColor = 0;
-    myvideo.gfx.opt.eRotate = ROTATE_180;
+    switch (myconfig.layout.mode.sel) {
+    case LAYOUT_MODE_B0:
+    case LAYOUT_MODE_B1:
+        myvideo.gfx.opt.eRotate = ROTATE_90;
+        break;
+    case LAYOUT_MODE_B2:
+    case LAYOUT_MODE_B3:
+        myvideo.gfx.opt.eRotate = ROTATE_270;
+        break;
+    default:
+        myvideo.gfx.opt.eRotate = ROTATE_180;
+        break;
+    }
+
+    if ((drt.w == 640) && (drt.h == 480)) {
+        myvideo.gfx.opt.eRotate = ROTATE_180;
+    }
     myvideo.gfx.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
     myvideo.gfx.opt.eDstDfbBldOp = 0;
     myvideo.gfx.opt.eDFBBlendFlag = 0;
@@ -5435,7 +5333,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.gfx.src.surf.u32Width = srt.w;
     myvideo.gfx.src.surf.u32Height = srt.h;
     myvideo.gfx.src.surf.u32Stride = pitch;
-    myvideo.gfx.src.surf.eColorFmt = is_rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
+    myvideo.gfx.src.surf.eColorFmt = rgb565 ? E_MI_GFX_FMT_RGB565 : E_MI_GFX_FMT_ARGB8888;
 
     myvideo.gfx.dst.rt.s32Xpos = drt.x;
     myvideo.gfx.dst.rt.s32Ypos = drt.y;
@@ -6975,7 +6873,10 @@ typedef enum {
     MENU_CPU_CORE,
 #endif
 
+#if !defined(MINI)
     MENU_SHADER,
+#endif
+
     MENU_LAYOUT_MODE,
     MENU_SWIN_ALPHA,
     MENU_SWIN_BORDER,
@@ -7018,9 +6919,6 @@ typedef enum {
     MENU_RJOY_CUST_KEY3,
     MENU_RJOY_DZONE,
 #endif
-#if defined(MINI) || defined(A30) || defined(FLIP)
-    MENU_CHK_BAT,
-#endif
     MENU_LAST,
 } menu_list_t;
 
@@ -7031,7 +6929,10 @@ static const char *MENU_LIST_STR[] = {
     "CPU Core",
 #endif
 
+#if !defined(MINI)
     "SHADER",
+#endif
+
     "LAYOUT MODE",
     "  ALPHA",
     "  BORDER",
@@ -7074,9 +6975,6 @@ static const char *MENU_LIST_STR[] = {
     "  JOY LEFT",
     "  JOY RIGHT",
     "R JOY DEAD ZONE",
-#endif
-#if defined(MINI) || defined(A30) || defined(FLIP)
-    "LOW BATTERY STATUS",
 #endif
 };
 
@@ -7858,11 +7756,6 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
 #endif
-#if defined(MINI) || defined(A30) || defined(FLIP)
-    case MENU_CHK_BAT:
-        myconfig.show_low_battery = right_key;
-        break;
-#endif
     default:
         return -1;
     }
@@ -8041,11 +7934,6 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
         break;
     case MENU_RJOY_DZONE:
         sprintf(buf, "%d", myconfig.rjoy.dzone);
-        break;
-#endif
-#if defined(MINI) || defined(A30) || defined(FLIP)
-    case MENU_CHK_BAT:
-        sprintf(buf, "%s (BAT %d%%)", l10n(myconfig.show_low_battery ? "Yes" : "No"), get_bat_val());
         break;
 #endif
     }

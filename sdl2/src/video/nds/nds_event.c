@@ -25,7 +25,10 @@
 #include "nds_event.h"
 
 nds_event myevent = { 0 };
+
+#if !defined(MINI)
 static touch_data_t tp[10] = { 0 };
+#endif
 
 extern nds_joy myjoy;
 extern nds_hook myhook;
@@ -777,7 +780,6 @@ TEST(sdl2_event, find_next_available_bg)
 
 static int handle_hotkey(void)
 {
-    static int cur_hinge_status = 0;
     int check_hotkey = 0;
 
     debug("call %s()\n", __func__);
@@ -794,8 +796,8 @@ static int handle_hotkey(void)
 #endif
 
     if (check_hotkey && hit_hotkey(KEY_BIT_DOWN)) {
-        cur_hinge_status ^= 1;
-        set_key_bit(KEY_BIT_HINGE, cur_hinge_status);
+        myhook.use_hinge ^= 1;
+        set_key_bit(KEY_BIT_HINGE, myhook.use_hinge);
         set_key_bit(KEY_BIT_DOWN, 0);
     }
 

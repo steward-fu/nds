@@ -165,7 +165,6 @@ typedef struct {
     int hotkey;
     int cpu_core;
     int fast_forward;
-    int show_low_battery;
     filter_type_t filter;
     char state_path[MAX_PATH];
 
