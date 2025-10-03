@@ -117,8 +117,11 @@ static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
 static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
-static int load_shader_file(const char *);
 static int get_file_name_by_index(const char *, int, char *, int);
+
+#if !defined(MINI)
+static int load_shader_file(const char *);
+#endif
 
 static SDL_Rect def_layout_pos[LAYOUT_MODE_MAX][2] = {
     // LAYOUT_MODE_T0
@@ -286,59 +289,59 @@ TEST_TEAR_DOWN(sdl2_video)
 
 static int alloc_lcd_mem(void)
 {
+    int i = 0;
+    int j = 0;
+    uint32_t size = NDS_Wx2 * NDS_Hx2 * 4;
+
+    debug("call %s()\n", __func__)
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j <2; j++) {
 #if defined(MINI)
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][0]);
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[0][1]);
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][0]);
-    MI_SYS_MMA_Alloc(NULL, NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.phy_addr[1][1]);
+            MI_U32 r = 0;
 
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][0], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[0][1], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][0], TRUE);
-    MI_SYS_Mmap(myvideo.lcd.phy_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4, &myvideo.lcd.virt_addr[1][1], TRUE);
+            r = MI_SYS_MMA_Alloc(NULL, size, &myvideo.lcd.phy_addr[i][j]);
+            if (r) {
+                fatal("failed to allocate buffer for lcd.phy_addr[%d][%d] (size=%d)\n", i, j, size);
+            }
+
+            MI_SYS_Mmap(myvideo.lcd.phy_addr[i][j], size, &myvideo.lcd.virt_addr[i][j], TRUE);
 #else
-    myvideo.lcd.virt_addr[0][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[0][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][0] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-    myvideo.lcd.virt_addr[1][1] = malloc(NDS_Wx2 * NDS_Hx2 * 4);
-#endif
+            myvideo.lcd.virt_addr[i][j] = malloc(size);
 
-    debug("lcd[0] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[0][0]);
-    debug("lcd[0] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[0][1]);
-    debug("lcd[1] virt_addr[0]=%p\n", myvideo.lcd.virt_addr[1][0]);
-    debug("lcd[1] virt_addr[1]=%p\n", myvideo.lcd.virt_addr[1][1]);
+            if (myvideo.lcd.virt_addr[i][j] == NULL) {
+                fatal("failed to allocate buffer for lcd.virt_addr[%d][%d] (size=%d)\n", i, j, size);
+            }
+#endif
+            debug("lcd.virt_addr[%d][%d]=%p\n", i, j, myvideo.lcd.virt_addr[i][j]);
+        }
+    }
 
     return 0;
 }
 
 static int free_lcd_mem(void)
 {
+    int i = 0;
+    int j = 0;
+    const int size = NDS_Wx2 * NDS_Hx2 * 4;
+
+    debug("call %s()\n", __func__)
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j <2; j++) {
 #if defined(MINI)
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][0], NDS_Wx2 * NDS_Hx2 * 4);
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[0][1], NDS_Wx2 * NDS_Hx2 * 4);
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][0], NDS_Wx2 * NDS_Hx2 * 4);
-    MI_SYS_Munmap(myvideo.lcd.virt_addr[1][1], NDS_Wx2 * NDS_Hx2 * 4);
-
-    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][0]);
-    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[0][1]);
-    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][0]);
-    MI_SYS_MMA_Free(myvideo.lcd.phy_addr[1][1]);
-
-    myvideo.lcd.phy_addr[0][0] = NULL;
-    myvideo.lcd.phy_addr[0][1] = NULL;
-    myvideo.lcd.phy_addr[1][0] = NULL;
-    myvideo.lcd.phy_addr[1][1] = NULL;
+            if (myvideo.lcd.phy_addr[i][j]) {
+                MI_SYS_Munmap(myvideo.lcd.virt_addr[i][j], size);
+                MI_SYS_MMA_Free(myvideo.lcd.phy_addr[i][j]);
+                myvideo.lcd.phy_addr[i][j] = NULL;
+            }
 #else
-    free(myvideo.lcd.virt_addr[0][0]);
-    free(myvideo.lcd.virt_addr[0][1]);
-    free(myvideo.lcd.virt_addr[1][0]);
-    free(myvideo.lcd.virt_addr[1][1]);
+            free(myvideo.lcd.virt_addr[i][j]);
 #endif
-
-    myvideo.lcd.virt_addr[0][0] = NULL;
-    myvideo.lcd.virt_addr[0][1] = NULL;
-    myvideo.lcd.virt_addr[1][0] = NULL;
-    myvideo.lcd.virt_addr[1][1] = NULL;
+            myvideo.lcd.virt_addr[i][j] = NULL;
+        }
+    }
 
     return 0;
 }
@@ -1990,8 +1993,10 @@ static int process_screen(void)
 #endif
 
         if (need_update) {
+#if !defined(MINI)
             int screen_w = SCREEN_W;
             int screen_h = SCREEN_H;
+#endif
 
 #if defined(XT894) || defined(XT897)
             screen_w = WL_WIN_H;
@@ -2139,7 +2144,7 @@ static void* prehook_cb_malloc(size_t size)
     void *r = NULL;
     uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
 
-    debug("call %s(size=%d)\n", __func__, (int)size);
+    trace("call %s(size=%d)\n", __func__, (int)size);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -2165,7 +2170,7 @@ static void prehook_cb_free(void *ptr)
     int c1 = 0;
     int found = 0;
 
-    debug("call %s(ptr=%p)\n", __func__, ptr);
+    trace("call %s(ptr=%p)\n", __func__, ptr);
 
     for (c0 = 0; c0 < 2; c0++) {
         for (c1 = 0; c1 < 2; c1++) {
@@ -2193,7 +2198,7 @@ static void* prehook_cb_realloc(void *ptr, size_t size)
     void *r = NULL;
     uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
 
-    debug("call %s(ptr=%p, size=%d)\n", __func__, ptr, (int)size);
+    trace("call %s(ptr=%p, size=%d)\n", __func__, ptr, (int)size);
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -2230,10 +2235,11 @@ static void prehook_cb_update_screen(void)
 {
     static int prepare_time = 30;
 
-    debug("call %s(prepare_time=%d)\n", __func__, prepare_time);
+    debug("call %s(%d)\n", __func__, prepare_time);
 
     if (prepare_time) {
         prepare_time -= 1;
+        myvideo.lcd.update = 0;
     }
     else if (myvideo.lcd.update == 0) {
         myvideo.lcd.cur_sel ^= 1;
@@ -2252,6 +2258,7 @@ static void prehook_cb_update_screen(void)
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         myvideo.menu.drastic.enable = 0;
 #endif
+        debug("set lcd.update=1\n");
         myvideo.lcd.update = 1;
     }
 }
@@ -2451,8 +2458,10 @@ TEST(sdl2_video, strip_newline_char)
 
 static void* video_handler(void *param)
 {
+#if !defined(MINI)
     int cur_shader = 0;
     char tmp[MAX_PATH] = { 0 };
+#endif
 
 #if defined(FLIP)
     EGLint surf_cfg[] = {
@@ -2671,10 +2680,13 @@ static void* video_handler(void *param)
 #else
         if (myvideo.lcd.update) {
 #endif
+            debug("handling screen update\n");
 
             process_screen();
             myvideo.lcd.update = 0;
         }
+
+        usleep(0);
     }
 
 #if defined(FLIP)
@@ -2769,6 +2781,7 @@ TEST(sdl2_video, free_lang_res)
 }
 #endif
 
+#if !defined(MINI)
 static int load_shader_file(const char *name)
 {
     long size = 0;
@@ -2879,6 +2892,7 @@ static int load_shader_file(const char *name)
 TEST(sdl2_video, load_shader_file)
 {
 }
+#endif
 #endif
 
 static int load_lang_file(void)
@@ -3855,6 +3869,9 @@ static int quit_lcd(void)
 #if defined(MINI)
 static int init_lcd(void)
 {
+    MI_U32 r = 0;
+    uint32_t size = 819200;
+
     debug("call %s()\n", __func__);
 
     MI_SYS_Init();
@@ -3862,8 +3879,7 @@ static int init_lcd(void)
 
     myvideo.fb.fd = open("/dev/fb0", O_RDWR);
     if (myvideo.fb.fd < 0) {
-        error("failed to open /dev/fb0\n");
-        return -1;
+        fatal("failed to open /dev/fb0\n");
     }
 
     ioctl(myvideo.fb.fd, FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
@@ -3878,8 +3894,12 @@ static int init_lcd(void)
     MI_SYS_Mmap(myvideo.fb.phy_addr, myvideo.fb.fix_info.smem_len, &myvideo.fb.virt_addr, TRUE);
     memset(&myvideo.gfx.opt, 0, sizeof(myvideo.gfx.opt));
 
-    MI_SYS_MMA_Alloc(NULL, SCREEN_BUF_SIZEx2, &myvideo.tmp.phy_addr);
-    MI_SYS_Mmap(myvideo.tmp.phy_addr, SCREEN_BUF_SIZEx2, &myvideo.tmp.virt_addr, TRUE);
+    size = SCREEN_BUF_SIZE;
+    r = MI_SYS_MMA_Alloc(NULL, size, &myvideo.tmp.phy_addr);
+    if (r) {
+        fatal("failed to allocate memory for tmp.phy_addr (size=%d)\n", size);
+    }
+    MI_SYS_Mmap(myvideo.tmp.phy_addr, size, &myvideo.tmp.virt_addr, TRUE);
 
     alloc_lcd_mem();
 
@@ -6216,10 +6236,8 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, int cur_bg, const char *fname)
 {
-    float scale = 1.0;
-
 #if defined(XT894) || defined(XT897)
-    scale = 1.125;
+    float scale = 1.125;
 #endif
 
     debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
@@ -6538,7 +6556,7 @@ static int init_device(void)
     load_overlay_file();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
-    set_auto_state(myconfig.autostate.enable, myconfig.autostate.slot);
+    //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)

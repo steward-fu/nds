@@ -670,7 +670,7 @@ TEST(alsa, quit_queue)
 
 static int get_available_rsize(queue_t *q)
 {
-    debug("call %s(q=%p)\n", __func__, q);
+    trace("call %s(q=%p)\n", __func__, q);
 
     if (!q) {
         error("queue is null\n");
@@ -707,7 +707,7 @@ TEST(alsa, get_available_rsize)
 
 static int get_available_wsize(queue_t *q)
 {
-    debug("call %s(q=%p)\n", __func__, q);
+    trace("call %s(q=%p)\n", __func__, q);
 
     if (!q) {
         error("queue is null\n");
@@ -748,7 +748,7 @@ static int put_queue(queue_t *q, uint8_t *buf, size_t size)
     int tmp = 0;
     int avai = 0;
 
-    debug("call %s(q=%p, buf=%p, size=%ld)\n", __func__, q, buf, size);
+    trace("call %s(q=%p, buf=%p, size=%ld)\n", __func__, q, buf, size);
 
     if (!q || !buf) {
         error("invalid parameters\n");
@@ -813,7 +813,7 @@ static size_t get_queue(queue_t *q, uint8_t *buf, size_t len)
     int avai = 0;
     int size = len;
 
-    debug("call %s(q=%p, buf=%p, max=%ld)\n", __func__, q, buf, len);
+    trace("call %s(q=%p, buf=%p, max=%ld)\n", __func__, q, buf, len);
 
     if (!q || !buf) {
         error("invalid parameters\n");
@@ -963,7 +963,7 @@ TEST(alsa, audio_handler)
 
 snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm)
 {
-    debug("call %s(%p)\n", __func__, pcm);
+    trace("call %s(%p)\n", __func__, pcm);
 
     if (pcm) {
         return myhook.use_mic ? (735 * 2) : 0;
@@ -1526,7 +1526,7 @@ TEST(alsa, snd_pcm_sw_params_malloc)
 
 snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframes_t size)
 {
-    debug("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
+    trace("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
 
 #if defined(UT)
     return size;

@@ -1298,7 +1298,7 @@ TEST(sdl2_event, get_pandora_key_code)
 
 static int get_input_key_code(int fd, struct input_event *e)
 {
-    debug("call %s(fd=%d, event=%p)\n", __func__, fd, e);
+    trace("call %s(fd=%d, event=%p)\n", __func__, fd, e);
 
     if (fd < 0) {
         error("invalid handle\n");
@@ -1324,7 +1324,7 @@ static int get_input_key_code(int fd, struct input_event *e)
         return 1;
     }
 
-    debug("ignore input event\n");
+    trace("ignore input event\n");
     return 0;
 }
 
@@ -1336,7 +1336,7 @@ TEST(sdl2_event, get_input_key_code)
 
 static int update_latest_keypad_value(void)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0) && myconfig.keys_rotate) {
         if (myconfig.keys_rotate == 1) {
@@ -1490,6 +1490,7 @@ TEST(sdl2_event, send_touch_axis)
 }
 #endif
 
+#if !defined(MINI)
 int handle_touch_event(int fd)
 {
     static int tp_id = 0;
@@ -1673,6 +1674,7 @@ int handle_touch_event(int fd)
 TEST(sdl2_event, handle_touch_event)
 {
 }
+#endif
 #endif
 
 int input_handler(void *data)
@@ -2323,7 +2325,7 @@ void prehook_platform_get_input(uintptr_t p)
 
     input_struct *input = (input_struct *)(((uint8_t *)p) + NDS_INPUT_OFFSET);
 
-    debug("call %s(p=%p)\n", __func__, input);
+    trace("call %s(p=%p)\n", __func__, input);
 
     if (myvideo.menu.sdl2.enable) {
         send_key_to_menu();
