@@ -87,8 +87,8 @@ static GLushort vert_indices[] = {
     0, 1, 2, 0, 2, 3
 };
 
-int enable_debug_log = 0;
 static runner_t myrunner = { 0 };
+int nds_debug_level = FATAL_LEVEL;
 
 static int init_shm(void)
 {
@@ -473,16 +473,8 @@ static void* runner_handler(void *param)
 int main(int argc, char **argv)
 {
     pthread_t id = 0;
-    const char *debug = NULL;
 
-    debug = getenv(NDS_DEBUG);
-
-    enable_debug_log = 0;
-    if (debug && !strcmp(debug, "1")) {
-        enable_debug_log = 1;
-    }
-
-    debug("call %s(enable_debug_log=%d)\n", __func__, enable_debug_log);
+    nds_debug_level = get_debug_level();
 
     pthread_create(&id, NULL, runner_handler, NULL);
     pthread_join(id, NULL);

@@ -8,7 +8,6 @@
 #define NDS_H       192
 #define NDS_Wx2     (NDS_W << 1)
 #define NDS_Hx2     (NDS_H << 1)
-#define NDS_DEBUG   "NDS_DEBUG_LOG"
 
 #define RES_PATH        "res"
 #define BG_PATH         RES_PATH"/bg"
@@ -83,22 +82,40 @@ enum layout_mode_t {
 #define DEF_LAYOUT_MODE     1
 #define DEF_JOY_DZONE       25
 
-extern int enable_debug_log;
+#define TRACE_LEVEL  3
+#define DEBUG_LEVEL  2
+#define ERROR_LEVEL  1
+#define FATAL_LEVEL  0
+
+extern int nds_debug_level;
 
 #define LOG_FILE  "mynds.log"
 
-#define debug(...) do {         \
-    if (enable_debug_log) {     \
-        printf("[DEBUG] ");     \
-        printf(__VA_ARGS__);    \
-    }                           \
+#define trace(...) do {                         \
+    if (nds_debug_level >= TRACE_LEVEL) {   \
+        printf("[TRACE] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
 } while(0);
 
-#define error(...) do {         \
-    if (enable_debug_log) {     \
-        printf("[ERROR] ");     \
-        printf(__VA_ARGS__);    \
-    }                           \
+#define debug(...) do {                         \
+    if (nds_debug_level >= DEBUG_LEVEL) {   \
+        printf("[DEBUG] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
+} while(0);
+
+#define error(...) do {                         \
+    if (nds_debug_level >= ERROR_LEVEL) {   \
+        printf("[ERROR] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
+} while(0);
+
+#define fatal(...) do {                         \
+    printf("[FATAL] ");                         \
+    printf(__VA_ARGS__);                        \
+    exit(-1);                                   \
 } while(0);
 
 typedef enum {
@@ -141,7 +158,7 @@ typedef struct {
 
     int lang;
 
-#if !defined(MINI)
+#if defined(MINI)
     int shader;
 #endif
 
@@ -243,6 +260,7 @@ int get_dir_cnt(const char *);
 int get_file_cnt(const char *);
 int get_path_by_idx(const char *, int, char *);
 uint64_t get_tick_count_ms(void);
+int get_debug_level(void);
 
 #endif
 

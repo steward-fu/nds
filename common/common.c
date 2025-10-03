@@ -26,8 +26,8 @@
 #include "drastic_bios_arm7.h"
 #include "drastic_bios_arm9.h"
 
-int enable_debug_log = 0;
 nds_config myconfig = { 0 };
+int nds_debug_level = FATAL_LEVEL;
 
 #if defined(UT)
 TEST_GROUP(common);
@@ -226,24 +226,50 @@ TEST(common, reset_config)
 }
 #endif
 
+int get_debug_level(void)
+{
+    int r = FATAL_LEVEL;
+    const char *level = NULL;
+
+    debug("cal %s()\n", __func__);
+
+    // export NDS_DEBUG_LEVEL=TRACE
+    level = getenv("NDS_DEBUG_LEVEL");
+    printf("[DEBUG] NDS_DEBUG_LEVEL=%s\n", level ? level : "FATAL");
+
+    if (level != NULL) {
+        if (!strcmp(level, "TRACE")) {
+            r = TRACE_LEVEL;
+        }
+        else if(!strcmp(level, "DEBUG")) {
+            r = DEBUG_LEVEL;
+        }
+        else if(!strcmp(level, "ERROR")) {
+            r = ERROR_LEVEL;
+        }
+        else if(!strcmp(level, "FATAL")) {
+            r = FATAL_LEVEL;
+        }
+    }
+
+    return r;
+}
+
+#if defined(UT)
+TEST(common, get_debug_level)
+{
+}
+#endif
+
 int load_config(const char *path)
 {
     int err = 0;
     struct stat st = { 0 };
     char buf[MAX_PATH] = { 0 };
-    const char *debug = NULL;
 
     debug("call %s()\n", __func__);
 
-    enable_debug_log = 0;
-    debug = getenv(NDS_DEBUG);
-
-    // export NDS_DEBU_LOG=1
-    if (debug && !strcmp(debug, "1")) {
-        enable_debug_log = 1;
-    }
-
-    debug("enable_debug_log=%d\n", enable_debug_log);
+    nds_debug_level = get_debug_level();
 
     strncpy(buf, path, sizeof(buf));
     strcat(buf, CFG_FILE);
