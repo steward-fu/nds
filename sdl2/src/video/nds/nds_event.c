@@ -1649,7 +1649,7 @@ int handle_touch_event(int fd)
                         myevent.touch.y = y;
                         break;
                     }
-                    myevent.input.touch_status = 1;
+                    myevent.input.touch_status = tp[tp_id].pressure * 100;
                     limit_touch_axis();
 
                     debug("mode=%d, %d, %d (%d, %d, %d, %d)\n",
@@ -1683,7 +1683,7 @@ int input_handler(void *data)
 {
     int rk = 0;
     int rj = 0;
-    int sleep_ms = 10000;
+    int sleep_us = 10000;
     struct input_event ev = {{ 0 }};
 
     debug("call %s()\n", __func__);
@@ -1697,7 +1697,7 @@ int input_handler(void *data)
 #endif
 
 #if defined(XT894) || defined(XT897)
-    sleep_ms = 100;
+    sleep_us = 1000;
     myevent.tp_fd = open(TOUCH_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     myevent.pwr_fd = open(POWER_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 #endif
@@ -1770,7 +1770,7 @@ int input_handler(void *data)
 
         SDL_SemPost(myevent.sem);
 
-        usleep(sleep_ms);
+        usleep(sleep_us);
     }
     
     return 0;
