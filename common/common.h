@@ -14,7 +14,7 @@
 #define PEN_PATH        RES_PATH"/pen"
 #define LANG_PATH       RES_PATH"/lang"
 #define MENU_PATH       RES_PATH"/menu"
-#define OVERLAY_PATH    RES_PATH"/overlay"
+#define MASK_PATH       RES_PATH"/mask"
 #define SHADER_PATH     RES_PATH"/shader"
 #define CFG_FILE        RES_PATH"/nds.cfg"
 #define FONT_FILE       RES_PATH"/font/font.ttf"
@@ -123,7 +123,7 @@ typedef enum {
     TEXTURE_LCD1,
     TEXTURE_BG,
     TEXTURE_PEN,
-    TEXTURE_OVERLAY,
+    TEXTURE_MASK,
     TEXTURE_TMP,
     TEXTURE_MAX
 } texture_type_t;
@@ -135,14 +135,6 @@ typedef enum {
     PEN_RB = 3,
     PEN_CP = 4
 } pen_type_t;
-
-typedef enum {
-    OVERLAY_APPLY_MODE_BOTH = 0,
-    OVERLAY_APPLY_MODE_LCD0,
-    OVERLAY_APPLY_MODE_LCD1,
-    OVERLAY_APPLY_MODE_NONE,
-    OVERLAY_APPLY_MODE_MAX
-} overlay_apply_mode_t;
 
 typedef enum {
     FILTER_BLUR = 0,
@@ -191,10 +183,7 @@ typedef struct {
 
         struct {
             int sel;
-            int enable;
-            int cur_sel_layout;
-            overlay_apply_mode_t apply[LAYOUT_MODE_MAX];
-        } overlay;
+        } mask;
 
         struct {
             int sel;

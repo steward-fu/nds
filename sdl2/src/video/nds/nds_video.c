@@ -111,7 +111,6 @@ static int init_video(_THIS);
 static int free_menu_res(void);
 static int load_lang_file(void);
 static int load_layout_bg(void);
-static int load_overlay_file(void);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
@@ -121,6 +120,10 @@ static int get_file_name_by_index(const char *, int, char *, int);
 
 #if !defined(MINI)
 static int load_shader_file(const char *);
+#endif
+
+#if defined(MINI)
+static int load_overlay_file(void);
 #endif
 
 static SDL_Rect def_layout_pos[LAYOUT_MODE_MAX][2] = {
@@ -1695,8 +1698,6 @@ static int process_screen(void)
         }
         else if (cur_layout_mode != myconfig.layout.mode.sel) {
             show_info = 50;
-            load_overlay_file();
-
             if (myconfig.layout.mode.sel <= LAYOUT_MODE_T15) {
                 sprintf(buf, " %s: T%d ", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
             }
@@ -2918,16 +2919,13 @@ static int get_file_name_by_index(const char *folder, int idx, char *buf, int fu
     return r;
 }
 
+#if defined(MINI)
 static int load_overlay_file(void)
 {
     int cc = 0;
     char buf[MAX_PATH + 32] = { 0 };
 
     debug("call %s(sel=%d, max=%d)\n", __func__, myconfig.layout.overlay.sel, myvideo.layout.overlay.max);
-
-#if !defined(MINI)
-    return 0;
-#endif
 
     if (myvideo.layout.overlay.bg) {
         SDL_FreeSurface(myvideo.layout.overlay.bg);
@@ -3023,10 +3021,8 @@ static int load_overlay_file(void)
 #if defined(UT)
 TEST(sdl2_video, load_overlay_file)
 {
-    TEST_ASSERT_EQUAL_INT(0, init_device());
-    //TEST_ASSERT_EQUAL_INT(3, load_overlay_file());
-    TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
+#endif
 #endif
 
 static int enum_lang_file(void)
@@ -3084,6 +3080,7 @@ TEST(sdl2_video, enum_lang_file)
 }
 #endif
 
+#if !defined(MINI)
 static int get_shader_cnt(void)
 {
     char buf[MAX_PATH + 32] = { 0 };
@@ -3100,6 +3097,7 @@ static int get_shader_cnt(void)
 TEST(sdl2_video, get_shader_cnt)
 {
 }
+#endif
 #endif
 
 static int get_bg_cnt(void)
@@ -5348,6 +5346,30 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     MI_GFX_BitBlit(&myvideo.gfx.src.surf, &myvideo.gfx.src.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &fence);
     MI_GFX_WaitAllDone(TRUE, fence);
+
+    gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
+    gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
+    gfx.hw.overlay.surf.u32Width = FB_W;
+    gfx.hw.overlay.surf.u32Height = FB_H;
+    gfx.hw.overlay.surf.u32Stride = FB_W * FB_BPP;
+    gfx.hw.overlay.rt.s32Xpos = 0;
+    gfx.hw.overlay.rt.s32Ypos = 0;
+    gfx.hw.overlay.rt.u32Width = FB_W;
+    gfx.hw.overlay.rt.u32Height = FB_H;
+
+    gfx.hw.dst.rt.s32Xpos = 0;
+    gfx.hw.dst.rt.s32Ypos = 0;
+    gfx.hw.dst.rt.u32Width = FB_W;
+    gfx.hw.dst.rt.u32Height = FB_H;
+    gfx.hw.dst.surf.phyAddr = gfx.fb.phyAddr + (FB_W * gfx.vinfo.yoffset * FB_BPP);
+
+    gfx.hw.opt.u32GlobalSrcConstColor = 0xff000000;
+    gfx.hw.opt.eRotate = E_MI_GFX_ROTATE_180;
+    gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+    gfx.hw.opt.eDstDfbBldOp = E_MI_GFX_DFB_BLD_INVSRCALPHA;
+    gfx.hw.opt.eDFBBlendFlag = E_MI_GFX_DFB_BLEND_SRC_PREMULTIPLY | E_MI_GFX_DFB_BLEND_COLORALPHA | E_MI_GFX_DFB_BLEND_ALPHACHANNEL;
+    MI_GFX_BitBlit(&gfx.hw.overlay.surf, &gfx.hw.overlay.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
+    MI_GFX_WaitAllDone(FALSE, u16Fence);
 #endif
 
     return 0;
@@ -6452,7 +6474,7 @@ static int init_device(void)
     }
 
     //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL);
-    load_overlay_file();
+    //load_overlay_file();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
@@ -7405,14 +7427,18 @@ TEST(sdl2_video, draw_small_block_win)
 
 static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
+#if !defined(MINI)
     //int add = is_lr ? 50 : 1;
     int max_shader_count = get_shader_cnt();
+#endif
 
+    debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
+
+#if !defined(MINI)
     if (myconfig.shader >= max_shader_count) {
         myconfig.shader = 0;
     }
-
-    debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
+#endif
 
     switch(cur_sel) {
     case MENU_LANG:
@@ -8024,7 +8050,7 @@ static int process_sdl2_setting(int key)
 #endif
 
         //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL);
-        load_overlay_file();
+        //load_overlay_file();
 
         myvideo.menu.sdl2.enable = 0;
 

@@ -423,7 +423,7 @@ typedef struct {
         struct {
             MI_GFX_Rect_t rt;
             MI_GFX_Surface_t surf;
-        } src, dst;
+        } src, dst, mask;
 #endif
     } gfx;
 
@@ -457,17 +457,6 @@ typedef struct {
 
         int max_mode;
         layout_mode_t mode[MAX_LAYOUT_MODE];
-
-        struct {
-            int max;
-            //int idx;
-            SDL_Surface *bg;
-            SDL_Surface *mask[2];
-
-#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-            int reload;
-#endif
-        } overlay;
 
 #if defined(TRIMUI)
         int pre_mode;
