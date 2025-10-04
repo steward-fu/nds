@@ -158,7 +158,7 @@ typedef struct {
 
     int lang;
 
-#if defined(MINI)
+#if !defined(MINI)
     int shader;
 #endif
 

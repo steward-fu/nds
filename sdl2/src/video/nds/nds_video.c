@@ -324,13 +324,14 @@ static int free_lcd_mem(void)
 {
     int i = 0;
     int j = 0;
-    const int size = NDS_Wx2 * NDS_Hx2 * 4;
 
     debug("call %s()\n", __func__)
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j <2; j++) {
 #if defined(MINI)
+            const int size = NDS_Wx2 * NDS_Hx2 * 4;
+
             if (myvideo.lcd.phy_addr[i][j]) {
                 MI_SYS_Munmap(myvideo.lcd.virt_addr[i][j], size);
                 MI_SYS_MMA_Free(myvideo.lcd.phy_addr[i][j]);
