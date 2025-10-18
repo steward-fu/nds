@@ -19,6 +19,8 @@
 #define KEYPAD_DEV  "/dev/input/event0"
 #elif defined(QX1000)
 #define INPUT_DEV   "/dev/input/event3"
+#define TOUCH_DEV   "/dev/input/event1"
+#define POWER_DEV   "/dev/input/event0"
 #elif defined(QX1050)
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(XT897)
@@ -425,7 +427,7 @@ typedef struct {
 typedef struct {
     int fd;
 
-#if defined(XT894) || defined(XT897)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     int tp_fd;
     int pwr_fd;
 #endif

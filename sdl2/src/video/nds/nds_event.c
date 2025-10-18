@@ -1499,7 +1499,7 @@ int handle_touch_event(int fd)
     static int tp_valid = 0;
     struct input_event ev = { 0 };
 
-#if defined(XT894) || defined(XT897)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     const int screen_w = WL_WIN_H;
     const int screen_h = WL_WIN_W;
 #endif
@@ -1508,7 +1508,6 @@ int handle_touch_event(int fd)
     float tp_max_x = 1000.0;
     float tp_max_y = 1000.0;
 #endif
-
 #if defined(QX1000)
     float tp_max_x = 2160.0;
     float tp_max_y = 1080.0;
@@ -1696,7 +1695,7 @@ int input_handler(void *data)
     }
 #endif
 
-#if defined(XT894) || defined(XT897)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     sleep_us = 1000;
     myevent.tp_fd = open(TOUCH_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     myevent.pwr_fd = open(POWER_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
@@ -1758,7 +1757,7 @@ int input_handler(void *data)
         handle_trimui_special_key();
 #endif
 
-#if defined(XT894) || defined(XT897)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
         rk = get_input_key_code(myevent.pwr_fd, &ev);
         if (rk > 0) {
             debug("code=%d, value=%d\n", ev.code, ev.value);
@@ -1878,7 +1877,7 @@ void quit_event(void)
         myevent.fd = -1;
     }
 
-#if defined(XT894) || defined(XT897)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     if (myevent.tp_fd > 0) {
         close(myevent.tp_fd);
         myevent.tp_fd = -1;
