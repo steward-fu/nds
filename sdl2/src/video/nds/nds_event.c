@@ -1574,7 +1574,7 @@ int handle_touch_event(int fd)
 
                 tp_valid = 0;
                 debug(
-                    "touch ID=%d, X=%d, Y=%d, Pressure=%d\n",
+                    "touch id=%d, x=%d, y=%d, pressure=%d\n",
                     tp_id,
                     tp[tp_id].x,
                     tp[tp_id].y,
@@ -1651,14 +1651,10 @@ int handle_touch_event(int fd)
                     myevent.input.touch_status = tp[tp_id].pressure * 100;
                     limit_touch_axis();
 
-                    debug("mode=%d, %d, %d (%d, %d, %d, %d)\n",
-                        myconfig.layout.mode.sel,
+                    debug("send touch event, x=%d, y=%d, pressure=%d\n",
                         myevent.touch.x,
                         myevent.touch.y,
-                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].x,
-                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].y,
-                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].w,
-                        myvideo.layout.mode[myconfig.layout.mode.sel].screen[lcd].h
+                        myevent.input.touch_status
                     );
                 }
             }

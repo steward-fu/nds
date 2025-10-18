@@ -254,8 +254,8 @@
 #define DEV_KEY_CODE_VOL_UP     -1
 #define DEV_KEY_CODE_VOL_DOWN   -1
 
-#define DEV_KEY_CODE_SAVE       2
-#define DEV_KEY_CODE_LOAD       13
+#define DEV_KEY_CODE_SAVE       1
+#define DEV_KEY_CODE_LOAD       14
 #define DEV_KEY_CODE_FAST       -1
 #define DEV_KEY_CODE_EXIT       28
 #endif

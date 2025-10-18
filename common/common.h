@@ -43,7 +43,7 @@
 #define LAYOUT_BG_H 480
 
 enum layout_mode_t {
-    LAYOUT_MODE_T0,      // 0
+    LAYOUT_MODE_T0,      // 0 Normal Mode
     LAYOUT_MODE_T1,      // 1
     LAYOUT_MODE_T2,      // 2
     LAYOUT_MODE_T3,      // 3
@@ -59,12 +59,16 @@ enum layout_mode_t {
     LAYOUT_MODE_T13,     // 13
     LAYOUT_MODE_T14,     // 14
     LAYOUT_MODE_T15,     // 15
-    LAYOUT_MODE_B0,      // 16
+    LAYOUT_MODE_B0,      // 16 Book Mode
     LAYOUT_MODE_B1,      // 17
     LAYOUT_MODE_B2,      // 18
     LAYOUT_MODE_B3,      // 19
-    LAYOUT_MODE_CUST,    // 20
-    LAYOUT_MODE_MAX,     // 21
+    LAYOUT_MODE_D0,      // 20 Draw Mode
+#if defined(QX1000)
+    LAYOUT_MODE_C0,      // Customized Mode
+    LAYOUT_MODE_C1,      //
+#endif
+    LAYOUT_MODE_MAX,
 };
 
 #define NDS_ALPHA_MAX   9

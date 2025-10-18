@@ -174,8 +174,14 @@ static SDL_Rect def_layout_pos[LAYOUT_MODE_MAX][2] = {
     {{ 0, 0, 480, 320 }, { 320, 0, 480, 320 }},
     // LAYOUT_MODE_B3
     {{ 320, 0, 480, 320 }, { 0, 0, 480, 320 }},
-    // LAYOUT_MODE_CUST
-    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }}
+    // LAYOUT_MODE_D0
+    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+#if defined(QX1000)
+    // LAYOUT_MODE_C0
+    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+    // LAYOUT_MODE_C1
+    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+#endif
 };
 
 #if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -1699,7 +1705,12 @@ static int process_screen(void)
         else if (cur_layout_mode != myconfig.layout.mode.sel) {
             show_info = 50;
             if (myconfig.layout.mode.sel <= LAYOUT_MODE_T15) {
-                sprintf(buf, " %s: T%d ", l10n("LAYOUT MODE"), myconfig.layout.mode.sel);
+                sprintf(
+                    buf,
+                    " %s: T%d ",
+                    l10n("LAYOUT MODE"),
+                    myconfig.layout.mode.sel
+                );
             }
             else if ((myconfig.layout.mode.sel >= LAYOUT_MODE_B0) &&
                 (myconfig.layout.mode.sel <= LAYOUT_MODE_B3))
@@ -1711,8 +1722,21 @@ static int process_screen(void)
                     myconfig.layout.mode.sel - LAYOUT_MODE_B0
                 );
             }
-            else if (myconfig.layout.mode.sel == LAYOUT_MODE_CUST) {
-                sprintf(buf, " %s: %s ", l10n("LAYOUT MODE"), l10n("CUST"));
+            else if (myconfig.layout.mode.sel == LAYOUT_MODE_D0) {
+                sprintf(
+                    buf,
+                    " %s: D%d ",
+                    l10n("LAYOUT MODE"),
+                    myconfig.layout.mode.sel - LAYOUT_MODE_D0
+                );
+            }
+            else if (myconfig.layout.mode.sel == LAYOUT_MODE_C0) {
+                sprintf(
+                    buf,
+                    " %s: C%d ",
+                    l10n("LAYOUT MODE"),
+                    myconfig.layout.mode.sel - LAYOUT_MODE_C0
+                );
             }
         }
         else if (cur_layout_bg != myconfig.layout.bg.sel) {
@@ -6261,6 +6285,30 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = max_h;
         myvideo.layout.mode[mode].screen[1].h = max_w >> 1;
         break;
+#if defined(QX1000)
+    case LAYOUT_MODE_C0:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 135;
+        myvideo.layout.mode[mode].screen[0].w = 1080;
+        myvideo.layout.mode[mode].screen[0].h = 810;
+
+        myvideo.layout.mode[mode].screen[1].x = 1080;
+        myvideo.layout.mode[mode].screen[1].y = 135;
+        myvideo.layout.mode[mode].screen[1].w = 1080;
+        myvideo.layout.mode[mode].screen[1].h = 810;
+        break;
+    case LAYOUT_MODE_C1:
+        myvideo.layout.mode[mode].screen[0].x = 56;
+        myvideo.layout.mode[mode].screen[0].y = 156;
+        myvideo.layout.mode[mode].screen[0].w = 256 << 2;
+        myvideo.layout.mode[mode].screen[0].h = 192 << 2;
+
+        myvideo.layout.mode[mode].screen[1].x = 56 + 1024;
+        myvideo.layout.mode[mode].screen[1].y = 156;
+        myvideo.layout.mode[mode].screen[1].w = 256 << 2;
+        myvideo.layout.mode[mode].screen[1].h = 192 << 2;
+        break;
+#endif
     default:
         myvideo.layout.mode[mode].screen[0].x =
             ((max_w - scale_w) >> 1) +
@@ -6347,6 +6395,11 @@ static int free_layout_mode(void)
     add_layout_mode(LAYOUT_MODE_T3, 0, NULL);
     add_layout_mode(LAYOUT_MODE_B2, 0, NULL);
     add_layout_mode(LAYOUT_MODE_B3, 0, NULL);
+#endif
+
+#if defined(QX1000)
+    add_layout_mode(LAYOUT_MODE_C0, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_C1, 0, NULL);
 #endif
 
     return 0;
