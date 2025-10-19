@@ -1811,7 +1811,14 @@ static int process_screen(void)
         drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].y;
         drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].w;
         drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].h;
-        debug("mode=%d, drt=%d,%d,%d,%d\n", myconfig.layout.mode.sel, drt.x, drt.y, drt.w, drt.h);
+        debug(
+            "mode=%d, drt=%d,%d,%d,%d\n",
+            myconfig.layout.mode.sel,
+            drt.x,
+            drt.y,
+            drt.w,
+            drt.h
+        );
 
 #if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
         switch (myconfig.layout.mode.sel) {
@@ -1897,7 +1904,17 @@ static int process_screen(void)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA,
+            srt.w,
+            srt.h,
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            pixels
+        );
 #endif
 #endif
 
@@ -1915,6 +1932,29 @@ static int process_screen(void)
 #if defined(MINI)
             MI_SYS_FlushInvCache(pixels, pitch * srt.h);
 #endif
+
+#if defined(XT894) || defined(XT897)
+            switch (myconfig.layout.mode.sel) {
+            case LAYOUT_MODE_T0:
+            case LAYOUT_MODE_T1:
+                switch (myconfig.layout.swin.pos) {
+                case 0:
+                    drt.x = 0;
+                    break;
+                case 1:
+                    drt.x = 240;
+                    break;
+                case 2:
+                    drt.x = 240;
+                    break;
+                case 3:
+                    drt.x = 0;
+                    break;
+                }
+                break;
+            }
+#endif
+
             flush_lcd(idx, pixels, srt, drt, pitch);
 
 #if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
@@ -4284,7 +4324,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     if ((!myvideo.menu.sdl2.enable && !myvideo.menu.drastic.enable) &&
-        (myconfig.layout.mode.sel <= LAYOUT_MODE_T1) && (id == TEXTURE_LCD0))
+#if defined(XT894) || defined(XT897)
+        (myconfig.layout.mode.sel == LAYOUT_MODE_T1) &&
+#endif
+        (id == TEXTURE_LCD0))
     {
         glUniform1f(myvideo.egl.frag.alpha, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -6237,9 +6280,24 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
 
     switch (mode) {
     case LAYOUT_MODE_T0:
-    case LAYOUT_MODE_T1:
+#if defined(XT894) || defined(XT897)
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[0].w = 240;
+        myvideo.layout.mode[mode].screen[0].h = 180;
+#else
         myvideo.layout.mode[mode].screen[0].x = margin_w;
         myvideo.layout.mode[mode].screen[1].x = margin_w;
+#endif
+        break;
+    case LAYOUT_MODE_T1:
+#if defined(XT894) || defined(XT897)
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[1].x = 0;
+#else
+        myvideo.layout.mode[mode].screen[0].x = margin_w;
+        myvideo.layout.mode[mode].screen[1].x = margin_w;
+#endif
         break;
     case LAYOUT_MODE_B0:
         myvideo.layout.mode[mode].screen[0].x = margin_w;
@@ -6285,8 +6343,8 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = max_h;
         myvideo.layout.mode[mode].screen[1].h = max_w >> 1;
         break;
-#if defined(XT894) || defined(XT897)
     case LAYOUT_MODE_C0:
+#if defined(XT894) || defined(XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 90;
         myvideo.layout.mode[mode].screen[0].w = 480;
@@ -6296,21 +6354,9 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 90;
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 360;
-        break;
-    case LAYOUT_MODE_C1:
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 78;
-        myvideo.layout.mode[mode].screen[0].w = 512;
-        myvideo.layout.mode[mode].screen[0].h = 384;
-
-        myvideo.layout.mode[mode].screen[1].x = 512;
-        myvideo.layout.mode[mode].screen[1].y = (540 - 336) >> 1;
-        myvideo.layout.mode[mode].screen[1].w = 448;
-        myvideo.layout.mode[mode].screen[1].h = 336;
-        break;
 #endif
+
 #if defined(QX1000)
-    case LAYOUT_MODE_C0:
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 135;
         myvideo.layout.mode[mode].screen[0].w = 1080;
@@ -6320,8 +6366,22 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 135;
         myvideo.layout.mode[mode].screen[1].w = 1080;
         myvideo.layout.mode[mode].screen[1].h = 810;
+#endif
         break;
     case LAYOUT_MODE_C1:
+#if defined(XT894) || defined(XT897)
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 78;
+        myvideo.layout.mode[mode].screen[0].w = 512;
+        myvideo.layout.mode[mode].screen[0].h = 384;
+
+        myvideo.layout.mode[mode].screen[1].x = 512;
+        myvideo.layout.mode[mode].screen[1].y = (540 - 336) >> 1;
+        myvideo.layout.mode[mode].screen[1].w = 448;
+        myvideo.layout.mode[mode].screen[1].h = 336;
+#endif
+
+#if defined(QX1000)
         myvideo.layout.mode[mode].screen[0].x = 56;
         myvideo.layout.mode[mode].screen[0].y = 156;
         myvideo.layout.mode[mode].screen[0].w = 256 << 2;
@@ -6331,8 +6391,8 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].y = 156;
         myvideo.layout.mode[mode].screen[1].w = 256 << 2;
         myvideo.layout.mode[mode].screen[1].h = 192 << 2;
-        break;
 #endif
+        break;
     default:
         myvideo.layout.mode[mode].screen[0].x =
             ((max_w - scale_w) >> 1) +
