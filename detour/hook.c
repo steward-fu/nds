@@ -151,10 +151,17 @@ static int32_t prehook_load_state_index(
     char buf[MAX_PATH] = { 0 };
     nds_load_state pfn = (nds_load_state)myhook.fun.load_state;
 
-    debug("call %s(pfn=%p)\n", __func__, pfn);
+    debug(
+        "call %s(pfn=%p, index=%d, d0=%p, d1=%p)\n",
+        __func__,
+        pfn,
+        index,
+        d0,
+        d1
+    );
 
-    if (!pfn || !system || !d0 || !d1) {
-        error("invalid input\n");
+    if (!pfn || !system) {
+        error("invalid parameter\n");
         return -1;
     }
 
@@ -171,6 +178,7 @@ static int32_t prehook_load_state_index(
         index
     );
 
+    debug("state path=\"%s\", slot=\"%s\"\n", state_path, buf);
     pfn((void *)myhook.var.system.base, buf, d0, d1, shot_only);
 }
 
@@ -186,15 +194,27 @@ TEST(detour, prehook_load_state_index)
 }
 #endif
 
-static int32_t prehook_save_state_index(void *system, uint32_t index, uint16_t *d0, uint16_t *d1)
+static int32_t prehook_save_state_index(
+    void *system,
+    uint32_t index,
+    uint16_t *d0,
+    uint16_t *d1)
 {
     char buf[MAX_PATH] = { 0 };
     nds_save_state pfn = (nds_save_state)myhook.fun.save_state;
 
-    debug("call %s(pfn=%p)\n", __func__, pfn);
+    debug(
+        "call %s(pfn=%p, index=%d, d0=%p, d1=%p)\n",
+        __func__,
+        pfn,
+        index,
+        d0,
+        d1
+    );
 
-    if (!pfn || !system || !d0 || !d1) {
-        error("invalid input\n");
+
+    if (!pfn || !system) {
+        error("invalid parameter\n");
         return -1;
     }
 
@@ -202,7 +222,15 @@ static int32_t prehook_save_state_index(void *system, uint32_t index, uint16_t *
     return 0;
 #endif
 
-    snprintf(buf, sizeof(buf), "%s_%d.dss", (const char *)myhook.var.system.gamecard_name, index);
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%s_%d.dss",
+        (const char *)myhook.var.system.gamecard_name,
+        index
+    );
+
+    debug("state path=\"%s\", slot=\"%s\"\n", state_path, buf);
     pfn((void *)myhook.var.system.base, state_path, buf, d0, d1);
 }
 
@@ -785,9 +813,20 @@ int init_hook(const char *home, size_t page, const char *path)
         strncpy(state_path, path, sizeof(state_path));
         debug("new state path=\"%s\"\n", path);
 
-        add_prehook((void *)myhook.fun.load_state_index,  (void *)prehook_load_state_index);
-        add_prehook((void *)myhook.fun.save_state_index,  (void *)prehook_save_state_index);
-        add_prehook((void *)myhook.fun.initialize_backup, (void *)prehook_initialize_backup);
+        add_prehook(
+            (void *)myhook.fun.load_state_index,
+            (void *)prehook_load_state_index
+        );
+
+        add_prehook(
+            (void *)myhook.fun.save_state_index,
+            (void *)prehook_save_state_index
+        );
+
+        add_prehook(
+            (void *)myhook.fun.initialize_backup,
+            (void *)prehook_initialize_backup
+        );
     }
 
 #if !defined(NDS_ARM64)

@@ -9,15 +9,15 @@
 #define NDS_Wx2     (NDS_W << 1)
 #define NDS_Hx2     (NDS_H << 1)
 
-#define RES_PATH        "res"
-#define BG_PATH         RES_PATH"/bg"
-#define PEN_PATH        RES_PATH"/pen"
-#define LANG_PATH       RES_PATH"/lang"
-#define MENU_PATH       RES_PATH"/menu"
-#define MASK_PATH       RES_PATH"/mask"
-#define SHADER_PATH     RES_PATH"/shader"
-#define CFG_FILE        RES_PATH"/nds.cfg"
-#define FONT_FILE       RES_PATH"/font/font.ttf"
+#define RES_PATH                    "res"
+#define BG_PATH                     RES_PATH"/bg"
+#define PEN_PATH                    RES_PATH"/pen"
+#define LANG_PATH                   RES_PATH"/lang"
+#define MENU_PATH                   RES_PATH"/menu"
+#define MASK_PATH                   RES_PATH"/mask"
+#define SHADER_PATH                 RES_PATH"/shader"
+#define CFG_FILE                    RES_PATH"/nds.cfg"
+#define FONT_FILE                   RES_PATH"/font/font.ttf"
 
 #define BIOS_PATH                   "system/"
 #define NDS_FIRMWARE_FILE           "nds_firmware.bin"
@@ -25,6 +25,14 @@
 #define NDS_BIOS_ARM9_FILE          "nds_bios_arm9.bin"
 #define DRASTIC_BIOS_ARM7_FILE      "drastic_bios_arm7.bin"
 #define DRASTIC_BIOS_ARM9_FILE      "drastic_bios_arm9.bin"
+
+#if defined(XT894) || defined(QX1000)
+#define DEF_STATE_PATH              "/home/defaultuser/Game/state/nds"
+#endif
+
+#if defined(XT897)
+#define DEF_STATE_PATH              "/home/nemo/Game/state/nds"
+#endif
 
 #define MENU_COLOR_DIS              0x808080
 #define MENU_COLOR_SEL              0xffffff
@@ -39,8 +47,8 @@
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
 
-#define LAYOUT_BG_W 640
-#define LAYOUT_BG_H 480
+#define LAYOUT_BG_W     640
+#define LAYOUT_BG_H     480
 
 enum layout_mode_t {
     LAYOUT_MODE_T0,      // 0 Normal Mode

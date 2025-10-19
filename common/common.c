@@ -214,6 +214,10 @@ int reset_config(void)
     myconfig.rjoy.cust_key[3] = 7;
 #endif
 
+#if defined(XT894) || defined(XT897) || defined(QX1000)
+    strncpy(myconfig.state_path, DEF_STATE_PATH, sizeof(myconfig.state_path));
+#endif
+
     return 0;
 }
 
