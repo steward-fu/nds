@@ -64,6 +64,10 @@ enum layout_mode_t {
     LAYOUT_MODE_B2,      // 18
     LAYOUT_MODE_B3,      // 19
     LAYOUT_MODE_D0,      // 20 Draw Mode
+#if defined(XT894) || defined(XT897)
+    LAYOUT_MODE_C0,      // Customized Mode
+    LAYOUT_MODE_C1,      //
+#endif
 #if defined(QX1000)
     LAYOUT_MODE_C0,      // Customized Mode
     LAYOUT_MODE_C1,      //

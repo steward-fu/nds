@@ -1692,7 +1692,11 @@ int input_handler(void *data)
 #endif
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(XT894) || defined(XT897)
+    sleep_us = 100;
+#else
     sleep_us = 1000;
+#endif
     myevent.tp_fd = open(TOUCH_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     myevent.pwr_fd = open(POWER_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 #endif
@@ -1820,7 +1824,15 @@ void init_event(void)
     myevent.cust_key.gpio = NULL;
     myevent.cust_key.fd = open("/dev/mem", O_RDWR);
     if (myevent.cust_key.fd > 0) {
-        myevent.cust_key.mem = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, myevent.cust_key.fd, 0x01c20000);
+        myevent.cust_key.mem = mmap(
+            0,
+            4096,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED,
+            myevent.cust_key.fd,
+            0x01c20000
+        );
+
         if (myevent.cust_key.mem != MAP_FAILED) {
             uint32_t *p = NULL;
 

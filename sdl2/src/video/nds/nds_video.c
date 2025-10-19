@@ -176,7 +176,7 @@ static SDL_Rect def_layout_pos[LAYOUT_MODE_MAX][2] = {
     {{ 320, 0, 480, 320 }, { 0, 0, 480, 320 }},
     // LAYOUT_MODE_D0
     {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
-#if defined(QX1000)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     // LAYOUT_MODE_C0
     {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
     // LAYOUT_MODE_C1
@@ -6285,6 +6285,30 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].w = max_h;
         myvideo.layout.mode[mode].screen[1].h = max_w >> 1;
         break;
+#if defined(XT894) || defined(XT897)
+    case LAYOUT_MODE_C0:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 90;
+        myvideo.layout.mode[mode].screen[0].w = 480;
+        myvideo.layout.mode[mode].screen[0].h = 360;
+
+        myvideo.layout.mode[mode].screen[1].x = 480;
+        myvideo.layout.mode[mode].screen[1].y = 90;
+        myvideo.layout.mode[mode].screen[1].w = 480;
+        myvideo.layout.mode[mode].screen[1].h = 360;
+        break;
+    case LAYOUT_MODE_C1:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 78;
+        myvideo.layout.mode[mode].screen[0].w = 512;
+        myvideo.layout.mode[mode].screen[0].h = 384;
+
+        myvideo.layout.mode[mode].screen[1].x = 512;
+        myvideo.layout.mode[mode].screen[1].y = (540 - 336) >> 1;
+        myvideo.layout.mode[mode].screen[1].w = 448;
+        myvideo.layout.mode[mode].screen[1].h = 336;
+        break;
+#endif
 #if defined(QX1000)
     case LAYOUT_MODE_C0:
         myvideo.layout.mode[mode].screen[0].x = 0;
@@ -6397,7 +6421,7 @@ static int free_layout_mode(void)
     add_layout_mode(LAYOUT_MODE_B3, 0, NULL);
 #endif
 
-#if defined(QX1000)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     add_layout_mode(LAYOUT_MODE_C0, 0, NULL);
     add_layout_mode(LAYOUT_MODE_C1, 0, NULL);
 #endif
