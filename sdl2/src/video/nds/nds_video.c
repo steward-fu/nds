@@ -110,7 +110,7 @@ static int quit_device(void);
 static int init_video(_THIS);
 static int free_menu_res(void);
 static int load_lang_file(void);
-static int load_layout_bg(void);
+static int load_bg_image(void);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
@@ -127,44 +127,44 @@ static int load_overlay_file(void);
 #endif
 
 static SDL_Rect def_layout_pos[LAYOUT_MODE_MAX][2] = {
-    // LAYOUT_MODE_T0
+    // LAYOUT_MODE_N0
     {{ 0, 0, 160, 120 }, { 0, 0, 640, 480 }},
-    // LAYOUT_MODE_T1
+    // LAYOUT_MODE_N1
     {{ 0, 0, 256, 192 }, { 0, 0, 640, 480 }},
 #if defined(TRIMUI)
-    // LAYOUT_MODE_T2
+    // LAYOUT_MODE_N2
     {{ 0, 0, 0, 0 }, { 32, 24, NDS_W, NDS_H }},
-    // LAYOUT_MODE_T3
+    // LAYOUT_MODE_N3
     {{ 0, 0, 0, 0 }, { 0, 0, SREEN_W, SCREEN_H }},
 #else
-    // LAYOUT_MODE_T2
+    // LAYOUT_MODE_N2
     {{ 0, 0, 0, 0 }, { 64, 48, 512, 384 }},
-    // LAYOUT_MODE_T3
+    // LAYOUT_MODE_N3
     {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
 #endif
-    // LAYOUT_MODE_T4
+    // LAYOUT_MODE_N4
     {{ 192, 48, 256, 192 }, { 192, 240, 256, 192 }},
-    // LAYOUT_MODE_T5
+    // LAYOUT_MODE_N5
     {{ 160, 0, 320, 240 }, { 160, 240, 320, 240 }},
-    // LAYOUT_MODE_T6
+    // LAYOUT_MODE_N6
     {{ 64, 144, 256, 192 }, { 320, 144, 256, 192 }},
-    //LAYOUT_MODE_T7
+    //LAYOUT_MODE_N7
     {{ 0, 120, 320, 240 }, { 320, 120, 320, 240 }},
-    // LAYOUT_MODE_T8
+    // LAYOUT_MODE_N8
     {{ 0, 0, 160, 120 }, { 160, 120, 480, 360 }},
-    // LAYOUT_MODE_T9
+    // LAYOUT_MODE_N9
     {{ 0, 0, 256, 192 }, { 256, 192, 384, 288 }},
-    // LAYOUT_MODE_T10
+    // LAYOUT_MODE_N10
     {{ 240, 0, 160, 120 }, { 80, 120, 480, 360 }},
-    // LAYOUT_MODE_T11
+    // LAYOUT_MODE_N11
     {{ 256, 0, 128, 96 }, { 64, 96, 512, 384 }},
-    // LAYOUT_MODE_T12
+    // LAYOUT_MODE_N12
     {{ 512, 0, 128, 96 }, { 0, 96, 512, 384 }},
-    // LAYOUT_MODE_T13
+    // LAYOUT_MODE_N13
     {{ 0, 0, 128, 96 }, { 128, 96, 512, 384 }},
-    // LAYOUT_MODE_T14
+    // LAYOUT_MODE_N14
     {{ 192, 0, 256, 192 }, { 128, 192, 384, 288 }},
-    // LAYOUT_MODE_T15
+    // LAYOUT_MODE_N15
     {{ 0, 144, 256, 192 }, { 256, 96, 384, 288 }},
     // LAYOUT_MODE_B0
     {{ 0, 26, 427, 320 }, { 320, 26, 427, 320 }},
@@ -1610,6 +1610,7 @@ int handle_drastic_menu(void)
     default:
         return 0;
     }
+
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
@@ -1648,6 +1649,8 @@ TEST(sdl2_video, handle_drastic_menu)
 static int process_screen(void)
 {
     int idx = 0;
+    int cur_bg_sel = 0;
+    int cur_mode_sel = 0;
     static int cur_mic = -1;
     static int cur_hinge = -1;
     static int autostate = 15;
@@ -1660,6 +1663,9 @@ static int process_screen(void)
     static char buf[MAX_PATH] = { 0 };
 
     debug("call %s()\n", __func__);
+
+    cur_bg_sel = myconfig.layout.bg.sel;
+    cur_mode_sel = myconfig.layout.mode.sel;
 
     if (myconfig.autostate.enable > 0) {
         if (autostate > 0) {
@@ -1683,8 +1689,8 @@ static int process_screen(void)
     if ((cur_filter != myconfig.filter) ||
         (cur_mic != myhook.use_mic) ||
         (cur_hinge != myhook.use_hinge) ||
-        (cur_layout_bg != myconfig.layout.bg.sel) ||
-        (cur_layout_mode != myconfig.layout.mode.sel) ||
+        (cur_layout_bg != cur_bg_sel) ||
+        (cur_layout_mode != cur_mode_sel) ||
         myvideo.lcd.status)
     {
         if (myvideo.lcd.status & NDS_STATE_SAVE) {
@@ -1702,56 +1708,56 @@ static int process_screen(void)
             sprintf(buf, " %s ", l10n("FAST FORWARD"));
             myvideo.lcd.status &= ~NDS_STATE_FAST;
         }
-        else if (cur_layout_mode != myconfig.layout.mode.sel) {
+        else if (cur_layout_mode != cur_mode_sel) {
             show_info = 50;
-            if (myconfig.layout.mode.sel <= LAYOUT_MODE_T15) {
+            if (cur_mode_sel <= LAYOUT_MODE_N15) {
                 sprintf(
                     buf,
-                    " %s: T%d ",
-                    l10n("LAYOUT MODE"),
-                    myconfig.layout.mode.sel
+                    " %s N%d ",
+                    l10n("LAYOUT"),
+                    cur_mode_sel
                 );
             }
-            else if ((myconfig.layout.mode.sel >= LAYOUT_MODE_B0) &&
-                (myconfig.layout.mode.sel <= LAYOUT_MODE_B3))
+            else if ((cur_mode_sel >= LAYOUT_MODE_B0) &&
+                (cur_mode_sel <= LAYOUT_MODE_B3))
             {
                 sprintf(
                     buf,
-                    " %s: B%d ",
-                    l10n("LAYOUT MODE"),
-                    myconfig.layout.mode.sel - LAYOUT_MODE_B0
+                    " %s B%d ",
+                    l10n("LAYOUT"),
+                    cur_mode_sel - LAYOUT_MODE_B0
                 );
             }
-            else if (myconfig.layout.mode.sel == LAYOUT_MODE_D0) {
+            else if (cur_mode_sel == LAYOUT_MODE_D0) {
                 sprintf(
                     buf,
-                    " %s: D%d ",
-                    l10n("LAYOUT MODE"),
-                    myconfig.layout.mode.sel - LAYOUT_MODE_D0
+                    " %s D%d ",
+                    l10n("LAYOUT"),
+                    cur_mode_sel - LAYOUT_MODE_D0
                 );
             }
-            else if (myconfig.layout.mode.sel == LAYOUT_MODE_C0) {
+            else if (cur_mode_sel == LAYOUT_MODE_C0) {
                 sprintf(
                     buf,
-                    " %s: C%d ",
-                    l10n("LAYOUT MODE"),
-                    myconfig.layout.mode.sel - LAYOUT_MODE_C0
+                    " %s C%d ",
+                    l10n("LAYOUT"),
+                    cur_mode_sel - LAYOUT_MODE_C0
                 );
             }
         }
-        else if (cur_layout_bg != myconfig.layout.bg.sel) {
+        else if (cur_layout_bg != cur_bg_sel) {
             show_info = 50;
-            if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path[0]) {
+            if (myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path[0]) {
                 sprintf(
                     buf,
-                    " %s: %d/%s ",
-                    l10n("LAYOUT BG"),
-                    myconfig.layout.bg.sel,
-                    myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path
+                    " %s %d/%s ",
+                    l10n("BG IMAGE"),
+                    cur_bg_sel,
+                    myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path
                 );
             }
             else {
-                sprintf(buf, " %s: %s ", l10n("LAYOUT BG"), l10n("NONE"));
+                sprintf(buf, " %s: %s ", l10n("BG IMAGE"), l10n("NONE"));
             }
         }
         else if (cur_mic != myhook.use_mic) {
@@ -1770,8 +1776,8 @@ static int process_screen(void)
         cur_mic = myhook.use_mic;
         cur_hinge = myhook.use_hinge;
         cur_filter = myconfig.filter;
-        cur_layout_bg = myconfig.layout.bg.sel;
-        cur_layout_mode = myconfig.layout.mode.sel;
+        cur_layout_bg = cur_bg_sel;
+        cur_layout_mode = cur_mode_sel;
         myvideo.layout.redraw_bg = REDRAW_BG_CNT;
     }
 
@@ -1783,7 +1789,7 @@ static int process_screen(void)
     }
         
     if (myvideo.layout.redraw_bg) {
-        load_layout_bg();
+        load_bg_image();
         myvideo.layout.redraw_bg -= 1;
     }
 
@@ -1807,13 +1813,13 @@ static int process_screen(void)
         show_pen = *myhook.var.sdl.swap_screens == idx ? 0 : 1;
         pitch = *myhook.var.sdl.bytes_per_pixel * srt.w;
         pixels = myvideo.lcd.virt_addr[myvideo.lcd.cur_sel ^ 1][idx];
-        drt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].x;
-        drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].y;
-        drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].w;
-        drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[idx].h;
+        drt.x = myvideo.layout.mode[cur_mode_sel].screen[idx].x;
+        drt.y = myvideo.layout.mode[cur_mode_sel].screen[idx].y;
+        drt.w = myvideo.layout.mode[cur_mode_sel].screen[idx].w;
+        drt.h = myvideo.layout.mode[cur_mode_sel].screen[idx].h;
         debug(
             "mode=%d, drt=%d,%d,%d,%d\n",
-            myconfig.layout.mode.sel,
+            cur_mode_sel,
             drt.x,
             drt.y,
             drt.w,
@@ -1821,21 +1827,21 @@ static int process_screen(void)
         );
 
 #if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
-        switch (myconfig.layout.mode.sel) {
-        case LAYOUT_MODE_T0:
-        case LAYOUT_MODE_T1:
-        case LAYOUT_MODE_T2:
-        case LAYOUT_MODE_T3:
+        switch (cur_mode_sel) {
+        case LAYOUT_MODE_N0:
+        case LAYOUT_MODE_N1:
+        case LAYOUT_MODE_N2:
+        case LAYOUT_MODE_N3:
             need_update = !!idx;
             break;
         }
 #endif
 
 #if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-        if ((myconfig.layout.mode.sel == LAYOUT_MODE_B0) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_B1) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_B2) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_B3))
+        if ((cur_mode_sel == LAYOUT_MODE_B0) ||
+            (cur_mode_sel == LAYOUT_MODE_B1) ||
+            (cur_mode_sel == LAYOUT_MODE_B2) ||
+            (cur_mode_sel == LAYOUT_MODE_B3))
         {
             drt.x = (drt.x == 0) ? 320 : 0;
         }
@@ -1868,8 +1874,8 @@ static int process_screen(void)
 #if defined(A30) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(XT894) || defined(XT897) || defined(QX1000)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
-            ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+            ((cur_mode_sel == LAYOUT_MODE_N0) ||
+            (cur_mode_sel == LAYOUT_MODE_N1)))
         {
             int c0 = 0;
             uint32_t *p0 = NULL;
@@ -1934,9 +1940,9 @@ static int process_screen(void)
 #endif
 
 #if defined(XT894) || defined(XT897)
-            switch (myconfig.layout.mode.sel) {
-            case LAYOUT_MODE_T0:
-            case LAYOUT_MODE_T1:
+            switch (cur_mode_sel) {
+            case LAYOUT_MODE_N0:
+            case LAYOUT_MODE_N1:
                 switch (myconfig.layout.swin.pos) {
                 case 0:
                     drt.x = 0;
@@ -1958,13 +1964,13 @@ static int process_screen(void)
             flush_lcd(idx, pixels, srt, drt, pitch);
 
 #if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
-            switch (myconfig.layout.mode.sel) {
-            case LAYOUT_MODE_T0:
-            case LAYOUT_MODE_T1:
-                drt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].x;
-                drt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].y;
-                drt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].w;
-                drt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[0].h;
+            switch (cur_mode_sel) {
+            case LAYOUT_MODE_N0:
+            case LAYOUT_MODE_N1:
+                drt.x = myvideo.layout.mode[cur_mode_sel].screen[0].x;
+                drt.y = myvideo.layout.mode[cur_mode_sel].screen[0].y;
+                drt.w = myvideo.layout.mode[cur_mode_sel].screen[0].w;
+                drt.h = myvideo.layout.mode[cur_mode_sel].screen[0].h;
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
@@ -2003,7 +2009,7 @@ static int process_screen(void)
     }
 
     if (show_info > 0) {
-        switch (myconfig.layout.mode.sel) {
+        switch (cur_mode_sel) {
         case LAYOUT_MODE_B0:
         case LAYOUT_MODE_B2:
             draw_info(NULL, buf, 0, 0, col_fg, col_bg);
@@ -2036,7 +2042,13 @@ static int process_screen(void)
         rt.y = 0;
         rt.w = myvideo.fps->w;
         rt.h = myvideo.fps->h;
-        flush_lcd(TEXTURE_TMP, myvideo.fps->pixels, myvideo.fps->clip_rect, rt, myvideo.fps->pitch);
+        flush_lcd(
+            TEXTURE_TMP,
+            myvideo.fps->pixels,
+            myvideo.fps->clip_rect,
+            rt,
+            myvideo.fps->pitch
+        );
     }
 
 #if defined(TRIMUI)
@@ -2048,7 +2060,8 @@ static int process_screen(void)
 #endif
 
     if (*myhook.var.sdl.needs_reinitializing) {
-        nds_set_screen_menu_off _func = (nds_set_screen_menu_off)myhook.fun.set_screen_menu_off;
+        nds_set_screen_menu_off _func =
+            (nds_set_screen_menu_off)myhook.fun.set_screen_menu_off;
         _func();
     }
     flip_lcd();
@@ -2193,8 +2206,10 @@ static void prehook_cb_update_screen(void)
         myvideo.lcd.cur_sel ^= 1;
 
 #if defined(PANDORA)
-        *((uint32_t *)myhook.var.sdl.screen[0].pixels) = (uintptr_t)myvideo.fb.pixels[FB_GAME][0];
-        *((uint32_t *)myhook.var.sdl.screen[1].pixels) = (uintptr_t)myvideo.fb.pixels[FB_GAME][1];
+        *((uint32_t *)myhook.var.sdl.screen[0].pixels) =
+            (uintptr_t)myvideo.fb.pixels[FB_GAME][0];
+        *((uint32_t *)myhook.var.sdl.screen[1].pixels) =
+            (uintptr_t)myvideo.fb.pixels[FB_GAME][1];
 #else
         *((uint32_t *)myhook.var.sdl.screen[0].pixels) =
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][0];
@@ -2463,7 +2478,13 @@ static void* video_handler(void *param)
         (EGLNativeWindowType)myvideo.drm.gs,
         NULL
     );
-    myvideo.egl.context = eglCreateContext(myvideo.egl.display, cfg, EGL_NO_CONTEXT, ctx_cfg);
+    myvideo.egl.context = eglCreateContext(
+        myvideo.egl.display,
+        cfg,
+        EGL_NO_CONTEXT,
+        ctx_cfg
+    );
+
     eglMakeCurrent(
         myvideo.egl.display,
         myvideo.egl.surface,
@@ -2494,7 +2515,13 @@ static void* video_handler(void *param)
 
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
     glUniform1i(myvideo.egl.frag.tex_sample, 0);
-    glUniform4f(myvideo.egl.frag.screen, LAYOUT_BG_W, LAYOUT_BG_H, 1.0 / LAYOUT_BG_W, 1.0 / LAYOUT_BG_H);
+    glUniform4f(
+        myvideo.egl.frag.screen,
+        LAYOUT_BG_W,
+        LAYOUT_BG_H,
+        1.0 / LAYOUT_BG_W,
+        1.0 / LAYOUT_BG_H
+    );
 #endif
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2513,7 +2540,10 @@ static void* video_handler(void *param)
     wl_display_roundtrip(myvideo.wl.display);
 
     myvideo.wl.surface = wl_compositor_create_surface(myvideo.wl.compositor);
-    myvideo.wl.shell_surface = wl_shell_get_shell_surface(myvideo.wl.shell, myvideo.wl.surface);
+    myvideo.wl.shell_surface = wl_shell_get_shell_surface(
+        myvideo.wl.shell, myvideo.wl.surface
+    );
+
     wl_shell_surface_set_toplevel(myvideo.wl.shell_surface);
     wl_shell_surface_add_listener(myvideo.wl.shell_surface, &cb_shell_surf, NULL);
     
@@ -2532,7 +2562,13 @@ static void* video_handler(void *param)
         (EGLNativeWindowType)myvideo.wl.window,
         NULL
     );
-    myvideo.egl.context = eglCreateContext(myvideo.egl.display, cfg, EGL_NO_CONTEXT, ctx_attribs);
+    myvideo.egl.context = eglCreateContext(
+        myvideo.egl.display,
+        cfg,
+        EGL_NO_CONTEXT,
+        ctx_attribs
+    );
+
     eglMakeCurrent(
         myvideo.egl.display,
         myvideo.egl.surface,
@@ -2556,7 +2592,13 @@ static void* video_handler(void *param)
 
     glUniform1i(myvideo.egl.frag.tex_sample, 0);
     glUniform1f(myvideo.egl.frag.alpha, 0.0);
-    glUniform4f(myvideo.egl.frag.screen, LAYOUT_BG_W, LAYOUT_BG_H, 1.0 / LAYOUT_BG_W, 1.0 / LAYOUT_BG_H);
+    glUniform4f(
+        myvideo.egl.frag.screen,
+        LAYOUT_BG_W,
+        LAYOUT_BG_H,
+        1.0 / LAYOUT_BG_W,
+        1.0 / LAYOUT_BG_H
+    );
 #endif
 
 #if defined(FLIP) || defined(A30) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
@@ -2594,7 +2636,7 @@ static void* video_handler(void *param)
 
                 myvideo.menu.update = 0;
                 myconfig.filter = FILTER_BLUR;
-                myconfig.layout.mode.sel = LAYOUT_MODE_T0;
+                myconfig.layout.mode.sel = LAYOUT_MODE_N0;
 
                 if (myvideo.menu.sdl2.enable) {
                     debug("update sdl2 menu\n");
@@ -2628,7 +2670,7 @@ static void* video_handler(void *param)
 #else
         if (myvideo.lcd.update) {
 #endif
-            debug("handling screen update\n");
+            debug("handle screen update\n");
 
             process_screen();
             myvideo.lcd.update = 0;
@@ -3164,7 +3206,7 @@ TEST(sdl2_video, get_shader_cnt)
 #endif
 #endif
 
-static int get_bg_cnt(void)
+static int get_bg_dir_cnt(void)
 {
     char buf[MAX_PATH + 32] = { 0 };
 
@@ -3177,10 +3219,10 @@ static int get_bg_cnt(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, get_bg_cnt)
+TEST(sdl2_video, get_bg_dir_cnt)
 {
     TEST_ASSERT_EQUAL_INT(0, init_device());
-    TEST_ASSERT_EQUAL_INT(9, get_bg_cnt());
+    TEST_ASSERT_EQUAL_INT(9, get_bg_dir_cnt());
     TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
 #endif
@@ -3645,8 +3687,8 @@ static int init_lcd(void)
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
 
-    if ((myconfig.layout.mode.sel != LAYOUT_MODE_T2) && (myconfig.layout.mode.sel != LAYOUT_MODE_T3)) {
-        myconfig.layout.mode.sel = LAYOUT_MODE_T2;
+    if ((myconfig.layout.mode.sel != LAYOUT_MODE_N2) && (myconfig.layout.mode.sel != LAYOUT_MODE_N3)) {
+        myconfig.layout.mode.sel = LAYOUT_MODE_N2;
     }
 
     alloc_lcd_mem();
@@ -3714,7 +3756,7 @@ int resize_disp(void)
     debug("call %s()\n", __func__);
 
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T2) {
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_N2) {
         myvideo.gfx.buf.info.fb.crop.width  = ((uint64_t)SCREEN_H) << 32;
         myvideo.gfx.buf.info.fb.crop.height = ((uint64_t)SCREEN_W) << 32;
     }
@@ -4098,8 +4140,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.shm.buf->tex = tex;
     myvideo.shm.buf->pitch = pitch;
     myvideo.shm.buf->alpha = 0;
-    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T1))
+    if ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_N1))
     {
         myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
     }
@@ -4210,8 +4252,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, srt.w, srt.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     }
 
-    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) &&
+    if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_N1)) &&
         (tex == TEXTURE_LCD0))
     {
         glUniform1f(myvideo.egl.frag.alpha, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
@@ -4228,8 +4270,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     glVertexAttribPointer(myvideo.egl.vert.tex_coord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), &fg_vertices[3]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T1)) &&
+    if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_N1)) &&
         (tex == TEXTURE_LCD0))
     {
         glUniform1f(myvideo.egl.frag.alpha, 0.0);
@@ -4241,16 +4283,16 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
-    if (id == TEXTURE_TMP) {
 #if defined(XT894)
+    if (id == TEXTURE_TMP) {
         int cc = 0;
         uint32_t *p = (uint32_t *)pixels;
 
         for (cc = 0; cc < (srt.w * srt.h); cc++) {
             p[cc] = (p[cc] | 0xff000000);
         }
-#endif
     }
+#endif
 
     if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
         drt.x = margin_w;
@@ -4325,11 +4367,15 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     if ((!myvideo.menu.sdl2.enable && !myvideo.menu.drastic.enable) &&
 #if defined(XT894) || defined(XT897)
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T1) &&
+        (myconfig.layout.mode.sel == LAYOUT_MODE_N1) &&
 #endif
         (id == TEXTURE_LCD0))
     {
-        glUniform1f(myvideo.egl.frag.alpha, 1.0 - ((float)myconfig.layout.swin.alpha / 10.0));
+        glUniform1f(
+            myvideo.egl.frag.alpha,
+            1.0 - ((float)myconfig.layout.swin.alpha / 10.0)
+        );
+
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
     }
@@ -4371,7 +4417,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if ((myconfig.layout.mode.sel == LAYOUT_MODE_T3) && (id == TEXTURE_LCD1)) {
+    if ((myconfig.layout.mode.sel == LAYOUT_MODE_N3) && (id == TEXTURE_LCD1)) {
         glUniform1f(myvideo.egl.frag.alpha, 0.0);
         glDisable(GL_BLEND);
     }
@@ -4743,7 +4789,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     if((srt.w == NDS_W) && (srt.h == NDS_H)) {
-        if (myconfig.layout.mode.sel == LAYOUT_MODE_T2) {
+        if (myconfig.layout.mode.sel == LAYOUT_MODE_N2) {
             dst = myvideo.fb.flip ? LUT_256x192_T21 : LUT_256x192_T20;
         }
         else {
@@ -4861,8 +4907,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     if ((id == TEXTURE_LCD0) &&
-        ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-        (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+        ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+        (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
     {
         if (myconfig.layout.swin.alpha > 0) {
             float m0 = (float)myconfig.layout.swin.alpha / 10;
@@ -4885,11 +4931,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             const uint32_t *s1_888 = pixels;
 
             switch (myconfig.layout.mode.sel) {
-            case LAYOUT_MODE_T0:
+            case LAYOUT_MODE_N0:
                 sw = 170;
                 sh = 128;
                 break;
-            case LAYOUT_MODE_T1:
+            case LAYOUT_MODE_N1:
                 sw = srt.w;
                 sh = srt.h;
                 break;
@@ -4898,7 +4944,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             ay = 0;
             for (y = 0; y < sh; y++) {
                 switch (myconfig.layout.mode.sel) {
-                case LAYOUT_MODE_T0:
+                case LAYOUT_MODE_N0:
                     if (y && ((y % 2) == 0)) {
                         ay += 1;
                     }
@@ -4915,7 +4961,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                     }
                     else {
                         switch (myconfig.layout.mode.sel) {
-                        case LAYOUT_MODE_T0:
+                        case LAYOUT_MODE_N0:
                             if (x && ((x % 2) == 0)) {
                                 ax += 1;
                             }
@@ -4970,7 +5016,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         }
 
         switch (myconfig.layout.mode.sel) {
-        case LAYOUT_MODE_T0:
+        case LAYOUT_MODE_N0:
             drt.w = 170;
             drt.h = 128;
             if (myconfig.layout.swin.alpha > 0) {
@@ -4979,7 +5025,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                 pitch = srt.w * 4;
             }
             break;
-        case LAYOUT_MODE_T1:
+        case LAYOUT_MODE_N1:
             drt.w = NDS_W;
             drt.h = NDS_H;
             if (myconfig.layout.swin.alpha > 0) {
@@ -5502,15 +5548,12 @@ static int flip_lcd(void)
     myvideo.drm.pre_fb = myvideo.drm.fb;
 #endif
 
-#if defined(XT894) || defined(XT897)
     if ((myvideo.layout.bg) &&
         (myconfig.layout.mode.sel != LAYOUT_MODE_B2) &&
         (myconfig.layout.mode.sel != LAYOUT_MODE_B3))
     {
-#else
-    if (myvideo.layout.bg)
-    {
-#endif
+        trace("draw bg image\n");
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glVertexAttribPointer(
@@ -5941,7 +5984,7 @@ TEST(sdl2_video, load_menu_res)
 }
 #endif
 
-static int free_layout_bg(void)
+static int free_bg_image(void)
 {
     debug("call %s()\n", __func__);
 
@@ -5954,18 +5997,20 @@ static int free_layout_bg(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, free_layout_bg)
+TEST(sdl2_video, free_bg_image)
 {
     myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, 128, 128, 32, 0, 0, 0, 0);
-    TEST_ASSERT_EQUAL_INT(0, free_layout_bg());
+    TEST_ASSERT_EQUAL_INT(0, free_bg_image());
     TEST_ASSERT_NULL(myvideo.layout.bg);
 }
 #endif
 
-static int load_layout_bg(void)
+static int load_bg_image(void)
 {
     int w = 0;
     int h = 0;
+    int cur_bg_sel = 0;
+    int cur_mode_sel = 0;
     static int pre_bg = -1;
     static int pre_mode = -1;
     SDL_Surface *t = NULL;
@@ -5973,13 +6018,16 @@ static int load_layout_bg(void)
 
     debug("call %s()\n", __func__);
 
-    if ((pre_bg != myconfig.layout.bg.sel) || (pre_mode != myconfig.layout.mode.sel)) {
-        pre_bg = myconfig.layout.bg.sel;
-        pre_mode = myconfig.layout.mode.sel;
+    cur_bg_sel = myconfig.layout.bg.sel;
+    cur_mode_sel = myconfig.layout.mode.sel;
 
-        free_layout_bg();
-        w = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].w;
-        h = myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].h;
+    if ((pre_bg != cur_bg_sel) || (pre_mode != cur_mode_sel)) {
+        pre_bg = cur_bg_sel;
+        pre_mode = cur_mode_sel;
+
+        free_bg_image();
+        w = myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].w;
+        h = myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].h;
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
         w = WL_WIN_H;
@@ -5990,11 +6038,11 @@ static int load_layout_bg(void)
             w = LAYOUT_BG_W;
             h = LAYOUT_BG_H;
         }
-        debug("bg image size=%dx%d\n", w, h);
+        debug("bg surface=%dx%d\n", w, h);
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
-            error("failed to create surface for bg\n");
+            error("failed to create bg surface\n");
             return -1;
         }
 
@@ -6006,12 +6054,12 @@ static int load_layout_bg(void)
 
         debug(
             "mode=%d, bg=%d, img=\"%s\"\n",
-            myconfig.layout.mode.sel,
-            myconfig.layout.bg.sel,
-            myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path
+            cur_mode_sel,
+            cur_bg_sel,
+            myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path
         );
 
-        if (myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path[0]) {
+        if (myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path[0]) {
 #if defined(XT894) || defined(XT897) || defined(QX1000)
             SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
             SDL_Rect drt = { 0 };
@@ -6031,13 +6079,13 @@ static int load_layout_bg(void)
                 "%s%s/%d/%s",
                 myvideo.home,
                 BG_PATH,
-                myconfig.layout.bg.sel,
-                myvideo.layout.mode[myconfig.layout.mode.sel].bg[myconfig.layout.bg.sel].path
+                cur_bg_sel,
+                myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path
             );
 
             t = IMG_Load(buf);
             if (!t) {
-                error("failed to load bg from \"%s\"\n", buf);
+                error("failed to load bg image from \"%s\"\n", buf);
                 return -1;
             }
 
@@ -6079,9 +6127,12 @@ static int load_layout_bg(void)
             SDL_FreeSurface(t);
         }
     }
+    else {
+        debug("same as previous bg image, do nothing\n");
+    }
 
 #if defined(TRIMUI) || defined(UT)
-    if (myconfig.layout.mode.sel == LAYOUT_MODE_T3) {
+    if (myconfig.layout.mode.sel == LAYOUT_MODE_N3) {
         return 0;
     }
 #endif
@@ -6103,6 +6154,7 @@ static int load_layout_bg(void)
             myvideo.layout.bg->pitch
         );
 #else
+        debug("bind bg texture\n");
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -6148,9 +6200,9 @@ static int load_layout_bg(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, load_layout_bg)
+TEST(sdl2_video, load_bg_image)
 {
-    TEST_ASSERT_EQUAL_INT(0, load_layout_bg());
+    TEST_ASSERT_EQUAL_INT(0, load_bg_image());
 }
 #endif
 
@@ -6279,7 +6331,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     myvideo.layout.mode[mode].screen[1].h *= scale;
 
     switch (mode) {
-    case LAYOUT_MODE_T0:
+    case LAYOUT_MODE_N0:
 #if defined(XT894) || defined(XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[1].x = 0;
@@ -6290,7 +6342,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].x = margin_w;
 #endif
         break;
-    case LAYOUT_MODE_T1:
+    case LAYOUT_MODE_N1:
 #if defined(XT894) || defined(XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[1].x = 0;
@@ -6474,9 +6526,9 @@ static int free_layout_mode(void)
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
 
 #if !defined(TRIMUI) && !defined(PANDORA)
-    add_layout_mode(LAYOUT_MODE_T0, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_T1, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_T3, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_N0, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_N1, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_N3, 0, NULL);
     add_layout_mode(LAYOUT_MODE_B2, 0, NULL);
     add_layout_mode(LAYOUT_MODE_B3, 0, NULL);
 #endif
@@ -6508,7 +6560,7 @@ static int enum_bg_file(void)
 
     free_layout_mode();
 
-    total = get_bg_cnt();
+    total = get_bg_dir_cnt();
     for (cc = 0; cc < total; cc++) {
         snprintf(buf, sizeof(buf), "%s%s/%d", myvideo.home, BG_PATH, cc);
         debug("enum folder=\"%s\"\n", buf);
@@ -6530,12 +6582,13 @@ static int enum_bg_file(void)
                 continue;
             }
 
-            if (dir->d_name[0] != 't') {
-                error("invalid layout bg file (\"%s\")\n", dir->d_name);
-                continue;
+            if (dir->d_name[0] == 'n') {
+                mode = atoi(&dir->d_name[1]) + LAYOUT_MODE_N0;
+            }
+            else if (dir->d_name[0] == 'b') {
+                mode = atoi(&dir->d_name[1]) + LAYOUT_MODE_B0;
             }
 
-            mode = atoi(&dir->d_name[1]);
             debug("mode=%d (\"%s\")\n", mode, dir->d_name);
             add_layout_mode(mode, cc, dir->d_name);
         }
@@ -6563,7 +6616,16 @@ static int init_device(void)
     strcat(myvideo.home, "/");
     debug("home=\"%s\"\n", myvideo.home);
 
-    myvideo.cvt = SDL_CreateRGBSurface(SDL_SWSURFACE, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
+    myvideo.cvt = SDL_CreateRGBSurface(
+        SDL_SWSURFACE,
+        LAYOUT_BG_W,
+        LAYOUT_BG_H,
+        32,
+        0,
+        0,
+        0,
+        0
+    );
 
     load_config(myvideo.home);
 
@@ -6601,7 +6663,7 @@ static int init_device(void)
 
     init_lcd();
     init_event();
-    load_layout_bg();
+    load_bg_image();
     init_hook(myvideo.home, sysconf(_SC_PAGESIZE), myconfig.state_path);
 
     r = 0;
@@ -6800,7 +6862,7 @@ static int quit_device(void)
     free_lang_res();
     free_menu_res();
     free_touch_pen();
-    free_layout_bg();
+    free_bg_image();
     free_layout_mode();
 
     if (myvideo.fps) {
@@ -6841,49 +6903,49 @@ TEST(sdl2_video, quit_video)
 #endif
 
 static const char *LAYOUT_MODE_STR0[] = {
-    "640*480",
-    "640*480",
-    "512*384",
-    "640*480",
-    "256*192",
-    "320*240",
-    "256*192",
-    "320*240",
-    "480*360",
-    "384*288",
-    "384*288",
+    "640x480",
+    "640x480",
+    "512x384",
+    "640x480",
+    "256x192",
+    "320x240",
+    "256x192",
+    "320x240",
+    "480x360",
+    "384x288",
+    "384x288",
     "512x384",
     "512x384",
     "512x384",
-    "384*288",
-    "384*288",
-    "427*320",
-    "427*320",
-    "480*320",
-    "480*320",
+    "384x288",
+    "384x288",
+    "427x320",
+    "427x320",
+    "480x320",
+    "480x320",
 };
 
 static const char *LAYOUT_MODE_STR1[] = {
-    "170*128",
-    "256*192",
+    "170x128",
+    "256x192",
     "",
     "",
-    "256*192",
-    "320*240",
-    "256*192",
-    "320*240",
-    "160*120",
-    "256*192",
-    "256*192",
-    "128*96",
-    "128*96",
-    "128*96",
-    "256*192",
-    "256*192",
-    "427*320",
-    "427*320",
-    "480*320",
-    "480*320",
+    "256x192",
+    "320x240",
+    "256x192",
+    "320x240",
+    "160x120",
+    "256x192",
+    "256x192",
+    "128x96",
+    "128x96",
+    "128x96",
+    "256x192",
+    "256x192",
+    "427x320",
+    "427x320",
+    "480x320",
+    "480x320",
 };
 
 static const char *SWIN_POS_STR[] = {
@@ -6906,18 +6968,18 @@ static const char *BIND_HOTKEY_STR[] = {
 
 #if defined(A30) || defined(FLIP)
 static const char *JOY_MODE_STR[] = {
-    "Disable",
-    "D-Pad",
-    "Stylus",
-    "Customized Key"
+    "DISABLE",
+    "D-PAD",
+    "STYLUS",
+    "CUSTOMIZED KEY"
 };
 
 #if defined(FLIP)
 static const char *RJOY_MODE_STR[] = {
-    "Disable",
-    "4-Btn",
-    "Stylus",
-    "Customized Key"
+    "DISABLE",
+    "4-BTN",
+    "STYLUS",
+    "CUSTOMIZED KEY"
 };
 #endif
 
@@ -7045,18 +7107,18 @@ static const char *MENU_LIST_STR[] = {
     "LANGUAGE",
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-    "CPU Core",
+    "CPU CORE",
 #endif
 
 #if !defined(MINI)
     "SHADER",
 #endif
 
-    "LAYOUT MODE",
-    "  ALPHA",
-    "  BORDER",
-    "  POSITION",
-    "  ALT. MODE",
+    "LAYOUT",
+    "ALPHA",
+    "BORDER",
+    "POSITION",
+    "ALTERNATIVE",
 
 #if defined(MINI)
     "OVERLAY",
@@ -7109,7 +7171,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
     }
 
     switch (mode) {
-    case LAYOUT_MODE_T0:
+    case LAYOUT_MODE_N0:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7147,7 +7209,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
             )
         );
         break;
-    case LAYOUT_MODE_T1:
+    case LAYOUT_MODE_N1:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7185,7 +7247,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
             )
         );
         break;
-    case LAYOUT_MODE_T2:
+    case LAYOUT_MODE_N2:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7198,14 +7260,14 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         break;
-    case LAYOUT_MODE_T3:
+    case LAYOUT_MODE_N3:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         break;
-    case LAYOUT_MODE_T4:
+    case LAYOUT_MODE_N4:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7224,7 +7286,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T5:
+    case LAYOUT_MODE_N5:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7243,7 +7305,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + ((96 - (rt.h * 2)) / 2) + rt.h;
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T6:
+    case LAYOUT_MODE_N6:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7262,7 +7324,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T7:
+    case LAYOUT_MODE_N7:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7281,7 +7343,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T8:
+    case LAYOUT_MODE_N8:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7300,7 +7362,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T9:
+    case LAYOUT_MODE_N9:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7319,7 +7381,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T10:
+    case LAYOUT_MODE_N10:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7338,7 +7400,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T11:
+    case LAYOUT_MODE_N11:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7357,7 +7419,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T12:
+    case LAYOUT_MODE_N12:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7376,7 +7438,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T13:
+    case LAYOUT_MODE_N13:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7395,7 +7457,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T14:
+    case LAYOUT_MODE_N14:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7414,7 +7476,7 @@ static int draw_small_block_win(int sx, int sy, uint32_t mode, SDL_Surface *surf
         rt.y = sy + (96 - rt.h);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_T15:
+    case LAYOUT_MODE_N15:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7581,8 +7643,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
     case MENU_SWIN_ALPHA:
-        if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) || 
-            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+        if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) || 
+            (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
         {
             if (right_key) {
                 if (myconfig.layout.swin.alpha < NDS_ALPHA_MAX) {
@@ -7598,15 +7660,15 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
     case MENU_SWIN_BORDER:
         if ((myconfig.layout.swin.alpha > 0) &&
-            ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+            ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
         {
             myconfig.layout.swin.border = right_key;
         }
         break;
     case MENU_SWIN_POS:
-        if (((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-            (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+        if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+            (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
         {
             if (right_key) {
                 if (myconfig.layout.swin.pos < 3) {
@@ -7901,7 +7963,13 @@ TEST(sdl2_video, apply_sdl2_menu_setting)
 }
 #endif
 
-static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0, int col1)
+static int draw_sdl2_menu_setting(
+    int cur_sel,
+    int cc,
+    int idx,
+    int sx,
+    int col0,
+    int col1)
 {
     const int SX = 150;
     const int SY = 107;
@@ -8010,10 +8078,10 @@ static int draw_sdl2_menu_setting(int cur_sel, int cc, int idx, int sx, int col0
 #if !defined(MINI)
     case MENU_SHADER:
         if (get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0) >= 0) {
-            sprintf(buf, "%s", tmp);
+            sprintf(buf, "%s", upper_string(tmp));
         }
         else {
-            strcpy(buf, "none");
+            strcpy(buf, "NONE");
         }
         break;
 #endif
@@ -8185,14 +8253,14 @@ static int process_sdl2_setting(int key)
         switch (cc) {
         case MENU_SWIN_ALPHA:
             if ((cur_sel == MENU_SWIN_ALPHA) &&
-                ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-                (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+                ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+                (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
-                if ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-                    (myconfig.layout.mode.sel == LAYOUT_MODE_T1))
+                if ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+                    (myconfig.layout.mode.sel == LAYOUT_MODE_N1))
                 {
                     col1 = MENU_COLOR_UNSEL;
                 }
@@ -8200,19 +8268,20 @@ static int process_sdl2_setting(int key)
                     col1 = MENU_COLOR_DIS;
                 }
             }
+            sx += get_font_width("XX");
             break;
         case MENU_SWIN_BORDER:
             if ((cur_sel == MENU_SWIN_BORDER) &&
                 (myconfig.layout.swin.alpha > 0) &&
-                ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-                (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+                ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+                (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
                 if ((myconfig.layout.swin.alpha > 0) &&
-                    ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-                    (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+                    ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+                    (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
                 {
                     col1 = MENU_COLOR_UNSEL;
                 }
@@ -8220,17 +8289,18 @@ static int process_sdl2_setting(int key)
                     col1 = MENU_COLOR_DIS;
                 }
             }
+            sx += get_font_width("XX");
             break;
         case MENU_SWIN_POS:
             if ((cur_sel == MENU_SWIN_POS) &&
-                ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-                (myconfig.layout.mode.sel == LAYOUT_MODE_T1)))
+                ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+                (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
-                if ((myconfig.layout.mode.sel == LAYOUT_MODE_T0) ||
-                    (myconfig.layout.mode.sel == LAYOUT_MODE_T1))
+                if ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+                    (myconfig.layout.mode.sel == LAYOUT_MODE_N1))
                 {
                     col1 = MENU_COLOR_UNSEL;
                 }
@@ -8238,6 +8308,7 @@ static int process_sdl2_setting(int key)
                     col1 = MENU_COLOR_DIS;
                 }
             }
+            sx += get_font_width("XX");
             break;
         case MENU_LAYOUT_ATL:
             if (*myhook.var.sdl.screen[0].hires_mode == 0) {
@@ -8246,6 +8317,7 @@ static int process_sdl2_setting(int key)
             else {
                 col1 = MENU_COLOR_UNSEL;
             }
+            sx += get_font_width("XX");
             break;
 #if defined(A30) || defined(FLIP)
         case MENU_JOY_CUST_KEY0:
@@ -8297,7 +8369,11 @@ static int process_sdl2_setting(int key)
             }
             if (col1 == MENU_COLOR_DIS) {
                 col1 = MENU_COLOR_SEL;
-                SDL_FillRect(myvideo.cvt, &rt, SDL_MapRGB(myvideo.menu.drastic.frame->format, 0x80, 0x80, 0x80));
+                SDL_FillRect(
+                    myvideo.cvt,
+                    &rt,
+                    SDL_MapRGB(myvideo.menu.drastic.frame->format, 0x80, 0x80, 0x80)
+                );
             }
             else {
                 SDL_FillRect(

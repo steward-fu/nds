@@ -99,7 +99,12 @@ TEST(sdl2_render, create_texture)
 }
 #endif
 
-static int lock_texture(SDL_Renderer *r, SDL_Texture *t, const SDL_Rect *rt, void **pixels, int *pitch)
+static int lock_texture(
+    SDL_Renderer *r,
+    SDL_Texture *t,
+    const SDL_Rect *rt,
+    void **pixels,
+    int *pitch)
 {
     nds_texture *td = NULL;
 
@@ -150,7 +155,12 @@ TEST(sdl2_render, lock_texture)
 }
 #endif
 
-static int update_texture(SDL_Renderer *r, SDL_Texture *t, const SDL_Rect *rt, const void *pixels, int pitch)
+static int update_texture(
+    SDL_Renderer *r,
+    SDL_Texture *t,
+    const SDL_Rect *rt,
+    const void *pixels,
+    int pitch)
 {
     debug("call %s()\n", __func__);
 
@@ -230,7 +240,11 @@ TEST(sdl2_render, queue_set_viewport)
 }
 #endif
 
-static int queue_draw_points(SDL_Renderer *r, SDL_RenderCommand *cmd, const SDL_FPoint *pt, int cnt)
+static int queue_draw_points(
+    SDL_Renderer *r,
+    SDL_RenderCommand *cmd,
+    const SDL_FPoint *pt,
+    int cnt)
 {
     debug("call %s()\n", __func__);
 
@@ -244,7 +258,11 @@ TEST(sdl2_render, queue_draw_points)
 }
 #endif
 
-static int queue_fill_rects(SDL_Renderer *r, SDL_RenderCommand *cmd, const SDL_FRect *rt, int cnt)
+static int queue_fill_rects(
+    SDL_Renderer *r,
+    SDL_RenderCommand *cmd,
+    const SDL_FRect *rt,
+    int cnt)
 {
     debug("call %s()\n", __func__);
 
@@ -258,7 +276,12 @@ TEST(sdl2_render, queue_fill_rects)
 }
 #endif
 
-static int queue_copy(SDL_Renderer *r, SDL_RenderCommand *cmd, SDL_Texture *t, const SDL_Rect *srt, const SDL_FRect *drt)
+static int queue_copy(
+    SDL_Renderer *r,
+    SDL_RenderCommand *cmd,
+    SDL_Texture *t,
+    const SDL_Rect *srt,
+    const SDL_FRect *drt)
 {
     debug("call %s()\n", __func__);
 
@@ -295,7 +318,11 @@ TEST(sdl2_render, queue_copy)
 }
 #endif
 
-static int run_command_queue(SDL_Renderer *r, SDL_RenderCommand *cmd, void *vertices, size_t vertsize)
+static int run_command_queue(
+    SDL_Renderer *r,
+    SDL_RenderCommand *cmd,
+    void *vertices,
+    size_t vertsize)
 {
     debug("call %s()\n", __func__);
 
@@ -309,7 +336,12 @@ TEST(sdl2_render, run_command_queue)
 }
 #endif
 
-static int render_read_pixels(SDL_Renderer *r, const SDL_Rect *rt, Uint32 fmt, void *pixels, int pitch)
+static int render_read_pixels(
+    SDL_Renderer *r,
+    const SDL_Rect *rt,
+    Uint32 fmt,
+    void *pixels,
+    int pitch)
 {
     debug("call %s()\n", __func__);
 
@@ -446,7 +478,9 @@ SDL_RenderDriver NDS_RenderDriver = {
     .CreateRenderer = create_renderer,
     .info = {
         .name = "NDS Video Render",
-        .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE,
+        .flags = SDL_RENDERER_ACCELERATED |
+            SDL_RENDERER_PRESENTVSYNC |
+            SDL_RENDERER_TARGETTEXTURE,
         .num_texture_formats = 2,
         .texture_formats = {
             [0] = SDL_PIXELFORMAT_RGB565,

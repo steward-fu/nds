@@ -135,7 +135,7 @@ TEST(sdl2_event, is_book_mode)
     myconfig.layout.mode.sel = LAYOUT_MODE_B0;
     TEST_ASSERT_EQUAL_INT(1, is_book_mode());
 
-    myconfig.layout.mode.sel = LAYOUT_MODE_T0;
+    myconfig.layout.mode.sel = LAYOUT_MODE_N0;
     TEST_ASSERT_EQUAL_INT(0, is_book_mode());
 }
 #endif
@@ -834,7 +834,7 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
 #if defined(TRIMUI)
-        myconfig.layout.mode.sel = (myconfig.layout.mode.sel == LAYOUT_MODE_T2) ? LAYOUT_MODE_T3 : LAYOUT_MODE_T2;
+        myconfig.layout.mode.sel = (myconfig.layout.mode.sel == LAYOUT_MODE_N2) ? LAYOUT_MODE_N3 : LAYOUT_MODE_N2;
         resize_disp();
 #else
         if (myevent.mode == NDS_KEY_MODE) {
@@ -867,9 +867,9 @@ static int handle_hotkey(void)
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
 #if !defined(XT894) && !defined(XT897)
-                if ((myconfig.layout.mode.sel != LAYOUT_MODE_T0) &&
-                    (myconfig.layout.mode.sel != LAYOUT_MODE_T1) &&
-                    (myconfig.layout.mode.sel != LAYOUT_MODE_T3))
+                if ((myconfig.layout.mode.sel != LAYOUT_MODE_N0) &&
+                    (myconfig.layout.mode.sel != LAYOUT_MODE_N1) &&
+                    (myconfig.layout.mode.sel != LAYOUT_MODE_N3))
 #endif
 #if 0
                 if ((myconfig.layout.mode.sel != LAYOUT_MODE_CUST))
@@ -1582,11 +1582,11 @@ int handle_touch_event(int fd)
                 );
 
                 switch (myconfig.layout.mode.sel) {
-                case LAYOUT_MODE_T0:
-                case LAYOUT_MODE_T1:
-                case LAYOUT_MODE_T2:
-                case LAYOUT_MODE_T3:
-                case LAYOUT_MODE_T4:
+                case LAYOUT_MODE_N0:
+                case LAYOUT_MODE_N1:
+                case LAYOUT_MODE_N2:
+                case LAYOUT_MODE_N3:
+                case LAYOUT_MODE_N4:
                     if (*myhook.var.sdl.swap_screens != 0) {
                         break;
                     }

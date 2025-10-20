@@ -5,6 +5,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <stdlib.h>
@@ -27,7 +28,7 @@
 #include "drastic_bios_arm9.h"
 
 nds_config myconfig = { 0 };
-int nds_debug_level = FATAL_LEVEL;
+int nds_debug_level = ERROR_LEVEL;
 
 #if defined(UT)
 TEST_GROUP(common);
@@ -239,7 +240,7 @@ int get_debug_level(void)
 
     // export NDS_DEBUG_LEVEL=TRACE
     level = getenv("NDS_DEBUG_LEVEL");
-    printf("[DEBUG] NDS_DEBUG_LEVEL=%s\n", level ? level : "FATAL");
+    debug("[DEBUG] NDS_DEBUG_LEVEL=%s\n", level ? level : "ERROR");
 
     if (level != NULL) {
         if (!strcmp(level, "TRACE")) {
@@ -566,6 +567,24 @@ TEST(common, get_file_cnt)
 {
     TEST_ASSERT_EQUAL_INT(-1, get_file_cnt("/XXX"));
     TEST_ASSERT_EQUAL_INT(4, get_file_cnt("src"));
+}
+#endif
+
+char* upper_string(char *buf)
+{
+    char *p = buf;
+
+    while (p && *p) {
+        *p = toupper(*p);
+        p += 1;
+    }
+
+    return buf;
+}
+
+#if defined(UT)
+TEST(common, upper_string)
+{
 }
 #endif
 

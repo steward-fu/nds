@@ -4,20 +4,27 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#define NDS_W       256
-#define NDS_H       192
-#define NDS_Wx2     (NDS_W << 1)
-#define NDS_Hx2     (NDS_H << 1)
+#define NDS_W           256
+#define NDS_H           192
+#define NDS_Wx2         (NDS_W << 1)
+#define NDS_Hx2         (NDS_H << 1)
+#define LAYOUT_BG_W     640
+#define LAYOUT_BG_H     480
 
-#define RES_PATH                    "res"
-#define BG_PATH                     RES_PATH"/bg"
-#define PEN_PATH                    RES_PATH"/pen"
-#define LANG_PATH                   RES_PATH"/lang"
-#define MENU_PATH                   RES_PATH"/menu"
-#define MASK_PATH                   RES_PATH"/mask"
-#define SHADER_PATH                 RES_PATH"/shader"
-#define CFG_FILE                    RES_PATH"/nds.cfg"
-#define FONT_FILE                   RES_PATH"/font/font.ttf"
+#define RES_PATH        "res"
+#define BG_PATH         RES_PATH"/bg"
+#define PEN_PATH        RES_PATH"/pen"
+#define LANG_PATH       RES_PATH"/lang"
+#define MENU_PATH       RES_PATH"/menu"
+#define MASK_PATH       RES_PATH"/mask"
+#define SHADER_PATH     RES_PATH"/shader"
+#define CFG_FILE        RES_PATH"/nds.cfg"
+#define FONT_FILE       RES_PATH"/font.ttf"
+
+#define MENU_COLOR_DIS              0x808080
+#define MENU_COLOR_SEL              0xffffff
+#define MENU_COLOR_UNSEL            0x000000
+#define MENU_COLOR_DRASTIC          0x289a35
 
 #define BIOS_PATH                   "system/"
 #define NDS_FIRMWARE_FILE           "nds_firmware.bin"
@@ -25,19 +32,6 @@
 #define NDS_BIOS_ARM9_FILE          "nds_bios_arm9.bin"
 #define DRASTIC_BIOS_ARM7_FILE      "drastic_bios_arm7.bin"
 #define DRASTIC_BIOS_ARM9_FILE      "drastic_bios_arm9.bin"
-
-#if defined(XT894) || defined(QX1000)
-#define DEF_STATE_PATH              "/home/defaultuser/Game/state/nds"
-#endif
-
-#if defined(XT897)
-#define DEF_STATE_PATH              "/home/nemo/Game/state/nds"
-#endif
-
-#define MENU_COLOR_DIS              0x808080
-#define MENU_COLOR_SEL              0xffffff
-#define MENU_COLOR_UNSEL            0x000000
-#define MENU_COLOR_DRASTIC          0x289a35
 
 #define SDL2_MENU_BG_FILE           "bg.png"
 #define SDL2_MENU_CURSOR_FILE       "cursor.png"
@@ -47,48 +41,57 @@
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
 
-#define LAYOUT_BG_W     640
-#define LAYOUT_BG_H     480
+#if defined(XT894) || defined(QX1000)
+#define DEF_STATE_PATH              "/home/defaultuser/Game/state/nds"
+#endif
+
+#if defined(XT897)
+#define DEF_STATE_PATH              "/home/nemo/Game/state/nds"
+#endif
 
 enum layout_mode_t {
-    LAYOUT_MODE_T0,      // 0 Normal Mode
-    LAYOUT_MODE_T1,      // 1
-    LAYOUT_MODE_T2,      // 2
-    LAYOUT_MODE_T3,      // 3
-    LAYOUT_MODE_T4,      // 4
-    LAYOUT_MODE_T5,      // 5
-    LAYOUT_MODE_T6,      // 6
-    LAYOUT_MODE_T7,      // 7
-    LAYOUT_MODE_T8,      // 8
-    LAYOUT_MODE_T9,      // 9
-    LAYOUT_MODE_T10,     // 10
-    LAYOUT_MODE_T11,     // 11
-    LAYOUT_MODE_T12,     // 12
-    LAYOUT_MODE_T13,     // 13
-    LAYOUT_MODE_T14,     // 14
-    LAYOUT_MODE_T15,     // 15
+    LAYOUT_MODE_N0,      // 0 Normal Mode
+    LAYOUT_MODE_N1,      // 1
+    LAYOUT_MODE_N2,      // 2
+    LAYOUT_MODE_N3,      // 3
+    LAYOUT_MODE_N4,      // 4
+    LAYOUT_MODE_N5,      // 5
+    LAYOUT_MODE_N6,      // 6
+    LAYOUT_MODE_N7,      // 7
+    LAYOUT_MODE_N8,      // 8
+    LAYOUT_MODE_N9,      // 9
+    LAYOUT_MODE_N10,     // 10
+    LAYOUT_MODE_N11,     // 11
+    LAYOUT_MODE_N12,     // 12
+    LAYOUT_MODE_N13,     // 13
+    LAYOUT_MODE_N14,     // 14
+    LAYOUT_MODE_N15,     // 15
+
     LAYOUT_MODE_B0,      // 16 Book Mode
     LAYOUT_MODE_B1,      // 17
     LAYOUT_MODE_B2,      // 18
     LAYOUT_MODE_B3,      // 19
+
     LAYOUT_MODE_D0,      // 20 Draw Mode
 #if defined(XT894) || defined(XT897)
     LAYOUT_MODE_C0,      // Customized Mode
     LAYOUT_MODE_C1,      //
 #endif
+
 #if defined(QX1000)
     LAYOUT_MODE_C0,      // Customized Mode
     LAYOUT_MODE_C1,      //
 #endif
+
     LAYOUT_MODE_MAX,
 };
 
-#define NDS_ALPHA_MAX   9
-#define MAX_PATH        255
-#define MAX_LANG_NAME   16
-#define MAX_LANG_FILE   32
-#define MAX_LANG_LINE   256
-#define MAX_MENU_LINE   256
+#define NDS_ALPHA_MAX       9
+#define MAX_PATH            255
+#define MAX_LANG_NAME       16
+#define MAX_LANG_FILE       32
+#define MAX_LANG_LINE       256
+#define MAX_MENU_LINE       256
 
 #define DEF_LANG            "en_US"
 #define DEF_PEN_SPEED       10
@@ -98,10 +101,10 @@ enum layout_mode_t {
 #define DEF_LAYOUT_MODE     1
 #define DEF_JOY_DZONE       25
 
-#define TRACE_LEVEL  3
-#define DEBUG_LEVEL  2
-#define ERROR_LEVEL  1
-#define FATAL_LEVEL  0
+#define TRACE_LEVEL         3
+#define DEBUG_LEVEL         2
+#define ERROR_LEVEL         1
+#define FATAL_LEVEL         0
 
 extern int nds_debug_level;
 
@@ -265,6 +268,7 @@ int get_file_cnt(const char *);
 int get_path_by_idx(const char *, int, char *);
 uint64_t get_tick_count_ms(void);
 int get_debug_level(void);
+char* upper_string(char *);
 
 #endif
 

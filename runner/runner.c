@@ -88,7 +88,7 @@ static GLushort vert_indices[] = {
 };
 
 static runner_t myrunner = { 0 };
-int nds_debug_level = FATAL_LEVEL;
+int nds_debug_level = ERROR_LEVEL;
 
 static int init_shm(void)
 {
