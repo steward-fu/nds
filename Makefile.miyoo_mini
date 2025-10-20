@@ -24,7 +24,7 @@ LDFLAGS += -lmi_common
 export MORE_CFLAGS=${CFLAGS}
 export MORE_LDFLAGS=${LDFLAGS}
 
-include Makefile.mk
+include Makefile.base
 
 .PHONY: scp
 scp:

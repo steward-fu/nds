@@ -16,7 +16,7 @@ LDFLAGS+= -ljson-c
 export MORE_CFLAGS=${CFLAGS}
 export MORE_LDFLAGS=${LDFLAGS}
 
-include Makefile.mk
+include Makefile.base
 
 .PHONY: push
 push:

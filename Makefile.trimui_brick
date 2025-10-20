@@ -3,7 +3,7 @@ export NDS_GCC=1
 export NDS_ALSA=1
 export NDS_RUNNER=1
 
-CCFLAGS  += -O3
+CCFLAGS += -O3
 CFLAGS  += -DBRICK
 CFLAGS  += -Wl,--no-undefined
 
@@ -17,7 +17,7 @@ LDFLAGS += -ljson-c
 export MORE_CFLAGS=${CFLAGS}
 export MORE_LDFLAGS=${LDFLAGS}
 
-include Makefile.mk
+include Makefile.base
 
 .PHONY: push
 push:
