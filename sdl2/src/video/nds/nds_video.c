@@ -677,10 +677,22 @@ static int draw_drastic_menu_main(void)
                     rt.y -= ((myvideo.menu.drastic.cursor->h - myvideo.menu.line_h) / 2);
                     rt.w = 0;
                     rt.h = 0;
-                    SDL_BlitSurface(myvideo.menu.drastic.cursor, NULL, myvideo.menu.drastic.frame, &rt);
+                    SDL_BlitSurface(
+                        myvideo.menu.drastic.cursor,
+                        NULL,
+                        myvideo.menu.drastic.frame,
+                        &rt
+                    );
                 }
             }
-            draw_info(myvideo.menu.drastic.frame, buf, x, y, p->bg ? MENU_COLOR_SEL : MENU_COLOR_UNSEL, 0);
+            draw_info(
+                myvideo.menu.drastic.frame,
+                buf,
+                x,
+                y,
+                p->bg ? MENU_COLOR_SEL : MENU_COLOR_UNSEL,
+                0
+            );
         }
     }
 
@@ -5681,7 +5693,13 @@ TEST(sdl2_video, l10n)
 }
 #endif
 
-static int draw_info(SDL_Surface *dst, const char *info, int x, int y, uint32_t fgcolor, uint32_t bgcolor)
+static int draw_info(
+    SDL_Surface *dst,
+    const char *info,
+    int x,
+    int y,
+    uint32_t fgcolor,
+    uint32_t bgcolor)
 {
     int w = 0;
     int h = 0;
@@ -6123,7 +6141,6 @@ static int load_bg_image(void)
                 );
             }
 #endif
-
             SDL_FreeSurface(t);
         }
     }
@@ -6902,7 +6919,30 @@ TEST(sdl2_video, quit_video)
 }
 #endif
 
-static const char *LAYOUT_MODE_STR0[] = {
+static const char* LAYOUT_NAME_STR[] = {
+    "N00",
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "N07",
+    "N08",
+    "N09",
+    "N10",
+    "N11",
+    "N12",
+    "N13",
+    "N14",
+    "N15",
+    "B00",
+    "B01",
+    "B02",
+    "B03",
+};
+
+static const char* LAYOUT_MODE_STR0[] = {
     "640x480",
     "640x480",
     "512x384",
@@ -7971,6 +8011,7 @@ static int draw_sdl2_menu_setting(
     int col0,
     int col1)
 {
+    int cur_mode_sel = 0;
     const int SX = 150;
     const int SY = 107;
     const int SSX = 385;
@@ -7981,6 +8022,8 @@ static int draw_sdl2_menu_setting(
 #endif
 
     debug("call %s(cur_sel=%d, cc=%d, idx=%d, sx=%d)\n", __func__, cur_sel, cc, idx, sx);
+
+    cur_mode_sel = myconfig.layout.mode.sel;
 
     draw_info(
         myvideo.cvt,
@@ -7996,6 +8039,18 @@ static int draw_sdl2_menu_setting(
     case MENU_LANG:
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
+
+#if !defined(MINI)
+    case MENU_SHADER:
+        if (get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0) >= 0) {
+            sprintf(buf, "%s", upper_string(tmp));
+        }
+        else {
+            strcpy(buf, "NONE");
+        }
+        break;
+#endif
+
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     case MENU_CPU_CORE:
         sprintf(buf, "%d", myconfig.cpu_core);
@@ -8011,12 +8066,17 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(myconfig.swap_r1_r2 ? "Yes" : "No"));
         break;
     case MENU_LAYOUT_MODE:
-        sprintf(buf, "[%d]   %s", myconfig.layout.mode.sel, LAYOUT_MODE_STR0[myconfig.layout.mode.sel]);
+        sprintf(
+            buf,
+            "%s    %s",
+            LAYOUT_NAME_STR[cur_mode_sel],
+            LAYOUT_MODE_STR0[cur_mode_sel]
+        );
         break;
     case MENU_SWIN_ALPHA:
-        sprintf(buf, "[%d]   ", myconfig.layout.mode.sel);
+        sprintf(buf, "%s    ", LAYOUT_NAME_STR[cur_mode_sel]);
         sx = get_font_width(buf);
-        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode.sel]);
+        sprintf(buf, "%s", LAYOUT_MODE_STR1[cur_mode_sel]);
         draw_info(
             myvideo.cvt,
             buf,
@@ -8036,22 +8096,16 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(SWIN_POS_STR[myconfig.layout.swin.pos]));
         break;
     case MENU_LAYOUT_ATL:
-        sprintf(buf, "[%d]   %s", myconfig.layout.mode.alt, LAYOUT_MODE_STR0[myconfig.layout.mode.alt]);
+        sprintf(
+            buf,
+            "%s    %s",
+            LAYOUT_NAME_STR[myconfig.layout.mode.alt],
+            LAYOUT_MODE_STR0[myconfig.layout.mode.alt]
+        );
         break;
+
 #if defined(MINI)
     case MENU_OVERLAY:
-        sprintf(buf, "[%d]   ", myconfig.layout.mode.alt);
-        sx = get_font_width(buf);
-        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode.alt]);
-        draw_info(
-            myvideo.cvt,
-            buf,
-            SSX + sx,
-            SY + (myvideo.menu.line_h * idx),
-            (cur_sel == MENU_LAYOUT_ATL) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL,
-            0
-        );
-
         sx = 0;
         sprintf(buf, "%s", l10n((myconfig.layout.overlay.enable > 0 )? "Yes" : "No"));
         break;
@@ -8075,18 +8129,20 @@ static int draw_sdl2_menu_setting(
         break;
 #endif
 
-#if !defined(MINI)
-    case MENU_SHADER:
-        if (get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0) >= 0) {
-            sprintf(buf, "%s", upper_string(tmp));
-        }
-        else {
-            strcpy(buf, "NONE");
-        }
-        break;
-#endif
-
     case MENU_ROTATE_KEY:
+        sprintf(buf, "%s    ", LAYOUT_NAME_STR[myconfig.layout.mode.alt]);
+        sx = get_font_width(buf);
+        sprintf(buf, "%s", LAYOUT_MODE_STR1[myconfig.layout.mode.alt]);
+        draw_info(
+            myvideo.cvt,
+            buf,
+            SSX + sx,
+            SY + (myvideo.menu.line_h * idx),
+            (cur_sel == MENU_LAYOUT_ATL) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL,
+            0
+        );
+
+        sx = 0;
         sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
         break;
     case MENU_PEN_SPEED:

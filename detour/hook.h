@@ -72,6 +72,7 @@ typedef struct {
     uintptr_t *base;
     uint32_t *gamecard_name;
     uint32_t *savestate_num;
+    uint8_t *micphone_status;
     struct {
         uintptr_t *base;
         uint32_t *frameskip_type;
@@ -121,6 +122,12 @@ typedef struct {
         float *realtime_speed_percentage;
         float *rendered_frames_percentage;
     } video;
+
+    struct {
+        struct {
+            int16_t *capture_buffer;
+        } audio;
+    } spu;
 } system_t;
 
 typedef struct {
@@ -300,6 +307,7 @@ int load_state(int slot);
 int save_state(int slot);
 int set_fast_forward(uint8_t v);
 int unlock_area(const void *);
+int toggle_micphone(void);
 void render_polygon_setup_perspective_steps(void);
 
 #endif

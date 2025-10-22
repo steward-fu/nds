@@ -768,10 +768,6 @@ snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm)
 {
     trace("call %s(%p)\n", __func__, pcm);
 
-    if (pcm) {
-        return myhook.use_mic ? (735 * 2) : 0;
-    }
-
     return 2048;
 }
 
@@ -950,17 +946,20 @@ TEST(alsa, snd_pcm_hw_params_set_rate_near)
 
 int snd_pcm_open(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode)
 {
-    debug("call %s(pcm=%p, name=%s, stream=%d, mode=%d)\n", __func__, pcm, name, stream, mode);
+    debug(
+        "call %s(pcm=%p, name=%s, stream=%d, mode=%d)\n",
+        __func__,
+        pcm,
+        name,
+        stream,
+        mode
+    );
 
-    if ((stream != SND_PCM_STREAM_PLAYBACK) && (stream != SND_PCM_STREAM_CAPTURE)) {
+    if (stream != SND_PCM_STREAM_PLAYBACK) {
         return -1;
     }
 
     *pcm = (struct _snd_pcm *)stream;
-    if (stream) {
-        srand(time(NULL));
-    }
-
     return 0;
 }
 
@@ -988,25 +987,9 @@ TEST(alsa, snd_pcm_prepare)
 
 snd_pcm_sframes_t snd_pcm_readi(snd_pcm_t *pcm, void *buf, snd_pcm_uframes_t size)
 {
-    static int need_clean = 0;
+    trace("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
 
-    debug("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
-
-    if (myhook.use_mic) {
-        int cc = 0;
-        int16_t *p = (uint16_t *)buf;
-
-        need_clean = 1;
-        for (cc = 0; cc < size; cc++) {
-            p[cc] = rand();
-        }
-    }
-    else if (need_clean) {
-        need_clean = 0;
-        memset(buf, 0, sizeof(int16_t) * size);
-    }
-
-    return myhook.use_mic ? size : 0;
+    return 0;
 }
 
 #if defined(UT)

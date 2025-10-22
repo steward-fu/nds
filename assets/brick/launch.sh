@@ -22,8 +22,7 @@ LD_LIBRARY_PATH=/usr/trimui/lib ./runner&
 sleep 1
 
 export SDL_VIDEODRIVER=NDS
-export DRASTIC_MIC_EN=1
-export DRASTIC_MIC_NAME=NDS
+
 ./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > std.log 2>&1
 sync
 

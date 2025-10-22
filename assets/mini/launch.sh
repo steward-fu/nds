@@ -4,8 +4,6 @@ RESTORE_RES=0
 
 export HOME=$MYDIR
 export SDL_VIDEODRIVER=NDS
-export DRASTIC_MIC_EN=1
-export DRASTIC_MIC_NAME=NDS
 export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH
 
 if [ -f /mnt/SDCARD/.tmp_update/script/stop_audioserver.sh ]; then

@@ -698,6 +698,8 @@ static int init_table(void)
     myhook.var.system.config.controls_b = (uint16_t *)0x0847982c;
     myhook.var.system.video.realtime_speed_percentage = (float *)0x0aedec08;
     myhook.var.system.video.rendered_frames_percentage = (float *)0x0aedec0c;
+    myhook.var.system.micphone_status = (uint8_t *)0xaedee69;
+    myhook.var.system.spu.audio.capture_buffer = (int16_t *)0x997a000;
     myhook.var.sdl.swap_screens = (uint32_t *)0x0aee9598;
     myhook.var.sdl.bytes_per_pixel = (uint32_t *)0x0aee957c;
     myhook.var.sdl.needs_reinitializing = (uint32_t *)0x0aee95a0;
@@ -781,6 +783,8 @@ static int init_table(void)
     myhook.fun.config_setup_input_map = (void *)0x08097250;
 #endif
 
+    srand(time(NULL));
+
     return 0;
 }
 
@@ -863,6 +867,38 @@ int quit_hook(void)
 TEST(detour, quit_hook)
 {
     TEST_ASSERT_EQUAL_INT(0, quit_hook());
+}
+#endif
+
+int toggle_micphone(void)
+{
+    const int buf_size = 65536;
+    static int need_clean = 0;
+
+    myhook.use_mic ^= 1;
+    if (myhook.use_mic) {
+        int cc = 0;
+        int16_t *p = (uint16_t *)myhook.var.system.spu.audio.capture_buffer;
+
+        need_clean = 1;
+        *myhook.var.system.micphone_status = 2;
+        for (cc = 0; cc < buf_size; cc++) {
+            p[cc] = rand();
+        }
+    }
+    else if (need_clean) {
+        need_clean = 0;
+        memset(
+            myhook.var.system.spu.audio.capture_buffer,
+            0,
+            sizeof(int16_t) * buf_size
+        );
+    }
+}
+
+#if defined(UT)
+TEST(detour, toggle_micphone)
+{
 }
 #endif
 
