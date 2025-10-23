@@ -73,7 +73,7 @@ Book Mode 3
 | L2                  | Switch Keypad or Touch              |
 | MENU + LEFT         | Change Layout Mode                  |
 | MENU + RIGHT        | Change Layout Mode                  |
-| MENU + L1           | Exit                                |
+| MENU + L1           | Quit Emulator                       |
 | MENU + L2           | Load State                          |
 | MENU + R1           | Fast Forward                        |
 | MENU + R2           | Save State                          |
