@@ -118,6 +118,8 @@ static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 static int get_file_name_by_index(const char *, int, char *, int);
 
+static int load_mask_image(const char *);
+
 #if !defined(MINI)
 static int load_shader_file(const char *);
 #endif
@@ -166,6 +168,7 @@ static SDL_Rect def_layout_pos[][2] = {
     {{ 192, 0, 256, 192 }, { 128, 192, 384, 288 }},
     // LAYOUT_MODE_N15
     {{ 0, 144, 256, 192 }, { 256, 96, 384, 288 }},
+
     // LAYOUT_MODE_B0
     {{ 0, 26, 427, 320 }, { 320, 26, 427, 320 }},
     // LAYOUT_MODE_B1
@@ -174,8 +177,10 @@ static SDL_Rect def_layout_pos[][2] = {
     {{ 0, 0, 480, 320 }, { 320, 0, 480, 320 }},
     // LAYOUT_MODE_B3
     {{ 320, 0, 480, 320 }, { 0, 0, 480, 320 }},
+
     // LAYOUT_MODE_D0
-    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+    //{{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+
 #if defined(XT894) || defined(XT897) || defined(QX1000)
     // LAYOUT_MODE_C0
     {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
@@ -2425,7 +2430,7 @@ TEST(sdl2_video, strip_newline_char)
 static void* video_handler(void *param)
 {
 #if !defined(MINI)
-    int cur_shader = 0;
+    int cur_shader = -1;
     char tmp[MAX_PATH] = { 0 };
 #endif
 
@@ -2621,15 +2626,16 @@ static void* video_handler(void *param)
     while (myvideo.thread.running) {
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
-            if (cur_shader != 0) {
-                cur_shader = 0;
+            if (cur_shader != -1) {
+                cur_shader = -1;
                 load_shader_file(NULL);
             }
         }
-        else if (myconfig.shader != cur_shader) {
-            cur_shader = myconfig.shader;
-            get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0);
-            load_shader_file(tmp);
+        else if ((myvideo.shader >= 0) && (myvideo.shader != cur_shader)) {
+            cur_shader = myvideo.shader;
+            if (get_file_name_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
+                load_shader_file(tmp);
+            }
         }
 
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
@@ -2781,6 +2787,13 @@ TEST(sdl2_video, free_lang_res)
 }
 #endif
 
+static int load_mask_file(const char *name)
+{
+    printf("call %s(name=%s)\n", __func__, name);
+
+    return 0;
+}
+
 #if !defined(MINI)
 static int load_shader_file(const char *name)
 {
@@ -2794,11 +2807,11 @@ static int load_shader_file(const char *name)
     GLint frag_shader = 0;
     GLint vert_shader = 0;
 
-    debug("call %s(name=%p)\n", __func__, name);
+    printf("call %s(name=%p)\n", __func__, name);
 
     if (name && name[0]) {
         sprintf(buf, "%s%s/%s", myvideo.home, SHADER_PATH, name);
-        debug("shader path=\"%s\"\n", buf);
+        printf("shader path=\"%s\"\n", buf);
 
         f = fopen(buf, "r");
         if (f) {
@@ -2947,43 +2960,6 @@ TEST(sdl2_video, load_lang_file)
     //TEST_ASSERT_EQUAL_INT(0, load_lang_file(DEF_LANG));
 }
 #endif
-
-static int get_total_file_count(const char *folder)
-{
-    int cnt = 0;
-    DIR *d = NULL;
-    struct dirent *dir = NULL;
-    char buf[MAX_PATH + 32] = { 0 };
-
-    debug("call %s()\n", __func__);
-
-    snprintf(buf, sizeof(buf), "%s/%s", myvideo.home, folder);
-    debug("enum folder=\"%s\"\n", buf);
-
-    d = opendir(buf);
-    if (!d) {
-        error("failed to open dir \"%s\"\n", buf);
-        return 0;
-    }
-
-    cnt = 0;
-    while ((dir = readdir(d)) != NULL) {
-        if (dir->d_type == DT_DIR) {
-            continue;
-        }
-        if (strcmp(dir->d_name, ".") == 0) {
-            continue;
-        }
-        if (strcmp(dir->d_name, "..") == 0) {
-            continue;
-        }
-
-        cnt += 1;
-    }
-    closedir(d);
-
-    return cnt;
-}
 
 static int get_file_name_by_index(const char *folder, int idx, char *buf, int full)
 {
@@ -3195,6 +3171,18 @@ TEST(sdl2_video, enum_lang_file)
     TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
 #endif
+
+static int get_mask_cnt(void)
+{
+    char buf[MAX_PATH + 32] = { 0 };
+
+    debug("call %s()\n", __func__);
+
+    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, MASK_PATH);
+    debug("mask folder=\"%s\"\n", buf);
+
+    return get_file_cnt(buf);
+}
 
 #if !defined(MINI)
 static int get_shader_cnt(void)
@@ -6703,6 +6691,9 @@ static int init_device(void)
         0
     );
 
+    myvideo.mask = -1;
+    myvideo.shader = -1;
+
     load_config(myvideo.home);
 
     myconfig.pen.max = get_pen_cnt();
@@ -7137,8 +7128,10 @@ typedef enum {
     MENU_LANG = 0,
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-    MENU_CPU_CORE,
+    MENU_CPU,
 #endif
+
+    MENU_MASK,
 
 #if !defined(MINI)
     MENU_SHADER,
@@ -7149,10 +7142,6 @@ typedef enum {
     MENU_SWIN_BORDER,
     MENU_SWIN_POS,
     MENU_LAYOUT_ATL,
-
-#if defined(MINI)
-    MENU_OVERLAY,
-#endif
 
 #if 0
     MENU_CUST_IMG,
@@ -7170,6 +7159,7 @@ typedef enum {
     MENU_PEN_SPEED,
     MENU_SHOW_CURSOR,
     MENU_FAST_FORWARD,
+
 #if defined(A30) || defined(FLIP)
     MENU_JOY_MODE,
     MENU_JOY_CUST_KEY0,
@@ -7178,6 +7168,7 @@ typedef enum {
     MENU_JOY_CUST_KEY3,
     MENU_JOY_DZONE,
 #endif
+
 #if defined(FLIP)
     MENU_RJOY_MODE,
     MENU_RJOY_CUST_KEY0,
@@ -7186,6 +7177,7 @@ typedef enum {
     MENU_RJOY_CUST_KEY3,
     MENU_RJOY_DZONE,
 #endif
+
     MENU_LAST,
 } menu_list_t;
 
@@ -7193,8 +7185,10 @@ static const char *MENU_LIST_STR[] = {
     "LANGUAGE",
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-    "CPU CORE",
+    "CPU",
 #endif
+
+    "MASK",
 
 #if !defined(MINI)
     "SHADER",
@@ -7205,10 +7199,6 @@ static const char *MENU_LIST_STR[] = {
     "BORDER",
     "POSITION",
     "ALTERNATIVE",
-
-#if defined(MINI)
-    "OVERLAY",
-#endif
 
 #if 0
     "CUST. LAYOUT",
@@ -7711,6 +7701,8 @@ TEST(sdl2_video, draw_small_win)
 
 static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
+    int max_mask_count = get_mask_cnt();
+
 #if !defined(MINI)
     //int add = is_lr ? 50 : 1;
     int max_shader_count = get_shader_cnt();
@@ -7718,9 +7710,13 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 
     debug("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
 
+    if (myvideo.mask >= max_mask_count) {
+        myvideo.mask = 0;
+    }
+
 #if !defined(MINI)
-    if (myconfig.shader >= max_shader_count) {
-        myconfig.shader = 0;
+    if (myvideo.shader >= max_shader_count) {
+        myvideo.shader = 0;
     }
 #endif
 
@@ -7734,7 +7730,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-    case MENU_CPU_CORE:
+    case MENU_CPU:
         if (right_key) {
             if (myconfig.cpu_core < MAX_CPU_CORE) {
                 myconfig.cpu_core += 1;
@@ -7914,16 +7910,29 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
 #endif
 
-#if !defined(MINI)
-    case MENU_SHADER:
+    case MENU_MASK:
         if (right_key) {
-            if (max_shader_count && (myconfig.shader < (max_shader_count - 1))) {
-                myconfig.shader += 1;
+            if (max_mask_count && (myvideo.mask < (max_mask_count - 1))) {
+                myvideo.mask += 1;
             }
         }
         else {
-            if (myconfig.shader > 0) {
-                myconfig.shader -= 1;
+            if (myvideo.mask >= 0) {
+                myvideo.mask -= 1;
+            }
+        }
+        break;
+
+#if !defined(MINI)
+    case MENU_SHADER:
+        if (right_key) {
+            if (max_shader_count && (myvideo.shader < (max_shader_count - 1))) {
+                myvideo.shader += 1;
+            }
+        }
+        else {
+            if (myvideo.shader >= 0) {
+                myvideo.shader -= 1;
             }
         }
         break;
@@ -8126,9 +8135,18 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
 
+    case MENU_MASK:
+        if (get_file_name_by_index(MASK_PATH, myvideo.mask, tmp, 0) >= 0) {
+            sprintf(buf, "%s", upper_string(tmp));
+        }
+        else {
+            strcpy(buf, "NONE");
+        }
+        break;
+
 #if !defined(MINI)
     case MENU_SHADER:
-        if (get_file_name_by_index(SHADER_PATH, myconfig.shader, tmp, 0) >= 0) {
+        if (get_file_name_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
         }
         else {
@@ -8138,7 +8156,7 @@ static int draw_sdl2_menu_setting(
 #endif
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-    case MENU_CPU_CORE:
+    case MENU_CPU:
         sprintf(buf, "%d", myconfig.cpu_core);
         break;
 #endif
@@ -8506,7 +8524,7 @@ static int process_sdl2_setting(int key)
             rt.y = SY + (myvideo.menu.line_h * idx) - 2;
             rt.h = FONT_SIZE + 3;
 
-            if (cc == MENU_SWIN_ALPHA) {
+            if ((cc == MENU_SWIN_ALPHA) || (cc == MENU_ROTATE_KEY)) {
                 rt.w -= 121;
             }
             if (col1 == MENU_COLOR_DIS) {

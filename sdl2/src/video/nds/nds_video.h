@@ -278,6 +278,12 @@ typedef struct {
         char *trans[MAX_LANG_LINE];
     } lang;
 
+    int mask;
+
+#if !defined(MINI)
+    int shader;
+#endif
+
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
     struct {
         struct wl_shell *shell;

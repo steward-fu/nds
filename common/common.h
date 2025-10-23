@@ -169,11 +169,6 @@ typedef struct {
     int keys_rotate;
 
     int lang;
-
-#if !defined(MINI)
-    int shader;
-#endif
-
     int hotkey;
     int cpu_core;
     int fast_forward;
@@ -267,9 +262,9 @@ int drop_bios_files(const char *);
 int get_dir_cnt(const char *);
 int get_file_cnt(const char *);
 int get_path_by_idx(const char *, int, char *);
-uint64_t get_tick_count_ms(void);
 int get_debug_level(void);
 char* upper_string(char *);
+uint64_t get_tick_count_ms(void);
 
 #endif
 

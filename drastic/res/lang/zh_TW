@@ -1,7 +1,8 @@
 LANGUAGE=顯示語言
 zh_TW=繁體中文
 zh_CN=簡體中文
-SHADER=遮罩選項
+MASK=遮罩圖片
+SHADER=着色器
 LAYOUT=佈局樣式
 ALPHA=小視窗透明
 BORDER=小視窗邊框
