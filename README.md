@@ -77,10 +77,6 @@ Book Mode 3
 | MENU + L2           | Load State                          |
 | MENU + R1           | Fast Forward                        |
 | MENU + R2           | Save State                          |
-| **SDL2 Menu**       |                                     |
-| UP / DOWN           | Select Item                         |
-| LEFT / RIGHT        | Change Setting                      |
-| B                   | Apply Change                        |
 | **Keypad Mode**     |                                     |
 | MENU + A            | Alternate Layout Mode               |
 | MENU + B            | Change Filter (Blur or Pixel)       |
