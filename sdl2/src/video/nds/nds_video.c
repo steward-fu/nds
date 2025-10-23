@@ -756,7 +756,7 @@ static int draw_drastic_menu_main(void)
             pfn((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50;
                 rt.w = NDS_W;
@@ -768,7 +768,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(MINI) || defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50 + NDS_H;
                 rt.w = NDS_W;
@@ -1913,15 +1913,6 @@ static int process_screen(void)
 #if !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        if (myconfig.filter == FILTER_PIXEL) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        }
-        else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        }
-
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
@@ -2654,9 +2645,25 @@ static void* video_handler(void *param)
                         myvideo.cvt->clip_rect,
                         myvideo.cvt->pitch
                     );
+
+                    flush_lcd(
+                        TEXTURE_TMP,
+                        myvideo.cvt->pixels,
+                        myvideo.cvt->clip_rect,
+                        myvideo.cvt->clip_rect,
+                        myvideo.cvt->pitch
+                    );
                 }
                 else {
                     debug("update drastic menu\n");
+
+                    flush_lcd(
+                        TEXTURE_TMP,
+                        myvideo.menu.drastic.frame->pixels,
+                        myvideo.menu.drastic.frame->clip_rect,
+                        myvideo.menu.drastic.frame->clip_rect,
+                        myvideo.menu.drastic.frame->pitch
+                    );
 
                     flush_lcd(
                         TEXTURE_TMP,
@@ -4358,10 +4365,12 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
 
     if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
-        drt.x = margin_w;
-        drt.y = 0;
-        drt.w = scale_w;
-        drt.h = scale_h;
+        if ((srt.w == LAYOUT_BG_W) && (srt.h == LAYOUT_BG_H)) {
+            drt.x = margin_w;
+            drt.y = 0;
+            drt.w = scale_w;
+            drt.h = scale_h;
+        }
     }
 
     glUniform4f(myvideo.egl.frag.screen, drt.h, drt.w, 1.0 / drt.h, 1.0 / drt.w);
@@ -6226,8 +6235,6 @@ static int load_bg_image(void)
         debug("binding bg texture\n");
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
