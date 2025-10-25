@@ -1835,11 +1835,11 @@ static int process_screen(void)
         }
         else if (cur_mic != myhook.use_mic) {
             show_info = 50;
-            sprintf(buf, "%s %s", l10n("MICPHONE"), l10n(myhook.use_mic ? "ON" : "OFF"));
+            sprintf(buf, "%s %s", l10n("MICROPHONE"), l10n(myhook.use_mic ? "ON" : "OFF"));
         }
         else if (cur_hinge != myhook.use_hinge) {
             show_info = 50;
-            sprintf(buf, "%s %s", l10n("HINGE"), l10n(myhook.use_hinge ? "ON" : "OFF"));
+            sprintf(buf, "%s %s", l10n("LCD HINGE"), l10n(myhook.use_hinge ? "CLOSE" : "OPEN"));
         }
         else if (cur_filter != myconfig.filter) {
             show_info = 50;
