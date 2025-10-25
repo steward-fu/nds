@@ -66,25 +66,35 @@ Book Mode 3
 
 &nbsp;
 
-## Hotkeys
-|  Key                | Description                         |
-| ------------------- | ----------------------------------- |
-| R2                  | Swap Screen                         |
-| L2                  | Switch Keypad or Touch              |
-| MENU + LEFT         | Change Layout Mode                  |
-| MENU + RIGHT        | Change Layout Mode                  |
-| MENU + L1           | Quit Emulator                       |
-| MENU + L2           | Load State                          |
-| MENU + R1           | Fast Forward                        |
-| MENU + R2           | Save State                          |
-| **Keypad Mode**     |                                     |
-| MENU + A            | Alternate Layout Mode               |
-| MENU + B            | Change Filter (Blur or Pixel)       |
-| MENU + Y            | Change Background Image             |
-| MENU + SELECT       | Enter DraStic Menu                  |
-| MENU + START        | Enter SDL2 Menu                     |
-| **Touch Mode**      |                                     |
-| DPAD                | Move Touch                          |
-| A                   | Touch Screen                        |
-| R1                  | Lower Moving Speed                  |
-| MENU + Y            | Change Touch Image                  |
+## Hotkey
+HOTKEY can be set as MENU or SELECT in SDL2 menu.  
+
+| **Keypad Mode**       | Description                         |
+| --------------------- | ----------------------------------- |
+| R2                    | Swap Screen                         |
+| L2                    | Switch Keypad or Touch Mode         |
+| HOTKEY + UP           | Toggle Microphone                   |
+| HOTKEY + DOWN         | Toggle LCD Hinge                    |
+| HOTKEY + LEFT         | Change Layout Mode                  |
+| HOTKEY + RIGHT        | Change Layout Mode                  |
+| HOTKEY + A            | Alternate Layout Mode               |
+| HOTKEY + B            | Change Filter (Blur or Pixel)       |
+| HOTKEY + X            | Show Help                           |
+| HOTKEY + Y            | Change Background Image             |
+| HOTKEY + L1           | Quit Emulator                       |
+| HOTKEY + L2           | Load State                          |
+| HOTKEY + R1           | Fast Forward                        |
+| HOTKEY + R2           | Save State                          |
+| HOTKEY + SELECT       | Enter DraStic Menu                  |
+| HOTKEY + START        | Enter SDL2 Menu                     |  
+
+| **Touch Mode**        |                                     |
+| --------------------- | ----------------------------------- |
+| DPAD                  | Move Touch                          |
+| A                     | Touch Screen                        |
+| R1                    | Lower Moving Speed                  |
+| HOTKEY + Y            | Change Touch Image                  |  
+
+| **Drastic/SDL2 Menu** |                                     |
+| --------------------- | ----------------------------------- |
+| HOTKEY + Y            | Change Background Image             |
