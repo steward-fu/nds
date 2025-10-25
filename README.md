@@ -67,7 +67,7 @@ Book Mode 3
 &nbsp;
 
 ## Hotkey
-HOTKEY can be set as MENU or SELECT in SDL2 menu.  
+The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.    
 
 | **Keypad Mode**       | Description                         |
 | --------------------- | ----------------------------------- |
