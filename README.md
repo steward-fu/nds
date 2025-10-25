@@ -88,13 +88,13 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 | HOTKEY + SELECT       | Enter DraStic Menu                  |
 | HOTKEY + START        | Enter SDL2 Menu                     |  
 
-| **Touch Mode**        |                                     |
+| **Touch Mode**        | Description                         |
 | --------------------- | ----------------------------------- |
 | DPAD                  | Move Touch                          |
 | A                     | Touch Screen                        |
 | R1                    | Lower Moving Speed                  |
 | HOTKEY + Y            | Change Touch Image                  |  
 
-| **Drastic/SDL2 Menu** |                                     |
+| **Drastic/SDL2 Menu** | Description                         |
 | --------------------- | ----------------------------------- |
 | HOTKEY + Y            | Change Background Image             |
