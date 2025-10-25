@@ -265,6 +265,7 @@ int get_path_by_idx(const char *, int, char *);
 int get_debug_level(void);
 char* upper_string(char *);
 uint64_t get_tick_count_ms(void);
+uint32_t rgb565_to_rgb888(uint16_t);
 
 #endif
 

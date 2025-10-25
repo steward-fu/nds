@@ -162,6 +162,12 @@ typedef struct {
 } adpcm_t;
 
 typedef struct {
+    uint8_t pixels[512];
+    uint16_t palette[16];
+    uint16_t title_en_utf16[128];
+} nds_icon_struct;
+
+typedef struct {
     system_t system;
     sdl_t sdl;
     adpcm_t adpcm;
@@ -204,6 +210,7 @@ typedef struct {
     void *select_quit;
     void *config_setup_input_map;
     void *print_string_ext;
+    void *nds_file_get_icon_data;
 } fun_t;
 
 typedef struct {
@@ -298,6 +305,7 @@ typedef int (*nds_printf_chk)(int, const char *);
 typedef int (*nds_puts)(const char *);
 typedef void (*nds_select_quit)(void *, void *);
 typedef void (*nds_config_setup_input_map)(void *);
+typedef int32_t (*nds_file_get_icon_data)(char *, nds_icon_struct *);
 
 int init_hook(const char *, size_t, const char *);
 int quit_hook(void);

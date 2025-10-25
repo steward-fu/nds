@@ -588,3 +588,16 @@ TEST(common, upper_string)
 }
 #endif
 
+uint32_t rgb565_to_rgb888(uint16_t c)
+{
+    uint32_t r = c & 0x1f;
+    uint32_t b = (c >> 10) & 0x1f;
+    uint32_t g = (c >> 5) & 0x1f;
+
+    r = (r << 3) + (r >> 2);
+    g = (g << 3) + (g >> 2);
+    b = (b << 3) + (b >> 2);
+
+    return (r << 16) | (g << 8) | b;
+}
+

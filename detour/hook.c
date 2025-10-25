@@ -781,6 +781,7 @@ static int init_table(void)
     myhook.fun.puts = (void *)0x0800405c;
     myhook.fun.select_quit = (void *)0x0809b134;
     myhook.fun.config_setup_input_map = (void *)0x08097250;
+    myhook.fun.nds_file_get_icon_data = (void *)0x08096d90;
 #endif
 
     srand(time(NULL));

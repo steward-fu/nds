@@ -1513,6 +1513,7 @@ static int draw_drastic_menu_rom(void)
     uint32_t c = 0;
     SDL_Rect rt = { 0 };
     cust_menu_sub_t *p = NULL;
+    char buf[255] = { 0 };
 
     debug("call %s()\n", __func__);
 
@@ -1600,12 +1601,67 @@ static int draw_drastic_menu_rom(void)
                         &rt,
                         SDL_MapRGB(myvideo.menu.drastic.frame->format,
                         (MENU_COLOR_DRASTIC >> 16) & 0xff, (MENU_COLOR_DRASTIC >> 8) & 0xff, MENU_COLOR_DRASTIC & 0xff));
+
+                    strncpy(buf, p->msg, sizeof(buf));
                 }
                 draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? MENU_COLOR_SEL : MENU_COLOR_UNSEL, 0);
             }
             cnt+= 1;
         }
     }
+
+#if !defined(TRIMUI)
+    if (buf[0]) {
+        SDL_Surface *t = SDL_CreateRGBSurface(SDL_SWSURFACE, 32, 32, 32, 0, 0, 0, 0);
+
+        if (t) {
+            int i = 0;
+            int j = 0;
+            nds_icon_struct icon = { 0 };
+            SDL_Rect srt = { 0, 0, 32, 32 };
+            SDL_Rect drt = { 0, 0, 96, 96 };
+            uint32_t *pixels = (uint32_t *)t->pixels;
+            nds_file_get_icon_data pfn =
+                (nds_file_get_icon_data)myhook.fun.nds_file_get_icon_data;
+
+            pfn(buf, &icon);
+            debug("draw icon for \"%s\"\n", buf);
+
+            SDL_FillRect(
+                t,
+                &t->clip_rect,
+                SDL_MapRGB(t->format, 0x80, 0x00, 0x00)
+            );
+
+            for (i = 0; i < 32; i++) {
+                for (j = 0; j < 16; j++) {
+                    int left = icon.pixels[(i * 16) + j] & 0x0f;
+                    int right = (icon.pixels[(i * 16) + j] >> 4) & 0x0f;
+                    *pixels++ = rgb565_to_rgb888(icon.palette[left]);
+                    *pixels++ = rgb565_to_rgb888(icon.palette[right]);
+                }
+            }
+
+            drt.x = LAYOUT_BG_W - 100;
+            drt.y = 0;
+            drt.w = 100;
+            drt.h = 100;
+            SDL_FillRect(
+                myvideo.menu.drastic.frame,
+                &drt,
+                SDL_MapRGB(myvideo.menu.drastic.frame->format, 0x80, 0x00, 0x00)
+            );
+
+            drt.x = LAYOUT_BG_W - 98;
+            drt.y = 2;
+            drt.w = 96;
+            drt.h = 96;
+            SDL_SoftStretch(t, &srt, myvideo.menu.drastic.frame, &drt);
+            SDL_FreeSurface(t);
+        }
+    }
+#endif
+
     return 0;
 }
 
@@ -2789,7 +2845,7 @@ TEST(sdl2_video, free_lang_res)
 
 static int load_mask_file(const char *name)
 {
-    printf("call %s(name=%s)\n", __func__, name);
+    debug("call %s(name=%s)\n", __func__, name);
 
     return 0;
 }
@@ -2807,11 +2863,11 @@ static int load_shader_file(const char *name)
     GLint frag_shader = 0;
     GLint vert_shader = 0;
 
-    printf("call %s(name=%p)\n", __func__, name);
+    debug("call %s(name=%p)\n", __func__, name);
 
     if (name && name[0]) {
         sprintf(buf, "%s%s/%s", myvideo.home, SHADER_PATH, name);
-        printf("shader path=\"%s\"\n", buf);
+        debug("shader path=\"%s\"\n", buf);
 
         f = fopen(buf, "r");
         if (f) {
