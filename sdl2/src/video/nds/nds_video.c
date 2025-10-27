@@ -135,9 +135,9 @@ static SDL_Rect def_layout_pos[][2] = {
     {{ 0, 0, 256, 192 }, { 0, 0, 640, 480 }},
 #if defined(TRIMUI)
     // LAYOUT_MODE_N2
-    {{ 0, 0, 0, 0 }, { 32, 24, NDS_W, NDS_H }},
+    {{ 0, 0, 0, 0 }, { 32, 24, 256, 192 }},
     // LAYOUT_MODE_N3
-    {{ 0, 0, 0, 0 }, { 0, 0, SREEN_W, SCREEN_H }},
+    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
 #else
     // LAYOUT_MODE_N2
     {{ 0, 0, 0, 0 }, { 64, 48, 512, 384 }},
@@ -150,7 +150,7 @@ static SDL_Rect def_layout_pos[][2] = {
     {{ 160, 0, 320, 240 }, { 160, 240, 320, 240 }},
     // LAYOUT_MODE_N6
     {{ 64, 144, 256, 192 }, { 320, 144, 256, 192 }},
-    //LAYOUT_MODE_N7
+    // LAYOUT_MODE_N7
     {{ 0, 120, 320, 240 }, { 320, 120, 320, 240 }},
     // LAYOUT_MODE_N8
     {{ 0, 0, 160, 120 }, { 160, 120, 480, 360 }},
@@ -183,8 +183,10 @@ static SDL_Rect def_layout_pos[][2] = {
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
     // LAYOUT_MODE_C0
-    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+    {{ 0, 0, 160, 120 }, { 0, 0, 640, 480 }},
     // LAYOUT_MODE_C1
+    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
+    // LAYOUT_MODE_C2
     {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
 #endif
 };
@@ -229,6 +231,7 @@ static const char* LAYOUT_NAME_STR[] = {
 #if defined(XT894) || defined(XT897)
     "C00",
     "C01",
+    "C02",
 #endif
 };
 
@@ -1905,6 +1908,9 @@ static int process_screen(void)
         case LAYOUT_MODE_N1:
         case LAYOUT_MODE_N2:
         case LAYOUT_MODE_N3:
+#if defined(XT894) || defined(XT897)
+        case LAYOUT_MODE_C0:
+#endif
             need_update = !!idx;
             break;
         }
@@ -2007,6 +2013,7 @@ static int process_screen(void)
             switch (cur_mode_sel) {
             case LAYOUT_MODE_N0:
             case LAYOUT_MODE_N1:
+            case LAYOUT_MODE_C0:
                 switch (myconfig.layout.swin.pos) {
                 case 0:
                     drt.x = 0;
@@ -2031,6 +2038,9 @@ static int process_screen(void)
             switch (cur_mode_sel) {
             case LAYOUT_MODE_N0:
             case LAYOUT_MODE_N1:
+#if defined(XT894) || defined(XT897)
+            case LAYOUT_MODE_C0:
+#endif
                 drt.x = myvideo.layout.mode[cur_mode_sel].screen[0].x;
                 drt.y = myvideo.layout.mode[cur_mode_sel].screen[0].y;
                 drt.w = myvideo.layout.mode[cur_mode_sel].screen[0].w;
@@ -6132,8 +6142,8 @@ static int load_bg_image(void)
 {
     int w = 0;
     int h = 0;
-    int cur_bg_sel = 0;
-    int cur_mode_sel = 0;
+    int cur_bg_sel = -1;
+    int cur_mode_sel = -1;
     static int pre_bg = -1;
     static int pre_mode = -1;
     SDL_Surface *t = NULL;
@@ -6161,7 +6171,7 @@ static int load_bg_image(void)
             w = LAYOUT_BG_W;
             h = LAYOUT_BG_H;
         }
-        debug("bg surface=%dx%d\n", w, h);
+        debug("background surface is %dx%d\n", w, h);
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
@@ -6176,9 +6186,9 @@ static int load_bg_image(void)
         );
 
         debug(
-            "mode=%d, bg=%d, img=\"%s\"\n",
-            cur_mode_sel,
+            "layout.mode[%d][%d], image=\"%s\"\n",
             cur_bg_sel,
+            cur_mode_sel,
             myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path
         );
 
@@ -6216,34 +6226,36 @@ static int load_bg_image(void)
             SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
-            scale = SDL_CreateRGBSurface(SDL_SWSURFACE, scale_w, scale_h, 32, 0, 0, 0, 0);
-            if (scale) {
-                drt.w = scale_w;
-                drt.h = scale_h;
-                SDL_SoftStretch(myvideo.layout.bg, &srt, scale, &drt);
+            if (myconfig.layout.mode.sel <= LAYOUT_MODE_B3) {
+                scale = SDL_CreateRGBSurface(SDL_SWSURFACE, scale_w, scale_h, 32, 0, 0, 0, 0);
+                if (scale) {
+                    drt.w = scale_w;
+                    drt.h = scale_h;
+                    SDL_SoftStretch(myvideo.layout.bg, &srt, scale, &drt);
 
-                SDL_FillRect(
-                    myvideo.layout.bg,
-                    &myvideo.layout.bg->clip_rect,
-                    SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
-                );
+                    SDL_FillRect(
+                        myvideo.layout.bg,
+                        &myvideo.layout.bg->clip_rect,
+                        SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
+                    );
 
-                srt.w = scale_w;
-                srt.h = scale_h;
+                    srt.w = scale_w;
+                    srt.h = scale_h;
 
-                drt.x = (w - scale_w) >> 1;
-                drt.y = 0;
-                SDL_BlitSurface(scale, &srt, myvideo.layout.bg, &drt);
-                SDL_FreeSurface(scale);
-            }
-            else {
-                error("failed to create scale surface for background\n");
+                    drt.x = (w - scale_w) >> 1;
+                    drt.y = 0;
+                    SDL_BlitSurface(scale, &srt, myvideo.layout.bg, &drt);
+                    SDL_FreeSurface(scale);
+                }
+                else {
+                    error("failed to create scale surface for background\n");
 
-                SDL_FillRect(
-                    myvideo.layout.bg,
-                    &myvideo.layout.bg->clip_rect,
-                    SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
-                );
+                    SDL_FillRect(
+                        myvideo.layout.bg,
+                        &myvideo.layout.bg->clip_rect,
+                        SDL_MapRGB(myvideo.layout.bg->format, 0, 0, 0)
+                    );
+                }
             }
 #endif
             SDL_FreeSurface(t);
@@ -6411,7 +6423,7 @@ VideoBootStrap NDS_bootstrap = {
     create_device
 };
 
-static int add_layout_mode(int mode, int cur_bg, const char *fname)
+static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h)
 {
 #if defined(XT894) || defined(XT897)
     const float scale = 1.125;
@@ -6431,7 +6443,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     const int bm_h = 960;
 #endif
 
-    debug("call %s(mode=%d, cur_bg=%d, fname=%p)\n", __func__, mode, cur_bg, fname);
+    debug("call %s(mode=%d, cur_bg=%d, fname=%p, w=%d, h=%d)\n", __func__, mode, cur_bg, fname, w, h);
 
     memcpy(
         myvideo.layout.mode[mode].screen,
@@ -6451,26 +6463,6 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     myvideo.layout.mode[mode].screen[1].h *= scale;
 
     switch (mode) {
-    case LAYOUT_MODE_N0:
-#if defined(XT894) || defined(XT897)
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-        myvideo.layout.mode[mode].screen[0].w = 240;
-        myvideo.layout.mode[mode].screen[0].h = 180;
-#else
-        myvideo.layout.mode[mode].screen[0].x = margin_w;
-        myvideo.layout.mode[mode].screen[1].x = margin_w;
-#endif
-        break;
-    case LAYOUT_MODE_N1:
-#if defined(XT894) || defined(XT897)
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[1].x = 0;
-#else
-        myvideo.layout.mode[mode].screen[0].x = margin_w;
-        myvideo.layout.mode[mode].screen[1].x = margin_w;
-#endif
-        break;
     case LAYOUT_MODE_B0:
         myvideo.layout.mode[mode].screen[0].x = margin_w;
         myvideo.layout.mode[mode].screen[0].y = (scale_h - bm_h) >> 1;
@@ -6518,6 +6510,19 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
     case LAYOUT_MODE_C0:
 #if defined(XT894) || defined(XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].w = 240;
+        myvideo.layout.mode[mode].screen[0].h = 180;
+
+        myvideo.layout.mode[mode].screen[1].x = 0;
+#else
+        myvideo.layout.mode[mode].screen[0].x = margin_w;
+
+        myvideo.layout.mode[mode].screen[1].x = margin_w;
+#endif
+        break;
+    case LAYOUT_MODE_C1:
+#if defined(XT894) || defined(XT897)
+        myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 90;
         myvideo.layout.mode[mode].screen[0].w = 480;
         myvideo.layout.mode[mode].screen[0].h = 360;
@@ -6540,7 +6545,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.mode[mode].screen[1].h = 810;
 #endif
         break;
-    case LAYOUT_MODE_C1:
+    case LAYOUT_MODE_C2:
 #if defined(XT894) || defined(XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 78;
@@ -6595,9 +6600,8 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
         myvideo.layout.max_mode = mode;
     }
 
-    myvideo.layout.mode[mode].bg[cur_bg].w = SCREEN_W;
-    myvideo.layout.mode[mode].bg[cur_bg].h = SCREEN_H;
-    myvideo.layout.mode[mode].bg[cur_bg].path[0] = 0;
+    myvideo.layout.mode[mode].bg[cur_bg].w = w;
+    myvideo.layout.mode[mode].bg[cur_bg].h = h;
 
     if (fname && fname[0]) {
         strcpy(myvideo.layout.mode[mode].bg[cur_bg].path, fname);
@@ -6609,6 +6613,9 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname)
             myvideo.layout.mode[mode].bg[cur_bg].w,
             myvideo.layout.mode[mode].bg[cur_bg].h
         );
+    }
+    else {
+        myvideo.layout.mode[mode].bg[cur_bg].path[0] = 0;
     }
 
     debug(
@@ -6646,16 +6653,17 @@ static int free_layout_mode(void)
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
 
 #if !defined(TRIMUI) && !defined(PANDORA)
-    add_layout_mode(LAYOUT_MODE_N0, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_N1, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_N3, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_B2, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_B3, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_N0, 0, NULL, 0, 0);
+    add_layout_mode(LAYOUT_MODE_N1, 0, NULL, 0, 0);
+    add_layout_mode(LAYOUT_MODE_N3, 0, NULL, 0, 0);
+    add_layout_mode(LAYOUT_MODE_B2, 0, NULL, 0, 0);
+    add_layout_mode(LAYOUT_MODE_B3, 0, NULL, 0, 0);
 #endif
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
-    add_layout_mode(LAYOUT_MODE_C0, 0, NULL);
-    add_layout_mode(LAYOUT_MODE_C1, 0, NULL);
+    add_layout_mode(LAYOUT_MODE_C0, 0, NULL, 0, 0);
+    add_layout_mode(LAYOUT_MODE_C1, 0, NULL, 0, 0);
+    add_layout_mode(LAYOUT_MODE_C2, 0, NULL, 0, 0);
 #endif
 
     return 0;
@@ -6669,6 +6677,8 @@ TEST(sdl2_video, free_layout_mode)
 
 static int enum_bg_file(void)
 {
+    int w = 0;
+    int h = 0;
     int cc = 0;
     int mode = 0;
     int total = 0;
@@ -6702,15 +6712,29 @@ static int enum_bg_file(void)
                 continue;
             }
 
+            w = SCREEN_W;
+            h = SCREEN_H;
             if (dir->d_name[0] == 'n') {
                 mode = atoi(&dir->d_name[1]) + LAYOUT_MODE_N0;
             }
             else if (dir->d_name[0] == 'b') {
                 mode = atoi(&dir->d_name[1]) + LAYOUT_MODE_B0;
             }
+            else {
+#if defined(XT894) || defined(XT897)
+                int len = strlen(CUSTOME_LAYOUT_XT89X_C);
+                if (!memcmp(dir->d_name, CUSTOME_LAYOUT_XT89X_C, len)) {
+                    w = WL_WIN_H;
+                    h = WL_WIN_W;
+                    mode = atoi(&dir->d_name[len]) + LAYOUT_MODE_C0;
+                }
+#else
+                continue
+#endif
+            }
 
-            debug("mode=%d (\"%s\")\n", mode, dir->d_name);
-            add_layout_mode(mode, cc, dir->d_name);
+            debug("layout mode=[%d][%d] (\"%s\") %dx%d\n", cc, mode, dir->d_name, w, h);
+            add_layout_mode(mode, cc, dir->d_name, w, h);
         }
         closedir(d);
     }
@@ -6765,7 +6789,7 @@ static int init_device(void)
     load_menu_res();
     load_touch_pen();
 
-    //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL);
+    //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL, 0, 0);
     //load_overlay_file();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
@@ -7048,8 +7072,9 @@ static const char* LAYOUT_MODE_STR0[] = {
     "480x320", // B3
 
 #if defined(XT894) || defined(XT897)
-    "480x360", // C0
-    "512x384", // C1
+    "640x480", // C1
+    "480x360", // C2
+    "512x384", // C3
 #endif
 };
 
@@ -7076,8 +7101,9 @@ static const char *LAYOUT_MODE_STR1[] = {
     "480x320", // B3
 
 #if defined(XT894) || defined(XT897)
-    "480x360", // C0
-    "448x336", // C1
+    "240x180", // C0
+    "480x360", // C1
+    "448x336", // C2
 #endif
 };
 
@@ -7709,6 +7735,44 @@ static int draw_small_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
         rt.y = sy;
         rt.w = 128;
         rt.h = 96;
+        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
+       
+        rt.w = 34;
+        rt.h = 26;
+        switch (myconfig.layout.swin.pos) {
+        case 0:
+            rt.x = (sx + 128) - rt.w;
+            rt.y = sy;
+            break;
+        case 1:
+            rt.x = sx;
+            rt.y = sy;
+            break;
+        case 2:
+            rt.x = sx;
+            rt.y = (sy + 96) - rt.h;
+            break;
+        case 3:
+            rt.x = (sx + 128) - rt.w;
+            rt.y = (sy + 96) - rt.h;
+            break;
+        }
+        SDL_FillRect(
+            surf,
+            &rt,
+            SDL_MapRGB(
+                surf->format,
+                0x00,
+                0x00,
+                (30 * myconfig.layout.swin.alpha)
+            )
+        );
+        break;
+    case LAYOUT_MODE_C1:
+        rt.x = sx;
+        rt.y = sy;
+        rt.w = 128;
+        rt.h = 96;
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
         
         rt.w = 64;
@@ -7723,7 +7787,7 @@ static int draw_small_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;
-    case LAYOUT_MODE_C1:
+    case LAYOUT_MODE_C2:
         rt.x = sx;
         rt.y = sy;
         rt.w = 128;
@@ -7821,7 +7885,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
     case MENU_SWIN_ALPHA:
-        if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) || 
+        if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
             (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
         {
             if (right_key) {
@@ -7846,6 +7910,9 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
     case MENU_SWIN_POS:
         if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+#if defined(XT894) || defined(XT897)
+            (myconfig.layout.mode.sel == LAYOUT_MODE_C0) ||
+#endif
             (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
         {
             if (right_key) {
@@ -8429,7 +8496,7 @@ static int process_sdl2_setting(int key)
         }
 #endif
 
-        //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL);
+        //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL, 0, 0);
         //load_overlay_file();
 
         myvideo.menu.sdl2.enable = 0;
@@ -8510,12 +8577,18 @@ static int process_sdl2_setting(int key)
         case MENU_SWIN_POS:
             if ((cur_sel == MENU_SWIN_POS) &&
                 ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+#if defined(XT894) || defined(XT897)
+                (myconfig.layout.mode.sel == LAYOUT_MODE_C0) ||
+#endif
                 (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
                 if ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
+#if defined(XT894) || defined(XT897)
+                    (myconfig.layout.mode.sel == LAYOUT_MODE_C0) ||
+#endif
                     (myconfig.layout.mode.sel == LAYOUT_MODE_N1))
                 {
                     col1 = MENU_COLOR_UNSEL;

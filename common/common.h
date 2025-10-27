@@ -49,8 +49,10 @@
 #define DEF_STATE_PATH              "/home/nemo/Game/state/nds"
 #endif
 
+#define CUSTOME_LAYOUT_XT89X_C      "c_moto_xt89x_c"
+
 enum layout_mode_t {
-    LAYOUT_MODE_N0,      // 0 Normal Mode
+    LAYOUT_MODE_N0,      // 0 (Normal Mode)
     LAYOUT_MODE_N1,      // 1
     LAYOUT_MODE_N2,      // 2
     LAYOUT_MODE_N3,      // 3
@@ -67,21 +69,23 @@ enum layout_mode_t {
     LAYOUT_MODE_N14,     // 14
     LAYOUT_MODE_N15,     // 15
 
-    LAYOUT_MODE_B0,      // 16 Book Mode
+    LAYOUT_MODE_B0,      // 16 (Book Mode)
     LAYOUT_MODE_B1,      // 17
     LAYOUT_MODE_B2,      // 18
     LAYOUT_MODE_B3,      // 19
 
-    //LAYOUT_MODE_D0,      // 20 Draw Mode
+    //LAYOUT_MODE_D0,      // 20 (Draw Mode)
 
 #if defined(XT894) || defined(XT897)
-    LAYOUT_MODE_C0,      // Customized Mode
+    LAYOUT_MODE_C0,      // (Custom Mode)
     LAYOUT_MODE_C1,      //
+    LAYOUT_MODE_C2,      //
 #endif
 
 #if defined(QX1000)
-    LAYOUT_MODE_C0,      // Customized Mode
+    LAYOUT_MODE_C0,      // (Custom Mode)
     LAYOUT_MODE_C1,      //
+    LAYOUT_MODE_C2,      //
 #endif
 
     LAYOUT_MODE_MAX,
