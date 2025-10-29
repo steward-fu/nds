@@ -5,64 +5,64 @@ This repository contains all necessary resources - including the customized SDL2
 
 ## Layout Modes
 Normal Mode 0  
-![image](image/n0.bmp)  
+![image](image/layout/n0.bmp)  
 
 Normal Mode 1  
-![image](image/n1.bmp)  
+![image](image/layout/n1.bmp)  
 
 Normal Mode 2  
-![image](image/n2.bmp)  
+![image](image/layout/n2.bmp)  
 
 Normal Mode 3  
-![image](image/n3.bmp)  
+![image](image/layout/n3.bmp)  
 
 Normal Mode 4  
-![image](image/n4.bmp)  
+![image](image/layout/n4.bmp)  
 
 Normal Mode 5  
-![image](image/n5.bmp)  
+![image](image/layout/n5.bmp)  
 
 Normal Mode 6  
-![image](image/n6.bmp)  
+![image](image/layout/n6.bmp)  
 
 Normal Mode 7  
-![image](image/n7.bmp)  
+![image](image/layout/n7.bmp)  
 
 Normal Mode 8  
-![image](image/n8.bmp)  
+![image](image/layout/n8.bmp)  
 
 Normal Mode 9  
-![image](image/n9.bmp)  
+![image](image/layout/n9.bmp)  
 
 Normal Mode 10  
-![image](image/n10.bmp)  
+![image](image/layout/n10.bmp)  
 
 Normal Mode 11  
-![image](image/n11.bmp)  
+![image](image/layout/n11.bmp)  
 
 Normal Mode 12  
-![image](image/n12.bmp)  
+![image](image/layout/n12.bmp)  
 
 Normal Mode 13  
-![image](image/n13.bmp)  
+![image](image/layout/n13.bmp)  
 
 Normal Mode 14  
-![image](image/n14.bmp)  
+![image](image/layout/n14.bmp)  
 
 Normal Mode 15  
-![image](image/n15.bmp)  
+![image](image/layout/n15.bmp)  
 
 Book Mode 0  
-![image](image/b0.bmp)  
+![image](image/layout/b0.bmp)  
 
 Book Mode 1  
-![image](image/b1.bmp)  
+![image](image/layout/b1.bmp)  
 
 Book Mode 2  
-![image](image/b2.bmp)  
+![image](image/layout/b2.bmp)  
 
 Book Mode 3  
-![image](image/b3.bmp)  
+![image](image/layout/b3.bmp)  
 
 &nbsp;
 
