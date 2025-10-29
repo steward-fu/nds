@@ -49,7 +49,8 @@
 #define DEF_STATE_PATH              "/home/nemo/Game/state/nds"
 #endif
 
-#define CUSTOME_LAYOUT_XT89X_C      "c_moto_xt89x_c"
+#define CUSTOME_LAYOUT_XT894_C      "c_moto_xt894_c"
+#define CUSTOME_LAYOUT_XT897_C      "c_moto_xt897_c"
 
 enum layout_mode_t {
     LAYOUT_MODE_N0,      // 0 (Normal Mode)

@@ -118,7 +118,9 @@ static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 static int get_file_name_by_index(const char *, int, char *, int);
 
+#if defined(MINI)
 static int load_mask_image(const char *);
+#endif
 
 #if !defined(MINI)
 static int load_shader_file(const char *);
@@ -1605,7 +1607,7 @@ static int draw_drastic_menu_rom(void)
                         SDL_MapRGB(myvideo.menu.drastic.frame->format,
                         (MENU_COLOR_DRASTIC >> 16) & 0xff, (MENU_COLOR_DRASTIC >> 8) & 0xff, MENU_COLOR_DRASTIC & 0xff));
 
-                    strncpy(buf, p->msg, sizeof(buf));
+                    strcpy(buf, p->msg);
                 }
                 draw_info(myvideo.menu.drastic.frame, p->msg, 20 / div, y, p->bg ? MENU_COLOR_SEL : MENU_COLOR_UNSEL, 0);
             }
@@ -2013,6 +2015,8 @@ static int process_screen(void)
             switch (cur_mode_sel) {
             case LAYOUT_MODE_N0:
             case LAYOUT_MODE_N1:
+                drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
+                break;
             case LAYOUT_MODE_C0:
                 switch (myconfig.layout.swin.pos) {
                 case 0:
@@ -2048,21 +2052,50 @@ static int process_screen(void)
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
+#if defined(XT894) || defined(XT897)
+                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
+                    drt.x = (screen_w - drt.x) - drt.w;
+                    drt.y = 0;
+#else
                     drt.x = screen_w - drt.w;
                     drt.y = 0;
+#endif
                     break;
                 case 1:
+#if defined(XT894) || defined(XT897)
+                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
+                    drt.y = 0;
+#else
                     drt.x = 0;
                     drt.y = 0;
+#endif
                     break;
                 case 2:
+#if defined(XT894) || defined(XT897)
+                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
+                    drt.y = screen_h - drt.h;
+#else
                     drt.x = 0;
                     drt.y = screen_h - drt.h;
+#endif
                     break;
                 case 3:
+#if defined(XT894) || defined(XT897)
+                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
+                    drt.x = (screen_w - drt.x) - drt.w;
+                    drt.y = screen_h - drt.h;
+#else
                     drt.x = screen_w - drt.w;
                     drt.y = screen_h - drt.h;
+#endif
                     break;
+                }
+#endif
+
+#if defined(XT894) || defined(XT897)
+                if (cur_mode_sel == LAYOUT_MODE_C0) {
+                    drt.x = screen_w - drt.w;
+                    drt.y = screen_h - drt.h;
                 }
 #endif
                 flush_lcd(
@@ -2072,6 +2105,7 @@ static int process_screen(void)
                     drt,
                     pitch
                 );
+
                 break;
             }
 #endif
@@ -2853,12 +2887,14 @@ TEST(sdl2_video, free_lang_res)
 }
 #endif
 
+#if defined(MINI)
 static int load_mask_file(const char *name)
 {
     debug("call %s(name=%s)\n", __func__, name);
 
     return 0;
 }
+#endif
 
 #if !defined(MINI)
 static int load_shader_file(const char *name)
@@ -4493,7 +4529,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     if ((!myvideo.menu.sdl2.enable && !myvideo.menu.drastic.enable) &&
 #if defined(XT894) || defined(XT897)
-        (cur_mode_sel == LAYOUT_MODE_N1) &&
+        ((cur_mode_sel == LAYOUT_MODE_N0) || (cur_mode_sel == LAYOUT_MODE_N1)) &&
 #endif
         (id == TEXTURE_LCD0))
     {
@@ -6463,6 +6499,12 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
     myvideo.layout.mode[mode].screen[1].h *= scale;
 
     switch (mode) {
+    case LAYOUT_MODE_N0:
+        myvideo.layout.mode[mode].screen[1].x = (960 - 640) >> 1; //WL_WIN_H - myvideo.layout.mode[mode].screen[1].w) >> 1;
+
+        //myvideo.layout.mode[mode].screen[0].x = margin_w + (scale_w >> 1);
+        //myvideo.layout.mode[mode].screen[0].y = (scale_h - bm_h) >> 1;
+        break;
     case LAYOUT_MODE_B0:
         myvideo.layout.mode[mode].screen[0].x = margin_w;
         myvideo.layout.mode[mode].screen[0].y = (scale_h - bm_h) >> 1;
@@ -6721,15 +6763,22 @@ static int enum_bg_file(void)
                 mode = atoi(&dir->d_name[1]) + LAYOUT_MODE_B0;
             }
             else {
-#if defined(XT894) || defined(XT897)
-                int len = strlen(CUSTOME_LAYOUT_XT89X_C);
-                if (!memcmp(dir->d_name, CUSTOME_LAYOUT_XT89X_C, len)) {
+#if defined(XT894)
+                int len = strlen(CUSTOME_LAYOUT_XT894_C);
+                if (!memcmp(dir->d_name, CUSTOME_LAYOUT_XT894_C, len)) {
+                    w = WL_WIN_H;
+                    h = WL_WIN_W;
+                    mode = atoi(&dir->d_name[len]) + LAYOUT_MODE_C0;
+                }
+#elif defined(XT897)
+                int len = strlen(CUSTOME_LAYOUT_XT897_C);
+                if (!memcmp(dir->d_name, CUSTOME_LAYOUT_XT897_C, len)) {
                     w = WL_WIN_H;
                     h = WL_WIN_W;
                     mode = atoi(&dir->d_name[len]) + LAYOUT_MODE_C0;
                 }
 #else
-                continue
+                continue;
 #endif
             }
 
@@ -7213,9 +7262,9 @@ typedef enum {
     MENU_CPU,
 #endif
 
+#if defined(MINI)
     MENU_MASK,
-
-#if !defined(MINI)
+#else
     MENU_SHADER,
 #endif
 
@@ -7270,9 +7319,9 @@ static const char *MENU_LIST_STR[] = {
     "CPU",
 #endif
 
+#if defined(MINI)
     "MASK",
-
-#if !defined(MINI)
+#else
     "SHADER",
 #endif
 
@@ -7910,9 +7959,6 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
     case MENU_SWIN_POS:
         if (((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
-#if defined(XT894) || defined(XT897)
-            (myconfig.layout.mode.sel == LAYOUT_MODE_C0) ||
-#endif
             (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
         {
             if (right_key) {
@@ -8033,6 +8079,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
 #endif
 
+#if defined(MINI)
     case MENU_MASK:
         if (right_key) {
             if (max_mask_count && (myvideo.mask < (max_mask_count - 1))) {
@@ -8045,8 +8092,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-
-#if !defined(MINI)
+#else
     case MENU_SHADER:
         if (right_key) {
             if (max_shader_count && (myvideo.shader < (max_shader_count - 1))) {
@@ -8258,6 +8304,7 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
 
+#if defined(MINI)
     case MENU_MASK:
         if (get_file_name_by_index(MASK_PATH, myvideo.mask, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
@@ -8266,8 +8313,7 @@ static int draw_sdl2_menu_setting(
             strcpy(buf, "NONE");
         }
         break;
-
-#if !defined(MINI)
+#else
     case MENU_SHADER:
         if (get_file_name_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
@@ -8577,18 +8623,12 @@ static int process_sdl2_setting(int key)
         case MENU_SWIN_POS:
             if ((cur_sel == MENU_SWIN_POS) &&
                 ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
-#if defined(XT894) || defined(XT897)
-                (myconfig.layout.mode.sel == LAYOUT_MODE_C0) ||
-#endif
                 (myconfig.layout.mode.sel == LAYOUT_MODE_N1)))
             {
                 col1 = MENU_COLOR_SEL;
             }
             else {
                 if ((myconfig.layout.mode.sel == LAYOUT_MODE_N0) ||
-#if defined(XT894) || defined(XT897)
-                    (myconfig.layout.mode.sel == LAYOUT_MODE_C0) ||
-#endif
                     (myconfig.layout.mode.sel == LAYOUT_MODE_N1))
                 {
                     col1 = MENU_COLOR_UNSEL;
