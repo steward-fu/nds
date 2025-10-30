@@ -1279,6 +1279,7 @@ x86emu_t* GetX86Emu()
     return thread_get_emu();
 }
 
+#if 0 // fixed library crash
 __attribute__((constructor))
 void init_library() 
 {
@@ -1300,6 +1301,7 @@ void init_library()
     SetupX86Emu(emu);
     thread_set_emu(emu);
 }
+#endif
 #endif
 
 #else

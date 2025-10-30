@@ -227,7 +227,7 @@ box86context_t *NewBox86Context(int argc)
     initCycleLog(context);
 
 #ifdef BUILD_LIB
-    context->deferedInit = 0;
+    context->deferredInit = 0;
 #else
     context->deferredInit = 1;
 #endif

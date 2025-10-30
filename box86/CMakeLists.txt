@@ -305,7 +305,7 @@ else()
 endif()
 
 
-add_definitions(-std=gnu11 -funwind-tables -fvisibility=hidden)
+add_definitions(-std=gnu11 -funwind-tables -fvisibility=default)
 
 if(USE_CCACHE)
     find_program(CCACHE_FOUND ccache)
@@ -722,7 +722,7 @@ add_library(interpreter OBJECT ${INTERPRETER})
 if(BOX86LIB)
 #build a static or dynamic lib...
 if(BOX86DYNAMIC)
-    add_library(box86 SHARED ${ELFLOADER_SRC} ${WRAPPEDS} "${BOX86_ROOT}/src/git_head.h")
+    add_library(box86 SHARED ${ELFLOADER_SRC} ${WRAPPEDS} ${INTERPRETER} "${BOX86_ROOT}/src/git_head.h")
 else()
     add_library(${BOX86} OBJECT ${ELFLOADER_SRC} ${WRAPPEDS} "${BOX86_ROOT}/src/git_head.h")
 endif()

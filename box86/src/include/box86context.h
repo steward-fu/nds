@@ -224,6 +224,7 @@ typedef struct box86context_s {
     char*               *log_call;
     char*               *log_ret;
     int                 current_line;
+	int 				count;
 } box86context_t;
 
 #ifndef USE_CUSTOM_MUTEX
