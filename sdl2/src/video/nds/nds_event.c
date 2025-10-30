@@ -26,7 +26,7 @@
 
 nds_event myevent = { 0 };
 
-#if !defined(MINI)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
 static touch_data_t tp[10] = { 0 };
 #endif
 
@@ -1490,22 +1490,21 @@ TEST(sdl2_event, send_touch_axis)
 }
 #endif
 
-#if !defined(MINI)
+#if defined(XT894) || defined(XT897) || defined(QX1000)
 int handle_touch_event(int fd)
 {
     static int tp_id = 0;
     static int tp_valid = 0;
     struct input_event ev = { 0 };
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
     const int screen_w = WL_WIN_H;
     const int screen_h = WL_WIN_W;
-#endif
 
 #if defined(XT894) || defined(XT897)
     float tp_max_x = 1000.0;
     float tp_max_y = 1000.0;
 #endif
+
 #if defined(QX1000)
     float tp_max_x = 2160.0;
     float tp_max_y = 1080.0;
@@ -1517,10 +1516,6 @@ int handle_touch_event(int fd)
         error("invalid parameter\n");
         return -1;
     }
-
-#if defined(UT)
-    return 0;
-#endif
 
     if (read(fd, &ev, sizeof(struct input_event)) <= 0) {
         return 0;
@@ -1561,6 +1556,7 @@ int handle_touch_event(int fd)
 #if defined(XT894) || defined(XT897)
         if ((ev.code == ABS_Z) && (ev.value == 0)) {
 #endif
+
 #if defined(QX1000)
         if ((ev.code == 0) && (ev.value == 0)) {
 #endif

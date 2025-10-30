@@ -1896,7 +1896,7 @@ static int process_screen(void)
         drt.w = myvideo.layout.mode[cur_mode_sel].screen[idx].w;
         drt.h = myvideo.layout.mode[cur_mode_sel].screen[idx].h;
         debug(
-            "mode=%d, drt=%d,%d,%d,%d\n",
+            "layout mode=%d, drt=%d,%d,%d,%d\n",
             cur_mode_sel,
             drt.x,
             drt.y,
@@ -2610,7 +2610,7 @@ static void* video_handler(void *param)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
+    glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_MASK]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -4206,7 +4206,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     const int margin_w = (max_w - scale_w) / 2.0;
 #endif
 
-    debug(
+    trace(
         "call %s(tex=%d, pixels=%p, pitch=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d))\n",
         __func__,
         id,
@@ -4228,7 +4228,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         (drt.w == 0) ||
         (drt.h == 0))
     {
-        error("invalid parameterl\n");
+        error("invalid parameter\n");
         return -1;
     }
 
@@ -4239,6 +4239,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     debug("myvideo.shm.buf=%p\n", myvideo.shm.buf);
+
     if (myvideo.shm.buf == MAP_FAILED) {
         error("myvideo.shm.buf is NULL\n");
         return 0;
@@ -4339,42 +4340,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         fg_vertices[16] = fg_vertices[1];
     }
 
-    glUniform1i(myvideo.egl.frag.enable_overlay, 0);
-    if (((tex == TEXTURE_LCD0) || (tex == TEXTURE_LCD1)) &&
-        !myvideo.menu.sdl2.enable &&
-        !myvideo.menu.drastic.enable &&
-        myvideo.layout.overlay.bg &&
-        myconfig.layout.overlay.enable &&
-        (cur_mode_sel != LAYOUT_MODE_B0) &&
-        (cur_mode_sel != LAYOUT_MODE_B1) &&
-        (cur_mode_sel != LAYOUT_MODE_B2) &&
-        (cur_mode_sel != LAYOUT_MODE_B3))
-    {
-        int apply = myconfig.layout.overlay.apply[cur_mode_sel];
-
-        if ((apply == OVERLAY_APPLY_MODE_BOTH) ||
-            ((apply == OVERLAY_APPLY_MODE_LCD0) && (tex == TEXTURE_LCD0)) ||
-            ((apply == OVERLAY_APPLY_MODE_LCD1) && (tex == TEXTURE_LCD1)))
-        {
-            glUniform1i(myvideo.egl.frag.enable_overlay, 1);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_OVERLAY]);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2D(
-                GL_TEXTURE_2D,
-                0,
-                GL_RGBA,
-                myvideo.layout.overlay.mask[tex]->w,
-                myvideo.layout.overlay.mask[tex]->h,
-                0,
-                GL_RGBA,
-                GL_UNSIGNED_BYTE,
-                myvideo.layout.overlay.mask[tex]->pixels
-            );
-        }
-    }
-
     if (tex == TEXTURE_TMP) {
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -4392,8 +4357,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         );
     }
 
-    if (((cur_mode_sel == LAYOUT_MODE_N0) ||
-        (cur_mode_sel == LAYOUT_MODE_N1)) &&
+    if (((cur_mode_sel == LAYOUT_MODE_N0) || (cur_mode_sel == LAYOUT_MODE_N1)) &&
         (tex == TEXTURE_LCD0))
     {
         glUniform1f(
@@ -4408,6 +4372,16 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         glUniform1f(myvideo.egl.frag.alpha, 1.0);
     }
 
+    if (cur_filter == FILTER_PIXEL) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
+    debug("texture id=%d\n", tex);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[tex]);
     glVertexAttribPointer(
@@ -4430,8 +4404,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
 
-    if (((cur_mode_sel == LAYOUT_MODE_N0) ||
-        (cur_mode_sel == LAYOUT_MODE_N1)) &&
+    if (((cur_mode_sel == LAYOUT_MODE_N0) || (cur_mode_sel == LAYOUT_MODE_N1)) &&
         (tex == TEXTURE_LCD0))
     {
         glUniform1f(myvideo.egl.frag.alpha, 0.0);
@@ -5711,10 +5684,7 @@ static int flip_lcd(void)
     myvideo.drm.pre_fb = myvideo.drm.fb;
 #endif
 
-    if ((myvideo.layout.bg) &&
-        (myconfig.layout.mode.sel != LAYOUT_MODE_B2) &&
-        (myconfig.layout.mode.sel != LAYOUT_MODE_B3))
-    {
+    if (myvideo.layout.bg) {
         trace("draw bg image\n");
 
         glActiveTexture(GL_TEXTURE0);
@@ -6207,13 +6177,13 @@ static int load_bg_image(void)
             w = LAYOUT_BG_W;
             h = LAYOUT_BG_H;
         }
-        debug("background surface is %dx%d\n", w, h);
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
             error("failed to create bg surface\n");
             return -1;
         }
+        debug("created background surface, size=%dx%d\n", w, h);
 
         SDL_FillRect(
             myvideo.layout.bg,
@@ -6257,9 +6227,10 @@ static int load_bg_image(void)
                 error("failed to load bg image from \"%s\"\n", buf);
                 return -1;
             }
+            debug("loaded background image from \"%s\"\n", buf);
 
-            debug("loaded bg image from \"%s\"\n", buf);
             SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
+            SDL_FreeSurface(t);
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
             if (myconfig.layout.mode.sel <= LAYOUT_MODE_B3) {
@@ -6294,7 +6265,6 @@ static int load_bg_image(void)
                 }
             }
 #endif
-            SDL_FreeSurface(t);
         }
     }
     else {
@@ -6324,7 +6294,8 @@ static int load_bg_image(void)
             myvideo.layout.bg->pitch
         );
 #else
-        debug("binding bg texture\n");
+        debug("background texture, size=%dx%d\n", myvideo.layout.bg->w, myvideo.layout.bg->h);
+
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(
@@ -6499,12 +6470,6 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
     myvideo.layout.mode[mode].screen[1].h *= scale;
 
     switch (mode) {
-    case LAYOUT_MODE_N0:
-        myvideo.layout.mode[mode].screen[1].x = (960 - 640) >> 1; //WL_WIN_H - myvideo.layout.mode[mode].screen[1].w) >> 1;
-
-        //myvideo.layout.mode[mode].screen[0].x = margin_w + (scale_w >> 1);
-        //myvideo.layout.mode[mode].screen[0].y = (scale_h - bm_h) >> 1;
-        break;
     case LAYOUT_MODE_B0:
         myvideo.layout.mode[mode].screen[0].x = margin_w;
         myvideo.layout.mode[mode].screen[0].y = (scale_h - bm_h) >> 1;
@@ -7178,16 +7143,16 @@ static const char *BIND_HOTKEY_STR[] = {
 static const char *JOY_MODE_STR[] = {
     "DISABLE",
     "D-PAD",
-    "STYLUS",
-    "CUSTOMIZED KEY"
+    "TOUCH",
+    "CUSTOM KEY"
 };
 
 #if defined(FLIP)
 static const char *RJOY_MODE_STR[] = {
     "DISABLE",
     "4-BTN",
-    "STYLUS",
-    "CUSTOMIZED KEY"
+    "TOUCH",
+    "CUSTOM KEY"
 };
 #endif
 
@@ -7316,7 +7281,7 @@ static const char *MENU_LIST_STR[] = {
     "LANGUAGE",
 
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-    "CPU",
+    "CPU CORE",
 #endif
 
 #if defined(MINI)
@@ -8310,7 +8275,7 @@ static int draw_sdl2_menu_setting(
             sprintf(buf, "%s", upper_string(tmp));
         }
         else {
-            strcpy(buf, "NONE");
+            strcpy(buf, l10n("NONE"));
         }
         break;
 #else
@@ -8319,7 +8284,7 @@ static int draw_sdl2_menu_setting(
             sprintf(buf, "%s", upper_string(tmp));
         }
         else {
-            strcpy(buf, "NONE");
+            strcpy(buf, l10n("NONE"));
         }
         break;
 #endif
@@ -8432,16 +8397,16 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(JOY_MODE_STR[myconfig.joy.mode]));
         break;
     case MENU_JOY_CUST_KEY0:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[0]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[0]]));
         break;
     case MENU_JOY_CUST_KEY1:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[1]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[1]]));
         break;
     case MENU_JOY_CUST_KEY2:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[2]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[2]]));
         break;
     case MENU_JOY_CUST_KEY3:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[3]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.joy.cust_key[3]]));
         break;
     case MENU_JOY_DZONE:
         sprintf(buf, "%d", myconfig.joy.dzone);
@@ -8452,16 +8417,16 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(RJOY_MODE_STR[myconfig.rjoy.mode]));
         break;
     case MENU_RJOY_CUST_KEY0:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[0]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[0]]));
         break;
     case MENU_RJOY_CUST_KEY1:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[1]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[1]]));
         break;
     case MENU_RJOY_CUST_KEY2:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[2]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[2]]));
         break;
     case MENU_RJOY_CUST_KEY3:
-        sprintf(buf, "Miyoo %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[3]]));
+        sprintf(buf, "MIYOO %s", l10n(JOY_CUST_KEY_STR[myconfig.rjoy.cust_key[3]]));
         break;
     case MENU_RJOY_DZONE:
         sprintf(buf, "%d", myconfig.rjoy.dzone);

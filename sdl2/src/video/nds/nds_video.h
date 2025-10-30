@@ -68,10 +68,10 @@
 #define FONT_SIZE 24
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(BRICK)
-#define REDRAW_BG_CNT 1
-#else
+#if defined(MINI)
 #define REDRAW_BG_CNT 120
+#else
+#define REDRAW_BG_CNT 1
 #endif
 
 typedef enum {
