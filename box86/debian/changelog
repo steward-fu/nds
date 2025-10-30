@@ -1,0 +1,150 @@
+box86 (0.3.8) unstable; urgency=low
+* Some optimisation of x86 P flags handling
+* Some x87 fixes and improvments
+* Added some of the tim64 wrapped functions to libc and friends
+* Changed the installation folder of x86 libs to avoid conflict with linux distro
+* Some fixes to internal memory tracking
+* Some more Vulkan extensions wrapped
+* Better handling of BOX86_MAXCPU
+* Some changes and improvments on Signal handling
+* More wrapped functions, and fix to some existing ones
+* A few more syscall, and fix to some existing ones
+* New build profile for SD865
+
+-- Sebastien Chevalier <ptitseb@box86.org>  Fri, 06 Dec 2024 14:06:00 -0100
+
+box86 (0.3.6) unstable; urgency=low
+* Wrapping: More libs and and function wrapping (gtk3, vulkan...)
+* Reworked X11 Callback handling, for better stability
+* Reworked exit and the load/unload of libs
+* Some more profiles in box86rc
+* More SSE3+ opcodes in dynarec
+* Better way to rename executable (including wine ones) so driver like mesa can apply the correct profile
+* Lots of improvments in x87 handling (virtual stack, rounding, ffree, etc.)
+* => should improve games stability
+* Better handling of large block in the dynarec
+* => should speedup dynarec, and allow use of BIGBLOCK 2 or 3 on more software
+* Added suport for BOX86_DYNAREC_CALLRET optimisation.
+* => backported from box64, can give 10% or more speed increase (but can also decrease speed in some cases). Still a bit crashy so use with care.
+
+-- Sebastien Chevalier <ptitseb@box86.org>  Thu, 31 May 2024 17:30:33 -0100
+
+box86 (0.3.4) unstable; urgency=low
+
+ * X86Libs: Updated libstdc++ & libgcc_s
+ * X86Libs: Use x86 vrsion of libunwind (it's needed by wine)
+ * Dynarec: Fixed some flags propagation issues inside blocks
+ * Dynarec: Improved Strong Memory Model emulation, introducing a 3rd level
+ * CPU: Remoworked how INT, priviliged opcodes and teh Trace flags works
+ * CPU: Added full support for SSE4.2
+ * ElfLoader: rework how elf memory is handled
+ * Emulation: Better handling of Signal (also handling SIGMAX correctly)
+ * Emulation: Better support for POKEUSER/PEEKUSER (helps Windows Unity games)
+ * Wrapping: More libs and some fixes in function wrapping (gtk3, vulkan...)
+ * Wrapping: Removed faked libunwind wrapping
+ * Hardware: Added more profile, with support for ADLink Ampere Altra
+ * OS: Added profile to build for Android and Termux.
+ * => Mostly a stability update with improved elfloader again, and added SSE 4.2 support (still need to work on the Dynarec part of this)
+ * => Some work also to reduce the memory footprint
+
+-- Sebastien Chevalier <ptitseb@box86.org>  Thu, 15 Dec 2023 17:30:33 -0100
+
+box86 (0.3.2) unstable; urgency=low
+
+ * Better syscall handling
+ * Fixed some wrapped functions, added some others
+ * Introduced another wrapper helper
+ * Added some more opcodes
+ * Added a cosimulation mode (to compare the behaviour of the dynarec against the interpreter)
+ * Added support of FASTNAN for some more opcodes
+ * Reduced memory footprint
+ * Added BOX86_NOSANDBOX (adds an argument to the command line)
+ * Added an ukrainian translation
+ * => Mostly a stability update with improved elfloader, fixed opcodes and refined profiles
+
+-- Sebastien Chevalier <ptitseb@box86.org>  Thu, 10 Mar 2023 10:20:33 -0500
+
+box86 (0.3.0) unstable; urgency=low
+
+ * Added rcfile handling: box86 now read "/etc/box86.box86rc" and "~/.box86rc" and apply per process parameters
+ * Added BOX86_DYNAREC_FORWARD to allow bigger Dynarec block to be build
+ * Refactored Strong Memory Model emulation (faster and more accurate)
+ * Box86 now return a custom name for the CPU instal of P4, build with Box86 and the cpu name it's running on
+ * Improved memory protection tracking and signal handling, again
+ * More wrapped libs (especially on the gtk familly)
+ * More wrapped functions
+ * Added support for CreateDeviceEx in d3dadapter9, for better gallium nine support
+ * Improved dladdr/dladdr1 wrapped function
+ * Some fixes to flags handling in the Dynarec on some special cases
+ * Added specific suppport for RK3588 board (needed some hack in signal handling, probably due to the use of a non mainlined kernel)
+ * Lots of improvment in the Rounding of float & double (Dynarec and Interpretor), and proper handling of denormals when converting to/from 80 bits long double
+ * Added specific suppport for RK3588 board (needed some hack in signal handling, probably due to the use of a non mainlined kernel)
+
+ -- Sebastien Chevalier <ptitseb@box86.org>  Thu, 10 Mar 2023 10:20:33 -0500
+
+box86 (0.2.8) unstable; urgency=low
+
+  * Wrapped more Vulkan functions, dxvk2.0 now works
+  * Added support for overridden malloc/free functions
+  * Improved elf loader
+  * Improved dlsym handling with RTLD_NEXT
+  * Added BOX86_DYNAREC_SAFEFLAGS to allow finetuning Dynarec generated code handling of flags accross function calls and returns.
+  * Added BOX86_BASH to setup x86 bash binary, so shell script can be run in x86 world
+  * Added BOX86_ROLLING_LOG to have details log only on crash
+  * Improved TLS Size handling (Unity3D games now works)
+  * Improved execv family of function to have better box86 integration
+  * Added a few more wrapped libs, like FAudio
+  * Improved gtk, SDL2, GL, vulkan (and more) wrapping
+  * Improved Signal Handling and memory protection traking
+  * Added some basic support for statically linked program. Thread are not working yet, but memory allocation and file access does.
+  * add LX2160A config by @lizthegrey in #612
+  * Grammar and formatting COMPILE.md by @Radiicall in #615
+  * Update README.md by @everypizza1 in #617
+  * docs: add instructions for Debian-based Linux by @ryanfortner in #622
+  * Fix typoes in readme by @ryanfortner in #621
+  * Various improvements to install_steam.sh by @ryanfortner in #620
+  * docs: remove unnecessary newline by @ryanfortner in #624
+  * fix: the first parameter of realpath may be null by @ye-yeshun in #630
+  * Add 6 wrapped function to libdrm, and 2 to libexpat. by @cjy880927 in #632
+  * Fix #610 by @rajdakin in #634
+  * some floating point instructions by @ye-yeshun in #637
+  * Fix Typo in readme x86_64 -> x86 by @Jai-JAP in #642
+  * Fix grammar by @Jai-JAP in #645
+  * Test wine preload by @ptitSeb in #649
+  * Align address when call mprotect by @wannacu in #651
+  * Added 66 0F 7D HSUBPD opcode by @wannacu in #652
+  * add TEGRAX1 and TEGRAX1ARM32 targets on ubuntu-18.04 by @theofficialgman in #654
+  * automatically install 32 bit libraries if 64 bit OS is detected in install_steam.sh by @Moldytzu in #659
+  * mention gcc-arm-linux-gnueabihf in compile.md by @Moldytzu in #660
+  * Add libc6:armhf install to RPi4 aarch64 build info by @WheezyE in #685
+  * Updated wine install for RPiOS bullseye 32/64bit by @WheezyE in #689
+  * Add atomic add opcodes by @Trass3r in #695
+  * steam: disable modern login and pass arguments to client by @Moldytzu in #700
+  * Modify sizeof(instsize_t) to 1 byte by @liuli0217 in #721
+  * Add MOV GS:od, AL by @liuli0217 in #722
+
+ -- Sebastien Chevalier <ptitseb@box86.org>  Thu, 17 Nov 2022 11:20:33 -0500
+
+box86 (0.2.6) unstable; urgency=low
+
+  * Added an option to get generated -NAN on SSE2 operation
+  * Many small fixes and improvement to get steam and SteamPlay working (along with box64)
+  * Added some workaround for program calling uname to mimic x86 system
+  * Added some more Vulkan extensions
+  * Added some granularity to mmap64, and generic memory protection tracking improvment, to mimic x86 system (for wine stagging and proton)
+  * Better clone syscall and libc implementation
+  * Improved wrapping of GTK libs
+  * More wrapped libs (more gtk libs, like gstreamer-1.0 among other non-gtk libs too)
+  * More wrapped functions(with some tricky one, like dladdr1)
+  * Some fixes and improvment to some wrapped functions
+  * Refactor Dynarec:
+  *  - better handling of SSE/x87 registers
+  *  - optimisation to limit float/double conversion
+  *  - better handling of "internal" jump inside a dynablock
+  * Improved elfloader
+  * Improved some tests
+  * A few fixes in some Dynarec opcodes
+  * Don't quit on unsupported syscall, return -1 / ENOSYS error
+  * A bit more optimisation in some Dynarec opcodes
+
+ -- Sebastien Chevalier <ptitseb@box86.org>  Tue, 18 Jan 2022 11:20:33 -0500

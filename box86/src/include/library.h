@@ -1,0 +1,40 @@
+#ifndef __LIBRARY_H_
+#define __LIBRARY_H_
+#include <stdint.h>
+#include "symbols.h"
+
+typedef struct library_s       library_t;
+typedef struct lib_s           lib_t;
+typedef struct kh_symbolmap_s  kh_symbolmap_t;
+typedef struct box86context_s  box86context_t;
+typedef struct x86emu_s        x86emu_t;
+typedef struct needed_libs_s   needed_libs_t;
+typedef struct elfheader_s     elfheader_t;
+
+#define LIB_WRAPPED     0
+#define LIB_EMULATED    1
+#define LIB_UNNKNOW     -1
+
+library_t *NewLibrary(const char* path, box86context_t* box86, elfheader_t* verneeded);
+int AddSymbolsLibrary(lib_t* maplib, library_t* lib, x86emu_t* emu);
+int FinalizeLibrary(library_t* lib, lib_t* local_maplib, int bindnow, x86emu_t* emu);
+
+char* GetNameLib(library_t *lib);
+int IsSameLib(library_t* lib, const char* path);    // check if lib is same (path -> name)
+int GetLibGlobalSymbolStartEnd(library_t* lib, const char* name, uintptr_t* start, uintptr_t* end, size_t size, int* weak, int version, const char* vername, int local, const char* defver);
+int GetLibWeakSymbolStartEnd(library_t* lib, const char* name, uintptr_t* start, uintptr_t* end, size_t size, int* weak, int version, const char* vername, int local, const char* defver);
+int GetLibLocalSymbolStartEnd(library_t* lib, const char* name, uintptr_t* start, uintptr_t* end, size_t size, int* weak, int version, const char* vername, int local, const char* defver);
+char** GetNeededLibsNames(library_t* lib);
+int GetNeededLibsN(library_t* lib);
+library_t* GetNeededLib(library_t* lib, int idx);
+lib_t* GetMaplib(library_t* lib);
+
+int GetElfIndex(library_t* lib);    // -1 if no elf (i.e. wrapped)
+elfheader_t* GetElf(library_t* lib);    // NULL if no elf (i.e. wrapped)
+void* GetHandle(library_t* lib);    // NULL if not wrapped
+void IncRefCount(library_t* lib, x86emu_t* emu);
+int DecRefCount(library_t** lib, x86emu_t* emu);   // might unload the lib!
+int GetRefCount(library_t* lib);
+
+void SetDlOpenIdx(library_t* lib, int dlopen);
+#endif //__LIBRARY_H_
