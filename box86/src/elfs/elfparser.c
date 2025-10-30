@@ -97,7 +97,7 @@ elfheader_t* ParseElfHeader(FILE* f, const char* name, int exec)
     }
 
     if(header.e_machine != EM_386) {
-        printf_dump(level, "Not an i386 ELF (%d)\n", header.e_machine);
+        printf_dump(level, "invalid ELF (%d)\n", header.e_machine);
         return NULL;
     }
 
