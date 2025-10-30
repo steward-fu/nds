@@ -1,0 +1,6 @@
+all:
+	gcc hello.c -o hello
+	gcc main.c libbox86.so -o test -I../src -I../src/include -lm && LD_LIBRARY_PATH=. ./test hello
+
+clean:
+	rm -rf test hello
