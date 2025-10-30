@@ -29,3 +29,7 @@ common/libcommon.so
 
 detour/libdtr.so
 drastic/res/nds.cfg
+
+drastic/config.json
+drastic/icon.png
+drastic/overlayfs.img
