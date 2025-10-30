@@ -188,6 +188,7 @@ int reset_config(void)
 
     myconfig.magic = REL_VER;
     myconfig.layout.mode.sel = DEF_LAYOUT_MODE;
+    myconfig.layout.mode.alt = DEF_LAYOUT_ALT;
     myconfig.layout.swin.alpha = DEF_SWIN_ALPHA;
     myconfig.layout.swin.border = DEF_SWIN_BORDER;
     myconfig.pen.speed = DEF_PEN_SPEED;

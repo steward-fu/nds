@@ -104,8 +104,15 @@ enum layout_mode_t {
 #define DEF_FAST_FORWARD    6
 #define DEF_SWIN_ALPHA      6
 #define DEF_SWIN_BORDER     1
-#define DEF_LAYOUT_MODE     1
 #define DEF_JOY_DZONE       25
+
+#if defined(XT894) || defined(XT897) || defined(QX1000)
+#define DEF_LAYOUT_MODE     LAYOUT_MODE_C0
+#define DEF_LAYOUT_ALT      LAYOUT_MODE_C1
+#else
+#define DEF_LAYOUT_MODE     LAYOUT_MODE_N1
+#define DEF_LAYOUT_ALT      LAYOUT_MODE_N3
+#endif
 
 #define TRACE_LEVEL         3
 #define DEBUG_LEVEL         2
