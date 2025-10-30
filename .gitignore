@@ -33,3 +33,5 @@ drastic/res/nds.cfg
 drastic/config.json
 drastic/icon.png
 drastic/overlayfs.img
+
+box86/build
