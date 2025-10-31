@@ -6309,6 +6309,16 @@ static int load_bg_image(void)
             GL_UNSIGNED_BYTE,
             myvideo.layout.bg->pixels
         );
+
+#if defined(FLIP)
+        flush_lcd(
+            TEXTURE_BG,
+            myvideo.layout.bg->pixels,
+            myvideo.layout.bg->clip_rect,
+            myvideo.layout.bg->clip_rect,
+            myvideo.layout.bg->pitch
+        );
+#endif
 #endif
 #endif
 
