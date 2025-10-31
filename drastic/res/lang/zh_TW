@@ -38,8 +38,10 @@ CUSTOM KEY=客製化按鍵
 4-BTN=四按鍵
 MICROPHONE=麥克風
 LCD HINGE=屏幕
-OPEN=開啟
+OPEN=打開
 CLOSE=關閉
+ON=打開
+OFF=關閉
 
 Version=版本
 Change Options=修改選項
