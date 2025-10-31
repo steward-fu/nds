@@ -321,12 +321,6 @@ include_directories(
     "${BOX86_ROOT}/src/wrapped/generated"
 )
 
-# git_head.h is a generated file
-set_source_files_properties(
-    "${BOX86_ROOT}/src/git_head.h"
-    PROPERTIES GENERATED TRUE
-    HEADER_FILE_ONLY TRUE)
-
 set(ELFLOADER_SRC
     "${BOX86_ROOT}/src/main.c"
     "${BOX86_ROOT}/src/box86context.c"
@@ -601,7 +595,6 @@ foreach(A ${WRAPPEDS})
     string(REPLACE ".c" "_private.h" C ${A})
     string(REPLACE "${MODROOT}" "${BOX86_ROOT}" B ${C})
     set(WRAPPEDS_HEAD ${WRAPPEDS_HEAD} ${B})
-    set_source_files_properties(${A} PROPERTIES OBJECT_DEPENDS ${B})
 endforeach()
 
 set(WRAPPER "${BOX86_ROOT}/src/wrapped/generated/wrapper.c" "${BOX86_ROOT}/src/wrapped/generated/wrapper.h")
@@ -702,30 +695,16 @@ if(ARM_DYNAREC)
 
 endif()
 
-# creates git_head.h
-if(ARM_DYNAREC)
-    add_custom_command(
-        OUTPUT "${BOX86_ROOT}/src/git_head.h"
-        COMMAND bash -c "echo \\\#define GITREV \\\"$(git rev-parse --short HEAD)\\\">\"${BOX86_ROOT}/src/git_head.h\""
-        DEPENDS dynarec ${ELFLOADER_SRC} ${INTERPRETER} ${WRAPPEDS}
-        VERBATIM)
-else()
-    add_custom_command(
-        OUTPUT "${BOX86_ROOT}/src/git_head.h"
-        COMMAND bash -c "echo \\\#define GITREV \\\"$(git rev-parse --short HEAD)\\\">\"${BOX86_ROOT}/src/git_head.h\""
-        DEPENDS ${ELFLOADER_SRC} ${INTERPRETER} ${WRAPPEDS}
-        VERBATIM)
-endif()
-
 add_library(interpreter OBJECT ${INTERPRETER})
 
 if(BOX86LIB)
 #build a static or dynamic lib...
 if(BOX86DYNAMIC)
-    add_library(box86 SHARED ${ELFLOADER_SRC} ${WRAPPEDS} ${INTERPRETER} "${BOX86_ROOT}/src/git_head.h")
+    add_library(box86 SHARED ${ELFLOADER_SRC} ${WRAPPEDS} ${INTERPRETER})
 else()
-    add_library(${BOX86} OBJECT ${ELFLOADER_SRC} ${WRAPPEDS} "${BOX86_ROOT}/src/git_head.h")
+    add_library(${BOX86} OBJECT ${ELFLOADER_SRC} ${WRAPPEDS} ${INTERPRETER})
 endif()
+
 if(ARM_DYNAREC)
     if(ANDROID)
         if(TERMUX)
@@ -734,7 +713,7 @@ if(ARM_DYNAREC)
         target_link_libraries(${BOX86} dynarec interpreter m dl)
         endif()
     else()
-        target_link_libraries(${BOX86} dynarec interpreter m dl rt pthread resolv)
+        target_link_libraries(${BOX86} dynarec m dl rt pthread resolv)
     endif()
 endif()
 if(${CMAKE_VERSION} VERSION_LESS "3.13")
@@ -750,7 +729,7 @@ add_custom_target(buildinfo ${BOX86}
 
 else(BOX86LIB)
 
-add_executable(${BOX86} ${ELFLOADER_SRC} ${WRAPPEDS} "${BOX86_ROOT}/src/git_head.h")
+add_executable(${BOX86} ${ELFLOADER_SRC} ${WRAPPEDS})
 add_dependencies(${BOX86} WRAPPERS)
 add_dependencies(${BOX86} PRINTER)
 if(ANDROID)

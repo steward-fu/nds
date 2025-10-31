@@ -3,11 +3,7 @@ all: box86
 	gcc main.c libbox86.so -o test -I../src -I../src/include -lm && LD_LIBRARY_PATH=. ./test hello
 
 box86:
-ifeq ($(wildcard ../build/libbox86.so),)
 	cd .. && ./build.sh armhf
-else
-	cd ../build && make
-endif
 
 clean:
 	rm -rf test hello
