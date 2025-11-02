@@ -2907,7 +2907,7 @@ static int load_mask_file(const char *name)
 }
 #endif
 
-#if !defined(MINI) && !defined(BRICK)
+#if !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *name)
 {
     long size = 0;
