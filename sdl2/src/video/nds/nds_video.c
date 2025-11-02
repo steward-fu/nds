@@ -122,7 +122,7 @@ static int get_file_name_by_index(const char *, int, char *, int);
 static int load_mask_image(const char *);
 #endif
 
-#if !defined(MINI)
+#if !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *);
 #endif
 
@@ -193,21 +193,6 @@ static SDL_Rect def_layout_pos[][2] = {
 #endif
 };
 
-#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
-GLfloat bg_vertices[] = {
-   -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-   -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-    1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-    1.0f,  1.0f,  0.0f,  1.0f,  0.0f
-};
-
-GLfloat fg_vertices[] = {
-   -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-   -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-    1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-    1.0f,  1.0f,  0.0f,  1.0f,  0.0f
-};
-
 static const char* LAYOUT_NAME_STR[] = {
     "N00",
     "N01",
@@ -235,6 +220,21 @@ static const char* LAYOUT_NAME_STR[] = {
     "C01",
     "C02",
 #endif
+};
+
+#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+GLfloat bg_vertices[] = {
+   -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+   -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+    1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  0.0f,  1.0f,  0.0f
+};
+
+GLfloat fg_vertices[] = {
+   -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+   -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+    1.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  0.0f,  1.0f,  0.0f
 };
 
 GLushort vert_indices[] = {
@@ -2538,10 +2538,8 @@ TEST(sdl2_video, strip_newline_char)
 
 static void* video_handler(void *param)
 {
-#if !defined(MINI)
     int cur_shader = -1;
     char tmp[MAX_PATH] = { 0 };
-#endif
 
 #if defined(FLIP)
     EGLint surf_cfg[] = {
@@ -2733,18 +2731,22 @@ static void* video_handler(void *param)
 #endif
 
     while (myvideo.thread.running) {
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
+#if !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
             if (cur_shader != -1) {
                 cur_shader = -1;
                 load_shader_file(NULL);
             }
+#endif
         }
         else if ((myvideo.shader >= 0) && (myvideo.shader != cur_shader)) {
+#if !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
             cur_shader = myvideo.shader;
             if (get_file_name_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
                 load_shader_file(tmp);
             }
+#endif
         }
 
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
@@ -2905,7 +2907,7 @@ static int load_mask_file(const char *name)
 }
 #endif
 
-#if !defined(MINI)
+#if !defined(MINI) && !defined(BRICK)
 static int load_shader_file(const char *name)
 {
     long size = 0;
@@ -4264,11 +4266,6 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.shm.buf->drt.w = drt.w;
     myvideo.shm.buf->drt.h = drt.h;
 
-    if (myvideo.layout.overlay.reload) {
-        myvideo.shm.buf->overlay.reload = 1;
-        myvideo.layout.overlay.reload = 0;
-    }
-
     memcpy(myvideo.shm.buf->buf, pixels, srt.h * pitch);
 
     myvideo.shm.buf->cmd = SHM_CMD_FLUSH;
@@ -4277,7 +4274,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     myvideo.shm.buf->pitch = pitch;
     myvideo.shm.buf->alpha = 0;
     if ((cur_mode_sel == LAYOUT_MODE_N0) ||
-        (cur_layout.mode_sel == LAYOUT_MODE_N1))
+        (cur_mode_sel == LAYOUT_MODE_N1))
     {
         myvideo.shm.buf->alpha = myconfig.layout.swin.alpha;
     }
@@ -6306,6 +6303,8 @@ static int load_bg_image(void)
             myvideo.layout.bg->pixels
         );
 
+#endif
+
 #if defined(MINI) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(FLIP)
         flush_lcd(
             TEXTURE_BG,
@@ -6314,7 +6313,6 @@ static int load_bg_image(void)
             myvideo.layout.bg->clip_rect,
             myvideo.layout.bg->pitch
         );
-#endif
 #endif
 
 #if defined(TRIMUI)

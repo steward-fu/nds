@@ -185,7 +185,7 @@ void prehook_adpcm_decode_block(spu_channel_struct *channel)
     int16_t *adpcm_step_table = NULL;
     int8_t *adpcm_index_step_table = NULL;
 
-    debug("call %s(channel=%p)\n", __func__, channel);
+    trace("call %s(channel=%p)\n", __func__, channel);
 
     adpcm_step_table = (int16_t *)myhook.var.adpcm.step_table;
     adpcm_index_step_table = (int8_t *)myhook.var.adpcm.index_step_table;

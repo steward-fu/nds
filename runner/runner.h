@@ -52,12 +52,6 @@ typedef struct {
     SDL_Rect srt;
     SDL_Rect drt;
 
-    struct {
-        int reload;
-        SDL_Rect lcd[2];
-        char image[MAX_PATH];
-    } overlay;
-
     uint8_t buf[R_LCD_W * R_LCD_H * 4];
 } shm_buf_t;
  

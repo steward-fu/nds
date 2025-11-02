@@ -199,13 +199,13 @@ static int hit_hotkey(uint32_t bit)
     int r = 0;
     uint32_t mask = 0;
 
-    debug("call %s(bit=%d)\n", __func__, bit);
+    trace("call %s(bit=%d)\n", __func__, bit);
 
     mask = 1 << bit;
     mask |= (1 << ((myconfig.hotkey == HOTKEY_BIND_SELECT) ? KEY_BIT_SELECT : KEY_BIT_MENU));
     r = (myevent.keypad.cur_bits ^ mask) ? 0 : 1;
 
-    debug("bit=%d, r=%d\n", bit, r);
+    trace("bit=%d, r=%d\n", bit, r);
 
     return r;
 }
