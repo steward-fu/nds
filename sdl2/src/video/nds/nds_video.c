@@ -1755,8 +1755,10 @@ TEST(sdl2_video, handle_drastic_menu)
 static int process_screen(void)
 {
     int idx = 0;
+    int cur_ff_sel = 0;
     int cur_bg_sel = 0;
     int cur_mode_sel = 0;
+    static int cur_ff = -1;
     static int cur_mic = -1;
     static int cur_hinge = -1;
     static int autostate = 15;
@@ -1770,6 +1772,7 @@ static int process_screen(void)
 
     debug("call %s()\n", __func__);
 
+    cur_ff_sel = (myvideo.lcd.status & NDS_STATE_FAST);
     cur_bg_sel = myconfig.layout.bg.sel;
     cur_mode_sel = myconfig.layout.mode.sel;
 
@@ -1793,6 +1796,7 @@ static int process_screen(void)
     }
 
     if ((cur_filter != myconfig.filter) ||
+        (cur_ff != cur_ff_sel) ||
         (cur_mic != myhook.use_mic) ||
         (cur_hinge != myhook.use_hinge) ||
         (cur_layout_bg != cur_bg_sel) ||
@@ -1809,10 +1813,15 @@ static int process_screen(void)
             sprintf(buf, " %s ", l10n("QUICK LOAD"));
             myvideo.lcd.status &= ~NDS_STATE_LOAD;
         }
-        else if (myvideo.lcd.status & NDS_STATE_FAST) {
+        else if (cur_ff != cur_ff_sel) {
             show_info = 50;
-            sprintf(buf, " %s ", l10n("FAST FORWARD"));
-            myvideo.lcd.status &= ~NDS_STATE_FAST;
+            sprintf(
+                buf,
+                " %s %s ",
+                l10n("FAST FORWARD"),
+                cur_ff_sel ? l10n("ON") : l10n("OFF")
+            );
+            cur_ff = cur_ff_sel;
         }
         else if (cur_layout_mode != cur_mode_sel) {
             show_info = 50;
@@ -1840,11 +1849,11 @@ static int process_screen(void)
         }
         else if (cur_mic != myhook.use_mic) {
             show_info = 50;
-            sprintf(buf, "%s %s", l10n("MICROPHONE"), l10n(myhook.use_mic ? "ON" : "OFF"));
+            sprintf(buf, " %s %s ", l10n("MICROPHONE"), l10n(myhook.use_mic ? "ON" : "OFF"));
         }
         else if (cur_hinge != myhook.use_hinge) {
             show_info = 50;
-            sprintf(buf, "%s %s", l10n("LCD HINGE"), l10n(myhook.use_hinge ? "CLOSE" : "OPEN"));
+            sprintf(buf, " %s %s ", l10n("LCD HINGE"), l10n(myhook.use_hinge ? "CLOSE" : "OPEN"));
         }
         else if (cur_filter != myconfig.filter) {
             show_info = 50;
@@ -6282,20 +6291,7 @@ static int load_bg_image(void)
 #endif
 
     if (myvideo.layout.bg) {
-#if !defined(TRIMUI)
-#if defined(MINI) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA)
-        SDL_Rect drt = { 0, 0, SCREEN_W, SCREEN_H };
-
-        flush_lcd(
-            TEXTURE_BG,
-            myvideo.layout.bg->pixels,
-            myvideo.layout.bg->clip_rect,
-            drt,
-            myvideo.layout.bg->pitch
-        );
-#else
-        debug("background texture, size=%dx%d\n", myvideo.layout.bg->w, myvideo.layout.bg->h);
-
+#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(FLIP)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(
@@ -6310,7 +6306,7 @@ static int load_bg_image(void)
             myvideo.layout.bg->pixels
         );
 
-#if defined(FLIP)
+#if defined(MINI) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(FLIP)
         flush_lcd(
             TEXTURE_BG,
             myvideo.layout.bg->pixels,
@@ -6318,7 +6314,6 @@ static int load_bg_image(void)
             myvideo.layout.bg->clip_rect,
             myvideo.layout.bg->pitch
         );
-#endif
 #endif
 #endif
 
@@ -7239,7 +7234,9 @@ typedef enum {
 
 #if defined(MINI)
     MENU_MASK,
-#else
+#endif
+
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     MENU_SHADER,
 #endif
 
@@ -7296,7 +7293,9 @@ static const char *MENU_LIST_STR[] = {
 
 #if defined(MINI)
     "MASK",
-#else
+#endif
+
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     "SHADER",
 #endif
 
@@ -8067,7 +8066,9 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-#else
+#endif
+
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     case MENU_SHADER:
         if (right_key) {
             if (max_shader_count && (myvideo.shader < (max_shader_count - 1))) {
@@ -8288,7 +8289,9 @@ static int draw_sdl2_menu_setting(
             strcpy(buf, l10n("NONE"));
         }
         break;
-#else
+#endif
+
+#if defined(XT894) || defined(XT897) || defined(QX1000)
     case MENU_SHADER:
         if (get_file_name_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));

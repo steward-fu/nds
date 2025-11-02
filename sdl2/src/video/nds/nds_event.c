@@ -2068,7 +2068,7 @@ static int send_key_event(int raw_event)
         update_raw_input_statue(KEY_BIT_LOAD, 0);
     }
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_FAST)) {
-        myvideo.lcd.status |= NDS_STATE_FAST;
+        myvideo.lcd.status ^= NDS_STATE_FAST;
         set_key_bit(KEY_BIT_FAST, 0);
         update_raw_input_statue(KEY_BIT_FAST, 0);
     }
