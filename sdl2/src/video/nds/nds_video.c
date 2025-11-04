@@ -122,7 +122,7 @@ static int get_file_name_by_index(const char *, int, char *, int);
 static int load_mask_image(const char *);
 #endif
 
-#if !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI) && !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *);
 #endif
 
@@ -135,17 +135,10 @@ static SDL_Rect def_layout_pos[][2] = {
     {{ 0, 0, 160, 120 }, { 0, 0, 640, 480 }},
     // LAYOUT_MODE_N1
     {{ 0, 0, 256, 192 }, { 0, 0, 640, 480 }},
-#if defined(TRIMUI)
-    // LAYOUT_MODE_N2
-    {{ 0, 0, 0, 0 }, { 32, 24, 256, 192 }},
-    // LAYOUT_MODE_N3
-    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
-#else
     // LAYOUT_MODE_N2
     {{ 0, 0, 0, 0 }, { 64, 48, 512, 384 }},
     // LAYOUT_MODE_N3
     {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
-#endif
     // LAYOUT_MODE_N4
     {{ 192, 48, 256, 192 }, { 192, 240, 256, 192 }},
     // LAYOUT_MODE_N5
@@ -1720,7 +1713,6 @@ int handle_drastic_menu(void)
 #if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
-
     flush_lcd(
         TEXTURE_TMP,
         myvideo.menu.drastic.frame->pixels,
@@ -2006,7 +1998,7 @@ static int process_screen(void)
 #endif
 
         if (need_update) {
-#if !defined(MINI)
+#if !defined(MINI) && !defined(TRIMUI)
             int screen_w = SCREEN_W;
             int screen_h = SCREEN_H;
 #endif
@@ -2538,8 +2530,10 @@ TEST(sdl2_video, strip_newline_char)
 
 static void* video_handler(void *param)
 {
+#if !defined(TRIMUI)
     int cur_shader = -1;
     char tmp[MAX_PATH] = { 0 };
+#endif
 
 #if defined(FLIP)
     EGLint surf_cfg[] = {
@@ -2907,7 +2901,7 @@ static int load_mask_file(const char *name)
 }
 #endif
 
-#if !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI) && !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *name)
 {
     long size = 0;
@@ -4217,9 +4211,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     const int margin_w = (max_w - scale_w) / 2.0;
 #endif
 
-    trace(
-        "call %s(tex=%d, pixels=%p, pitch=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d))\n",
+    debug(
+        "call %s(mode=%d, tex=%d, pixels=%p, pitch=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d))\n",
         __func__,
+        cur_mode_sel,
         id,
         pixels,
         pitch,
@@ -5011,8 +5006,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         );
     }
     else if ((srt.w == SCREEN_W) && (srt.h == SCREEN_H)) {
-        dst = ((uint32_t *)myvideo.gfx.ion.vadd) +
-            (SCREEN_W * SCREEN_H * myvideo.fb.flip);
+        dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H * myvideo.fb.flip);
         for (y = 0; y < sh; y++) {
             for (x = 0; x < sw; x++) {
                 dst[(((sw - 1) - x) * SCREEN_H) + y] = *src++;
@@ -5655,6 +5649,8 @@ static int flip_lcd(void)
     int r = 0;
 #endif
 
+    debug("call %s()\n", __func__);
+
 #if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
     myvideo.shm.buf->cmd = SHM_CMD_FLIP;
     debug("send SHM_CMD_FLIP\n");
@@ -5665,8 +5661,6 @@ static int flip_lcd(void)
         usleep(10);
     }
 #endif
-
-    debug("call %s()\n", __func__);
 
 #if defined(PANDORA)
     debug("flip /dev/fb%d\n", myvideo.fb.cur_idx + 1);
@@ -6461,6 +6455,33 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
         sizeof(SDL_Rect) * 2
     );
 
+#if defined(TRIMUI)
+    switch (mode) {
+    case LAYOUT_MODE_N2:
+        myvideo.layout.mode[mode].screen[0].x = 32;
+        myvideo.layout.mode[mode].screen[0].y = 24;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H;
+
+        myvideo.layout.mode[mode].screen[1].x = 32;
+        myvideo.layout.mode[mode].screen[1].y = 24;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H;
+        break;
+    case LAYOUT_MODE_N3:
+        myvideo.layout.mode[mode].screen[0].x = 0;
+        myvideo.layout.mode[mode].screen[0].y = 0;
+        myvideo.layout.mode[mode].screen[0].w = NDS_W;
+        myvideo.layout.mode[mode].screen[0].h = NDS_H;
+
+        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].y = 0;
+        myvideo.layout.mode[mode].screen[1].w = NDS_W;
+        myvideo.layout.mode[mode].screen[1].h = NDS_H;
+        break;
+    }
+#endif
+
 #if defined(XT894) || defined(XT897) || defined(QX1000)
     myvideo.layout.mode[mode].screen[0].x *= scale;
     myvideo.layout.mode[mode].screen[0].y *= scale;
@@ -6661,6 +6682,10 @@ static int free_layout_mode(void)
 
     myvideo.layout.max_mode = 0;
     memset(myvideo.layout.mode, 0, sizeof(myvideo.layout.mode));
+
+#if defined(TRIMUI)
+    add_layout_mode(LAYOUT_MODE_N3, 0, NULL, 0, 0);
+#endif
 
 #if !defined(TRIMUI) && !defined(PANDORA)
     add_layout_mode(LAYOUT_MODE_N0, 0, NULL, 0, 0);
@@ -8255,7 +8280,7 @@ static int draw_sdl2_menu_setting(
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
 
-#if !defined(MINI)
+#if !defined(MINI) && !defined(TRIMUI)
     char tmp[MAX_PATH] = { 0 };
 #endif
 

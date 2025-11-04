@@ -290,11 +290,11 @@ static int queue_copy(
     usleep(100000);
 
 #if defined(TRIMUI)
-    if (myconfig.layout.mode.sel != LAYOUT_MODE_T2) {
+    if (myconfig.layout.mode.sel != LAYOUT_MODE_N2) {
         myvideo.layout.restore = 1;
         myvideo.layout.pre_mode = myconfig.layout.mode.sel;
     }
-    myconfig.layout.mode.sel = LAYOUT_MODE_T2;
+    myconfig.layout.mode.sel = LAYOUT_MODE_N2;
     resize_disp();
 #endif
 
