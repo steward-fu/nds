@@ -68,10 +68,9 @@ B3
 
 &nbsp;
 
-## Hotkey
 The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.    
 
-| **Keypad Mode**       | Description                         |
+| ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | R2                    | Swap Screen                         |
 | L2                    | Switch Keypad or Touch Mode         |
@@ -89,14 +88,12 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 | HOTKEY + R2           | Save State                          |
 | HOTKEY + SELECT       | Enter DraStic Menu                  |
 | HOTKEY + START        | Enter SDL2 Menu                     |  
-
-| **Touch Mode**        | Description                         |
-| --------------------- | ----------------------------------- |
+| ( Touch Mode )        |                                     |
 | DPAD                  | Move Touch                          |
 | A                     | Touch Screen                        |
 | R1                    | Lower Moving Speed                  |
 | HOTKEY + Y            | Change Touch Image                  |  
-
-| **Drastic/SDL2 Menu** | Description                         |
-| --------------------- | ----------------------------------- |
+| ( SDL2 Menu )         |                                     |
+| HOTKEY + Y            | Change Background Image             |  
+| ( Drastic Menu )      |                                     |
 | HOTKEY + Y            | Change Background Image             |
