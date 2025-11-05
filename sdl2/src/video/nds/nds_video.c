@@ -97,10 +97,10 @@ extern nds_config myconfig;
 static char lang_file_name[MAX_LANG_FILE][MAX_LANG_NAME] = { 0 };
 
 #if defined(TRIMUI)
-static uint32_t LUT_256x192_T20[NDS_W * NDS_H] = { 0 };
-static uint32_t LUT_256x192_T21[NDS_W * NDS_H] = { 0 };
-static uint32_t LUT_256x192_T30[NDS_W * NDS_H] = { 0 };
-static uint32_t LUT_256x192_T31[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_N20[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_N21[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_N30[NDS_W * NDS_H] = { 0 };
+static uint32_t LUT_256x192_N31[NDS_W * NDS_H] = { 0 };
 #endif
 
 static void quit_video(_THIS);
@@ -3802,12 +3802,12 @@ static int init_lcd(void)
     for (y = 0; y < NDS_H; y++) {
         for (x = 0; x < NDS_W; x++) {
             dst = (uint32_t *)myvideo.gfx.ion.vadd;
-            LUT_256x192_T20[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
-            LUT_256x192_T30[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
+            LUT_256x192_N20[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
+            LUT_256x192_N30[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
 
             dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H);
-            LUT_256x192_T21[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
-            LUT_256x192_T31[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
+            LUT_256x192_N21[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
+            LUT_256x192_N31[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
             cc+= 1;
         }
     }
@@ -4171,7 +4171,10 @@ TEST(sdl2_video, draw_touch_pen)
 
 int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 {
+#if !defined(TRIMUI)
     int cur_filter = myconfig.filter;
+#endif
+
     int cur_mode_sel = myconfig.layout.mode.sel;
 
 #if defined(TRIMUI)
@@ -4239,8 +4242,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     if (myvideo.menu.sdl2.enable || myvideo.menu.drastic.enable) {
+#if !defined(TRIMUI)
         cur_filter = FILTER_BLUR;
         cur_mode_sel = LAYOUT_MODE_N3;
+#endif
     }
 
 #if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
@@ -4921,15 +4926,18 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 
 #if defined(TRIMUI)
     if ((pitch / srt.w) != 4) {
+        error("only support in ARGB8888 format\n");
         return -1;
     }
 
     if((srt.w == NDS_W) && (srt.h == NDS_H)) {
+        debug("copy pixels by using LUT method for resolution of %dx%d\n", srt.w, srt.h);
+
         if (cur_mode_sel == LAYOUT_MODE_N2) {
-            dst = myvideo.fb.flip ? LUT_256x192_T21 : LUT_256x192_T20;
+            dst = myvideo.fb.flip ? LUT_256x192_N21 : LUT_256x192_N20;
         }
         else {
-            dst = myvideo.fb.flip ? LUT_256x192_T31 : LUT_256x192_T30;
+            dst = myvideo.fb.flip ? LUT_256x192_N31 : LUT_256x192_N30;
         }
 
         asm volatile (
@@ -5006,6 +5014,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         );
     }
     else if ((srt.w == SCREEN_W) && (srt.h == SCREEN_H)) {
+        debug("copy pixels for resolution of %dx%d\n", srt.w, srt.h);
+
         dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H * myvideo.fb.flip);
         for (y = 0; y < sh; y++) {
             for (x = 0; x < sw; x++) {
@@ -5014,6 +5024,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
         }
     }
     else if ((srt.w == LAYOUT_BG_W) && (srt.h == LAYOUT_BG_H)) {
+        debug("copy layout pixels for resolution of %dx%d\n", srt.w, srt.h);
+
         sw = SCREEN_W;
         sh = SCREEN_H;
         dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H * myvideo.fb.flip);
@@ -5024,6 +5036,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             }
             src += srt.w;
         }
+    }
+    else {
+        error("not support in resolution (src:%xx%d, dst:%dx%d)\n", srt.w, srt.h, drt.w, drt.h);
+        return -1;
     }
 #endif
 
