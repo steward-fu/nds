@@ -230,8 +230,14 @@ typedef enum {
 #endif
 } gfx_fmt_t;
 
+#if defined(TRIMUI)
+#define MENU_W              SCREEN_W
+#define MENU_H              SCREEN_H
+#else
 #define MENU_W              LAYOUT_BG_W
 #define MENU_H              LAYOUT_BG_H
+#endif
+
 #define SCREEN_BUF_SIZE     (SCREEN_W * SCREEN_H * 4)
 #define SCREEN_BUF_SIZEx2   (SCREEN_W * SCREEN_H * 4 * 2)
 #define MAX_LAYOUT_MODE     32
