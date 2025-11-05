@@ -6,6 +6,9 @@ This repository contains all necessary resources - including the customized SDL2
 &nbsp;
 
 ## Miyoo Flip
+Model: MY355  
+Operating System: 20250526143414  
+
 N0  
 ![image](image/layout/n0.bmp)  
 
