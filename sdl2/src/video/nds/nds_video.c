@@ -126,8 +126,8 @@ static int load_mask_image(const char *);
 static int load_shader_file(const char *);
 #endif
 
-#if defined(MINI)
-static int load_overlay_file(void);
+#if 0 //defined(MINI)
+static int load_mask_file(void);
 #endif
 
 static SDL_Rect def_layout_pos[][2] = {
@@ -3118,8 +3118,8 @@ static int get_file_name_by_index(const char *folder, int idx, char *buf, int fu
     return r;
 }
 
-#if defined(MINI)
-static int load_overlay_file(void)
+#if 0 //defined(MINI)
+static int load_mask_file(void)
 {
     int cc = 0;
     char buf[MAX_PATH + 32] = { 0 };
@@ -3218,7 +3218,7 @@ static int load_overlay_file(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, load_overlay_file)
+TEST(sdl2_video, load_mask_file)
 {
 }
 #endif
@@ -5622,6 +5622,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     MI_GFX_BitBlit(&myvideo.gfx.src.surf, &myvideo.gfx.src.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &fence);
     MI_GFX_WaitAllDone(TRUE, fence);
 
+#if 0
     gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
     gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
     gfx.hw.overlay.surf.u32Width = FB_W;
@@ -5645,6 +5646,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     gfx.hw.opt.eDFBBlendFlag = E_MI_GFX_DFB_BLEND_SRC_PREMULTIPLY | E_MI_GFX_DFB_BLEND_COLORALPHA | E_MI_GFX_DFB_BLEND_ALPHACHANNEL;
     MI_GFX_BitBlit(&gfx.hw.overlay.surf, &gfx.hw.overlay.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
     MI_GFX_WaitAllDone(FALSE, u16Fence);
+#endif
 #endif
 
     return 0;
@@ -6848,7 +6850,7 @@ static int init_device(void)
     load_touch_pen();
 
     //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL, 0, 0);
-    //load_overlay_file();
+    //load_mask_file();
 
 #if defined(MINI) || defined(TRIMUI) || defined(PANDORA)
     //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
@@ -7271,7 +7273,7 @@ typedef enum {
     MENU_CPU,
 #endif
 
-#if defined(MINI)
+#if 0 // defined(MINI)
     MENU_MASK,
 #endif
 
@@ -7330,7 +7332,7 @@ static const char *MENU_LIST_STR[] = {
     "CPU CORE",
 #endif
 
-#if defined(MINI)
+#if 0 //defined(MINI)
     "MASK",
 #endif
 
@@ -7998,8 +8000,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-#if defined(MINI)
-    case MENU_OVERLAY:
+#if 0 // defined(MINI)
+    case MENU_MASK:
         if (right_key) {
             myconfig.layout.overlay.enable = 1;
         }
@@ -8092,7 +8094,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
 #endif
 
-#if defined(MINI)
+#if 0 //defined(MINI)
     case MENU_MASK:
         if (right_key) {
             if (max_mask_count && (myvideo.mask < (max_mask_count - 1))) {
@@ -8319,7 +8321,7 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
 
-#if defined(MINI)
+#if 0 //defined(MINI)
     case MENU_MASK:
         if (get_file_name_by_index(MASK_PATH, myvideo.mask, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
@@ -8394,8 +8396,8 @@ static int draw_sdl2_menu_setting(
         );
         break;
 
-#if defined(MINI)
-    case MENU_OVERLAY:
+#if 0 // defined(MINI)
+    case MENU_MASK:
         sx = 0;
         sprintf(buf, "%s", l10n((myconfig.layout.overlay.enable > 0 )? "Yes" : "No"));
         break;
@@ -8560,7 +8562,7 @@ static int process_sdl2_setting(int key)
 #endif
 
         //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL, 0, 0);
-        //load_overlay_file();
+        //load_mask_file();
 
         myvideo.menu.sdl2.enable = 0;
 
