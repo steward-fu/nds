@@ -22,6 +22,8 @@ sv=`cat /proc/sys/vm/swappiness`
 echo 10 > /proc/sys/vm/swappiness
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
+kill -STOP `pidof keymon`
+
 cd $MYDIR
 ./vol&
 ./cpuclock 1500
@@ -31,6 +33,8 @@ killall vol
 
 echo $sv > /proc/sys/vm/swappiness
 echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+kill -CONT `pidof keymon`
 
 if [ "$RESTORE_RES" == "1" ]; then
     fbset -g 752 560 752 1120 32
