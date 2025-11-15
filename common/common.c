@@ -241,7 +241,6 @@ int get_debug_level(void)
 
     // export NDS_DEBUG_LEVEL=TRACE
     level = getenv("NDS_DEBUG_LEVEL");
-    debug("[DEBUG] NDS_DEBUG_LEVEL=%s\n", level ? level : "ERROR");
 
     if (level != NULL) {
         if (!strcmp(level, "TRACE")) {
@@ -257,6 +256,8 @@ int get_debug_level(void)
             r = FATAL_LEVEL;
         }
     }
+
+    debug("[DEBUG] NDS_DEBUG_LEVEL=%s\n", level ? level : "ERROR");
 
     return r;
 }

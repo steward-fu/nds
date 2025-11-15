@@ -75,7 +75,7 @@ static int limit_touch_axis(void)
 {
     int r = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (myevent.touch.x < 0) {
         r = 1;
@@ -116,7 +116,7 @@ TEST(sdl2_event, limit_touch_axis)
 
 static int is_book_mode(void)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if ((myconfig.layout.mode.sel == LAYOUT_MODE_B0) ||
         (myconfig.layout.mode.sel == LAYOUT_MODE_B1) ||
@@ -145,7 +145,7 @@ static int inc_touch_axis(int type)
     float move = 0.0;
     float v = 100000.0 / ((float)myconfig.pen.speed / 10.0);
 
-    debug("call %s(type=%d)\n", __func__, type);
+    trace("call %s(type=%d)\n", __func__, type);
 
     if (myevent.touch.slow_down) {
         v *= 2;
@@ -169,7 +169,7 @@ static int release_key(void)
 {
     int cc = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
         if (myevent.keypad.cur_bits & 1) {
@@ -221,7 +221,7 @@ TEST(sdl2_event, hit_hotkey)
 
 static int set_key_bit(uint32_t bit, int val)
 {
-    debug("call %s(bit=%d, val=%d, cur_bits=0x%04x)\n", __func__, bit, val, myevent.keypad.cur_bits);
+    trace("call %s(bit=%d, val=%d, cur_bits=0x%04x)\n", __func__, bit, val, myevent.keypad.cur_bits);
 
     if (val) {
         if (myconfig.hotkey == HOTKEY_BIND_SELECT) {
@@ -241,7 +241,7 @@ static int set_key_bit(uint32_t bit, int val)
         myevent.keypad.cur_bits &= ~(1 << bit);
     }
 
-    debug("cur_bits=0x%04x\n", myevent.keypad.cur_bits);
+    trace("cur_bits=0x%04x\n", myevent.keypad.cur_bits);
     return 0;
 }
 
@@ -278,7 +278,7 @@ static int remap_keypad(jval_t *j, int idx)
     int LEFT_TH = -1 * myconfig.joy.dzone;
     int RIGHT_TH = myconfig.joy.dzone;
 
-    debug("call %s(joy=%p, idx=%d)\n", __func__, j, idx);
+    trace("call %s(joy=%p, idx=%d)\n", __func__, j, idx);
 
     if (idx) {
         u_key = KEY_BIT_X;
@@ -405,7 +405,7 @@ static int remap_touch(jval_t *j, int idx)
     int LEFT_TH = -1 * myconfig.joy.dzone;
     int RIGHT_TH = myconfig.joy.dzone;
 
-    debug("call %s(joy=%p, idx=%d)\n", __func__, j, idx);
+    trace("call %s(joy=%p, idx=%d)\n", __func__, j, idx);
 
     if (idx) {
         UP_TH = -1 * myconfig.rjoy.dzone;
@@ -567,7 +567,7 @@ static int remap_custkey(jval_t *j, int idx)
     int LEFT_TH = -1 * myconfig.joy.dzone;
     int RIGHT_TH = myconfig.joy.dzone;
 
-    debug("call %s(joy=%p, idx=%d)\n", __func__, j, idx);
+    trace("call %s(joy=%p, idx=%d)\n", __func__, j, idx);
 
     if (idx) {
         UP_TH = -1 * myconfig.rjoy.dzone;
@@ -683,7 +683,7 @@ static int update_joy_state(void)
 {
     int r = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (myconfig.joy.mode == MYJOY_MODE_KEY) {
         r |= remap_keypad(&myjoy.left.last, 0);
@@ -720,7 +720,7 @@ TEST(sdl2_event, update_joy_state)
 
 static int enter_sdl2_menu(sdl2_menu_type_t t)
 {
-    debug("call %s(t=%d)\n", __func__, t);
+    trace("call %s(t=%d)\n", __func__, t);
 
     if (myvideo.menu.sdl2.enable == 0) {
         myvideo.menu.sdl2.type = t;
@@ -757,17 +757,17 @@ static int find_next_available_bg(void)
     int mode = myconfig.layout.mode.sel;
     int next = (myconfig.layout.bg.sel + 1) % MAX_LAYOUT_BG_FILE;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
-    debug("next=%d\n", next);
+    trace("next=%d\n", next);
     for (cc = next; cc < MAX_LAYOUT_BG_FILE; cc++) {
         if (myvideo.layout.mode[mode].bg[cc].path[0]) {
-            debug("next available=%d\n", cc);
+            trace("next available=%d\n", cc);
             return cc;
         }
     }
 
-    debug("used black bg\n");
+    trace("used black bg\n");
     return MAX_LAYOUT_BG_FILE - 1;
 }
 
@@ -782,7 +782,7 @@ static int handle_hotkey(void)
 {
     int check_hotkey = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     check_hotkey = 1;
     if (myvideo.menu.sdl2.enable || myvideo.menu.drastic.enable) {
@@ -998,36 +998,46 @@ TEST(sdl2_event, handle_hotkey)
 
 static int update_key_bit(uint32_t c, uint32_t v)
 {
-    debug("call %s(c=%d, v=%d)\n", __func__, c, v);
+    trace("call %s(c=%d, v=%d)\n", __func__, c, v);
 
     if (c == myevent.keypad.up) {
+        trace("set KEY_BIT_UP\n");
         set_key_bit(KEY_BIT_UP, v);
     }
     if (c == myevent.keypad.down) {
+        trace("set KEY_BIT_DOWN\n");
         set_key_bit(KEY_BIT_DOWN, v);
     }
     if (c == myevent.keypad.left) {
+        trace("set KEY_BIT_LEFT\n");
         set_key_bit(KEY_BIT_LEFT, v);
     }
     if (c == myevent.keypad.right) {
+        trace("set KEY_BIT_RIGHT\n");
         set_key_bit(KEY_BIT_RIGHT, v);
     }
     if (c == myevent.keypad.a) {
+        trace("set KEY_BIT_A\n");
         set_key_bit(KEY_BIT_A, v);
     }
     if (c == myevent.keypad.b) {
+        trace("set KEY_BIT_B\n");
         set_key_bit(KEY_BIT_B, v);
     }
     if (c == myevent.keypad.x) {
+        trace("set KEY_BIT_X\n");
         set_key_bit(KEY_BIT_X, v);
     }
     if (c == myevent.keypad.y) {
+        trace("set KEY_BIT_Y\n");
         set_key_bit(KEY_BIT_Y, v);
     }
     if (c == myevent.keypad.l1) {
+        trace("set KEY_BIT_L1\n");
         set_key_bit(KEY_BIT_L1, v);
     }
     if (c == myevent.keypad.r1) {
+        trace("set KEY_BIT_R1\n");
         set_key_bit(KEY_BIT_R1, v);
     }
     if (c == myevent.keypad.r2) {
@@ -1038,35 +1048,45 @@ static int update_key_bit(uint32_t c, uint32_t v)
             SDL_SendMouseButton(myvideo.win, 0, v ? SDL_PRESSED : SDL_RELEASED, SDL_BUTTON_LEFT);
         }
 #endif
+        trace("set KEY_BIT_L2\n");
         set_key_bit(KEY_BIT_L2, v);
     }
     if (c == myevent.keypad.l2) {
+        trace("set KEY_BIT_R2\n");
         set_key_bit(KEY_BIT_R2, v);
     }
     if (c == myevent.keypad.select) {
+        trace("set KEY_BIT_SELECT\n");
         set_key_bit(KEY_BIT_SELECT, v);
     }
     if (c == myevent.keypad.start) {
+        trace("set KEY_BIT_START\n");
         set_key_bit(KEY_BIT_START, v);
     }
     if (c == myevent.keypad.menu) {
+        trace("set KEY_BIT_MENU\n");
         set_key_bit(KEY_BIT_MENU, v);
     }
     if (c == myevent.keypad.save) {
+        trace("set KEY_BIT_SAVE\n");
         set_key_bit(KEY_BIT_SAVE, v);
     }
     if (c == myevent.keypad.load) {
+        trace("set KEY_BIT_LOAD\n");
         set_key_bit(KEY_BIT_LOAD, v);
     }
     if (c == myevent.keypad.fast) {
+        trace("set KEY_BIT_FAST\n");
         set_key_bit(KEY_BIT_FAST, v);
     }
     if (c == myevent.keypad.exit) {
+        trace("set KEY_BIT_QUIT\n");
         set_key_bit(KEY_BIT_QUIT, v);
     }
 
 #if defined(MINI) || defined(XT894) || defined(XT897) || defined(UT)
     if (c == myevent.keypad.power) {
+        trace("set KEY_BIT_QUIT\n");
         set_key_bit(KEY_BIT_QUIT, v);
     }
 #endif
@@ -1117,7 +1137,7 @@ static int get_flip_key_code(struct input_event *e)
         /* 19 */ -1
     }; 
 
-    debug("call %s(e=%p)\n", __func__, e);
+    trace("call %s(e=%p)\n", __func__, e);
 
     if (myevent.fd < 0) {
         error("invalid input handle\n");
@@ -1176,7 +1196,7 @@ static int get_brick_key_code(struct input_event *e)
     static uint32_t pre_up_down = 0;
     static uint32_t pre_left_right = 0;
 
-    debug("call %s(e=%p)\n", __func__, e);
+    trace("call %s(e=%p)\n", __func__, e);
 
     if (myevent.fd < 0) {
         error("invalid input handle\n");
@@ -1257,7 +1277,7 @@ TEST(sdl2_event, get_brick_key_code)
 #if defined(PANDORA) || defined(UT)
 static int get_pandora_key_code(struct input_event *e)
 {
-    debug("call %s(e=%p)\n", __func__, e);
+    trace("call %s(e=%p)\n", __func__, e);
 
     if ((myevent.fd < 0) || (myevent.kb_fd < 0)) {
         error("invalid input handle\n");
@@ -1314,14 +1334,11 @@ static int get_input_key_code(int fd, struct input_event *e)
     return 0;
 #endif
 
-    if (read(fd, e, sizeof(struct input_event)) == 0) {
-        debug("no input event\n");
-        return 0;
-    }
-
-    if ((e->type == EV_KEY) && (e->value != 2)) {
-        debug("got input event\n");
-        return 1;
+    if (read(fd, e, sizeof(struct input_event)) > 0) {
+        if ((e->type == EV_KEY) && (e->value != 2)) {
+            trace("got input event\n");
+            return 1;
+        }
     }
 
     trace("ignore input event\n");
@@ -1418,7 +1435,7 @@ static int handle_trimui_special_key(void)
     int r = 0;
     static uint32_t pre_value = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (myevent.cust_key.gpio != NULL) {
         uint32_t v = *myevent.cust_key.gpio & 0x800;
@@ -1426,7 +1443,7 @@ static int handle_trimui_special_key(void)
         if (v != pre_value) {
             r = 1;
             pre_value = v;
-            debug("set r2=%d\n", !v);
+            trace("set r2=%d\n", !v);
             set_key_bit(KEY_BIT_R2, !v);
         }
     }
@@ -1471,7 +1488,7 @@ static int send_touch_axis(void)
 
 #endif
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
 #if !defined(UT)
     x = (myevent.touch.x * 160) / myevent.touch.max_x;
@@ -1510,7 +1527,7 @@ int handle_touch_event(int fd)
     float tp_max_y = 1080.0;
 #endif
 
-    debug("call %s(fd=%d)\n", __func__, fd);
+    trace("call %s(fd=%d)\n", __func__, fd);
 
     if (fd < 0) {
         error("invalid parameter\n");
@@ -1521,7 +1538,7 @@ int handle_touch_event(int fd)
         return 0;
     }
 
-    debug("touch, type:%d, code:0x%x, value:%d\n", ev.type, ev.code, ev.value);
+    trace("touch, type:%d, code:0x%x, value:%d\n", ev.type, ev.code, ev.value);
     if (ev.type == EV_ABS) {
         if (ev.code == ABS_MT_TRACKING_ID) {
 #if defined(XT894) || defined(XT897)
@@ -1567,7 +1584,7 @@ int handle_touch_event(int fd)
                 int update = 0;
 
                 tp_valid = 0;
-                debug(
+                trace(
                     "touch id=%d, x=%d, y=%d, pressure=%d\n",
                     tp_id,
                     tp[tp_id].x,
@@ -1645,7 +1662,7 @@ int handle_touch_event(int fd)
                     myevent.input.touch_status = tp[tp_id].pressure * 100;
                     limit_touch_axis();
 
-                    debug("send touch event, x=%d, y=%d, pressure=%d\n",
+                    trace("send touch event, x=%d, y=%d, pressure=%d\n",
                         myevent.touch.x,
                         myevent.touch.y,
                         myevent.input.touch_status
@@ -1675,7 +1692,7 @@ int input_handler(void *data)
     int sleep_us = 10000;
     struct input_event ev = {{ 0 }};
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
 #if !defined(UT)
     myevent.fd = open(INPUT_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
@@ -1720,9 +1737,7 @@ int input_handler(void *data)
 
         SDL_SemWait(myevent.sem);
 
-        ev.code = 0;
-        ev.type = 0;
-        ev.value = 0;
+        memset(&ev, 0, sizeof(ev));
 
 #if defined(FLIP) || defined(UT)
         rk = get_flip_key_code(&ev);
@@ -1735,7 +1750,7 @@ int input_handler(void *data)
 #endif
 
         if (rk > 0) {
-            debug("code=%d, value=%d\n", ev.code, ev.value);
+            trace("code=%d, value=%d\n", ev.code, ev.value);
             update_key_bit(ev.code, ev.value);
         }
 
@@ -1754,7 +1769,7 @@ int input_handler(void *data)
 #if defined(XT894) || defined(XT897) || defined(QX1000)
         rk = get_input_key_code(myevent.pwr_fd, &ev);
         if (rk > 0) {
-            debug("code=%d, value=%d\n", ev.code, ev.value);
+            trace("code=%d, value=%d\n", ev.code, ev.value);
             update_key_bit(ev.code, ev.value);
         }
 
@@ -1778,7 +1793,7 @@ TEST(sdl2_event, input_handler)
 
 void init_event(void)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     memset(&myevent, 0, sizeof(myevent));
 
@@ -1804,6 +1819,11 @@ void init_event(void)
     myevent.keypad.start = DEV_KEY_CODE_START;
     myevent.keypad.menu = DEV_KEY_CODE_MENU;
     myevent.keypad.power = DEV_KEY_CODE_POWER;
+
+    myevent.keypad.save = -1;
+    myevent.keypad.load = -1;
+    myevent.keypad.fast = -1;
+    myevent.keypad.exit = -1;
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(BRICK) || defined(PANDORA) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
@@ -1861,14 +1881,14 @@ TEST(sdl2_event, init_event)
 
 void quit_event(void)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     myevent.thread.running = 0;
-    debug("wait for input handler complete...\n");
+    trace("wait for input handler complete...\n");
     if (myevent.thread.id) {
         SDL_WaitThread(myevent.thread.id, NULL);
     }
-    debug("completed\n");
+    trace("completed\n");
 
     if (myevent.sem) {
         SDL_DestroySemaphore(myevent.sem);
@@ -1927,7 +1947,7 @@ static int send_key_to_menu(void)
     uint32_t bit = 0;
     uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
         bit = 1 << cc;
@@ -1959,7 +1979,7 @@ static int update_raw_input_statue(uint32_t kbit, int val)
 {
     uint32_t b = 0;
 
-    debug("call %s(kbit=%d, val=%d)\n", __func__, kbit, val);
+    trace("call %s(kbit=%d, val=%d)\n", __func__, kbit, val);
 
     switch (kbit) {
     case KEY_BIT_UP:        b = NDS_KEY_BIT_UP;     break;
@@ -2013,7 +2033,7 @@ static int send_key_event(int raw_event)
     uint32_t bit = 0;
     uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
-    debug("call %s(raw_event=%d)\n", __func__, raw_event);
+    trace("call %s(raw_event=%d)\n", __func__, raw_event);
 
     for (cc=0; cc<=KEY_BIT_LAST; cc++) {
         bit = 1 << cc;
@@ -2033,11 +2053,11 @@ static int send_key_event(int raw_event)
 
         if (changed & bit) {
             if (raw_event) {
-                debug("input bit=0x%x, pressed=%d\n", cc, pressed);
+                trace("input bit=0x%x, pressed=%d\n", cc, pressed);
                 update_raw_input_statue(cc, pressed);
             }
             else {
-                debug("send code[%d]=0x%04x, pressed=%d\n", cc, nds_key_code[cc], pressed);
+                trace("send code[%d]=0x%04x, pressed=%d\n", cc, nds_key_code[cc], pressed);
 
 #if !defined(UT)
                 SDL_SendKeyboardKey(
@@ -2104,7 +2124,7 @@ static int update_touch_axis(void)
 {
     int r = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (is_book_mode() && (myconfig.keys_rotate == 0)) {
         if (myevent.keypad.cur_bits & (1 << KEY_BIT_UP)) {
@@ -2167,12 +2187,12 @@ static int send_touch_key(int raw_event)
     uint32_t pressed = 0;
 #endif
 
-    debug("call %s(changed=0x%x)\n", __func__, changed);
+    trace("call %s(changed=0x%x)\n", __func__, changed);
 
     if (changed & (1 << KEY_BIT_A)) {
 #if !defined(UT)
         pressed = !!(myevent.keypad.cur_bits & (1 << KEY_BIT_A));
-        debug("send touch key (pressed=%d)\n", pressed);
+        trace("send touch key (pressed=%d)\n", pressed);
 
         if (raw_event) {
             myevent.input.touch_status = pressed;
@@ -2233,7 +2253,7 @@ static int send_touch_event(int raw_event)
 {
     int r = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (myevent.keypad.pre_bits != myevent.keypad.cur_bits) {
         send_touch_key(raw_event);
@@ -2286,7 +2306,7 @@ TEST(sdl2_event, send_touch_event)
 
 void pump_event(_THIS)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
 #if !defined(UT)
     SDL_SemWait(myevent.sem);
@@ -2348,7 +2368,7 @@ void prehook_platform_get_input(uintptr_t p)
         pre_key_bits = myevent.input.button_status;
         if (p) {
             input->button_status = myevent.input.button_status;
-            debug("button_status=0x%x\n", input->button_status);
+            trace("button_status=0x%x\n", input->button_status);
         }
         else {
             error("p is null\n");
@@ -2367,7 +2387,7 @@ void prehook_platform_get_input(uintptr_t p)
             input->touch_x = myevent.touch.x;
             input->touch_y = myevent.touch.y;
             input->touch_status = myevent.input.touch_status;
-            debug(
+            trace(
                 "x=%d, y=%d, pressed%d\n",
                 input->touch_x,
                 input->touch_y,
