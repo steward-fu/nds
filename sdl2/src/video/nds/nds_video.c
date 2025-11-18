@@ -2828,6 +2828,7 @@ static void* video_handler(void *param)
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.wl.ready = 0;
 
+    eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
     glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
     eglMakeCurrent(myvideo.egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
