@@ -232,7 +232,7 @@ typedef enum {
 #define JSON_SET_STR(_X_, _BUF_)    json_object_object_add(root, _X_, json_object_new_string(_BUF_));
 #define JSON_GET_STR(_X_, _BUF_)    do { \
     struct json_object *str = NULL; \
-    json_object_object_get(root, _X_); \
+    str = json_object_object_get(root, _X_); \
     if (str && json_object_is_type(str, json_type_string)) { \
         snprintf(_BUF_, sizeof(_BUF_), "%s", json_object_get_string(str)); \
     } \
