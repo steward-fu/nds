@@ -19,6 +19,7 @@ SDL2_CFG += --disable-video-opengles2
 SDL2_CFG += --disable-hidapi-joystick
 
 REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
+CFLAGS   += -DREL_VER=0x$(REL_VER)
 
 .PHONY: all
 all: cfg

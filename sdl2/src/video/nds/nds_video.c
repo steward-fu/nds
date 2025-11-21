@@ -6419,6 +6419,8 @@ static SDL_VideoDevice *create_device(int idx)
 {
     SDL_VideoDevice *d = NULL;
 
+    update_debug_level();
+
     trace("call %s(idx=%d)\n", __func__, idx);
 
     d = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
@@ -8135,13 +8137,13 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 
     case MENU_ROTATE_KEY:
         if (right_key) {
-            if (myconfig.keys_rotate < 2) {
-                myconfig.keys_rotate += 1;
+            if (myconfig.key_rotate < 2) {
+                myconfig.key_rotate += 1;
             }
         }
         else {
-            if (myconfig.keys_rotate > 0) {
-                myconfig.keys_rotate -= 1;
+            if (myconfig.key_rotate > 0) {
+                myconfig.key_rotate -= 1;
             }
         }
         break;
@@ -8444,7 +8446,7 @@ static int draw_sdl2_menu_setting(
         );
 
         sx = 0;
-        sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.keys_rotate % 3]);
+        sprintf(buf, "%s", ROTATE_KEY_STR[myconfig.key_rotate % 3]);
         break;
     case MENU_PEN_SPEED:
         sprintf(buf, "%.1fx", ((float)myconfig.pen.speed) / 10);

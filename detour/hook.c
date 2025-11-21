@@ -47,7 +47,7 @@ int unlock_area(const void *p)
 {
     int r = -1;
 
-    debug("call %s(p=%p)\n", __func__, p);
+    trace("call %s(p=%p)\n", __func__, p);
 
     if (!p) {
         error("invalid input\n");
@@ -59,7 +59,7 @@ int unlock_area(const void *p)
 #endif
 
     r = mprotect(ALIGN_ADDR(p), page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
-    debug("mprotect()=%d\n", r);
+    trace("mprotect()=%d\n", r);
 
     return r;
 }
@@ -96,7 +96,7 @@ TEST(detour, set_fast_forward)
 
 static int prehook_puts(const char *s)
 {
-    debug("call %s(s=%p)\n", __func__, s);
+    trace("call %s(s=%p)\n", __func__, s);
 
     if (!s) {
         error("invalid input\n");
@@ -119,7 +119,7 @@ static int prehook_printf_chk(int flag, const char *fmt, ...)
 {
     va_list args = { 0 };
 
-    debug("call %s(flag=%d, fmt=%p)\n", __func__, flag, fmt);
+    trace("call %s(flag=%d, fmt=%p)\n", __func__, flag, fmt);
 
     if (!fmt) {
         error("invalid input\n");
@@ -151,7 +151,7 @@ static int32_t prehook_load_state_index(
     char buf[MAX_PATH] = { 0 };
     nds_load_state pfn = (nds_load_state)myhook.fun.load_state;
 
-    debug(
+    trace(
         "call %s(pfn=%p, index=%d, d0=%p, d1=%p)\n",
         __func__,
         pfn,
@@ -178,7 +178,7 @@ static int32_t prehook_load_state_index(
         index
     );
 
-    debug("state path=\"%s\", slot=\"%s\"\n", state_path, buf);
+    trace("state path=\"%s\", slot=\"%s\"\n", state_path, buf);
     pfn((void *)myhook.var.system.base, buf, d0, d1, shot_only);
 }
 
@@ -203,7 +203,7 @@ static int32_t prehook_save_state_index(
     char buf[MAX_PATH] = { 0 };
     nds_save_state pfn = (nds_save_state)myhook.fun.save_state;
 
-    debug(
+    trace(
         "call %s(pfn=%p, index=%d, d0=%p, d1=%p)\n",
         __func__,
         pfn,
@@ -230,7 +230,7 @@ static int32_t prehook_save_state_index(
         index
     );
 
-    debug("state path=\"%s\", slot=\"%s\"\n", state_path, buf);
+    trace("state path=\"%s\", slot=\"%s\"\n", state_path, buf);
     pfn((void *)myhook.var.system.base, state_path, buf, d0, d1);
 }
 
@@ -267,7 +267,7 @@ static void prehook_initialize_backup(
     uint32_t desmume_footer_position = 0;
     uint32_t clean_pages_loaded = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (path && path[0]) {
         data_file_name = malloc(MAX_PATH);
@@ -280,7 +280,7 @@ static void prehook_initialize_backup(
             (const char *)myhook.var.system.gamecard_name
         );
 
-        debug("new state path=\"%s\"\n", data_file_name);
+        trace("new state path=\"%s\"\n", data_file_name);
     }
 
     do {
@@ -344,7 +344,7 @@ static void prehook_initialize_backup(
                 uVar2 = ftell(__stream);
                 fseek(__stream, __off, 0);
                 fclose(__stream);
-                debug("loading backup file %s, %d bytes in %s\n", data_file_name, uVar2, __func__);
+                trace("loading backup file %s, %d bytes in %s\n", data_file_name, uVar2, __func__);
 
                 if ((size + 0x7a) != uVar2) {
                     backup->fix_file_size = size + 0x7a;
@@ -361,7 +361,7 @@ static void prehook_initialize_backup(
 
                     if (pvVar4 != (void *)0x0) {
                         uVar2 = (intptr_t)pvVar4 - (intptr_t)data;
-                        debug("found DeSmuME footer at %d. Truncating in %s\n", uVar2, __func__);
+                        trace("found DeSmuME footer at %d. Truncating in %s\n", uVar2, __func__);
                     }
                     uVar3 = uVar2 >> 0xe;
                     error(
@@ -410,7 +410,7 @@ int save_state(int slot)
     char buf[MAX_PATH] = { 0 };
     nds_screen_copy16 pfn_copy16 = (nds_screen_copy16)myhook.fun.screen_copy16;
 
-    debug("call %s(slot=%d)\n", __func__, slot);
+    trace("call %s(slot=%d)\n", __func__, slot);
 
     if (slot > MAX_STATE_SLOT) {
         error("invalid slot\n");
@@ -487,7 +487,7 @@ int load_state(int slot)
 {
     char buf[MAX_PATH] = { 0 };
 
-    debug("call %s(slot=%d)\n", __func__, slot);
+    trace("call %s(slot=%d)\n", __func__, slot);
 
     if (slot > MAX_STATE_SLOT) {
         error("invalid slot\n");
@@ -543,7 +543,7 @@ int quit_drastic(void)
 {
     nds_quit pfn = (nds_quit)myhook.fun.quit;
 
-    debug("call %s(pfn=%p)\n", __func__, pfn);
+    trace("call %s(pfn=%p)\n", __func__, pfn);
 
     if (!pfn) {
         error("invalid pfn\n");
@@ -576,10 +576,10 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     uint8_t src[LEN] = { 0 };
     uint8_t dst[LEN] = { 0x42, 0x00, 0x00, 0x58, 0x40, 0x00, 0x1f, 0xd6 };
 
-    debug("call %s(pos=0x%lx, pfn=0x%lx)\n", __func__, pos, pfn);
+    trace("call %s(pos=0x%lx, pfn=0x%lx)\n", __func__, pos, pfn);
 
     snprintf(buf, sizeof(buf), "/tmp/%s", DRASTIC64);
-    debug("patch the target file (\"%s\")\n", buf);
+    trace("patch the target file (\"%s\")\n", buf);
 
     fp = fopen(buf, "rb+");
     if (fp == NULL) {
@@ -589,7 +589,7 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
 
     fseek(fp, pos, SEEK_SET);
     len = fread(src, 1, LEN, fp);
-    debug("read %d bytes\n", len);
+    trace("read %d bytes\n", len);
 
     dst[8] = (uint8_t)(pfn >> 0);
     dst[9] = (uint8_t)(pfn >> 8);
@@ -600,7 +600,7 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     dst[14] = (uint8_t)(pfn >> 48);
     dst[15] = (uint8_t)(pfn >> 56);
 
-    debug("org 0x%04lx: "
+    trace("org 0x%04lx: "
         "%02x %02x %02x %02x "
         "%02x %02x %02x %02x "
         "%02x %02x %02x %02x "
@@ -609,7 +609,7 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
         src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7],
         src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15]
     );
-    debug("new 0x%04lx: "
+    trace("new 0x%04lx: "
         "%02x %02x %02x %02x "
         "%02x %02x %02x %02x "
         "%02x %02x %02x %02x "
@@ -622,7 +622,7 @@ static int patch_drastic64(uint64_t pos, uint64_t pfn)
     if (memcmp(src, dst, LEN)) {
         fseek(fp, pos, SEEK_SET);
         len = fwrite(dst, 1, LEN, fp);
-        debug("patched drastic64 at 0x%lx successfully\n", pos);
+        trace("patched drastic64 at 0x%lx successfully\n", pos);
     }
     else {
         r = 0;
@@ -644,7 +644,7 @@ int add_prehook(void *org, void *cb)
 {
     int r = -1;
 
-    debug("call %s(org=%p, cb=%p)\n", __func__, org, cb);
+    trace("call %s(org=%p, cb=%p)\n", __func__, org, cb);
 
     if (!org || !cb) {
         error("invalid pointer\n");
@@ -687,7 +687,7 @@ TEST(detour, add_prehook)
 
 static int init_table(void)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     myhook.var.system.base = (uintptr_t *)0x083f4000;
     myhook.var.system.gamecard_name = (uint32_t *)0x0847e8e8;
@@ -802,7 +802,7 @@ int init_hook(const char *home, size_t page, const char *path)
 {
     page_size = page;
 
-    debug("call %s(home=%p, page=%ld, path=\"%s\")\n", __func__, home, page, path);
+    trace("call %s(home=%p, page=%ld, path=\"%s\")\n", __func__, home, page, path);
 
     if (!home || !page) {
         error("invalid input");
@@ -816,7 +816,7 @@ int init_hook(const char *home, size_t page, const char *path)
     if (path && path[0]) {
         is_state_hooked = 1;
         strncpy(state_path, path, sizeof(state_path));
-        debug("new state path=\"%s\"\n", path);
+        trace("new state path=\"%s\"\n", path);
 
         add_prehook(
             (void *)myhook.fun.load_state_index,
@@ -859,7 +859,7 @@ TEST(detour, init_hook)
 
 int quit_hook(void)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     return 0;
 }

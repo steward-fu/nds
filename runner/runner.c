@@ -24,7 +24,9 @@
 #include "common.h"
 #include "runner.h"
 
-const char *vert_shader_code =
+static const char *DEBUG_LEVEL_STR[] = { "FATAL", "ERROR", "DEBUG", "TRACE" };
+
+static const char *vert_shader_code =
     "attribute vec4 vert_tex_pos;                                       \n"
     "attribute vec2 vert_tex_coord;                                     \n"
     "varying vec2 frag_tex_coord;                                       \n"
@@ -34,7 +36,7 @@ const char *vert_shader_code =
     "    frag_tex_coord = vert_tex_coord;                               \n"
     "}                                                                  \n";
 
-const char *frag_shader_code =
+static const char *frag_shader_code =
     "precision mediump float;                                           \n"
     "varying vec2 frag_tex_coord;                                       \n"
     "uniform float frag_rotate;                                         \n"
@@ -358,6 +360,7 @@ int main(int argc, char **argv)
     pthread_t id = 0;
 
     nds_debug_level = get_debug_level();
+    debug("log level \"%s\"\n", DEBUG_LEVEL_STR[nds_debug_level]);
 
     pthread_create(&id, NULL, runner_handler, NULL);
     pthread_join(id, NULL);

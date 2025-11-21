@@ -173,12 +173,77 @@ typedef enum {
     FILTER_PIXEL,
 } filter_type_t;
 
+#define CFG_USING_JSON_FORMAT   1
+#define JSON_MAGIC              "magic"
+#define JSON_SWAP_L1_L2         "l1_l2_swap"
+#define JSON_SWAP_R1_R2         "r1_r2_swap"
+#define JSON_KEY_ROTATE         "key_rotation"
+#define JSON_LANG               "language"
+#define JSON_HOTKEY             "hotkey_binding"
+#define JSON_CPU_CORE           "cpu_core"
+#define JSON_FAST_FORWARD       "fast_forward"
+#define JSON_FILTER             "screen_filter"
+#define JSON_STATE_PATH         "state_path"
+#define JSON_AUTOSTATE_SLOT     "autostate_slot"
+#define JSON_AUTOSTATE_ENABLE   "autostate_enable"
+#define JSON_MENU_SEL           "menu_sel_bg"
+#define JSON_MENU_MAX           "menu_max_bg_cnt"
+#define JSON_MENU_SHOW_CURSOR   "menu_show_cursor"
+#define JSON_LAYOUT_MODE_ALT    "layout_alt_mode"
+#define JSON_LAYOUT_MODE_SEL    "layout_sel_mode"
+#define JSON_LAYOUT_BG_SEL      "layout_sel_bg"
+#define JSON_LAYOUT_MASK_SEL    "layout_sel_mask"
+#define JSON_LAYOUT_SWIN_POS    "layout_swin_pos"
+#define JSON_LAYOUT_SWIN_ALPHA  "layout_swin_alpha"
+#define JSON_LAYOUT_SWIN_BORDER "layout_swin_border"
+#define JSON_PEN_SEL            "pen_sel_img"
+#define JSON_PEN_TYPE           "pen_sel_type"
+#define JSON_PEN_MAX            "pen_max_img_cnt"
+#define JSON_PEN_SPEED          "pen_speed"
+#define JSON_JOY_MAX_X          "joy_max_x"
+#define JSON_JOY_ZERO_X         "joy_zero_x"
+#define JSON_JOY_MIN_X          "joy_max_x"
+#define JSON_JOY_MAX_Y          "joy_max_y"
+#define JSON_JOY_ZERO_Y         "joy_zero_y"
+#define JSON_JOY_MIN_Y          "joy_max_y"
+#define JSON_JOY_MODE           "joy_mode"
+#define JSON_JOY_DZONE          "joy_dead_zone"
+#define JSON_JOY_SHOW_CNT       "joy_disp_timeout"
+#define JSON_JOY_CUST_KEY0      "joy_cust_key0"
+#define JSON_JOY_CUST_KEY1      "joy_cust_key1"
+#define JSON_JOY_CUST_KEY2      "joy_cust_key2"
+#define JSON_JOY_CUST_KEY3      "joy_cust_key3"
+#define JSON_RJOY_MAX_X         "right_joy_max_x"
+#define JSON_RJOY_ZERO_X        "right_joy_zero_x"
+#define JSON_RJOY_MIN_X         "right_joy_max_x"
+#define JSON_RJOY_MAX_Y         "right_joy_max_y"
+#define JSON_RJOY_ZERO_Y        "right_joy_zero_y"
+#define JSON_RJOY_MIN_Y         "right_joy_max_y"
+#define JSON_RJOY_MODE          "right_joy_mode"
+#define JSON_RJOY_DZONE         "right_joy_dead_zone"
+#define JSON_RJOY_SHOW_CNT      "right_joy_disp_timeout"
+#define JSON_RJOY_CUST_KEY0     "right_joy_cust_key0"
+#define JSON_RJOY_CUST_KEY1     "right_joy_cust_key1"
+#define JSON_RJOY_CUST_KEY2     "right_joy_cust_key2"
+#define JSON_RJOY_CUST_KEY3     "right_joy_cust_key3"
+
+#define JSON_SET_INT(_X_, _BUF_)    json_object_object_add(root, _X_, json_object_new_int64(_BUF_));
+#define JSON_GET_INT(_X_, _BUF_)    _BUF_ = json_object_get_int64(json_object_object_get(root, _X_))
+#define JSON_SET_STR(_X_, _BUF_)    json_object_object_add(root, _X_, json_object_new_string(_BUF_));
+#define JSON_GET_STR(_X_, _BUF_)    do { \
+    struct json_object *str = NULL; \
+    json_object_object_get(root, _X_); \
+    if (str && json_object_is_type(str, json_type_string)) { \
+        snprintf(_BUF_, sizeof(_BUF_), "%s", json_object_get_string(str)); \
+    } \
+} while(0);
+
 typedef struct {
     uint32_t magic;
 
     int swap_l1_l2;
     int swap_r1_r2;
-    int keys_rotate;
+    int key_rotate;
 
     int lang;
     int hotkey;
@@ -211,17 +276,6 @@ typedef struct {
         struct {
             int sel;
         } mask;
-
-        struct {
-            int sel;
-
-            struct {
-                int x;
-                int y;
-                int w;
-                int h;
-            } lcd[2];
-        } cust;
 
         struct {
             int pos;
@@ -275,6 +329,7 @@ int get_dir_cnt(const char *);
 int get_file_cnt(const char *);
 int get_path_by_idx(const char *, int, char *);
 int get_debug_level(void);
+int update_debug_level(void);
 char* upper_string(char *);
 uint64_t get_tick_count_ms(void);
 uint32_t rgb565_to_rgb888(uint16_t);

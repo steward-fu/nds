@@ -1355,8 +1355,8 @@ static int update_latest_keypad_value(void)
 {
     trace("call %s()\n", __func__);
 
-    if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0) && myconfig.keys_rotate) {
-        if (myconfig.keys_rotate == 1) {
+    if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0) && myconfig.key_rotate) {
+        if (myconfig.key_rotate == 1) {
             myevent.keypad.up = DEV_KEY_CODE_LEFT;
             myevent.keypad.down = DEV_KEY_CODE_RIGHT;
             myevent.keypad.left = DEV_KEY_CODE_DOWN;
@@ -2126,7 +2126,7 @@ static int update_touch_axis(void)
 
     trace("call %s()\n", __func__);
 
-    if (is_book_mode() && (myconfig.keys_rotate == 0)) {
+    if (is_book_mode() && (myconfig.key_rotate == 0)) {
         if (myevent.keypad.cur_bits & (1 << KEY_BIT_UP)) {
             r = 1;
             myevent.touch.x+= inc_touch_axis(1);

@@ -255,7 +255,7 @@ TEST(alsa, prehook_adpcm_decode_block)
 #if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
 static void pulse_context_state(pa_context *context, void *userdata)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (context) {
         switch (pa_context_get_state(context)) {
@@ -283,7 +283,7 @@ TEST(alsa, pulse_context_state)
 
 static void pulse_stream_state(pa_stream *stream, void *userdata)
 {
-    debug("call %s(stream=%p, userdat=%p)\n", __func__, stream, userdata);
+    trace("call %s(stream=%p, userdat=%p)\n", __func__, stream, userdata);
 
     if (stream) {
         switch (pa_stream_get_state(stream)) {
@@ -309,7 +309,7 @@ TEST(alsa, pulse_stream_state)
 
 static void pulse_stream_latency_update(pa_stream *stream, void *userdata)
 {
-    debug("call %s(stream=%p, userdata=%p)\n", __func__, stream, userdata);
+    trace("call %s(stream=%p, userdata=%p)\n", __func__, stream, userdata);
 
     if (stream) {
         pa_threaded_mainloop_signal(mypulse.mainloop, 0);
@@ -326,7 +326,7 @@ TEST(alsa, pulse_stream_latency_update)
 
 static void pulse_stream_request(pa_stream *stream, size_t length, void *userdata)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (stream) {
         pa_threaded_mainloop_signal(mypulse.mainloop, 0);
@@ -347,7 +347,7 @@ static int open_dsp(void)
 {
     int arg = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (dsp_fd > 0) {
         close(dsp_fd);
@@ -388,7 +388,7 @@ TEST(alsa, open_dsp)
 
 int set_autostate(int enable, int slot)
 {
-    debug("call %s(enable=%d, slot=%d)\n", __func__, enable, slot);
+    trace("call %s(enable=%d, slot=%d)\n", __func__, enable, slot);
 
     autostate.slot = slot;
     autostate.enable = enable;
@@ -409,7 +409,7 @@ TEST(alsa, set_autostate)
 
 static int init_queue(queue_t *q, size_t s)
 {
-    debug("call %s(q=%p, s=%ld)\n", __func__, q, s);
+    trace("call %s(q=%p, s=%ld)\n", __func__, q, s);
 
     if (!q) {
         error("q is null\n");
@@ -447,7 +447,7 @@ TEST(alsa, init_queue)
 
 static int quit_queue(queue_t *q)
 {
-    debug("call %s(q=%p)\n", __func__, q);
+    trace("call %s(q=%p)\n", __func__, q);
 
     if (q->buf) {
         free(q->buf);
@@ -689,7 +689,7 @@ static void* audio_handler(void *id)
     int idx = 0;
     int len = mypcm.len;
 
-    debug("call %s()++\n", __func__);
+    trace("call %s()++\n", __func__);
 
 #if defined(UT)
     mypcm.ready = 0;
@@ -748,7 +748,7 @@ static void* audio_handler(void *id)
         usleep(10);
     }
 
-    debug("call %s()--\n", __func__);
+    trace("call %s()--\n", __func__);
 
 #if defined(UT)
     return NULL;
@@ -780,7 +780,7 @@ TEST(alsa, snd_pcm_avail)
 
 int snd_pcm_hw_params(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     return 0;
 }
@@ -794,7 +794,7 @@ TEST(alsa, snd_pcm_hw_params)
 
 int snd_pcm_hw_params_any(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     return 0;
 }
@@ -808,7 +808,7 @@ TEST(alsa, snd_pcm_hw_params_any)
 
 void snd_pcm_hw_params_free(snd_pcm_hw_params_t *obj)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 }
 
 #if defined(UT)
@@ -821,7 +821,7 @@ TEST(alsa, snd_pcm_hw_params_free)
 
 int snd_pcm_hw_params_malloc(snd_pcm_hw_params_t **ptr)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     return 0;
 }
@@ -838,7 +838,7 @@ int snd_pcm_hw_params_set_access(
     snd_pcm_hw_params_t *params,
     snd_pcm_access_t _access)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     return 0;
 }
@@ -854,7 +854,7 @@ int snd_pcm_hw_params_set_buffer_size_near(
     snd_pcm_hw_params_t *params,
     snd_pcm_uframes_t *val)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     *val = SND_SAMPLES * 2 * SND_CHANNELS;
     return 0;
@@ -872,7 +872,7 @@ TEST(alsa, snd_pcm_hw_params_set_buffer_size_near)
 
 int snd_pcm_hw_params_set_channels(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     return 0;
 }
@@ -906,7 +906,7 @@ int snd_pcm_hw_params_set_period_size_near(
     snd_pcm_uframes_t *val,
     int *dir)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     *val = SND_PERIOD;
     return 0;
@@ -928,7 +928,7 @@ int snd_pcm_hw_params_set_rate_near(
     unsigned int *val,
     int *dir)
 {
-    debug("call %s(pcm=%p, params=%p, val=%p, dir=%p)\n", __func__, pcm, params, val, dir);
+    trace("call %s(pcm=%p, params=%p, val=%p, dir=%p)\n", __func__, pcm, params, val, dir);
 
     *val = SND_FREQ;
     return 0;
@@ -946,7 +946,7 @@ TEST(alsa, snd_pcm_hw_params_set_rate_near)
 
 int snd_pcm_open(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode)
 {
-    debug(
+    trace(
         "call %s(pcm=%p, name=%s, stream=%d, mode=%d)\n",
         __func__,
         pcm,
@@ -973,7 +973,7 @@ TEST(alsa, snd_pcm_open)
 
 int snd_pcm_prepare(snd_pcm_t *pcm)
 {
-    debug("call %s(pcm=%p)\n", __func__, pcm);
+    trace("call %s(pcm=%p)\n", __func__, pcm);
 
     return 0;
 }
@@ -1001,7 +1001,7 @@ TEST(alsa, snd_pcm_readi)
 
 int snd_pcm_recover(snd_pcm_t *pcm, int err, int silent)
 {
-    debug("call %s(pcm=%p, err=%d, silent=%d)\n", __func__, pcm, err, silent);
+    trace("call %s(pcm=%p, err=%d, silent=%d)\n", __func__, pcm, err, silent);
 
     return 0;
 }
@@ -1032,7 +1032,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     struct json_object *jfile = NULL;
 #endif
 
-    debug("call %s(pcm=%p)\n", __func__, pcm);
+    trace("call %s(pcm=%p)\n", __func__, pcm);
 
     if (pcm) {
         return 0;
@@ -1183,7 +1183,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
 {
     void *r = NULL;
 
-    debug("call %s(pcm=%p)\n", __func__, pcm);
+    trace("call %s(pcm=%p)\n", __func__, pcm);
 
     if (autostate.enable > 0) {
         save_state(autostate.slot);
@@ -1246,7 +1246,7 @@ TEST(alsa, snd_pcm_close)
 
 int snd_pcm_sw_params(snd_pcm_t *pcm, snd_pcm_sw_params_t *params)
 {
-    debug("call %s(pcm=%p, params=%p)\n", __func__, pcm, params);
+    trace("call %s(pcm=%p, params=%p)\n", __func__, pcm, params);
 
     return 0;
 }
@@ -1260,7 +1260,7 @@ TEST(alsa, snd_pcm_sw_params)
 
 int snd_pcm_sw_params_current(snd_pcm_t *pcm, snd_pcm_sw_params_t *params)
 {
-    debug("call %s(pcm=%p, params=%p)\n", __func__, pcm, params);
+    trace("call %s(pcm=%p, params=%p)\n", __func__, pcm, params);
 
     return 0;
 }
@@ -1274,7 +1274,7 @@ TEST(alsa, snd_pcm_sw_params_current)
 
 void snd_pcm_sw_params_free(snd_pcm_sw_params_t *obj)
 {
-    debug("call %s(obj=%p)\n", __func__, obj);
+    trace("call %s(obj=%p)\n", __func__, obj);
 }
 
 #if defined(UT)
@@ -1287,7 +1287,7 @@ TEST(alsa, snd_pcm_sw_params_free)
 
 int snd_pcm_sw_params_malloc(snd_pcm_sw_params_t **ptr)
 {
-    debug("call %s(ptr=%p)\n", __func__, ptr);
+    trace("call %s(ptr=%p)\n", __func__, ptr);
     return 0;
 }
 
