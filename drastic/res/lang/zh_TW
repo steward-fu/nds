@@ -42,6 +42,7 @@ OPEN=打開
 CLOSE=關閉
 ON=打開
 OFF=關閉
+DEBUG LOG=除錯日誌
 
 Version=版本
 Change Options=修改選項

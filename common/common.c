@@ -227,12 +227,16 @@ TEST(common, reset_config)
 }
 #endif
 
-int get_debug_level(void)
+int get_debug_level(int local_var)
 {
     int r = FATAL_LEVEL;
     const char *level = NULL;
 
     trace("cal %s()\n", __func__);
+
+    if (local_var) {
+        return nds_debug_level;
+    }
 
     // export NDS_DEBUG_LEVEL=TRACE
     level = getenv("NDS_DEBUG_LEVEL");
@@ -261,11 +265,14 @@ TEST(common, get_debug_level)
 }
 #endif
 
-int update_debug_level(void)
+int update_debug_level(int new_level)
 {
-    trace("call %s()\n");
+    trace("call %s()\n", __func__);
 
-    nds_debug_level = get_debug_level();
+    nds_debug_level = new_level;
+    if (nds_debug_level < 0) {
+        nds_debug_level = get_debug_level(0);
+    }
     trace("log level \"%s\"\n", DEBUG_LEVEL_STR[nds_debug_level]);
 
     return 0;

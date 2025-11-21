@@ -6419,7 +6419,7 @@ static SDL_VideoDevice *create_device(int idx)
 {
     SDL_VideoDevice *d = NULL;
 
-    update_debug_level();
+    update_debug_level(-1);
 
     trace("call %s(idx=%d)\n", __func__, idx);
 
@@ -7333,6 +7333,7 @@ typedef enum {
     MENU_RJOY_DZONE,
 #endif
 
+    MENU_LOG_LEVEL,
     MENU_LAST,
 } menu_list_t;
 
@@ -7390,6 +7391,8 @@ static const char *MENU_LIST_STR[] = {
     "  JOY RIGHT",
     "R JOY DEAD ZONE",
 #endif
+
+    "DEBUG LOG"
 };
 
 static int draw_small_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
@@ -8277,6 +8280,14 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
 #endif
+    case MENU_LOG_LEVEL:
+        if (right_key) {
+            update_debug_level(TRACE_LEVEL);
+        }
+        else {
+            update_debug_level(ERROR_LEVEL);
+        }
+        break;
     default:
         return -1;
     }
@@ -8497,6 +8508,9 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%d", myconfig.rjoy.dzone);
         break;
 #endif
+    case MENU_LOG_LEVEL:
+        sprintf(buf, "%s", l10n((get_debug_level(1) == TRACE_LEVEL) ? "ON" : "OFF"));
+        break;
     }
     draw_info(myvideo.cvt, buf, SSX + sx, SY + (myvideo.menu.line_h * idx), col1, 0);
 
