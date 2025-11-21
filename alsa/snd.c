@@ -766,7 +766,12 @@ TEST(alsa, audio_handler)
 
 snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm)
 {
-    trace("call %s(%p)\n", __func__, pcm);
+    trace("call %s(pcm=%d)\n", __func__, pcm);
+
+    if ((uint32_t)pcm == SND_PCM_STREAM_CAPTURE) {
+        trace("capture flush (use_mic=%d)\n", myhook.use_mic);
+        return 0;
+    }
 
     return 2048;
 }
@@ -960,7 +965,7 @@ int snd_pcm_open(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int
     }
 
     *pcm = (struct _snd_pcm *)stream;
-    return 0;
+    return SND_PCM_STREAM_PLAYBACK;
 }
 
 #if defined(UT)
@@ -973,7 +978,7 @@ TEST(alsa, snd_pcm_open)
 
 int snd_pcm_prepare(snd_pcm_t *pcm)
 {
-    trace("call %s(pcm=%p)\n", __func__, pcm);
+    trace("call %s(pcm=%d)\n", __func__, pcm);
 
     return 0;
 }
@@ -987,7 +992,7 @@ TEST(alsa, snd_pcm_prepare)
 
 snd_pcm_sframes_t snd_pcm_readi(snd_pcm_t *pcm, void *buf, snd_pcm_uframes_t size)
 {
-    trace("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
+    trace("call %s(pcm=%d, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
 
     return 0;
 }

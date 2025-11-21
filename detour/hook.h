@@ -68,6 +68,20 @@ typedef struct {
     uint32_t busy;
 } savestate_thread_data_struct;
 
+typedef struct  {
+    int16_t buffer[65536];
+    int16_t capture_buffer[65536];
+    uint32_t buffer_base;
+    uint32_t buffer_index;
+    uint32_t output_frequency;
+    uint32_t capture_frequency;
+    uint32_t playback_buffer_size;
+    uint8_t enable_output;
+    uint8_t enable_capture;
+    uint8_t synchronize;
+    uint8_t pause_state;
+} audio_struct;
+
 typedef struct {
     uintptr_t *base;
     uint32_t *gamecard_name;
@@ -124,9 +138,7 @@ typedef struct {
     } video;
 
     struct {
-        struct {
-            int16_t *capture_buffer;
-        } audio;
+        audio_struct *audio;
     } spu;
 } system_t;
 
@@ -174,6 +186,9 @@ typedef struct {
     uint32_t *pcm_handler;
     uint32_t *fast_forward;
     uint32_t *desmume_footer_str;
+    uint32_t *pcm_handle;
+    uint32_t *capture_handle;
+    uint8_t *mic_en;
     savestate_thread_data_struct *savestate_thread;
 } var_t;
 
@@ -211,6 +226,7 @@ typedef struct {
     void *config_setup_input_map;
     void *print_string_ext;
     void *nds_file_get_icon_data;
+    void *audio_capture_flush;
 } fun_t;
 
 typedef struct {
@@ -306,6 +322,7 @@ typedef int (*nds_puts)(const char *);
 typedef void (*nds_select_quit)(void *, void *);
 typedef void (*nds_config_setup_input_map)(void *);
 typedef int32_t (*nds_file_get_icon_data)(char *, nds_icon_struct *);
+typedef void (*nds_audio_capture_flush)(audio_struct *audio);
 
 int init_hook(const char *, size_t, const char *);
 int quit_hook(void);

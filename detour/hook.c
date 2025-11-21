@@ -699,7 +699,8 @@ static int init_table(void)
     myhook.var.system.video.realtime_speed_percentage = (float *)0x0aedec08;
     myhook.var.system.video.rendered_frames_percentage = (float *)0x0aedec0c;
     myhook.var.system.micphone_status = (uint8_t *)0xaedee69;
-    myhook.var.system.spu.audio.capture_buffer = (int16_t *)0x997a000;
+    myhook.var.system.spu.audio = (audio_struct *)0x995a000;
+
     myhook.var.sdl.swap_screens = (uint32_t *)0x0aee9598;
     myhook.var.sdl.bytes_per_pixel = (uint32_t *)0x0aee957c;
     myhook.var.sdl.needs_reinitializing = (uint32_t *)0x0aee95a0;
@@ -726,6 +727,9 @@ static int init_table(void)
     myhook.var.desmume_footer_str = (uint32_t *)0x0815a740;
     myhook.var.pcm_handler = (uint32_t *)0x083e532c;
     myhook.var.fast_forward = (uint32_t *)0x08006ad0;
+    myhook.var.pcm_handle = (uint32_t *)0x83e532c;
+    myhook.var.capture_handle = (uint32_t *)0x83e5330;
+    myhook.var.mic_en = (uint8_t *)0x83e5310;
     myhook.var.savestate_thread = (savestate_thread_data_struct *)0x083e4ad0;
 
 #if defined(NDS_ARM64)
@@ -782,6 +786,7 @@ static int init_table(void)
     myhook.fun.select_quit = (void *)0x0809b134;
     myhook.fun.config_setup_input_map = (void *)0x08097250;
     myhook.fun.nds_file_get_icon_data = (void *)0x08096d90;
+    myhook.fun.audio_capture_flush = (void *)0x080aa894;
 #endif
 
     srand(time(NULL));
@@ -795,6 +800,17 @@ TEST(detour, init_table)
     TEST_ASSERT_EQUAL_INT(0, init_table());
     TEST_ASSERT_EQUAL_INT(0x08006ad0, myhook.var.fast_forward);
     TEST_ASSERT_EQUAL_INT(0x080a0a18, myhook.fun.menu);
+}
+#endif
+
+static void prehook_audio_capture_flush(audio_struct *audio)
+{
+    trace("call %s()\n", __func__);
+}
+
+#if defined(UT)
+TEST(detour, prehook_audio_capture_flush)
+{
 }
 #endif
 
@@ -833,6 +849,11 @@ int init_hook(const char *home, size_t page, const char *path)
             (void *)prehook_initialize_backup
         );
     }
+
+    add_prehook(
+        (void *)myhook.fun.audio_capture_flush,
+        (void *)prehook_audio_capture_flush
+    );
 
 #if !defined(NDS_ARM64)
     add_prehook(
@@ -879,10 +900,12 @@ int toggle_micphone(void)
     myhook.use_mic ^= 1;
     if (myhook.use_mic) {
         int cc = 0;
-        int16_t *p = (uint16_t *)myhook.var.system.spu.audio.capture_buffer;
+        int16_t *p = (uint16_t *)myhook.var.system.spu.audio->capture_buffer;
+
+        *myhook.var.capture_handle = 1;
+        *myhook.var.system.micphone_status = 2;
 
         need_clean = 1;
-        *myhook.var.system.micphone_status = 2;
         for (cc = 0; cc < buf_size; cc++) {
             p[cc] = rand();
         }
@@ -890,7 +913,7 @@ int toggle_micphone(void)
     else if (need_clean) {
         need_clean = 0;
         memset(
-            myhook.var.system.spu.audio.capture_buffer,
+            myhook.var.system.spu.audio->capture_buffer,
             0,
             sizeof(int16_t) * buf_size
         );
