@@ -1008,6 +1008,7 @@ TEST(alsa, snd_pcm_recover)
 
 static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_blocking, uint32_t audio_capture)
 {
+#if 0
     int iVar3 = 0;
     int error_value = 0;
     int16_t *audio_buffer = NULL;
@@ -1017,6 +1018,7 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
     snd_pcm_sframes_t frames_available = 0;
     snd_pcm_t *pcm_handle = (snd_pcm_t *)*myhook.var.pcm_handle;
     snd_pcm_t *capture_handle = (snd_pcm_t *)*myhook.var.capture_handle;
+#endif
 
     trace("call %s(audio=%p, non_blocking=%d, audio_capture=%d)\n", __func__, audio, non_blocking, audio_capture);
 
@@ -1054,6 +1056,17 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
 
 #if defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
     write(dsp_fd, audio, audio->buffer_index * SND_CHANNELS);
+#endif
+
+#if defined(MINI)
+    MI_AUDIO_Frame_t frame = { 0 };
+
+    frame.eBitwidth = myao.gattr.eBitwidth;
+    frame.eSoundmode = myao.gattr.eSoundmode;
+    frame.u32Len = audio->buffer_index * SND_CHANNELS;
+    frame.apVirAddr[0] = audio;
+    frame.apVirAddr[1] = NULL;
+    MI_AO_SendFrame(myao.id, myao.ch, &frame, 1);
 #endif
 
 #endif
