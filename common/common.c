@@ -197,7 +197,7 @@ int reset_config(void)
     myconfig.pen.speed = DEF_PEN_SPEED;
     myconfig.fast_forward = DEF_FAST_FORWARD;
 
-#if defined(A30) || defined(FLIP) || defined(UT)
+#if defined(FLIP) || defined(UT)
     myconfig.joy.dzone = DEF_JOY_DZONE;
     myconfig.joy.cust_key[0] = 0;
     myconfig.joy.cust_key[1] = 1;
@@ -333,7 +333,7 @@ int load_config(const char *path)
         JSON_GET_INT(JSON_PEN_SPEED, myconfig.pen.speed);
         JSON_GET_INT(JSON_PEN_TYPE, myconfig.pen.type);
 
-#if defined(A30) || defined(FLIP) || defined(UT)
+#if defined(FLIP) || defined(UT)
         JSON_GET_INT(JSON_JOY_MAX_X, myconfig.joy.max_x);
         JSON_GET_INT(JSON_JOY_ZERO_X, myconfig.joy.zero_x);
         JSON_GET_INT(JSON_JOY_MIN_X, myconfig.joy.min_x);
@@ -445,7 +445,7 @@ int update_config(const char *path)
         JSON_SET_INT(JSON_PEN_SPEED, myconfig.pen.speed);
         JSON_SET_INT(JSON_PEN_TYPE, myconfig.pen.type);
 
-#if defined(A30) || defined(FLIP) || defined(UT)
+#if defined(FLIP) || defined(UT)
         JSON_SET_INT(JSON_JOY_MAX_X, myconfig.joy.max_x);
         JSON_SET_INT(JSON_JOY_ZERO_X, myconfig.joy.zero_x);
         JSON_SET_INT(JSON_JOY_MIN_X, myconfig.joy.min_x);

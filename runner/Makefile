@@ -22,6 +22,7 @@ LDFLAGS += -lrt
 LDFLAGS += -lusc
 LDFLAGS += -lIMGegl
 LDFLAGS += -lPVROCL
+LDFLAGS += -ljson-c
 LDFLAGS += -lsrv_um
 LDFLAGS += -lpthread
 LDFLAGS += -lglslcompiler

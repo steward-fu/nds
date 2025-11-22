@@ -78,15 +78,7 @@ struct mypcm_t {
     uint8_t *buf;
 } mypcm = { 0 };
 
-#if defined(A30) || defined(BRICK)
-static int vol_base = 100;
-static int vol_mul = 1;
-static int mem_fd = -1;
-static uint8_t *mem_ptr = NULL;
-static uint32_t *vol_ptr = NULL;
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(UT) || defined(BRICK)
+#if defined(TRIMUI) || defined(PANDORA) || defined(UT) || defined(BRICK)
 static int dsp_fd = -1;
 #endif
 
@@ -173,6 +165,7 @@ static void prehook_audio_buffer_force_feed(audio_struct *audio)
     int iVar2;
     uint32_t uVar1 = 0;
     snd_pcm_sframes_t frames_available = 0;
+    snd_pcm_t *pcm_handle = SND_PCM_STREAM_PLAYBACK;
 
     uVar1 = snd_pcm_avail(pcm_handle);
     iVar2 = snd_pcm_writei(pcm_handle, audio, uVar1);
@@ -367,7 +360,7 @@ TEST(alsa, pulse_stream_request)
 #endif
 #endif
 
-#if defined(A30) || defined(UT) || defined(BRICK)
+#if defined(UT) || defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
 static int open_dsp(void)
 {
     int arg = 0;
@@ -377,13 +370,6 @@ static int open_dsp(void)
     if (dsp_fd > 0) {
         close(dsp_fd);
     }
-
-#if !defined(UT) && !defined(BRICK)
-    system("amixer set \'DACL Mixer AIF1DA0L\' on");
-
-    vol_ptr = (uint32_t *)(&mem_ptr[0xc00 + 0x258]);
-    *vol_ptr = ((vol_base + (cur_vol << vol_mul)) << 8) | (vol_base + (cur_vol << vol_mul));
-#endif
 
     dsp_fd = open(DSP_DEV, O_WRONLY);
     if (dsp_fd < 0) {
@@ -706,10 +692,6 @@ static void* audio_handler(void *id)
     MI_AUDIO_Frame_t frame = { 0 };
 #endif
 
-#if defined(A30)
-    int chk_cnt = 0;
-#endif
-
     int r = 0;
     int idx = 0;
     int len = mypcm.len;
@@ -737,7 +719,7 @@ static void* audio_handler(void *id)
                 MI_AO_SendFrame(myao.id, myao.ch, &frame, 1);
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
+#if defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
                 write(dsp_fd, mypcm.buf, mypcm.len);
 #endif
 
@@ -750,26 +732,7 @@ static void* audio_handler(void *id)
 #endif
             }
         }
-#if defined(A30)
-        else {
-            if (chk_cnt == 0) {
-                char buf[MAX_PATH] = { 0 };
-                FILE *fd = popen("amixer get \'DACL Mixer AIF1DA0L\' | "
-                    "grep \"Mono: Playback \\[off\\]\" | wc -l", "r");
 
-                if (fd) {
-                    fgets(buf, sizeof(buf), fd);
-                    pclose(fd);
-
-                    if (atoi(buf) > 0) {
-                        open_dsp();
-                    }
-                }
-                chk_cnt = 30000;
-            }
-            chk_cnt -= 1;
-        }
-#endif
         usleep(10);
     }
 
@@ -1082,11 +1045,18 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
     // audio->buffer_index = 1470
     put_queue(&queue, (uint8_t *)audio, audio->buffer_index * SND_CHANNELS);
 #else
+
+#if defined(XT897)
     pa_threaded_mainloop_lock(mypulse.mainloop);
     pa_stream_write(mypulse.stream, audio, audio->buffer_index * SND_CHANNELS, NULL, 0, PA_SEEK_RELATIVE);
     pa_threaded_mainloop_unlock(mypulse.mainloop);
 #endif
 
+#if defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
+    write(dsp_fd, audio, audio->buffer_index * SND_CHANNELS);
+#endif
+
+#endif
 #endif
 
     audio->buffer_index = 0;
@@ -1103,18 +1073,6 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #if defined(MINI) || defined(UT)
     MI_S32 miret = 0;
     MI_SYS_ChnPort_t stAoChn0OutputPort0 = { 0 };
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
-    int arg = 0;
-#endif
-
-#if defined(A30) || defined(BRICK)
-    struct tm ct = { 0 };
-#endif
-
-#if defined(MINI) || defined(A30) || defined(BRICK)
-    struct json_object *jfile = NULL;
 #endif
 
     trace("call %s(pcm=%p)\n", __func__, pcm);
@@ -1179,30 +1137,8 @@ int snd_pcm_start(snd_pcm_t *pcm)
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
 #endif
 
-#if defined(A30)
-    mem_fd = open("/dev/mem", O_RDWR);
-    mem_ptr = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, 0x1c22000);
-#endif
-
-#if defined(A30) || defined(BRICK)
+#if defined(BRICK) || defined(TRIMUI) || defined(PANDORA)
     open_dsp();
-#endif
-
-#if defined(TRIMUI) || defined(PANDORA)
-    dsp_fd = open(DSP_DEV, O_WRONLY);
-    if (dsp_fd < 0) {
-        error("failed to open \"%s\" device\n", DSP_DEV);
-        return -1;
-    }
-
-    arg = 16;
-    ioctl(dsp_fd, SOUND_PCM_WRITE_BITS, &arg);
-
-    arg = SND_CHANNELS;
-    ioctl(dsp_fd, SOUND_PCM_WRITE_CHANNELS, &arg);
-
-    arg = SND_FREQ;
-    ioctl(dsp_fd, SOUND_PCM_WRITE_RATE, &arg);
 #endif
 
 #if defined(QX1000) || defined(XT894) || defined(XT897)
@@ -1300,7 +1236,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     MI_AO_Disable(myao.id);
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(A30) || defined(BRICK)
+#if defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;
@@ -1324,12 +1260,6 @@ int snd_pcm_close(snd_pcm_t *pcm)
         pa_threaded_mainloop_stop(mypulse.mainloop);
         mypulse.mainloop = NULL;
     }
-#endif
-
-#if defined(A30)
-    *vol_ptr = (160 << 8) | 160;
-    munmap(mem_ptr, 4096);
-    close(mem_fd);
 #endif
 
     return 0;

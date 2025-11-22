@@ -11,7 +11,7 @@
 #define SND_SAMPLES         8192
 #define DEF_QUEUE_SIZE      (SND_SAMPLES * 10)
 
-#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050)
+#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050) || defined(BRICK)
 #define USE_CIRCLE_QUEUE    0
 #else
 #define USE_CIRCLE_QUEUE    1

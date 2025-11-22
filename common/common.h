@@ -291,7 +291,7 @@ typedef struct {
         pen_type_t type;
     } pen;
 
-#if defined(A30) || defined(FLIP) || defined(UT)
+#if defined(FLIP) || defined(UT)
     struct {
         int max_x;
         int zero_x;
