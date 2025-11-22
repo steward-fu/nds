@@ -98,9 +98,9 @@ struct autostate {
 } autostate = { 10, 0 };
 
 static int cur_vol = 0;
-static queue_t queue = { 0 };
 static pthread_t thread = { 0 };
 
+static queue_t queue = { 0 };
 static int init_queue(queue_t *, size_t);
 static int quit_queue(queue_t *);
 static int put_queue(queue_t *, uint8_t *, size_t);
@@ -167,7 +167,32 @@ MI_S32 MI_AO_Disable(MI_AUDIO_DEV AoDevId)
 }
 #endif
 
-void prehook_adpcm_decode_block(spu_channel_struct *channel)
+static void prehook_audio_buffer_force_feed(audio_struct *audio)
+{
+#if USE_CIRCLE_QUEUE
+    int iVar2;
+    uint32_t uVar1 = 0;
+    snd_pcm_sframes_t frames_available = 0;
+
+    uVar1 = snd_pcm_avail(pcm_handle);
+    iVar2 = snd_pcm_writei(pcm_handle, audio, uVar1);
+
+    do {
+        if (-1 < iVar2) {
+            break;;
+        }
+        snd_pcm_prepare(pcm_handle);
+    } while(0);
+#endif
+}
+
+#if defined(UT)
+TEST(alsa, prehook_audio_buffer_force_feed)
+{
+}
+#endif
+
+static void prehook_adpcm_decode_block(spu_channel_struct *channel)
 {
     uint32_t uVar1 = 0;
     uint32_t uVar2 = 0;
@@ -1032,9 +1057,7 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
 
     trace("call %s(audio=%p, non_blocking=%d, audio_capture=%d)\n", __func__, audio, non_blocking, audio_capture);
 
-#if 1
-    put_queue(&queue, (uint8_t *)audio, audio->buffer_index * SND_CHANNELS);
-#else
+#if 0
     uVar1 = audio->buffer_index >> 1;
     uVar2 = snd_pcm_avail(pcm_handle);
     if (non_blocking != 0 && uVar1 < uVar2 || (non_blocking == 0 || uVar1 == uVar2)) {
@@ -1053,6 +1076,17 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
         }
         snd_pcm_readi(capture_handle,audio->capture_buffer,uVar1);
     }
+#else
+
+#if USE_CIRCLE_QUEUE
+    // audio->buffer_index = 1470
+    put_queue(&queue, (uint8_t *)audio, audio->buffer_index * SND_CHANNELS);
+#else
+    pa_threaded_mainloop_lock(mypulse.mainloop);
+    pa_stream_write(mypulse.stream, audio, audio->buffer_index * SND_CHANNELS, NULL, 0, PA_SEEK_RELATIVE);
+    pa_threaded_mainloop_unlock(mypulse.mainloop);
+#endif
+
 #endif
 
     audio->buffer_index = 0;
@@ -1089,6 +1123,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
         return 0;
     }
 
+#if USE_CIRCLE_QUEUE
     init_queue(&queue, (size_t)DEF_QUEUE_SIZE);
     if (queue.buf == NULL) {
         return -1;
@@ -1101,6 +1136,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
         return -1;
     }
     memset(mypcm.buf, 0, mypcm.len);
+#endif
 
 #if defined(MINI) ||defined(UT)
     myao.sattr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
@@ -1217,9 +1253,15 @@ int snd_pcm_start(snd_pcm_t *pcm)
 
     add_prehook((void *)myhook.fun.spu_adpcm_decode_block, prehook_adpcm_decode_block);
     add_prehook((void *)myhook.fun.audio_synchronous_update, prehook_audio_synchronous_update);
+    add_prehook((void *)myhook.fun.audio_buffer_force_feed, prehook_audio_buffer_force_feed);
 
+#if USE_CIRCLE_QUEUE
+    trace("use circle queue\n");
     mypcm.ready = 1;
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);
+#else
+    trace("use internal audio buffer\n");
+#endif
 
     return 0;
 }
@@ -1241,13 +1283,17 @@ int snd_pcm_close(snd_pcm_t *pcm)
         save_state(autostate.slot);
     }
 
+#if USE_CIRCLE_QUEUE
     mypcm.ready = 0;
     pthread_join(thread, &r);
+
     if (mypcm.buf) {
         free(mypcm.buf);
         mypcm.buf = NULL;
     }
+
     quit_queue(&queue);
+#endif
 
 #if defined(MINI) || defined(UT)
     MI_AO_DisableChn(myao.id, myao.ch);
@@ -1355,6 +1401,10 @@ snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t *pcm, const void *buf, snd_pcm_uframe
     trace("call %s(pcm=%p, buf=%p, size=%ld)\n", __func__, pcm, buf, size);
 
 #if defined(UT)
+    return size;
+#endif
+
+#if !USE_CIRCLE_QUEUE
     return size;
 #endif
 

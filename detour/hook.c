@@ -788,6 +788,7 @@ static int init_table(void)
     myhook.fun.nds_file_get_icon_data = (void *)0x08096d90;
     myhook.fun.audio_capture_flush = (void *)0x080aa894;
     myhook.fun.audio_synchronous_update = (void *)0x080aa7c0;
+    myhook.fun.audio_buffer_force_feed = (void *)0x080aa760;
 #endif
 
     srand(time(NULL));
