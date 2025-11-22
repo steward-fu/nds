@@ -791,6 +791,7 @@ static int handle_hotkey(void)
 
     if (check_hotkey && hit_hotkey(KEY_BIT_UP)) {
         toggle_micphone();
+        set_key_bit(KEY_BIT_UP, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_DOWN)) {
