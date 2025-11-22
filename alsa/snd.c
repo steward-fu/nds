@@ -1018,6 +1018,52 @@ TEST(alsa, snd_pcm_recover)
 }
 #endif
 
+static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_blocking, uint32_t audio_capture)
+{
+    int iVar3 = 0;
+    int error_value = 0;
+    int16_t *audio_buffer = NULL;
+    uint32_t uVar1 = 0;
+    uint32_t uVar2 = 0;
+    uint32_t frames_to_update = 0;
+    snd_pcm_sframes_t frames_available = 0;
+    snd_pcm_t *pcm_handle = (snd_pcm_t *)*myhook.var.pcm_handle;
+    snd_pcm_t *capture_handle = (snd_pcm_t *)*myhook.var.capture_handle;
+
+    trace("call %s(audio=%p, non_blocking=%d, audio_capture=%d)\n", __func__, audio, non_blocking, audio_capture);
+
+#if 1
+    put_queue(&queue, (uint8_t *)audio, audio->buffer_index * SND_CHANNELS);
+#else
+    uVar1 = audio->buffer_index >> 1;
+    uVar2 = snd_pcm_avail(pcm_handle);
+    if (non_blocking != 0 && uVar1 < uVar2 || (non_blocking == 0 || uVar1 == uVar2)) {
+        uVar2 = uVar1;
+    }
+
+    iVar3 = snd_pcm_writei(pcm_handle,audio,uVar2);
+    if (iVar3 < 0) {
+        snd_pcm_recover(pcm_handle,iVar3,1);
+    }
+
+    if ((audio_capture != 0) && (audio->enable_capture != '\0')) {
+        iVar3 = snd_pcm_avail(capture_handle);
+        if (iVar3 < 0) {
+            snd_pcm_prepare(capture_handle);
+        }
+        snd_pcm_readi(capture_handle,audio->capture_buffer,uVar1);
+    }
+#endif
+
+    audio->buffer_index = 0;
+}
+
+#if defined(UT)
+TEST(alsa, prehook_audio_synchronous_update)
+{
+}
+#endif
+
 int snd_pcm_start(snd_pcm_t *pcm)
 {
 #if defined(MINI) || defined(UT)
@@ -1170,6 +1216,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #endif
 
     add_prehook((void *)myhook.fun.spu_adpcm_decode_block, prehook_adpcm_decode_block);
+    add_prehook((void *)myhook.fun.audio_synchronous_update, prehook_audio_synchronous_update);
 
     mypcm.ready = 1;
     pthread_create(&thread, NULL, audio_handler, (void *)NULL);

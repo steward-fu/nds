@@ -372,12 +372,14 @@ int load_config(const char *path)
     }
 #endif
 
+#if !CFG_USING_JSON_FORMAT
     if (myconfig.magic != REL_VER) {
         error("reset config due to invalid magic number\n");
 
         err = 1;
         reset_config();
     }
+#endif
 
     if (myconfig.state_path[0] && stat(myconfig.state_path, &st) == -1) {
         mkdir(myconfig.state_path, 0755);
