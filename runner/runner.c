@@ -86,6 +86,11 @@ static int init_shm(void)
     myrunner.shm.fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0777);
     debug("shm fd=%d\n", myrunner.shm.fd);
 
+    if (myrunner.shm.fd < 0) {
+        error("failed to open shared memory\n");
+        return -1;
+    }
+
     ftruncate(myrunner.shm.fd, sizeof(shm_buf_t));
 
     myrunner.shm.buf = mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, myrunner.shm.fd, 0);
@@ -364,6 +369,7 @@ int main(int argc, char **argv)
 
     pthread_create(&id, NULL, runner_handler, NULL);
     pthread_join(id, NULL);
+
     return 0;
 }
 

@@ -8,7 +8,7 @@ function kill_runner() {
     if [ "$PID" != "" ]; then
         kill -9 $PID
     fi
-    rm -rf /tmp/shm
+    rm -rf /tmp/NDS_SHM
 }
 
 cd $MYDIR
@@ -18,8 +18,15 @@ echo 10 > /proc/sys/vm/swappiness
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 kill_runner
+sleep 0.3
+
 LD_LIBRARY_PATH=/usr/trimui/lib ./runner&
-sleep 1
+sleep 0.3
+
+PID=`pidof runner`
+if [ "$PID" == "" ]; then
+    exit
+fi
 
 export SDL_VIDEODRIVER=NDS
 
