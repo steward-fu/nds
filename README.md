@@ -11,6 +11,7 @@ This repository contains all necessary resources - including the customized SDL2
 ## Miyoo Mini Plus
 Model: MY354  
 Operating System: 202305052130 Onion_v4.3.1-1  
+![Alt text](image/miyoo_mini_plus.jpg)  
 
 Layout N0  
 ![image](image/layout/n0.bmp)  
@@ -108,6 +109,7 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 ## Miyoo Flip
 Model: MY355  
 Operating System: 20250526143414  
+![Alt text](image/miyoo_flip.jpg)  
 
 Layout N0  
 ![image](image/layout/n0.bmp)  
@@ -300,6 +302,7 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 ## Trimui Smart
 Model: TG2040  
 Operating System: 1.0.0 UI_20240510 Kernel_3.4.39  
+![Alt text](image/trimui_smart.jpg)  
 
 Layout N0  
 ![image](image/layout/n2.bmp)  
@@ -334,6 +337,7 @@ Layout N1
 ## Trimui Brick
 Model: TG3040  
 Operating System: 1.1.0 UI_20250610 Kernel_4.9.191  
+![Alt text](image/trimui_brick.jpg)  
 
 Layout N0  
 ![image](image/layout/n0.bmp)  
