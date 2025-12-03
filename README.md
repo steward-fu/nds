@@ -11,7 +11,7 @@ This repository contains all necessary resources - including the customized SDL2
 ## Miyoo Mini Plus
 Model: MY354  
 Operating System: 202305052130 Onion_v4.3.1-1  
-![Alt text](image/miyoo_mini_plus.jpg)  
+![image](image/miyoo_mini_plus.jpg)  
 
 Layout N0  
 ![image](image/layout/n0.bmp)  
@@ -71,7 +71,7 @@ Layout B2
 ![image](image/layout/b2.bmp)  
 
 Layout B3  
-![image](image/layout/b3.bmp)
+![image](image/layout/b3.bmp)  
 
 &nbsp;
 
@@ -109,48 +109,7 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 ## Miyoo Flip
 Model: MY355  
 Operating System: 20250526143414  
-![Alt text](image/miyoo_flip.jpg)  
-
-Layout N0  
-![image](image/layout/n0.bmp)  
-
-Layout N1  
-![image](image/layout/n1.bmp)  
-
-Layout N2  
-![image](image/layout/n2.bmp)  
-
-Layout N3  
-![image](image/layout/n3.bmp)  
-
-Layout N4  
-![image](image/layout/n4.bmp)  
-
-Layout N5  
-![image](image/layout/n5.bmp)  
-
-Layout N6  
-![image](image/layout/n6.bmp)  
-
-Layout N7  
-![image](image/layout/n7.bmp)  
-
-Layout N8  
-![image](image/layout/n8.bmp)  
-
-Layout N9  
-![image](image/layout/n9.bmp)  
-
-Layout N10  
-![image](image/layout/n10.bmp)  
-
-Layout N11  
-![image](image/layout/n11.bmp)  
-
-Layout N12  
-![image](image/lay## Miyoo Flip
-Model: MY355  
-Operating System: 20250526143414  
+![image](image/miyoo_flip.jpg)  
 
 Layout N0  
 ![image](image/layout/n0.bmp)  
@@ -210,61 +169,7 @@ Layout B2
 ![image](image/layout/b2.bmp)  
 
 Layout B3  
-![image](image/layout/b3.bmp)
-
-&nbsp;
-
-The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
-
-| ( Keypad Mode )       | (Function)                          |
-| --------------------- | ----------------------------------- |
-| R2                    | Swap Screen                         |
-| L2                    | Switch Keypad or Touch Mode         |
-| HOTKEY + UP           | Toggle Microphone                   |
-| HOTKEY + DOWN         | Toggle LCD Hinge                    |
-| HOTKEY + LEFT         | Change Layout Mode                  |
-| HOTKEY + RIGHT        | Change Layout Mode                  |
-| HOTKEY + A            | Alternate Layout Mode               |
-| HOTKEY + B            | Change Filter (Blur or Pixel)       |
-| HOTKEY + Y            | Change Background Image             |
-| HOTKEY + L1           | Quit Emulator                       |
-| HOTKEY + L2           | Load State                          |
-| HOTKEY + R1           | Fast Forward                        |
-| HOTKEY + R2           | Save State                          |
-| HOTKEY + SELECT       | Enter DraStic Menu                  |
-| HOTKEY + START        | Enter SDL2 Menu                     |  
-| ( Touch Mode )        |                                     |
-| DPAD                  | Move Touch                          |
-| A                     | Touch Screen                        |
-| R1                    | Lower Moving Speed                  |
-| HOTKEY + Y            | Change Touch Image                  |  
-| ( SDL2 Menu )         |                                     |
-| HOTKEY + Y            | Change Background Image             |  
-| ( DraStic Menu )      |                                     |
-| HOTKEY + Y            | Change Background Image             |
-
-&nbsp;out/n12.bmp)  
-
-Layout N13  
-![image](image/layout/n13.bmp)  
-
-Layout N14  
-![image](image/layout/n14.bmp)  
-
-Layout N15  
-![image](image/layout/n15.bmp)  
-
-Layout B0  
-![image](image/layout/b0.bmp)  
-
-Layout B1  
-![image](image/layout/b1.bmp)  
-
-Layout B2  
-![image](image/layout/b2.bmp)  
-
-Layout B3  
-![image](image/layout/b3.bmp)
+![image](image/layout/b3.bmp)  
 
 &nbsp;
 
@@ -302,7 +207,7 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 ## Trimui Smart
 Model: TG2040  
 Operating System: 1.0.0 UI_20240510 Kernel_3.4.39  
-![Alt text](image/trimui_smart.jpg)  
+![image](image/trimui_smart.jpg)  
 
 Layout N0  
 ![image](image/layout/n2.bmp)  
@@ -337,7 +242,7 @@ Layout N1
 ## Trimui Brick
 Model: TG3040  
 Operating System: 1.1.0 UI_20250610 Kernel_4.9.191  
-![Alt text](image/trimui_brick.jpg)  
+![image](image/trimui_brick.jpg)  
 
 Layout N0  
 ![image](image/layout/n0.bmp)  
