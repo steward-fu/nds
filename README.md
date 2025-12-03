@@ -10,64 +10,64 @@ This repository contains all necessary resources - including the customized SDL2
 Model: MY355  
 Operating System: 20250526143414  
 
-N0  
+Layout N0  
 ![image](image/layout/n0.bmp)  
 
-N1  
+Layout N1  
 ![image](image/layout/n1.bmp)  
 
-N2  
+Layout N2  
 ![image](image/layout/n2.bmp)  
 
-N3  
+Layout N3  
 ![image](image/layout/n3.bmp)  
 
-N4  
+Layout N4  
 ![image](image/layout/n4.bmp)  
 
-N5  
+Layout N5  
 ![image](image/layout/n5.bmp)  
 
-N6  
+Layout N6  
 ![image](image/layout/n6.bmp)  
 
-N7  
+Layout N7  
 ![image](image/layout/n7.bmp)  
 
-N8  
+Layout N8  
 ![image](image/layout/n8.bmp)  
 
-N9  
+Layout N9  
 ![image](image/layout/n9.bmp)  
 
-N10  
+Layout N10  
 ![image](image/layout/n10.bmp)  
 
-N11  
+Layout N11  
 ![image](image/layout/n11.bmp)  
 
-N12  
+Layout N12  
 ![image](image/layout/n12.bmp)  
 
-N13  
+Layout N13  
 ![image](image/layout/n13.bmp)  
 
-N14  
+Layout N14  
 ![image](image/layout/n14.bmp)  
 
-N15  
+Layout N15  
 ![image](image/layout/n15.bmp)  
 
-B0  
+Layout B0  
 ![image](image/layout/b0.bmp)  
 
-B1  
+Layout B1  
 ![image](image/layout/b1.bmp)  
 
-B2  
+Layout B2  
 ![image](image/layout/b2.bmp)  
 
-B3  
+Layout B3  
 ![image](image/layout/b3.bmp)
 
 &nbsp;
@@ -108,10 +108,10 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 Model: TG2040  
 Operating System: 1.0.0 UI_20240510 Kernel_3.4.39  
 
-N0  
+Layout N0  
 ![image](image/layout/n2.bmp)  
 
-N1  
+Layout N1  
 ![image](image/layout/n3.bmp)  
 
 &nbsp;
