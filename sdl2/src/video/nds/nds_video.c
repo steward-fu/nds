@@ -19,7 +19,7 @@
 #include <sys/ioctl.h>
 #include <json-c/json.h>
 
-#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -52,36 +52,6 @@
 #include "hex_pen.h"
 #include "nds_video.h"
 #include "nds_event.h"
-
-#if defined(FLIP)
-#include "hex_flip_hotkey_cn.h"
-#include "hex_flip_hotkey_en.h"
-#endif
-
-#if defined(BRICK)
-#include "hex_brick_hotkey_cn.h"
-#include "hex_brick_hotkey_en.h"
-#endif
-
-#if defined(GKD2)
-#include "hex_gkd2_hotkey_cn.h"
-#include "hex_gkd2_hotkey_en.h"
-#endif
-
-#if defined(GKDMINI)
-#include "hex_gkdmini_hotkey_cn.h"
-#include "hex_gkdmini_hotkey_en.h"
-#endif
-
-#if defined(MINI)
-#include "hex_mini_hotkey_cn.h"
-#include "hex_mini_hotkey_en.h"
-#endif
-
-#if defined(TRIMUI_SMART)
-#include "hex_trimui_hotkey_cn.h"
-#include "hex_trimui_hotkey_en.h"
-#endif
 
 nds_video myvideo = { 0 };
 
@@ -117,7 +87,7 @@ static int get_file_name_by_index(const char *, int, char *, int);
 static int load_mask_image(const char *);
 #endif
 
-#if !defined(TRIMUI_SMART) && !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI_SMART) && !defined(MINI) && !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *);
 #endif
 
@@ -371,7 +341,7 @@ static int free_lcd_mem(void)
     return 0;
 }
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
 static int get_cpu_core(int idx)
 {
     FILE *fd = NULL;
@@ -743,7 +713,7 @@ static int draw_drastic_menu_main(void)
             pfn((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50;
                 rt.w = NDS_W;
@@ -755,7 +725,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50 + NDS_H;
                 rt.w = NDS_W;
@@ -1694,7 +1664,7 @@ int handle_drastic_menu(void)
         return 0;
     }
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(
@@ -1889,7 +1859,7 @@ static int process_screen(void)
             drt.h
         );
 
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
         switch (cur_mode_sel) {
         case LAYOUT_MODE_N0:
         case LAYOUT_MODE_N1:
@@ -1903,7 +1873,7 @@ static int process_screen(void)
         }
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         if ((cur_mode_sel == LAYOUT_MODE_B0) ||
             (cur_mode_sel == LAYOUT_MODE_B1) ||
             (cur_mode_sel == LAYOUT_MODE_B2) ||
@@ -1937,7 +1907,7 @@ static int process_screen(void)
 #endif
         }
 
-#if defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(XT894) || defined(XT897) || defined(QX1000)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
             ((cur_mode_sel == LAYOUT_MODE_N0) ||
@@ -1964,7 +1934,7 @@ static int process_screen(void)
             }
         }
 
-#if !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[idx]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(
@@ -2023,7 +1993,7 @@ static int process_screen(void)
 
             flush_lcd(idx, pixels, srt, drt, pitch);
 
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
             switch (cur_mode_sel) {
             case LAYOUT_MODE_N0:
             case LAYOUT_MODE_N1:
@@ -2034,7 +2004,7 @@ static int process_screen(void)
                 drt.y = myvideo.layout.mode[cur_mode_sel].screen[0].y;
                 drt.w = myvideo.layout.mode[cur_mode_sel].screen[0].w;
                 drt.h = myvideo.layout.mode[cur_mode_sel].screen[0].h;
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
 #if defined(XT894) || defined(XT897)
@@ -2311,7 +2281,7 @@ static void prehook_cb_update_screen(void)
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         myvideo.menu.drastic.enable = 0;
 #endif
         trace("set lcd.update=1\n");
@@ -2514,7 +2484,7 @@ TEST(sdl2_video, strip_newline_char)
 
 static void* video_handler(void *param)
 {
-#if !defined(TRIMUI_SMART)
+#if !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
     int cur_shader = -1;
     char tmp[MAX_PATH] = { 0 };
 #endif
@@ -2694,7 +2664,7 @@ static void* video_handler(void *param)
     );
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     alloc_lcd_mem();
 #endif
 
@@ -2709,23 +2679,23 @@ static void* video_handler(void *param)
 #endif
 
     while (myvideo.thread.running) {
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
-#if !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
             if (cur_shader != -1) {
                 cur_shader = -1;
                 load_shader_file(NULL);
             }
 #endif
         }
+#if !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
         else if ((myvideo.shader >= 0) && (myvideo.shader != cur_shader)) {
-#if !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
             cur_shader = myvideo.shader;
             if (get_file_name_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
                 load_shader_file(tmp);
             }
-#endif
         }
+#endif
 
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
             if (myvideo.menu.update) {
@@ -2822,7 +2792,7 @@ static void* video_handler(void *param)
     wl_display_disconnect(myvideo.wl.display);
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     free_lcd_mem();
 #endif
 
@@ -2878,7 +2848,7 @@ static int load_mask_file(const char *name)
 }
 #endif
 
-#if !defined(TRIMUI_SMART) && !defined(MINI) && !defined(BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI_SMART) && !defined(MINI) && !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *name)
 {
     long size = 0;
@@ -3121,7 +3091,7 @@ static int load_mask_file(void)
 
         trace("load overlay from \"%s\"\n", buf);
 
-#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         strcpy(myvideo.shm.buf->overlay.image, buf);
         myvideo.layout.overlay.reload = 1;
 #endif
@@ -3180,7 +3150,7 @@ static int load_mask_file(void)
         trace("overlay image=%p\n", myvideo.layout.overlay.bg);
     }
     else {
-#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         myvideo.shm.buf->overlay.image[0] = 0;
         myvideo.layout.overlay.reload = 1;
 #endif
@@ -3389,7 +3359,7 @@ TEST(sdl2_video, resize_disp)
 }
 #endif
 
-#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
 static int init_lcd(void)
 {
     trace("call %s()\n", __func__);
@@ -4087,7 +4057,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     int rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
@@ -4143,7 +4113,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 #endif
     }
 
-#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     trace("myvideo.shm.buf=%p\n", myvideo.shm.buf);
 
     if (myvideo.shm.buf == MAP_FAILED) {
@@ -5572,7 +5542,7 @@ static int flip_lcd(void)
 
     trace("call %s()\n", __func__);
 
-#if defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     myvideo.shm.buf->cmd = SHM_CMD_FLIP;
     trace("send SHM_CMD_FLIP\n");
 
@@ -6220,7 +6190,7 @@ static int load_bg_image(void)
 
 #endif
 
-#if defined(MINI) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(FLIP)
+#if defined(MINI) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(FLIP)
         flush_lcd(
             TEXTURE_BG,
             myvideo.layout.bg->pixels,
@@ -6761,7 +6731,7 @@ static int init_device(void)
     //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     if (myconfig.cpu_core <= 0) {
         myconfig.cpu_core = INIT_CPU_CORE;
     }
@@ -7174,7 +7144,7 @@ TEST(sdl2_video, lang_prev)
 typedef enum {
     MENU_LANG = 0,
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     MENU_CPU,
 #endif
 
@@ -7234,7 +7204,7 @@ typedef enum {
 static const char *MENU_LIST_STR[] = {
     "LANGUAGE",
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     "CPU CORE",
 #endif
 
@@ -7821,7 +7791,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             lang_prev();
         }
         break;
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     case MENU_CPU:
         if (right_key) {
             if (myconfig.cpu_core < MAX_CPU_CORE) {
@@ -8214,7 +8184,7 @@ static int draw_sdl2_menu_setting(
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
 
-#if !defined(MINI) && !defined(TRIMUI_SMART)
+#if !defined(MINI) && !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
     char tmp[MAX_PATH] = { 0 };
 #endif
 
@@ -8259,7 +8229,7 @@ static int draw_sdl2_menu_setting(
         break;
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     case MENU_CPU:
         sprintf(buf, "%d", myconfig.cpu_core);
         break;
@@ -8423,7 +8393,7 @@ static int process_sdl2_setting(int key)
     static int cur_sel = 0;
     static int pre_fast = 0;
     static int pre_lang = 0;
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     static int pre_cpu_core = 0;
 #endif
 
@@ -8473,7 +8443,7 @@ static int process_sdl2_setting(int key)
             pre_fast = myconfig.fast_forward;
         }
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         if (pre_cpu_core != myconfig.cpu_core) {
             set_cpu_core(myconfig.cpu_core);
             pre_cpu_core = myconfig.cpu_core;
@@ -8691,7 +8661,7 @@ static int process_sdl2_setting(int key)
     }
     draw_small_win(450, 360, mode, myvideo.cvt);
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(
@@ -8716,91 +8686,6 @@ TEST(sdl2_video, process_sdl2_setting)
 }
 #endif
 
-#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
-static int show_hotkey(int key)
-{
-    int is_cn = 0;
-    int src_size = 0;
-    void *src_ptr = NULL;
-    SDL_RWops *rw = NULL;
-    SDL_Surface *png = NULL;
-    static int cur_lang = -1;
-
-    trace("call %s(key=%d)\n", __func__, key);
-
-    switch (key) {
-    case KEY_BIT_B:
-        myvideo.menu.sdl2.enable = 0;
-        return 0;
-    default:
-        cur_lang = -1;
-        break;
-    }
-
-    if (cur_lang != myconfig.lang) {
-        cur_lang = myconfig.lang;
-
-        if (!strcmp(lang_file_name[cur_lang], "zh_CN") ||
-            !strcmp(lang_file_name[cur_lang], "zh_TW"))
-        {
-            is_cn = 1;
-        }
-
-#if defined(FLIP)
-        src_ptr = is_cn ? hex_flip_hotkey_cn : hex_flip_hotkey_en;
-        src_size = is_cn ? sizeof(hex_flip_hotkey_cn) : sizeof(hex_flip_hotkey_en);
-#endif
-
-#if defined(BRICK)
-        src_ptr = is_cn ? hex_brick_hotkey_cn : hex_brick_hotkey_en;
-        src_size = is_cn ? sizeof(hex_brick_hotkey_cn) : sizeof(hex_brick_hotkey_en);
-#endif
-
-#if defined(GKD2)
-        src_ptr = is_cn ? hex_gkd2_hotkey_cn : hex_gkd2_hotkey_en;
-        src_size = is_cn ? sizeof(hex_gkd2_hotkey_cn) : sizeof(hex_gkd2_hotkey_en);
-#endif
-
-#if defined(GKDMINI)
-        src_ptr = is_cn ? hex_gkdmini_hotkey_cn : hex_gkdmini_hotkey_en;
-        src_size = is_cn ? sizeof(hex_gkdmini_hotkey_cn) : sizeof(hex_gkdmini_hotkey_en);
-#endif
-
-#if defined(MINI)
-        src_ptr = is_cn ? hex_mini_hotkey_cn : hex_mini_hotkey_en;
-        src_size = is_cn ? sizeof(hex_mini_hotkey_cn) : sizeof(hex_mini_hotkey_en);
-#endif
-
-#if defined(TRIMUI_SMART)
-        src_ptr = is_cn ? hex_trimui_hotkey_cn : hex_trimui_hotkey_en;
-        src_size = is_cn ? sizeof(hex_trimui_hotkey_cn) : sizeof(hex_trimui_hotkey_en);
-#endif
-
-        rw = SDL_RWFromMem(src_ptr, src_size);
-        png = IMG_Load_RW(rw, 1);
-        SDL_BlitSurface(png, NULL, myvideo.cvt, NULL);
-        SDL_FreeSurface(png);
-    }
-
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
-    myvideo.menu.update = 1;
-#else
-    flush_lcd(
-        TEXTURE_TMP,
-        myvideo.cvt->pixels,
-        myvideo.cvt->clip_rect,
-        myvideo.cvt->clip_rect,
-        myvideo.cvt->pitch
-    );
-
-    flip_lcd();
-#endif
-    myvideo.layout.redraw_bg = REDRAW_BG_CNT;
-
-    return 0;
-}
-#endif
-
 int handle_sdl2_menu(int key)
 {
     trace("call %skey=%d()\n", __func__, key);
@@ -8808,10 +8693,6 @@ int handle_sdl2_menu(int key)
     switch (myvideo.menu.sdl2.type) {
     case MENU_TYPE_SDL2:
         return process_sdl2_setting(key);
-#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
-    case MENU_TYPE_SHOW_HOTKEY:
-        return show_hotkey(key);
-#endif
     default:
         return 0;
     }

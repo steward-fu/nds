@@ -21,7 +21,7 @@ kill_runner
 sleep 0.3
 
 LD_LIBRARY_PATH=/usr/trimui/lib ./runner&
-sleep 0.3
+sleep 1
 
 PID=`pidof runner`
 if [ "$PID" == "" ]; then

@@ -33,7 +33,7 @@
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(GKDMINI)
 #define INPUT_DEV   "/dev/input/event2"
-#elif defined(BRICK)
+#elif defined(TRIMUI_BRICK)
 #define INPUT_DEV   "/dev/input/event3"
 #elif defined(TRIMUI_SMART)
 #define INPUT_DEV   "/dev/input/event0"
@@ -266,7 +266,7 @@
 #define DEV_KEY_CODE_EXIT       22
 #endif
 
-#if defined(BRICK)
+#if defined(TRIMUI_BRICK)
 #define DEV_KEY_CODE_UP         100
 #define DEV_KEY_CODE_DOWN       101
 #define DEV_KEY_CODE_LEFT       102

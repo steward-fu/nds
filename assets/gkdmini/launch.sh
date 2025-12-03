@@ -22,7 +22,7 @@ kill_runner
 sleep 0.3
 
 ./runner&
-sleep 0.3
+sleep 1
 
 PID=`pidof runner`
 if [ "$PID" == "" ]; then

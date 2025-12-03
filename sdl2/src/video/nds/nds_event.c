@@ -855,7 +855,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
+#if defined(MINI) || defined(FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
         //enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
@@ -1041,7 +1041,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         trace("set KEY_BIT_R1\n");
         set_key_bit(KEY_BIT_R1, v);
     }
-    if (c == myevent.keypad.r2) {
+    if (c == myevent.keypad.l2) {
 #if defined(FLIP)
         if (myconfig.joy.mode == MYJOY_MODE_TOUCH) {
             myconfig.joy.show_cnt = MYJOY_SHOW_CNT;
@@ -1052,7 +1052,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         trace("set KEY_BIT_L2\n");
         set_key_bit(KEY_BIT_L2, v);
     }
-    if (c == myevent.keypad.l2) {
+    if (c == myevent.keypad.r2) {
         trace("set KEY_BIT_R2\n");
         set_key_bit(KEY_BIT_R2, v);
     }
@@ -1190,7 +1190,7 @@ TEST(sdl2_event, get_flip_key_code)
 }
 #endif
 
-#if defined(BRICK) || defined(UT)
+#if defined(TRIMUI_BRICK) || defined(UT)
 static int get_brick_key_code(struct input_event *e)
 {
     int r = 0;
@@ -1742,7 +1742,7 @@ int input_handler(void *data)
 
 #if defined(FLIP) || defined(UT)
         rk = get_flip_key_code(&ev);
-#elif defined(BRICK) || defined(UT)
+#elif defined(TRIMUI_BRICK) || defined(UT)
         rk = get_brick_key_code(&ev);
 #elif defined(PANDORA) || defined(UT)
         rk = get_pandora_key_code(&ev);
@@ -1826,7 +1826,7 @@ void init_event(void)
     myevent.keypad.fast = -1;
     myevent.keypad.exit = -1;
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(BRICK) || defined(PANDORA) || defined(UT)
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(TRIMUI_BRICK) || defined(PANDORA) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(PANDORA) || defined(UT)

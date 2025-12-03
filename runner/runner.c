@@ -223,7 +223,7 @@ static void* runner_handler(void *param)
             rt.w = myrunner.shm.buf->drt.w;
             rt.h = myrunner.shm.buf->drt.h;
 
-#if defined(BRICK)
+#if defined(TRIMUI_BRICK)
             rt.x = ((float)rt.x) * 1.6;
             rt.y = ((float)rt.y) * 1.6;
             rt.w = ((float)rt.w) * 1.6;

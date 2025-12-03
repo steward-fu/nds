@@ -2507,8 +2507,8 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
     fi
 
-    if test x$MOD = xbrick; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DBRICK"
+    if test x$MOD = xtrimui_brick; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI_BRICK"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
@@ -3830,10 +3830,10 @@ case "$host" in
             *qx1050*)   CheckNDSVideo ;;
             *gkd2*)     CheckNDSVideo ;;
             *gkdmini*)  CheckNDSVideo ;;
-            *brick*)    CheckNDSVideo ;;
             *xt897*)    CheckNDSVideo ;;
             *xt894*)    CheckNDSVideo ;;
-            *trimui_smart*)   CheckNDSVideo ;;
+            *trimui_smart*)     CheckNDSVideo ;;
+            *trimui_brick*)     CheckNDSVideo ;;
             *)
                 CheckVisibilityHidden
                 ;;
