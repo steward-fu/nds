@@ -54,15 +54,15 @@
 #include "mi_gfx.h"
 #endif
 
-#if defined(TRIMUI)
-#include "trimui.h"
+#if defined(TRIMUI_SMART)
+#include "smart.h"
 #endif
 
 #if defined(GKD2) || defined(GKDMINI) || defined(BRICK) || defined(UT)
 #include "runner.h"
 #endif
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
 #define FONT_SIZE 12
 #else
 #define FONT_SIZE 24
@@ -101,19 +101,6 @@ typedef enum {
 #define BAT_CUR_CMD     "cat /sys/class/power_supply/battery/capacity"
 #endif
 
-#if defined(A30)
-#define SCREEN_W        640
-#define SCREEN_H        480
-#define INIT_CPU_CORE   2
-#define MAX_CPU_CORE    4
-#define DAC_BASE        0x1c22000
-#define CCU_BASE        0x01c20000
-#define BAT_CHK_CNT     300
-#define BAT_MAX_CMD     "cat /sys/class/power_supply/battery/voltage_max_design"
-#define BAT_MIN_CMD     "cat /sys/class/power_supply/battery/voltage_min_design"
-#define BAT_CUR_CMD     "cat /sys/class/power_supply/battery/voltage_now"
-#endif
-
 #if defined(MINI)
 #define SCREEN_W        640
 #define SCREEN_H        480
@@ -125,7 +112,7 @@ typedef enum {
 #define REG_MPLL_PA     (REG_RIU_PA + 0x103000 * 2)
 #endif
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
 #define SCREEN_W        320
 #define SCREEN_H        240
 #define ION_W           NDS_Wx2
@@ -230,7 +217,7 @@ typedef enum {
 #endif
 } gfx_fmt_t;
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
 #define MENU_W              SCREEN_W
 #define MENU_H              SCREEN_H
 #else
@@ -307,7 +294,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
     struct {
         EGLConfig config;
         EGLDisplay display;
@@ -401,7 +388,7 @@ typedef struct {
         struct fb_var_screeninfo var_info;
         struct fb_fix_screeninfo fix_info;
 
-#if defined(A30) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(BRICK)
         void *virt_addr;
 #endif
 
@@ -410,13 +397,13 @@ typedef struct {
         MI_PHY phy_addr;
 #endif
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         int flip;
 #endif
     } fb;
 
     struct {
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         int ion_fd;
         int mem_fd;
         int disp_fd;
@@ -467,7 +454,7 @@ typedef struct {
         int max_mode;
         layout_mode_t mode[MAX_LAYOUT_MODE];
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         int pre_mode;
         int restore;
 #endif

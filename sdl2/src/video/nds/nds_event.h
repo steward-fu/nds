@@ -10,8 +10,6 @@
 
 #if defined(MINI)
 #define INPUT_DEV   "/dev/input/event0"
-#elif defined(A30)
-#define INPUT_DEV   "/dev/input/event3"
 #elif defined(FLIP)
 #define INPUT_DEV   "/dev/miyooio"
 #elif defined(PANDORA)
@@ -37,7 +35,7 @@
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(BRICK)
 #define INPUT_DEV   "/dev/input/event3"
-#elif defined(TRIMUI)
+#elif defined(TRIMUI_SMART)
 #define INPUT_DEV   "/dev/input/event0"
 #endif
 
@@ -67,27 +65,6 @@
 #define DEV_KEY_CODE_VOL_DOWN   114
 #endif
 
-#if defined(A30)
-#define DEV_KEY_CODE_UP         103
-#define DEV_KEY_CODE_DOWN       108
-#define DEV_KEY_CODE_LEFT       105
-#define DEV_KEY_CODE_RIGHT      106
-#define DEV_KEY_CODE_A          57
-#define DEV_KEY_CODE_B          29
-#define DEV_KEY_CODE_X          42
-#define DEV_KEY_CODE_Y          56
-#define DEV_KEY_CODE_L1         18
-#define DEV_KEY_CODE_R1         20
-#define DEV_KEY_CODE_L2         15
-#define DEV_KEY_CODE_R2         14
-#define DEV_KEY_CODE_START      28
-#define DEV_KEY_CODE_SELECT     97
-#define DEV_KEY_CODE_MENU       1
-#define DEV_KEY_CODE_POWER      -1
-#define DEV_KEY_CODE_VOL_UP     115
-#define DEV_KEY_CODE_VOL_DOWN   114
-#endif
-
 #if defined(MINI)
 #define DEV_KEY_CODE_UP         103
 #define DEV_KEY_CODE_DOWN       108
@@ -109,7 +86,7 @@
 #define DEV_KEY_CODE_VOL_DOWN   114
 #endif
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
 #define DEV_KEY_CODE_UP         103
 #define DEV_KEY_CODE_DOWN       108
 #define DEV_KEY_CODE_LEFT       105
@@ -409,7 +386,7 @@
 #define NDS_KEY_BIT_MENU        0x0040000
 #define NDS_KEY_BIT_QUIT        0x4000000
 
-#if defined(TRIMUI) || defined(UT)
+#if defined(TRIMUI_SMART) || defined(UT)
 typedef struct _cust_key_t {
     int fd;
     uint8_t *mem;
@@ -481,7 +458,7 @@ typedef struct {
         SDL_Thread *id;
     } thread;
 
-#if defined(TRIMUI) || defined(UT)
+#if defined(TRIMUI_SMART) || defined(UT)
     cust_key_t cust_key;
 #endif
 } nds_event;

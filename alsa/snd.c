@@ -78,7 +78,7 @@ struct mypcm_t {
     uint8_t *buf;
 } mypcm = { 0 };
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(UT) || defined(BRICK)
+#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(UT) || defined(BRICK)
 static int dsp_fd = -1;
 #endif
 
@@ -360,7 +360,7 @@ TEST(alsa, pulse_stream_request)
 #endif
 #endif
 
-#if defined(UT) || defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
+#if defined(UT) || defined(TRIMUI_SMART) || defined(PANDORA) || defined(BRICK)
 static int open_dsp(void)
 {
     int arg = 0;
@@ -719,7 +719,7 @@ static void* audio_handler(void *id)
                 MI_AO_SendFrame(myao.id, myao.ch, &frame, 1);
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
+#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(BRICK)
                 write(dsp_fd, mypcm.buf, mypcm.len);
 #endif
 
@@ -1054,7 +1054,7 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
     pa_threaded_mainloop_unlock(mypulse.mainloop);
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
+#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(BRICK)
     write(dsp_fd, audio, audio->buffer_index * SND_CHANNELS);
 #endif
 
@@ -1150,7 +1150,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
 #endif
 
-#if defined(BRICK) || defined(TRIMUI) || defined(PANDORA)
+#if defined(BRICK) || defined(TRIMUI_SMART) || defined(PANDORA)
     open_dsp();
 #endif
 
@@ -1249,7 +1249,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     MI_AO_Disable(myao.id);
 #endif
 
-#if defined(TRIMUI) || defined(PANDORA) || defined(BRICK)
+#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(BRICK)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;

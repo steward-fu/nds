@@ -1,9 +1,9 @@
-export MOD=trimui
+export MOD=trimui_smart
 export NDS_GCC=1
 export NDS_ALSA=1
 
 CCFLAGS += -O3
-CFLAGS  += -DTRIMUI
+CFLAGS  += -DTRIMUI_SMART
 CFLAGS  += -Wl,--no-undefined
 
 CFLAGS  += -mfpu=neon

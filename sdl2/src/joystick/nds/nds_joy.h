@@ -22,12 +22,7 @@
 #define JOY_RIGHT_CFG_FILE  "/userdata/joypad_right.config"
 #endif
 
-#if defined(A30)
-#define JOY_DEV             "/dev/ttyS0"
-#define JOY_CFG_FILE        "/config/joypad.config"
-#endif
-
-#if defined(A30) || defined(FLIP) || defined(UT)
+#if defined(FLIP) || defined(UT)
 #define AXIS_MAX_LEN        4
 #define FRAME_LEN           6
 #define FRAME_START         0xff
@@ -56,7 +51,7 @@ typedef struct {
 #endif
 
 typedef struct {
-#if defined(A30) || defined(FLIP) || defined(UT)
+#if defined(FLIP) || defined(UT)
     int fd;
 
     int running;

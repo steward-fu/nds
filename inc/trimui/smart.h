@@ -1,5 +1,5 @@
-#ifndef __TRIMUI_H__
-#define __TRIMUI_H__
+#ifndef __SMART_H__
+#define __SMART_H__
 
 enum ion_heap_type {
     ION_HEAP_TYPE_SYSTEM,

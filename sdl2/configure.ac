@@ -2441,14 +2441,6 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_common"
     fi
 
-    if test x$MOD = xa30; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DA30"
-
-        AC_DEFINE(SDL_JOYSTICK_NDS, 1, [ ])
-        SOURCES="$SOURCES $srcdir/src/joystick/nds/*.c"
-        have_joystick=yes
-    fi
-
     if test x$MOD = xflip; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
@@ -2460,8 +2452,8 @@ CheckNDSVideo()
         have_joystick=yes
     fi
 
-    if test x$MOD = xtrimui; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI"
+    if test x$MOD = xtrimui_smart; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DTRIMUI_SMART"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/trimui"
     fi
 
@@ -3834,7 +3826,6 @@ case "$host" in
             *ut*)       CheckNDSVideo ;;
             *mini*)     CheckNDSVideo ;;
             *flip*)     CheckNDSVideo ;;
-            *trimui*)   CheckNDSVideo ;;
             *qx1000*)   CheckNDSVideo ;;
             *qx1050*)   CheckNDSVideo ;;
             *gkd2*)     CheckNDSVideo ;;
@@ -3842,6 +3833,7 @@ case "$host" in
             *brick*)    CheckNDSVideo ;;
             *xt897*)    CheckNDSVideo ;;
             *xt894*)    CheckNDSVideo ;;
+            *trimui_smart*)   CheckNDSVideo ;;
             *)
                 CheckVisibilityHidden
                 ;;

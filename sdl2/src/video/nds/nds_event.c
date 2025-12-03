@@ -257,7 +257,7 @@ TEST(sdl2_event, set_key_bit)
 }
 #endif
 
-#if defined(A30) || defined(FLIP) || defined(UT)
+#if defined(FLIP) || defined(UT)
 static int remap_keypad(jval_t *j, int idx)
 {
     int r = 0;
@@ -801,7 +801,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_LEFT)) {
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         set_key_bit(KEY_BIT_SWAP, 1);
 #else
         if (myconfig.layout.mode.sel > 0) {
@@ -812,7 +812,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_RIGHT)) {
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0)) {
             if (*myhook.var.sdl.swap_screens) {
                 myevent.mode = (myevent.mode == NDS_KEY_MODE) ? NDS_TOUCH_MODE : NDS_KEY_MODE;
@@ -832,7 +832,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_A)) {
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         myconfig.layout.mode.sel = (myconfig.layout.mode.sel == LAYOUT_MODE_N2) ? LAYOUT_MODE_N3 : LAYOUT_MODE_N2;
         resize_disp();
 #else
@@ -847,7 +847,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_B)) {
-#if !defined(TRIMUI)
+#if !defined(TRIMUI_SMART)
         myconfig.filter = (myconfig.filter == FILTER_PIXEL) ? FILTER_BLUR : FILTER_PIXEL;
 #endif
 
@@ -855,8 +855,8 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(A30) || defined(TRIMUI)
-        enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
+#if defined(MINI) || defined(FLIP) || defined(BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
+        //enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
         set_key_bit(KEY_BIT_X, 0);
@@ -902,7 +902,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_START)) {
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         set_key_bit(KEY_BIT_QUIT, 1);
 #else
         if (myvideo.menu.sdl2.enable == 0) {
@@ -931,7 +931,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_R1)) {
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         set_key_bit(KEY_BIT_LOAD, 1);
 #else
         static int pre_fast = 0;
@@ -947,7 +947,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_L1)) {
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         set_key_bit(KEY_BIT_SAVE, 1);
 #else
         set_key_bit(KEY_BIT_QUIT, 1);
@@ -957,20 +957,20 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_R2)) {
-#if !defined(TRIMUI)
+#if !defined(TRIMUI_SMART)
         set_key_bit(KEY_BIT_LOAD, 1);
 #endif
         set_key_bit(KEY_BIT_R2, 0);
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_L2)) {
-#if !defined(TRIMUI)
+#if !defined(TRIMUI_SMART)
         set_key_bit(KEY_BIT_SAVE, 1);
 #endif
         set_key_bit(KEY_BIT_L2, 0);
     }
     else if (myevent.keypad.cur_bits & (1 << KEY_BIT_L2)) {
-#if defined(A30) || defined(FLIP)
+#if defined(FLIP)
         if (myconfig.joy.mode != MYJOY_MODE_TOUCH) {
 #endif
             if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0)) {
@@ -982,7 +982,7 @@ static int handle_hotkey(void)
                 }
                 myevent.touch.slow_down = 0;
             }
-#if defined(A30) || defined(FLIP)
+#if defined(FLIP)
         }
 #endif
     }
@@ -1042,7 +1042,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_R1, v);
     }
     if (c == myevent.keypad.r2) {
-#if defined(A30) || defined(FLIP)
+#if defined(FLIP)
         if (myconfig.joy.mode == MYJOY_MODE_TOUCH) {
             myconfig.joy.show_cnt = MYJOY_SHOW_CNT;
             myevent.input.touch_status = !!v;
@@ -1430,7 +1430,7 @@ TEST(sdl2_event, update_latest_keypad_value)
 }
 #endif
 
-#if defined(TRIMUI) || defined(UT)
+#if defined(TRIMUI_SMART) || defined(UT)
 static int handle_trimui_special_key(void)
 {
     int r = 0;
@@ -1755,7 +1755,7 @@ int input_handler(void *data)
             update_key_bit(ev.code, ev.value);
         }
 
-#if defined(A30) || defined(FLIP)
+#if defined(FLIP)
         rj = update_joy_state();
 #endif
 
@@ -1763,7 +1763,7 @@ int input_handler(void *data)
             handle_hotkey();
         }
 
-#if defined(TRIMUI) || defined(UT)
+#if defined(TRIMUI_SMART) || defined(UT)
         handle_trimui_special_key();
 #endif
 
@@ -1835,7 +1835,7 @@ void init_event(void)
 #endif
 #endif
 
-#if defined(TRIMUI) || defined(UT)
+#if defined(TRIMUI_SMART) || defined(UT)
     myevent.cust_key.gpio = NULL;
     myevent.cust_key.fd = open("/dev/mem", O_RDWR);
     if (myevent.cust_key.fd > 0) {
@@ -1919,7 +1919,7 @@ void quit_event(void)
     }
 #endif
 
-#if defined(TRIMUI) || defined(UT)
+#if defined(TRIMUI_SMART) || defined(UT)
     if (myevent.cust_key.fd > 0) {
         uint32_t *p = (uint32_t *)(myevent.cust_key.mem + 0x800 + (0x24 * 6) + 0x04);
 
@@ -2040,13 +2040,13 @@ static int send_key_event(int raw_event)
         bit = 1 << cc;
         pressed = !!(myevent.keypad.cur_bits & bit);
 
-#if !defined(TRIMUI)
+#if !defined(TRIMUI_SMART)
         if ((myconfig.hotkey == HOTKEY_BIND_MENU) && (cc == KEY_BIT_MENU)) {
             continue;
         }
 #endif
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
         if (cc == KEY_BIT_MENU) {
             continue;
         }
@@ -2070,7 +2070,7 @@ static int send_key_event(int raw_event)
         }
     }
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_R2)) {
         set_key_bit(KEY_BIT_R2, 0);
     }
@@ -2266,7 +2266,7 @@ static int send_touch_event(int raw_event)
         send_touch_axis();
     }
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
     if (myevent.keypad.pre_bits & (1 << KEY_BIT_R2)) {
         set_key_bit(KEY_BIT_R2, 0);
     }

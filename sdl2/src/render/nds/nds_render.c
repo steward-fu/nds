@@ -289,7 +289,7 @@ static int queue_copy(
     myvideo.menu.drastic.enable = 1;
     usleep(100000);
 
-#if defined(TRIMUI)
+#if defined(TRIMUI_SMART)
     if (myconfig.layout.mode.sel != LAYOUT_MODE_N2) {
         myvideo.layout.restore = 1;
         myvideo.layout.pre_mode = myconfig.layout.mode.sel;
