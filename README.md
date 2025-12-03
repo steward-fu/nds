@@ -512,7 +512,7 @@ Layout B3
 
 &nbsp;
 
-The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
+The HOTKEY is user-configurable and can be rebound to the F1 or SELECT key via the SDL2 menu.  
 
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
