@@ -11,11 +11,14 @@ This repository contains all necessary resources - including the customized SDL2
 &nbsp;
 
 ## Miyoo Mini Plus
+![image](image/miyoo_mini_plus.jpg)  
 Model: MY354  
 Operating System: 202305052130 Onion_v4.3.1-1  
-
-![image](image/miyoo_mini_plus.jpg)  
-
+Installation:
+```
+Copy the "drastic" folder to "Emu/"
+```
+  
 Layout N0  
 ![image](image/layout/n0.bmp)  
 
@@ -110,11 +113,14 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 &nbsp;
 
 ## Miyoo Flip
+![image](image/miyoo_flip.jpg)  
 Model: MY355  
 Operating System: 20250526143414  
-
-![image](image/miyoo_flip.jpg)  
-
+Installation:
+```
+Copy the "drastic" folder to "Emu/"
+```
+  
 Layout N0  
 ![image](image/layout/n0.bmp)  
 
@@ -209,11 +215,14 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 &nbsp;
 
 ## Trimui Smart
+![image](image/trimui_smart.jpg)  
 Model: TG2040  
 Operating System: 1.0.0 UI_20240510 Kernel_3.4.39  
-
-![image](image/trimui_smart.jpg)  
-
+Installation:
+```
+Copy the "drastic" folder to "Emus/"
+```
+  
 Layout N0  
 ![image](image/layout/n2.bmp)  
 
@@ -245,11 +254,14 @@ Layout N1
 &nbsp;
 
 ## Trimui Brick
+![image](image/trimui_brick.jpg)  
 Model: TG3040  
 Operating System: 1.1.0 UI_20250610 Kernel_4.9.191  
-
-![image](image/trimui_brick.jpg)  
-
+Installation:
+```
+Copy the "drastic" folder to "Emus/"
+```
+  
 Layout N0  
 ![image](image/layout/n0.bmp)  
 
@@ -346,11 +358,15 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 &nbsp;
 
 ## GKD Pixel 2
+![image](image/gkd_pixel_2.jpg)  
 Model: GKD Pixel 2  
 Operating System: IUX UI_v2.5_Jan_15_2025 Kernel_5.10.198  
-
-![image](image/gkd_pixel_2.jpg)  
-
+Installation:
+```
+1. Copy the "drastic" folder to "STORAGE/"
+2. Copy the "14nds" file to "STORAGE/iux/sections/handheld/14nds"
+```
+  
 Layout N0  
 ![image](image/layout/n0.bmp)  
 
@@ -445,11 +461,15 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 &nbsp;
 
 ## GKD Mini Plus
+![image](image/gkd_mini_plus.jpg)  
 Model: GKD Mini Plus   
 Operating System: IUX Jul_14_2025  
-
-![image](image/gkd_mini_plus.jpg)  
-
+Installation:
+```
+1. Copy the "drastic" folder to "STORAGE/"
+2. Copy the "14nds" file to "STORAGE/miniplus/sections/02handheld/14nds"
+```
+  
 Layout N0  
 ![image](image/layout/n0.bmp)  
 
