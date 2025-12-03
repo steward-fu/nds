@@ -1,14 +1,14 @@
 # NDS Emulator (DraStic) for Handheld Devices
 This repository contains all necessary resources - including the customized SDL2 and ALSA source code - required for supported devices. The NDS emulator used in this project is DraStic (closed-source), extracted from the RetroPie package. The provided ELF binary is compiled for ARM32, not AArch64. The specific DraStic version is v2.5.0.4 with the SHA-1 checksum **ae9c215bdea88359cbcb3c259ce0d60a1f59986c**. This port primarily focuses on integrating and customizing the SDL2 and ALSA libraries, along with extensive modifications to the DraStic emulator itself. As a result, several internal hooking points are used to ensure proper functionality. Please ensure that you are using the exact DraStic version specified above. Suggestions and issue reports are welcome via GitHub. However, please note that I cannot guarantee that all reported issues or feature requests will be resolved or included in future release builds. Finally, since the SDL2 library in this repository is heavily customized, it is not recommended for general-purpose use on other supported devices.
 
- - [Miyoo Mini](#miyoo-mini)
+ - [Miyoo Mini (Plus)](#miyoo-mini-plus)
  - [Miyoo Flip](#miyoo-flip)
  - [Trimui Smart](#trimui-smart)
  - [Trimui Brick](#trimui-brick)
 
 &nbsp;
 
-## Miyoo Mini
+## Miyoo Mini (Plus)
 Model: MY354  
 Operating System: 202305052130 Onion_v4.3.1-1  
 
