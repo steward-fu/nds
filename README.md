@@ -14,11 +14,26 @@ This repository contains all necessary resources - including the customized SDL2
 ![image](image/miyoo_mini_plus.jpg)  
 Model: MY354  
 Operating System: 202305052130 Onion_v4.3.1-1  
+
+Building:
+```
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz
+$ tar xvf mini_toolchain-v1.0.tar.gz
+$ sudo mv mini /opt
+$ sudo mv prebuilt /opt
+
+$ git clone https://github.com/steward-fu/nds
+$ cd nds
+$ make -f Makefile.miyoo_mini clean
+$ make -f Makefile.miyoo_mini
+```
+
 Installation:
 ```
 Copy the "drastic" folder to "Emu/"
 ```
-  
+
 Layout N0  
 ![image](image/layout/n0.bmp)  
 
