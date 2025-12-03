@@ -81,10 +81,10 @@ static runner_t myrunner = { 0 };
 
 static int init_shm(void)
 {
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     myrunner.shm.fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0777);
-    debug("shm fd=%d\n", myrunner.shm.fd);
+    trace("shm fd=%d\n", myrunner.shm.fd);
 
     if (myrunner.shm.fd < 0) {
         error("failed to open shared memory\n");
@@ -94,7 +94,7 @@ static int init_shm(void)
     ftruncate(myrunner.shm.fd, sizeof(shm_buf_t));
 
     myrunner.shm.buf = mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, myrunner.shm.fd, 0);
-    debug("shm buf=%p\n", myrunner.shm.buf);
+    trace("shm buf=%p\n", myrunner.shm.buf);
 
     return 0;
 }
@@ -103,7 +103,7 @@ static int init_gles(void)
 {
     int r = 0;
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     r = SDL_Init(SDL_INIT_VIDEO);
     if (r != 0) {
@@ -179,7 +179,7 @@ static void* runner_handler(void *param)
     SDL_Rect rt = { 0 };
     char cur_bg_path[MAX_PATH] = { 0 };
 
-    debug("call %s()\n", __func__);
+    trace("call %s()\n", __func__);
 
     if (init_gles() < 0) {
         error("failed to init gles\n");
@@ -200,7 +200,7 @@ static void* runner_handler(void *param)
 
         switch (myrunner.shm.buf->cmd) {
         case SHM_CMD_FLUSH:
-            debug("recv SHM_CMD_FLUSH, tex=%d, pitch=%d, alpha=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d)\n",
+            trace("recv SHM_CMD_FLUSH, tex=%d, pitch=%d, alpha=%d, srt(%d,%d,%d,%d), drt(%d,%d,%d,%d)\n",
                 myrunner.shm.buf->tex,
                 myrunner.shm.buf->pitch,
                 myrunner.shm.buf->alpha,
@@ -213,7 +213,7 @@ static void* runner_handler(void *param)
             if (myrunner.shm.buf->tex == TEXTURE_BG) {
                 myrunner.gles.bg.w = myrunner.shm.buf->srt.w;
                 myrunner.gles.bg.h = myrunner.shm.buf->srt.h;
-                debug("background texture in runner, w=%d, h=%d, pitch=%d\n", myrunner.gles.bg.w, myrunner.gles.bg.h, myrunner.shm.buf->pitch);
+                trace("background texture in runner, w=%d, h=%d, pitch=%d\n", myrunner.gles.bg.w, myrunner.gles.bg.h, myrunner.shm.buf->pitch);
                 memcpy(myrunner.gles.bg.pixels, myrunner.shm.buf->buf, myrunner.gles.bg.h * myrunner.shm.buf->pitch);
                 break;
             }
@@ -305,7 +305,7 @@ static void* runner_handler(void *param)
             }
             break;
         case SHM_CMD_FLIP:
-            debug("recv SHM_CMD_FLIP\n");
+            trace("recv SHM_CMD_FLIP\n");
             SDL_GL_SwapWindow(myrunner.sdl2.win);
 
             glActiveTexture(GL_TEXTURE0);
@@ -331,13 +331,13 @@ static void* runner_handler(void *param)
             break;
         case SHM_CMD_QUIT:
             running = 0;
-            debug("recv SHM_CMD_QUIT\n");
+            trace("recv SHM_CMD_QUIT\n");
             break;
         }
         myrunner.shm.buf->valid = 0;
     }
 
-    debug("free resources\n");
+    trace("free resources\n");
 
     munmap((void *)myrunner.shm.buf, sizeof(shm_buf_t));
     shm_unlink(SHM_NAME);
@@ -365,7 +365,7 @@ int main(int argc, char **argv)
     pthread_t id = 0;
 
     nds_debug_level = get_debug_level(0);
-    debug("log level \"%s\"\n", DEBUG_LEVEL_STR[nds_debug_level]);
+    trace("log level \"%s\"\n", DEBUG_LEVEL_STR[nds_debug_level]);
 
     pthread_create(&id, NULL, runner_handler, NULL);
     pthread_join(id, NULL);
