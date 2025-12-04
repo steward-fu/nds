@@ -86,8 +86,11 @@ typedef enum {
 #define MYJOY_MOVE_SPEED 4
 
 #if defined(UT)
-#define SCREEN_W 640
-#define SCREEN_H 480
+#define SCREEN_W        640
+#define SCREEN_H        480
+#define WL_WIN_W        640
+#define WL_WIN_H        480
+#define MAX_CPU_CORE    2
 #endif
 
 #if defined(FLIP)

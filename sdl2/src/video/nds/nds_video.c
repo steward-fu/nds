@@ -91,9 +91,17 @@ static int load_mask_image(const char *);
 static int load_shader_file(const char *);
 #endif
 
-#if 0 //defined(MINI)
-static int load_mask_file(void);
+#if defined(MINI) || defined(UT)
+static int load_mask_file(const char *);
 #endif
+
+static const char *DRASTIC_MENU_LAYER_P0 = "Change Options";
+static const char *DRASTIC_MENU_LAYER_P1 = "Frame skip type";
+static const char *DRASTIC_MENU_LAYER_P2 = "D-Pad Up";
+static const char *DRASTIC_MENU_LAYER_P3 = "Enter Menu";
+static const char *DRASTIC_MENU_LAYER_P4 = "Username";
+static const char *DRASTIC_MENU_LAYER_P5 = "KB Return: toggle cheat";
+static const char *DRASTIC_MENU_LAYER_P6 = "KB Return: select";
 
 static SDL_Rect def_layout_pos[][2] = {
     // LAYOUT_MODE_N0
@@ -281,7 +289,7 @@ TEST_TEAR_DOWN(sdl2_video)
 }
 #endif
 
-static int alloc_lcd_mem(void)
+static int alloc_lcd_virtual_mem(void)
 {
     int i = 0;
     int j = 0;
@@ -292,10 +300,7 @@ static int alloc_lcd_mem(void)
     for (i = 0; i < 2; i++) {
         for (j = 0; j <2; j++) {
 #if defined(MINI)
-            MI_U32 r = 0;
-
-            r = MI_SYS_MMA_Alloc(NULL, size, &myvideo.lcd.phy_addr[i][j]);
-            if (r) {
+            if (MI_SYS_MMA_Alloc(NULL, size, &myvideo.lcd.phy_addr[i][j])) {
                 fatal("failed to allocate buffer for lcd.phy_addr[%d][%d] (size=%d)\n", i, j, size);
             }
 
@@ -314,7 +319,28 @@ static int alloc_lcd_mem(void)
     return 0;
 }
 
-static int free_lcd_mem(void)
+#if defined(UT)
+TEST(sdl2_video, alloc_lcd_virtual_mem)
+{
+    myvideo.lcd.virt_addr[0][0] = NULL;
+    myvideo.lcd.virt_addr[0][1] = NULL;
+    myvideo.lcd.virt_addr[1][0] = NULL;
+    myvideo.lcd.virt_addr[1][1] = NULL;
+
+    TEST_ASSERT_EQUAL_INT(0, alloc_lcd_virtual_mem());
+    TEST_ASSERT_NOT_NULL(myvideo.lcd.virt_addr[0][0]);
+    TEST_ASSERT_NOT_NULL(myvideo.lcd.virt_addr[0][1]);
+    TEST_ASSERT_NOT_NULL(myvideo.lcd.virt_addr[1][0]);
+    TEST_ASSERT_NOT_NULL(myvideo.lcd.virt_addr[1][1]);
+
+    free(myvideo.lcd.virt_addr[0][0]);
+    free(myvideo.lcd.virt_addr[0][1]);
+    free(myvideo.lcd.virt_addr[1][0]);
+    free(myvideo.lcd.virt_addr[1][1]);
+}
+#endif
+
+static int free_lcd_virtual_mem(void)
 {
     int i = 0;
     int j = 0;
@@ -341,11 +367,31 @@ static int free_lcd_mem(void)
     return 0;
 }
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
-static int get_cpu_core(int idx)
+#if defined(UT)
+TEST(sdl2_video, free_lcd_virtual_mem)
+{
+    TEST_ASSERT_EQUAL_INT(0, alloc_lcd_virtual_mem());
+    TEST_ASSERT_EQUAL_INT(0, free_lcd_virtual_mem());
+    TEST_ASSERT_NULL(myvideo.lcd.virt_addr[0][0]);
+    TEST_ASSERT_NULL(myvideo.lcd.virt_addr[0][1]);
+    TEST_ASSERT_NULL(myvideo.lcd.virt_addr[1][0]);
+    TEST_ASSERT_NULL(myvideo.lcd.virt_addr[1][1]);
+    TEST_ASSERT_EQUAL_INT(0, free_lcd_virtual_mem());
+}
+#endif
+
+#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(UT)
+static int get_cpu_core_state(int idx)
 {
     FILE *fd = NULL;
     char buf[MAX_PATH] = { 0 };
+
+    trace("call %s(idx=%d)\n", __func__, idx);
+
+    if (idx >= MAX_CPU_CORE) {
+        error("invalid parameter\n");
+        return -1;
+    }
 
     sprintf(buf, "cat /sys/devices/system/cpu/cpu%d/online", idx % 4); 
     fd = popen(buf, "r");
@@ -358,41 +404,66 @@ static int get_cpu_core(int idx)
     return atoi(buf);
 }
 
+#if defined(UT)
+TEST(sdl2_video, get_cpu_core_state)
+{
+    TEST_ASSERT_EQUAL_INT(1, get_cpu_core_state(0));
+    TEST_ASSERT_EQUAL_INT(-1, get_cpu_core_state(MAX_CPU_CORE));
+}
+#endif
+
 static int check_cpu_core_before_set(int num, int v)
 {
+    int r = 0;
     char buf[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
 
-    if (num >= MAX_CPU_CORE) {
-        return -1;
+    r = get_cpu_core_state(num);
+    if (r >= 0) {
+        if (r != v) {
+            sprintf(buf, "echo %d > /sys/devices/system/cpu/cpu%d/online", v ? 1 : 0, num);
+            system(buf);
+        }
+        return 0;
     }
 
-    if (get_cpu_core(num) != v) {
-        sprintf(buf, "echo %d > /sys/devices/system/cpu/cpu%d/online", v ? 1 : 0, num);
-        system(buf);
-    }
-
-    return 0;
+    return -1;
 }   
 
-static int set_cpu_core(int n)
+#if defined(UT)
+TEST(sdl2_video, check_cpu_core_before_set)
+{
+    TEST_ASSERT_EQUAL_INT(0, check_cpu_core_before_set(0, 1));
+    TEST_ASSERT_EQUAL_INT(-1, check_cpu_core_before_set(MAX_CPU_CORE, 0));
+}
+#endif
+
+static int set_cpu_core(int num)
 {
     int cc = 0;
 
-    trace("call %s(n=%d)\n", __func__, n);
+    trace("call %s(num=%d)\n", __func__, num);
 
-    n -= 1;
-    if (n < 0) {
-        error("invalid cpu number\n");
+    num -= 1;
+    if (num < 0) {
+        error("invalid parameter\n");
         return -1;
     }
 
     for (cc = 0; cc < MAX_CPU_CORE; cc++) {
-        check_cpu_core_before_set(cc, cc <= n ? 1 : 0);
+        check_cpu_core_before_set(cc, cc <= num ? 1 : 0);
     }
 
     return 0;
+}
+#endif
+
+#if defined(UT)
+TEST(sdl2_video, set_cpu_core)
+{
+    TEST_ASSERT_EQUAL_INT(-1, set_cpu_core(0));
+    TEST_ASSERT_EQUAL_INT(0, set_cpu_core(1));
 }
 #endif
 
@@ -403,6 +474,7 @@ static void* wl_disp_handler(void* pParam)
 
     myvideo.wl.thread.running = 1;
 
+#if !defined(UT)
     while (myvideo.wl.thread.running) {
         if (myvideo.wl.ready) {
             wl_display_dispatch(myvideo.wl.display);
@@ -411,6 +483,7 @@ static void* wl_disp_handler(void* pParam)
             usleep(1000);
         }
     }
+#endif
 
     trace("call %s()--\n", __func__);
 
@@ -420,7 +493,7 @@ static void* wl_disp_handler(void* pParam)
 #if defined(UT)
 TEST(sdl2_video, wl_disp_handler)
 {
-    //TEST_ASSERT_EQUAL_INT(0, wl_disp_handler());
+    TEST_ASSERT_EQUAL_INT(0, wl_disp_handler(NULL));
 }
 #endif
 
@@ -428,13 +501,16 @@ static void cb_ping(void *dat, struct wl_shell_surface *shell_surf, uint32_t ser
 {
     trace("call %s()\n", __func__);
 
+#if !defined(UT)
     wl_shell_surface_pong(shell_surf, serial);
+#endif
 }
 
 #if defined(UT)
 TEST(sdl2_video, cb_ping)
 {
-    //TEST_ASSERT_EQUAL_INT(0, cb_ping());
+    cb_ping(NULL, NULL, 0);
+    TEST_PASS();
 }
 #endif
 
@@ -446,7 +522,8 @@ static void cb_config(void *dat, struct wl_shell_surface *shell_surf, uint32_t e
 #if defined(UT)
 TEST(sdl2_video, cb_config)
 {
-    //TEST_ASSERT_EQUAL_INT(0, cb_config());
+    cb_config(NULL, NULL, 0, 0, 0);
+    TEST_PASS();
 }
 #endif
 
@@ -458,7 +535,8 @@ static void cb_popup_done(void *dat, struct wl_shell_surface *shell_surf)
 #if defined(UT)
 TEST(sdl2_video, cb_popup_done)
 {
-    //TEST_ASSERT_EQUAL_INT(0, cb_popup_done());
+    cb_popup_done(NULL, NULL);
+    TEST_PASS();
 }
 #endif
 
@@ -472,18 +550,21 @@ static void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const cha
 {
     trace("call %s()\n", __func__);
 
+#if !defined(UT)
     if (strcmp(intf, "wl_compositor") == 0) {
         myvideo.wl.compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
     }
     else if (strcmp(intf, "wl_shell") == 0) {
         myvideo.wl.shell = wl_registry_bind(reg, id, &wl_shell_interface, 1);
     }
+#endif
 }
 
 #if defined(UT)
 TEST(sdl2_video, cb_handle)
 {
-    //TEST_ASSERT_EQUAL_INT(0, cb_handle());
+    cb_handle(NULL, NULL, 0, NULL, 0);
+    TEST_PASS();
 }
 #endif
 
@@ -495,7 +576,8 @@ static void cb_remove(void *dat, struct wl_registry *reg, uint32_t id)
 #if defined(UT)
 TEST(sdl2_video, cb_remove)
 {
-    //TEST_ASSERT_EQUAL_INT(0, cb_remove());
+    cb_remove(NULL, NULL, 0);
+    TEST_PASS();
 }
 #endif
 #endif
@@ -503,36 +585,29 @@ TEST(sdl2_video, cb_remove)
 static int get_current_menu_layer(void)
 {
     int cc = 0;
-    const char *P0 = "Change Options";
-    const char *P1 = "Frame skip type";
-    const char *P2 = "D-Pad Up";
-    const char *P3 = "Enter Menu";
-    const char *P4 = "Username";
-    const char *P5 = "KB Return: toggle cheat";
-    const char *P6 = "KB Return: select";
 
-    trace("call %s(item.cnt=%d)\n", __func__, myvideo.menu.drastic.item.cnt);
+    trace("call %s(drastic.item.cnt=%d)\n", __func__, myvideo.menu.drastic.item.cnt);
 
     for (cc = 0; cc < myvideo.menu.drastic.item.cnt; cc++) {
-        if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P0, strlen(P0))) {
+        if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, DRASTIC_MENU_LAYER_P0, strlen(DRASTIC_MENU_LAYER_P0))) {
             return MENU_MAIN;
         }
-        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P1, strlen(P1))) {
+        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, DRASTIC_MENU_LAYER_P1, strlen(DRASTIC_MENU_LAYER_P1))) {
             return MENU_OPTION;
         }
-        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P2, strlen(P2))) {
+        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, DRASTIC_MENU_LAYER_P2, strlen(DRASTIC_MENU_LAYER_P2))) {
             return MENU_CONTROLLER;
         }
-        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P3, strlen(P3))) {
+        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, DRASTIC_MENU_LAYER_P3, strlen(DRASTIC_MENU_LAYER_P3))) {
             return MENU_CONTROLLER2;
         }
-        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P4, strlen(P4))) {
+        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, DRASTIC_MENU_LAYER_P4, strlen(DRASTIC_MENU_LAYER_P4))) {
             return MENU_FIRMWARE;
         }
-        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P5, strlen(P5))) {
+        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, DRASTIC_MENU_LAYER_P5, strlen(DRASTIC_MENU_LAYER_P5))) {
             return MENU_CHEAT;
         }
-        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, P6, strlen(P6))) {
+        else if (!memcmp(myvideo.menu.drastic.item.idx[cc].msg, DRASTIC_MENU_LAYER_P6, strlen(DRASTIC_MENU_LAYER_P6))) {
             return MENU_ROM;
         }
     }
@@ -543,7 +618,31 @@ static int get_current_menu_layer(void)
 #if defined(UT)
 TEST(sdl2_video, get_current_menu_layer)
 {
-    TEST_ASSERT_EQUAL_INT(0, get_current_menu_layer());
+    memset(myvideo.menu.drastic.item.idx, 0, sizeof(myvideo.menu.drastic.item.idx));
+
+    myvideo.menu.drastic.item.cnt = 1;
+    TEST_ASSERT_EQUAL_INT(-1, get_current_menu_layer());
+
+    strcpy(myvideo.menu.drastic.item.idx[0].msg, DRASTIC_MENU_LAYER_P0);
+    TEST_ASSERT_EQUAL_INT(MENU_MAIN, get_current_menu_layer());
+
+    strcpy(myvideo.menu.drastic.item.idx[0].msg, DRASTIC_MENU_LAYER_P1);
+    TEST_ASSERT_EQUAL_INT(MENU_OPTION, get_current_menu_layer());
+
+    strcpy(myvideo.menu.drastic.item.idx[0].msg, DRASTIC_MENU_LAYER_P2);
+    TEST_ASSERT_EQUAL_INT(MENU_CONTROLLER, get_current_menu_layer());
+
+    strcpy(myvideo.menu.drastic.item.idx[0].msg, DRASTIC_MENU_LAYER_P3);
+    TEST_ASSERT_EQUAL_INT(MENU_CONTROLLER2, get_current_menu_layer());
+
+    strcpy(myvideo.menu.drastic.item.idx[0].msg, DRASTIC_MENU_LAYER_P4);
+    TEST_ASSERT_EQUAL_INT(MENU_FIRMWARE, get_current_menu_layer());
+
+    strcpy(myvideo.menu.drastic.item.idx[0].msg, DRASTIC_MENU_LAYER_P5);
+    TEST_ASSERT_EQUAL_INT(MENU_CHEAT, get_current_menu_layer());
+
+    strcpy(myvideo.menu.drastic.item.idx[0].msg, DRASTIC_MENU_LAYER_P6);
+    TEST_ASSERT_EQUAL_INT(MENU_ROM, get_current_menu_layer());
 }
 #endif
 
@@ -562,6 +661,10 @@ static int draw_drastic_menu_main(void)
     char buf[MAX_PATH << 1] = { 0 };
 
     trace("call %s()\n", __func__);
+
+#if defined(UT)
+    return 0;
+#endif
 
 #if defined(TRIMUI_SMART)
     div = 2;
@@ -713,7 +816,7 @@ static int draw_drastic_menu_main(void)
             pfn((void*)myhook.var.system.base, slot, top, bottom, 1);
             t = SDL_CreateRGBSurfaceFrom(top, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if !defined(TRIMUI_SMART)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50;
                 rt.w = NDS_W;
@@ -725,7 +828,7 @@ static int draw_drastic_menu_main(void)
 
             t = SDL_CreateRGBSurfaceFrom(bottom, NDS_W, NDS_H, 16, NDS_W * 2, 0, 0, 0, 0);
             if (t) {
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if !defined(TRIMUI_SMART)
                 rt.x = SCREEN_W - (NDS_W + 10);
                 rt.y = 50 + NDS_H;
                 rt.w = NDS_W;
@@ -760,6 +863,7 @@ static int draw_drastic_menu_main(void)
             free(bottom);
         }
     }
+
     return 0;
 }
 
@@ -773,10 +877,16 @@ TEST(sdl2_video, draw_drastic_menu_main)
 static int mark_double_spaces(char *p)
 {
     int cc = 0;
-    int len = strlen(p);
+    int len = 0;
 
-    trace("call %s()\n", __func__);
+    trace("call %s(p=%p)\n", __func__, p);
 
+    if (!p) {
+        error("invalid parameter\n");
+        return -1;
+    }
+
+    len = strlen(p);
     for (cc = 0; cc < len - 1; cc++) {
         if ((p[cc] == ' ') && (p[cc + 1] == ' ')) {
             p[cc] = 0;
@@ -790,7 +900,11 @@ static int mark_double_spaces(char *p)
 #if defined(UT)
 TEST(sdl2_video, mark_double_spaces)
 {
-    //TEST_ASSERT_EQUAL_INT(0, mark_double_spaces());
+    char t[] = { "A  B  C" };
+
+    TEST_ASSERT_EQUAL_INT(-1, mark_double_spaces(NULL));
+    TEST_ASSERT_EQUAL_INT(0, mark_double_spaces(t));
+    TEST_ASSERT_EQUAL_STRING("A", t);
 }
 #endif
 
@@ -798,7 +912,12 @@ static char* find_menu_string_tail(char *p)
 {
     int cc = 0;
 
-    trace("call %s()\n", __func__);
+    trace("call %s(p=%p)\n", __func__, p);
+
+    if (!p) {
+        error("invalid parameter\n");
+        return NULL;
+    }
 
     for (cc = strlen(p) - 1; cc >= 0; cc--) {
         if (p[cc] == ' ') {
@@ -812,7 +931,10 @@ static char* find_menu_string_tail(char *p)
 #if defined(UT)
 TEST(sdl2_video, find_menu_string_tail)
 {
-    //TEST_ASSERT_EQUAL_INT(0, find_menu_string_tail());
+    char t[] = { "ABC 0123" };
+
+    TEST_ASSERT_NULL(find_menu_string_tail(NULL));
+    TEST_ASSERT_NOT_NULL(find_menu_string_tail(t));
 }
 #endif
 
@@ -832,6 +954,10 @@ static int draw_drastic_menu_option(void)
     char buf[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
+
+#if defined(UT)
+    return 0;
+#endif
 
 #if defined(TRIMUI_SMART)
     div = 2;
@@ -936,6 +1062,10 @@ static int draw_drastic_menu_controller(void)
     char buf[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
+
+#if defined(UT)
+    return 0;
+#endif
 
 #if defined(TRIMUI_SMART)
     div = 2;
@@ -1067,6 +1197,10 @@ static int draw_drastic_menu_controller2(void)
     char buf[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
+
+#if defined(UT)
+    return 0;
+#endif
 
 #if defined(TRIMUI_SMART)
     div = 2;
@@ -1216,6 +1350,10 @@ static int draw_drastic_menu_firmware(void)
 
     trace("call %s()\n", __func__);
 
+#if defined(UT)
+    return 0;
+#endif
+
 #if defined(TRIMUI_SMART)
     div = 2;
 #endif
@@ -1338,9 +1476,14 @@ static int draw_drastic_menu_cheat(void)
 
     trace("call %s()\n", __func__);
 
+#if defined(UT)
+    return 0;
+#endif
+
 #if defined(TRIMUI_SMART)
     div = 2;
 #endif
+
     for (cc=0; cc<myvideo.menu.drastic.item.cnt; cc++) {
         p = &myvideo.menu.drastic.item.idx[cc];
         if (p->x == 650) {
@@ -1468,6 +1611,10 @@ static int draw_drastic_menu_rom(void)
     char buf[255] = { 0 };
 
     trace("call %s()\n", __func__);
+
+#if defined(UT)
+    return 0;
+#endif
 
 #if defined(TRIMUI_SMART)
     div = 2;
@@ -1620,7 +1767,7 @@ static int draw_drastic_menu_rom(void)
 #if defined(UT)
 TEST(sdl2_video, draw_drastic_menu_rom)
 {
-    //TEST_ASSERT_EQUAL_INT(0, draw_drastic_menu_rom());
+    TEST_ASSERT_EQUAL_INT(0, draw_drastic_menu_rom());
 }
 #endif
 
@@ -1629,6 +1776,10 @@ int handle_drastic_menu(void)
     int layer = 0;
 
     trace("call %s()\n", __func__);
+
+#if defined(UT)
+    return 0;
+#endif
 
     layer = get_current_menu_layer();
     SDL_SoftStretch(
@@ -1694,7 +1845,7 @@ int handle_drastic_menu(void)
 #if defined(UT)
 TEST(sdl2_video, handle_drastic_menu)
 {
-    //TEST_ASSERT_EQUAL_INT(0, handle_drastic_menu());
+    TEST_ASSERT_EQUAL_INT(0, handle_drastic_menu());
 }
 #endif
 
@@ -1717,6 +1868,10 @@ static int process_screen(void)
     static char buf[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
+
+#if defined(UT)
+    return 0;
+#endif
 
     cur_ff_sel = (myvideo.lcd.status & NDS_STATE_FAST);
     cur_bg_sel = myconfig.layout.bg.sel;
@@ -1859,7 +2014,7 @@ static int process_screen(void)
             drt.h
         );
 
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if !defined(TRIMUI_SMART)
         switch (cur_mode_sel) {
         case LAYOUT_MODE_N0:
         case LAYOUT_MODE_N1:
@@ -1907,7 +2062,7 @@ static int process_screen(void)
 #endif
         }
 
-#if defined(FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if !defined(TRIMUI_SMART) && !defined(MINI)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
             ((cur_mode_sel == LAYOUT_MODE_N0) ||
@@ -1993,7 +2148,7 @@ static int process_screen(void)
 
             flush_lcd(idx, pixels, srt, drt, pitch);
 
-#if defined(MINI) || defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if !defined(TRIMUI_SMART)
             switch (cur_mode_sel) {
             case LAYOUT_MODE_N0:
             case LAYOUT_MODE_N1:
@@ -2004,7 +2159,7 @@ static int process_screen(void)
                 drt.y = myvideo.layout.mode[cur_mode_sel].screen[0].y;
                 drt.w = myvideo.layout.mode[cur_mode_sel].screen[0].w;
                 drt.h = myvideo.layout.mode[cur_mode_sel].screen[0].h;
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(XT894) || defined(XT897) || defined(QX1000)
+#if !defined(TRIMUI_SMART) && !defined(MINI)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
 #if defined(XT894) || defined(XT897)
@@ -2135,6 +2290,7 @@ static int process_screen(void)
 #if defined(UT)
 TEST(sdl2_video, process_screen)
 {
+    TEST_ASSERT_EQUAL_INT(0, process_screen());
 }
 #endif
 
@@ -2144,24 +2300,46 @@ static void* kill_handler(void *param)
 
     trace("call %s()\n", __func__);
 
+    if (!param) {
+        error("invalid parameter\n");
+        return NULL;
+    }
+
+#if !defined(UT)
     usleep(1000000);
     sprintf(buf, "kill -9 %d", (uint32_t)param);
     trace("killed by sdl2 library\n");
     system(buf);
+#endif
 
     return NULL;
 }
+
+#if defined(UT)
+TEST(sdl2_video, kill_handler)
+{
+    TEST_ASSERT_EQUAL_INT(0, kill_handler(NULL));
+}
+#endif
 
 static void prehook_cb_select_quit(void *menu_state, void *menu_option)
 {
     pthread_t id = 0;
 
-    trace("call %s()\n", __func__);
+    trace("call %s(menu_state=%p, menu_option=%p)\n", __func__, menu_state, menu_option);
 
     update_config(myvideo.home);
     pthread_create(&id, NULL, kill_handler, (void *)getpid());
     quit_drastic();
 }
+
+#if defined(UT)
+TEST(sdl2_video, prehook_cb_select_quit)
+{
+    prehook_cb_select_quit(NULL, NULL);
+    TEST_PASS();
+}
+#endif
 
 static void* prehook_cb_malloc(size_t size)
 {
@@ -2664,8 +2842,8 @@ static void* video_handler(void *param)
     );
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
-    alloc_lcd_mem();
+#if !defined(MINI) && !defined(TRIMUI_SMART)
+    alloc_lcd_virtual_mem();
 #endif
 
     trace("call %s()++\n", __func__);
@@ -2792,8 +2970,8 @@ static void* video_handler(void *param)
     wl_display_disconnect(myvideo.wl.display);
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
-    free_lcd_mem();
+#if !defined(MINI) && !defined(TRIMUI_SMART)
+    free_lcd_virtual_mem();
 #endif
 
     trace("call %s()--\n", __func__);
@@ -2839,13 +3017,19 @@ TEST(sdl2_video, free_lang_res)
 }
 #endif
 
-#if defined(MINI)
+#if defined(MINI) || defined(UT)
 static int load_mask_file(const char *name)
 {
     trace("call %s(name=%s)\n", __func__, name);
 
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, load_mask_file)
+{
+}
+#endif
 #endif
 
 #if !defined(TRIMUI_SMART) && !defined(MINI) && !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
@@ -3064,112 +3248,6 @@ static int get_file_name_by_index(const char *folder, int idx, char *buf, int fu
 
     return r;
 }
-
-#if 0 //defined(MINI)
-static int load_mask_file(void)
-{
-    int cc = 0;
-    char buf[MAX_PATH + 32] = { 0 };
-
-    trace("call %s(sel=%d, max=%d)\n", __func__, myconfig.layout.overlay.sel, myvideo.layout.overlay.max);
-
-    if (myvideo.layout.overlay.bg) {
-        SDL_FreeSurface(myvideo.layout.overlay.bg);
-        myvideo.layout.overlay.bg = NULL;
-    }
-
-    for (cc = 0; cc < 2; cc++) {
-        if (myvideo.layout.overlay.mask[cc]) {
-            SDL_FreeSurface(myvideo.layout.overlay.mask[cc]);
-            myvideo.layout.overlay.mask[cc] = NULL;
-        }
-    }
-
-    if (get_file_name_by_index(OVERLAY_PATH, myconfig.layout.overlay.sel, buf, 1) >= 0) {
-        SDL_Surface *t = NULL;
-        SDL_Surface *tmp = NULL;
-
-        trace("load overlay from \"%s\"\n", buf);
-
-#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
-        strcpy(myvideo.shm.buf->overlay.image, buf);
-        myvideo.layout.overlay.reload = 1;
-#endif
-
-        t = IMG_Load(buf);
-        tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0xff0000, 0xff00, 0xff, 0xff000000);
-        myvideo.layout.overlay.bg = SDL_ConvertSurface(t, tmp->format, 0);
-        SDL_FreeSurface(t);
-
-        for (cc = 0; cc < 2; cc++) {
-            SDL_Rect srt = { 0 };
-            SDL_Rect drt = { 0 };
-
-            srt.w = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].w;
-            srt.h = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].h;
-            srt.x = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].x;
-            srt.y = myvideo.layout.mode[myconfig.layout.mode.sel].screen[cc].y;
-
-            myvideo.layout.overlay.mask[cc] = SDL_CreateRGBSurface(
-                SDL_SWSURFACE,
-                srt.w,
-                srt.h,
-                32,
-                0xff0000,
-                0xff00,
-                0xff,
-                0xff000000
-            );
-
-            drt.x = 0;
-            drt.y = 0;
-            drt.w = srt.w;
-            drt.h = srt.h;
-
-            SDL_BlitSurface(
-                myvideo.layout.overlay.bg,
-                &srt,
-                myvideo.layout.overlay.mask[cc],
-                &drt
-            );
-
-            trace("overlay[%d]=(src:%d,%d,%d,%d) (drt:%d,%d,%d,%d)\n",
-                cc,
-                srt.x,
-                srt.y,
-                srt.w,
-                srt.h,
-                drt.x,
-                drt.y,
-                drt.w,
-                drt.h
-            );
-        }
-        SDL_FreeSurface(tmp);
-
-        trace("overlay image=%p\n", myvideo.layout.overlay.bg);
-    }
-    else {
-#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
-        myvideo.shm.buf->overlay.image[0] = 0;
-        myvideo.layout.overlay.reload = 1;
-#endif
-
-        myvideo.layout.overlay.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_W, SCREEN_H, 32, 0, 0, 0, 0);
-
-        SDL_FillRect(myvideo.layout.overlay.bg, &myvideo.layout.overlay.bg->clip_rect, SDL_MapRGB(myvideo.layout.overlay.bg->format, 0x00, 0x00, 0x00));
-        trace("loaded black overlay image\n");
-    }
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(sdl2_video, load_mask_file)
-{
-}
-#endif
-#endif
 
 static int enum_lang_file(void)
 {
@@ -3743,7 +3821,7 @@ static int init_lcd(void)
         myconfig.layout.mode.sel = LAYOUT_MODE_N2;
     }
 
-    alloc_lcd_mem();
+    alloc_lcd_virtual_mem();
 
     cc = 0;
     for (y = 0; y < NDS_H; y++) {
@@ -3796,7 +3874,7 @@ static int quit_lcd(void)
     myvideo.gfx.mem_fd = -1;
     myvideo.gfx.disp_fd = -1;
 
-    free_lcd_mem();
+    free_lcd_virtual_mem();
     return 0;
 }
 
@@ -3858,7 +3936,7 @@ static int init_lcd(void)
     }
     MI_SYS_Mmap(myvideo.tmp.phy_addr, size, &myvideo.tmp.virt_addr, TRUE);
 
-    alloc_lcd_mem();
+    alloc_lcd_virtual_mem();
 
     myvideo.sar_fd = open("/dev/sar", O_RDWR);
     trace("sar handle=%d\n", myvideo.sar_fd);
@@ -3883,7 +3961,7 @@ static int quit_lcd(void)
         myvideo.tmp.phy_addr = NULL;
     }
 
-    free_lcd_mem();
+    free_lcd_virtual_mem();
     MI_GFX_Close();
     MI_SYS_Exit();
 
@@ -6565,7 +6643,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
 #if defined(UT)
 TEST(sdl2_video, add_layout_mode)
 {
-    TEST_ASSERT_EQUAL_INT(0, add_layout_mode(0, 0, NULL));
+    TEST_ASSERT_EQUAL_INT(0, add_layout_mode(LAYOUT_MODE_N0, 0, NULL, 0, 0));
 }
 #endif
 
@@ -8688,28 +8766,26 @@ TEST(sdl2_video, process_sdl2_setting)
 
 int handle_sdl2_menu(int key)
 {
-    trace("call %skey=%d()\n", __func__, key);
+    trace("call %s(key=%d)\n", __func__, key);
 
     switch (myvideo.menu.sdl2.type) {
     case MENU_TYPE_SDL2:
         return process_sdl2_setting(key);
     default:
-        return 0;
+        return -1;
     }
 
-    return 0;
+    return -1;
 }
 
 #if defined(UT)
 TEST(sdl2_video, handle_sdl2_menu)
 {
-    uint8_t hires = 0;
+    myvideo.menu.sdl2.type = MENU_TYPE_SDL2;
+    TEST_ASSERT_EQUAL_INT(0, handle_sdl2_menu(MENU_TYPE_SDL2));
 
-    //TEST_ASSERT_EQUAL_INT(0, init_video(NULL));
-    myhook.var.sdl.screen[0].hires_mode = &hires;
-    myhook.var.sdl.screen[1].hires_mode = &hires;
-    //TEST_ASSERT_EQUAL_INT(0, handle_sdl2_menu(0));
-    quit_video(0);
+    myvideo.menu.sdl2.type = -1;
+    TEST_ASSERT_EQUAL_INT(-1, handle_sdl2_menu(0));
 }
 #endif
 

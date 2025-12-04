@@ -26,7 +26,7 @@
 
 nds_event myevent = { 0 };
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050) || defined(UT)
 static touch_data_t tp[10] = { 0 };
 #endif
 
@@ -497,7 +497,7 @@ static int remap_touch(jval_t *j, int idx)
             int x = 0;
             int y = 0;
 
-            if (is_book_mode() && (myconfig.keys_rotate == 0)) {
+            if (is_book_mode() && (myconfig.key_rotate == 0)) {
                 if (pre_up[idx]) {
                     myevent.touch.x+= inc_touch_axis(1);
                 }
@@ -1424,7 +1424,7 @@ TEST(sdl2_event, update_latest_keypad_value)
     TEST_ASSERT_EQUAL_INT(0, update_latest_keypad_value());
     TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_L2, myevent.keypad.l1);
 
-    myconfig.keys_rotate = 1;
+    myconfig.key_rotate = 1;
     TEST_ASSERT_EQUAL_INT(0, update_latest_keypad_value());
     TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_LEFT, myevent.keypad.up);
 }
@@ -1508,7 +1508,7 @@ TEST(sdl2_event, send_touch_axis)
 }
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050) || defined(UT)
 int handle_touch_event(int fd)
 {
     static int tp_id = 0;
@@ -1518,7 +1518,7 @@ int handle_touch_event(int fd)
     const int screen_w = WL_WIN_H;
     const int screen_h = WL_WIN_W;
 
-#if defined(XT894) || defined(XT897)
+#if defined(XT894) || defined(XT897) || defined(UT)
     float tp_max_x = 1000.0;
     float tp_max_y = 1000.0;
 #endif
@@ -1575,7 +1575,7 @@ int handle_touch_event(int fd)
         if ((ev.code == ABS_Z) && (ev.value == 0)) {
 #endif
 
-#if defined(QX1000)
+#if defined(QX1000) || defined(QX1050)
         if ((ev.code == 0) && (ev.value == 0)) {
 #endif
             if (tp_valid) {
@@ -1673,7 +1673,9 @@ int handle_touch_event(int fd)
             else {
                 myevent.input.touch_status = 0;
             }
+#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050)
         }
+#endif
     }
 
     return 0;

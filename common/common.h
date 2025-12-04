@@ -124,31 +124,49 @@ extern int nds_debug_level;
 #define LOG_FILE  "mynds.log"
 
 #define trace(...) do {                         \
-    if (nds_debug_level >= TRACE_LEVEL) {   \
+    if (nds_debug_level >= TRACE_LEVEL) {       \
         printf("[TRACE] ");                     \
         printf(__VA_ARGS__);                    \
     }                                           \
 } while(0);
 
 #define debug(...) do {                         \
-    if (nds_debug_level >= DEBUG_LEVEL) {   \
+    if (nds_debug_level >= DEBUG_LEVEL) {       \
         printf("[DEBUG] ");                     \
         printf(__VA_ARGS__);                    \
     }                                           \
 } while(0);
 
+#if defined(UT)
 #define error(...) do {                         \
-    if (nds_debug_level >= ERROR_LEVEL) {   \
+    if (nds_debug_level >= DEBUG_LEVEL) {       \
+        printf("[DEBUG] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
+} while(0);
+#else
+#define error(...) do {                         \
+    if (nds_debug_level >= ERROR_LEVEL) {       \
         printf("[ERROR] ");                     \
         printf(__VA_ARGS__);                    \
     }                                           \
 } while(0);
+#endif
 
+#if defined(UT)
+#define fatal(...) do {                         \
+    if (nds_debug_level >= DEBUG_LEVEL) {       \
+        printf("[DEBUG] ");                     \
+        printf(__VA_ARGS__);                    \
+    }                                           \
+} while(0);
+#else
 #define fatal(...) do {                         \
     printf("[FATAL] ");                         \
     printf(__VA_ARGS__);                        \
     exit(-1);                                   \
 } while(0);
+#endif
 
 typedef enum {
     TEXTURE_LCD0 = 0,

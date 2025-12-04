@@ -756,7 +756,7 @@ snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm)
 {
     trace("call %s(pcm=%d)\n", __func__, pcm);
 
-    if ((uint32_t)pcm == SND_PCM_STREAM_CAPTURE) {
+    if ((uintptr_t)pcm == SND_PCM_STREAM_CAPTURE) {
         trace("capture flush (use_mic=%d)\n", myhook.use_mic);
         return 0;
     }
