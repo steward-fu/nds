@@ -20,6 +20,8 @@ Operating System: 202305052130 Onion_v4.3.1-1
 
 Building Source:
 ```
+# Debian 12
+
 $ cd
 $ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz
 $ tar xvf mini_toolchain-v1.0.tar.gz
@@ -42,7 +44,7 @@ Layout
 
 &nbsp;
 
-The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
+Button:
 
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
@@ -70,6 +72,8 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 | HOTKEY + Y            | Change Background Image             |  
 | ( DraStic Menu )      |                                     |
 | HOTKEY + Y            | Change Background Image             |
+
+P.S. The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
 
 &nbsp;
 
