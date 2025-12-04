@@ -12,13 +12,14 @@ This repository contains all necessary resources - including the customized SDL2
 
 ## Miyoo Mini Plus
 ![image](image/miyoo_mini_plus.jpg)  
-Device:
+
+Device
 ```
 Model: MY354  
 Operating System: 202305052130 Onion_v4.3.1-1  
-```
+```  
 
-Building Source:
+Building Source
 ```
 # Debian 12
 
@@ -34,7 +35,7 @@ $ make -f Makefile.miyoo_mini clean
 $ make -f Makefile.miyoo_mini
 ```
 
-Installation:
+Installation
 ```
 Copy the "drastic" folder to "Emu/"
 ```
@@ -42,10 +43,7 @@ Copy the "drastic" folder to "Emu/"
 Layout  
 ![image](image/layout/base.bmp)  
 
-&nbsp;
-
-Button:
-
+Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | R2                    | Swap Screen                         |
