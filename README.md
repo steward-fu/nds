@@ -12,72 +12,33 @@ This repository contains all necessary resources - including the customized SDL2
 
 ## Miyoo Mini Plus
 ![image](image/miyoo_mini_plus.jpg)  
+Device:
+```
 Model: MY354  
 Operating System: 202305052130 Onion_v4.3.1-1  
+```
+
+Building Source:
+```
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz
+$ tar xvf mini_toolchain-v1.0.tar.gz
+$ sudo mv mini /opt
+$ sudo mv prebuilt /opt
+
+$ git clone https://github.com/steward-fu/nds
+$ cd nds
+$ make -f Makefile.miyoo_mini clean
+$ make -f Makefile.miyoo_mini
+```
+
 Installation:
 ```
 Copy the "drastic" folder to "Emu/"
 ```
-  
-Layout N0  
-![image](image/layout/n0.bmp)  
 
-Layout N1  
-![image](image/layout/n1.bmp)  
-
-Layout N2  
-![image](image/layout/n2.bmp)  
-
-Layout N3  
-![image](image/layout/n3.bmp)  
-
-Layout N4  
-![image](image/layout/n4.bmp)  
-
-Layout N5  
-![image](image/layout/n5.bmp)  
-
-Layout N6  
-![image](image/layout/n6.bmp)  
-
-Layout N7  
-![image](image/layout/n7.bmp)  
-
-Layout N8  
-![image](image/layout/n8.bmp)  
-
-Layout N9  
-![image](image/layout/n9.bmp)  
-
-Layout N10  
-![image](image/layout/n10.bmp)  
-
-Layout N11  
-![image](image/layout/n11.bmp)  
-
-Layout N12  
-![image](image/layout/n12.bmp)  
-
-Layout N13  
-![image](image/layout/n13.bmp)  
-
-Layout N14  
-![image](image/layout/n14.bmp)  
-
-Layout N15  
-![image](image/layout/n15.bmp)  
-
-Layout B0  
-![image](image/layout/b0.bmp)  
-
-Layout B1  
-![image](image/layout/b1.bmp)  
-
-Layout B2  
-![image](image/layout/b2.bmp)  
-
-Layout B3  
-![image](image/layout/b3.bmp)  
+Layout  
+![image](image/layout/base.bmp)  
 
 &nbsp;
 
@@ -121,65 +82,8 @@ Installation:
 Copy the "drastic" folder to "Emu/"
 ```
   
-Layout N0  
-![image](image/layout/n0.bmp)  
-
-Layout N1  
-![image](image/layout/n1.bmp)  
-
-Layout N2  
-![image](image/layout/n2.bmp)  
-
-Layout N3  
-![image](image/layout/n3.bmp)  
-
-Layout N4  
-![image](image/layout/n4.bmp)  
-
-Layout N5  
-![image](image/layout/n5.bmp)  
-
-Layout N6  
-![image](image/layout/n6.bmp)  
-
-Layout N7  
-![image](image/layout/n7.bmp)  
-
-Layout N8  
-![image](image/layout/n8.bmp)  
-
-Layout N9  
-![image](image/layout/n9.bmp)  
-
-Layout N10  
-![image](image/layout/n10.bmp)  
-
-Layout N11  
-![image](image/layout/n11.bmp)  
-
-Layout N12  
-![image](image/layout/n12.bmp)  
-
-Layout N13  
-![image](image/layout/n13.bmp)  
-
-Layout N14  
-![image](image/layout/n14.bmp)  
-
-Layout N15  
-![image](image/layout/n15.bmp)  
-
-Layout B0  
-![image](image/layout/b0.bmp)  
-
-Layout B1  
-![image](image/layout/b1.bmp)  
-
-Layout B2  
-![image](image/layout/b2.bmp)  
-
-Layout B3  
-![image](image/layout/b3.bmp)  
+Layout  
+![image](image/layout/base.bmp)  
 
 &nbsp;
 
@@ -262,65 +166,8 @@ Installation:
 Copy the "drastic" folder to "Emus/"
 ```
   
-Layout N0  
-![image](image/layout/n0.bmp)  
-
-Layout N1  
-![image](image/layout/n1.bmp)  
-
-Layout N2  
-![image](image/layout/n2.bmp)  
-
-Layout N3  
-![image](image/layout/n3.bmp)  
-
-Layout N4  
-![image](image/layout/n4.bmp)  
-
-Layout N5  
-![image](image/layout/n5.bmp)  
-
-Layout N6  
-![image](image/layout/n6.bmp)  
-
-Layout N7  
-![image](image/layout/n7.bmp)  
-
-Layout N8  
-![image](image/layout/n8.bmp)  
-
-Layout N9  
-![image](image/layout/n9.bmp)  
-
-Layout N10  
-![image](image/layout/n10.bmp)  
-
-Layout N11  
-![image](image/layout/n11.bmp)  
-
-Layout N12  
-![image](image/layout/n12.bmp)  
-
-Layout N13  
-![image](image/layout/n13.bmp)  
-
-Layout N14  
-![image](image/layout/n14.bmp)  
-
-Layout N15  
-![image](image/layout/n15.bmp)  
-
-Layout B0  
-![image](image/layout/b0.bmp)  
-
-Layout B1  
-![image](image/layout/b1.bmp)  
-
-Layout B2  
-![image](image/layout/b2.bmp)  
-
-Layout B3  
-![image](image/layout/b3.bmp)
+Layout  
+![image](image/layout/base.bmp)  
 
 &nbsp;
 
@@ -367,65 +214,8 @@ Installation:
 2. Copy the "14nds" file to "STORAGE/iux/sections/handheld/14nds"
 ```
   
-Layout N0  
-![image](image/layout/n0.bmp)  
-
-Layout N1  
-![image](image/layout/n1.bmp)  
-
-Layout N2  
-![image](image/layout/n2.bmp)  
-
-Layout N3  
-![image](image/layout/n3.bmp)  
-
-Layout N4  
-![image](image/layout/n4.bmp)  
-
-Layout N5  
-![image](image/layout/n5.bmp)  
-
-Layout N6  
-![image](image/layout/n6.bmp)  
-
-Layout N7  
-![image](image/layout/n7.bmp)  
-
-Layout N8  
-![image](image/layout/n8.bmp)  
-
-Layout N9  
-![image](image/layout/n9.bmp)  
-
-Layout N10  
-![image](image/layout/n10.bmp)  
-
-Layout N11  
-![image](image/layout/n11.bmp)  
-
-Layout N12  
-![image](image/layout/n12.bmp)  
-
-Layout N13  
-![image](image/layout/n13.bmp)  
-
-Layout N14  
-![image](image/layout/n14.bmp)  
-
-Layout N15  
-![image](image/layout/n15.bmp)  
-
-Layout B0  
-![image](image/layout/b0.bmp)  
-
-Layout B1  
-![image](image/layout/b1.bmp)  
-
-Layout B2  
-![image](image/layout/b2.bmp)  
-
-Layout B3  
-![image](image/layout/b3.bmp)  
+Layout  
+![image](image/layout/base.bmp)  
 
 &nbsp;
 
