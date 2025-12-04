@@ -2429,8 +2429,8 @@ CheckNDSVideo()
         SUMMARY_video="${SUMMARY_video} nds_video"
     fi
 
-    if test x$MOD = xmini; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMINI"
+    if test x$MOD = xmiyoo_mini; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_MINI"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/mini"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lib/mini"
@@ -3824,7 +3824,6 @@ case "$host" in
 
         case "$MOD" in
             *ut*)       CheckNDSVideo ;;
-            *mini*)     CheckNDSVideo ;;
             *flip*)     CheckNDSVideo ;;
             *qx1000*)   CheckNDSVideo ;;
             *qx1050*)   CheckNDSVideo ;;
@@ -3832,6 +3831,7 @@ case "$host" in
             *gkdmini*)  CheckNDSVideo ;;
             *xt897*)    CheckNDSVideo ;;
             *xt894*)    CheckNDSVideo ;;
+            *miyoo_mini*)       CheckNDSVideo ;;
             *trimui_smart*)     CheckNDSVideo ;;
             *trimui_brick*)     CheckNDSVideo ;;
             *)

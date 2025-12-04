@@ -855,7 +855,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MINI) || defined(FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
+#if defined(MIYOO_MINI) || defined(FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
         //enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
@@ -1085,7 +1085,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_QUIT, v);
     }
 
-#if defined(MINI) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(MIYOO_MINI) || defined(XT894) || defined(XT897) || defined(UT)
     if (c == myevent.keypad.power) {
         trace("set KEY_BIT_QUIT\n");
         set_key_bit(KEY_BIT_QUIT, v);

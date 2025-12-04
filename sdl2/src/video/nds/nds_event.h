@@ -8,7 +8,7 @@
 #include "nds_event.h"
 #include "hook.h"
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
 #define INPUT_DEV   "/dev/input/event0"
 #elif defined(FLIP)
 #define INPUT_DEV   "/dev/miyooio"
@@ -65,7 +65,7 @@
 #define DEV_KEY_CODE_VOL_DOWN   114
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
 #define DEV_KEY_CODE_UP         103
 #define DEV_KEY_CODE_DOWN       108
 #define DEV_KEY_CODE_LEFT       105

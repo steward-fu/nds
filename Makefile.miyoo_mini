@@ -1,9 +1,9 @@
-export MOD=mini
+export MOD=miyoo_mini
 export NDS_GCC=1
 export NDS_ALSA=1
 
 CFLAGS  += -O3
-CFLAGS  += -DMINI
+CFLAGS  += -DMIYOO_MINI
 CFLAGS  += -Wl,--no-undefined
 
 CFLAGS  += -mfpu=neon

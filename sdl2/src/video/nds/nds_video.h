@@ -49,7 +49,7 @@
 #include "hook.h"
 #include "common.h"
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
 #include "mi_sys.h"
 #include "mi_gfx.h"
 #endif
@@ -68,7 +68,7 @@
 #define FONT_SIZE 24
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
 #define REDRAW_BG_CNT 120
 #else
 #define REDRAW_BG_CNT 1
@@ -104,7 +104,7 @@ typedef enum {
 #define BAT_CUR_CMD     "cat /sys/class/power_supply/battery/capacity"
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
 #define SCREEN_W        640
 #define SCREEN_H        480
 #define BAT_CHK_CNT     90
@@ -199,7 +199,7 @@ typedef enum {
 #define HOTKEY_BIND_SELECT  1
 
 typedef enum {
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     ROTATE_90 = E_MI_GFX_ROTATE_90,
     ROTATE_180 = E_MI_GFX_ROTATE_180,
     ROTATE_270 = E_MI_GFX_ROTATE_270,
@@ -211,7 +211,7 @@ typedef enum {
 } roatet_type_t;
 
 typedef enum {
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     FMT_RGB565 = E_MI_GFX_FMT_RGB565,
     FMT_ARGB888 = E_MI_GFX_FMT_ARGB8888
 #else
@@ -348,7 +348,7 @@ typedef struct {
     } drm;
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     int sar_fd;
 #endif
 
@@ -367,12 +367,12 @@ typedef struct {
         int cur_sel;
         void *virt_addr[2][2];
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
         MI_PHY phy_addr[2][2];
 #endif
     } lcd;
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     struct {
         void *virt_addr;
         MI_PHY phy_addr;
@@ -395,7 +395,7 @@ typedef struct {
         void *virt_addr;
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
         void *virt_addr;
         MI_PHY phy_addr;
 #endif
@@ -416,7 +416,7 @@ typedef struct {
         disp_layer_config disp;
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
         MI_GFX_Opt_t opt;
 
         struct {

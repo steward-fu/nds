@@ -38,7 +38,7 @@
 #include "hook.h"
 #include "common.h"
 
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
 #include "mi_ao.h"
 #include "mi_sys.h"
 #include "mi_common_datatype.h"
@@ -63,7 +63,7 @@ struct mypulse_t {
 } mypulse = { 0 };
 #endif
 
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
 struct {
     MI_AO_CHN ch;
     MI_AUDIO_DEV id;
@@ -688,7 +688,7 @@ TEST(alsa, get_queue)
 
 static void* audio_handler(void *id)
 {
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
     MI_AUDIO_Frame_t frame = { 0 };
 #endif
 
@@ -710,7 +710,7 @@ static void* audio_handler(void *id)
             if (len == 0) {
                 idx = 0;
                 len = mypcm.len;
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
                 frame.eBitwidth = myao.gattr.eBitwidth;
                 frame.eSoundmode = myao.gattr.eSoundmode;
                 frame.u32Len = mypcm.len;
@@ -1058,7 +1058,7 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
     write(dsp_fd, audio, audio->buffer_index * SND_CHANNELS);
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     MI_AUDIO_Frame_t frame = { 0 };
 
     frame.eBitwidth = myao.gattr.eBitwidth;
@@ -1083,7 +1083,7 @@ TEST(alsa, prehook_audio_synchronous_update)
 
 int snd_pcm_start(snd_pcm_t *pcm)
 {
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
     MI_S32 miret = 0;
     MI_SYS_ChnPort_t stAoChn0OutputPort0 = { 0 };
 #endif
@@ -1109,7 +1109,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     memset(mypcm.buf, 0, mypcm.len);
 #endif
 
-#if defined(MINI) ||defined(UT)
+#if defined(MIYOO_MINI) ||defined(UT)
     myao.sattr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
     myao.sattr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
     myao.sattr.u32FrmNum = 6;
@@ -1244,7 +1244,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     quit_queue(&queue);
 #endif
 
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
     MI_AO_DisableChn(myao.id, myao.ch);
     MI_AO_Disable(myao.id);
 #endif

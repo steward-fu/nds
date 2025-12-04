@@ -83,15 +83,15 @@ static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 static int get_filename_by_index(const char *, int, char *, int);
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
 static int load_mask_image(const char *);
 #endif
 
-#if !defined(TRIMUI_SMART) && !defined(MINI) && !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI) && !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *);
 #endif
 
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
 static int load_mask_file(const char *);
 #endif
 
@@ -299,7 +299,7 @@ static int alloc_lcd_virtual_mem(void)
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j <2; j++) {
-#if defined(MINI)
+#if defined(MIYOO_MINI)
             if (MI_SYS_MMA_Alloc(NULL, size, &myvideo.lcd.phy_addr[i][j])) {
                 fatal("failed to allocate buffer for lcd.phy_addr[%d][%d] (size=%d)\n", i, j, size);
             }
@@ -349,7 +349,7 @@ static int free_lcd_virtual_mem(void)
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j <2; j++) {
-#if defined(MINI)
+#if defined(MIYOO_MINI)
             const int size = NDS_Wx2 * NDS_Hx2 * 4;
 
             if (myvideo.lcd.phy_addr[i][j]) {
@@ -2062,7 +2062,7 @@ static int process_screen(void)
 #endif
         }
 
-#if !defined(TRIMUI_SMART) && !defined(MINI)
+#if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI)
         if ((idx == 0) &&
             myconfig.layout.swin.border &&
             ((cur_mode_sel == LAYOUT_MODE_N0) ||
@@ -2107,7 +2107,7 @@ static int process_screen(void)
 #endif
 
         if (need_update) {
-#if !defined(MINI) && !defined(TRIMUI_SMART)
+#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
             int screen_w = SCREEN_W;
             int screen_h = SCREEN_H;
 #endif
@@ -2117,7 +2117,7 @@ static int process_screen(void)
             screen_h = WL_WIN_W;
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
             MI_SYS_FlushInvCache(pixels, pitch * srt.h);
 #endif
 
@@ -2159,7 +2159,7 @@ static int process_screen(void)
                 drt.y = myvideo.layout.mode[cur_mode_sel].screen[0].y;
                 drt.w = myvideo.layout.mode[cur_mode_sel].screen[0].w;
                 drt.h = myvideo.layout.mode[cur_mode_sel].screen[0].h;
-#if !defined(TRIMUI_SMART) && !defined(MINI)
+#if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
 #if defined(XT894) || defined(XT897)
@@ -2324,7 +2324,7 @@ TEST(sdl2_video, kill_handler)
 }
 #endif
 
-static void prehook_cb_select_quit(void *menu_state, void *menu_option)
+static void prehook_select_quit(void *menu_state, void *menu_option)
 {
     pthread_t id = 0;
 
@@ -2336,24 +2336,19 @@ static void prehook_cb_select_quit(void *menu_state, void *menu_option)
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_select_quit)
+TEST(sdl2_video, prehook_select_quit)
 {
-    prehook_cb_select_quit(NULL, NULL);
+    prehook_select_quit(NULL, NULL);
     TEST_PASS();
 }
 #endif
 
-static void* prehook_cb_malloc(size_t size)
+static void* prehook_malloc(size_t size)
 {
     void *r = NULL;
     uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
 
     trace("call %s(size=%d)\n", __func__, (int)size);
-
-    if (size <= 0) {
-        error("invalid parameter\n");
-        return NULL;
-    }
 
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
@@ -2367,23 +2362,25 @@ static void* prehook_cb_malloc(size_t size)
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_malloc)
+TEST(sdl2_video, prehook_malloc)
 {
     uint32_t bpp = 32;
     void *r = NULL;
 
+    TEST_ASSERT_NOT_NULL(rprehook_malloc(0));
+
     myhook.var.sdl.bytes_per_pixel = &bpp;
     myvideo.lcd.virt_addr[0][0] = (void *)0x12345678;
-    TEST_ASSERT_EQUAL_INT(0x12345678, prehook_cb_malloc(NDS_W * NDS_H * bpp));
-    TEST_ASSERT_EQUAL_INT(0x12345678, prehook_cb_malloc(NDS_Wx2 * NDS_Hx2 * bpp));
+    TEST_ASSERT_EQUAL_INT(0x12345678, prehook_malloc(NDS_W * NDS_H * bpp));
+    TEST_ASSERT_EQUAL_INT(0x12345678, prehook_malloc(NDS_Wx2 * NDS_Hx2 * bpp));
 
-    r = prehook_cb_malloc(100);
+    r = prehook_malloc(100);
     TEST_ASSERT_NOT_NULL(r);
     free(r);
 }
 #endif
 
-static void prehook_cb_free(void *ptr)
+static void prehook_free(void *ptr)
 {
     int c0 = 0;
     int c1 = 0;
@@ -2400,43 +2397,39 @@ static void prehook_cb_free(void *ptr)
         }
     }
 
-    if (found == 0) {
+    if ((found == 0) && (!ptr)) {
         free(ptr);
-        ptr = NULL;
     }
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_free)
+TEST(sdl2_video, prehook_free)
 {
     int *p = malloc(sizeof(int) * 100);
 
+    prehook_free(NULL);
+
     myvideo.lcd.virt_addr[0][0] = p;
-    prehook_cb_free(p);
+    prehook_free(p);
     p[99] = 100;
 
     myvideo.lcd.virt_addr[0][0] = 0;
-    prehook_cb_free(p);
+    prehook_free(p);
     TEST_PASS();
 }
 #endif
 
-static void* prehook_cb_realloc(void *ptr, size_t size)
+static void* prehook_realloc(void *ptr, size_t size)
 {
     void *r = NULL;
     uint32_t bpp = *myhook.var.sdl.bytes_per_pixel;
 
     trace("call %s(ptr=%p, size=%d)\n", __func__, ptr, (int)size);
 
-    if (!ptr || (size == 0)) {
-        error("invalid parameter\n");
-        return NULL;
-    }
-
     if ((size == (NDS_W * NDS_H * bpp)) ||
         (size == (NDS_Wx2 * NDS_Hx2 * bpp)))
     {
-        r = prehook_cb_malloc(size);
+        r = prehook_malloc(size);
     }
     else {
         r = realloc(ptr, size);
@@ -2446,7 +2439,7 @@ static void* prehook_cb_realloc(void *ptr, size_t size)
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_realloc)
+TEST(sdl2_video, prehook_realloc)
 {
     int bpp = 32;
     int *p = malloc(sizeof(int) * 100);
@@ -2455,12 +2448,12 @@ TEST(sdl2_video, prehook_cb_realloc)
     myhook.var.sdl.bytes_per_pixel = (void *)&bpp;
     myvideo.lcd.virt_addr[0][0] = (void *)0x12345678;
 
-    TEST_ASSERT_NULL(prehook_cb_realloc(NULL, 0));
+    TEST_ASSERT_NULL(prehook_realloc(NULL, 0));
 
-    r = prehook_cb_realloc(p, NDS_W * NDS_H * bpp);
+    r = prehook_realloc(p, NDS_W * NDS_H * bpp);
     TEST_ASSERT_EQUAL_INT(0x12345678, r);
 
-    r = prehook_cb_realloc(p, 200);
+    r = prehook_realloc(p, 200);
     TEST_ASSERT_NOT_EQUAL(0x12345678, (uintptr_t)r);
     TEST_ASSERT_EQUAL(p, r);
     r[199] = 100;
@@ -2468,20 +2461,20 @@ TEST(sdl2_video, prehook_cb_realloc)
 }
 #endif
 
-void prehook_cb_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+void prehook_blit_screen_menu(uint16_t *src, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
     trace("call %s()\n", __func__);
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_blit_screen_menu)
+TEST(sdl2_video, prehook_blit_screen_menu)
 {
-    prehook_cb_blit_screen_menu(NULL, 0, 0, 0, 0);
+    prehook_blit_screen_menu(NULL, 0, 0, 0, 0);
     TEST_PASS();
 }
 #endif
 
-static void prehook_cb_update_screen(void)
+static void prehook_update_screen(void)
 {
     static int prepare_time = 30;
 
@@ -2508,7 +2501,7 @@ static void prehook_cb_update_screen(void)
             (uint32_t)myvideo.lcd.virt_addr[myvideo.lcd.cur_sel][1];
 #endif
 
-#if !defined(MINI) && !defined(TRIMUI_SMART)
+#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
         myvideo.menu.drastic.enable = 0;
 #endif
 #endif
@@ -2519,13 +2512,13 @@ static void prehook_cb_update_screen(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_update_screen)
+TEST(sdl2_video, prehook_update_screen)
 {
     int i = 0;
 
     myvideo.lcd.cur_sel = 0;
     for (i = 0; i < 100; i++) {
-        prehook_cb_update_screen();
+        prehook_update_screen();
     }
 
     TEST_ASSERT_EQUAL_INT(1, !!myvideo.lcd.cur_sel);
@@ -2533,7 +2526,7 @@ TEST(sdl2_video, prehook_cb_update_screen)
 #endif
 
 #if defined(NDS_ARM64) || defined(UT)
-static void prehook_cb_print_string_ext(
+static void prehook_print_string_ext(
     char *p,
     unsigned long fg,
     unsigned long bg,
@@ -2549,14 +2542,14 @@ static void prehook_cb_print_string_ext(
 #endif
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_print_string_ext)
+TEST(sdl2_video, prehook_print_string_ext)
 {
-    prehook_cb_print_string_ext(NULL, 0, 0, 0, 0, 0, 0, 0, 0);
+    prehook_print_string_ext(NULL, 0, 0, 0, 0, 0, 0, 0, 0);
     TEST_PASS();
 }
 #endif
 
-static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
+static void prehook_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t x, uint32_t y)
 {
 #if !defined(UT)
     int w = 0;
@@ -2624,14 +2617,14 @@ static void prehook_cb_print_string(char *p, uint32_t fg, uint32_t bg, uint32_t 
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_print_string)
+TEST(sdl2_video, prehook_print_string)
 {
-    prehook_cb_print_string(NULL, 0, 0, 0, 0);
+    prehook_print_string(NULL, 0, 0, 0, 0);
     TEST_PASS();
 }
 #endif
 
-static void prehook_cb_savestate_pre(void)
+static void prehook_savestate_pre(void)
 {
 #if !defined(UT) && !defined(NDS_ARM64)
     asm volatile (
@@ -2646,14 +2639,14 @@ static void prehook_cb_savestate_pre(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_savestate_pre)
+TEST(sdl2_video, prehook_savestate_pre)
 {
-    prehook_cb_savestate_pre();
+    prehook_savestate_pre();
     TEST_PASS();
 }
 #endif
 
-static void prehook_cb_savestate_post(void)
+static void prehook_savestate_post(void)
 {
 #if !defined(UT) && !defined(NDS_ARM64)
     asm volatile (
@@ -2668,9 +2661,9 @@ static void prehook_cb_savestate_post(void)
 }
 
 #if defined(UT)
-TEST(sdl2_video, prehook_cb_savestate_post)
+TEST(sdl2_video, prehook_savestate_post)
 {
-    prehook_cb_savestate_post();
+    prehook_savestate_post();
     TEST_PASS();
 }
 #endif
@@ -2916,7 +2909,7 @@ static void* video_handler(void *param)
     );
 #endif
 
-#if !defined(MINI) && !defined(TRIMUI_SMART)
+#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
     alloc_lcd_virtual_mem();
 #endif
 
@@ -2931,7 +2924,7 @@ static void* video_handler(void *param)
 #endif
 
     while (myvideo.thread.running) {
-#if !defined(MINI) && !defined(TRIMUI_SMART)
+#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
         if ((myvideo.menu.sdl2.enable) || (myvideo.menu.drastic.enable)) {
 #if !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
             if (cur_shader != -1) {
@@ -3044,7 +3037,7 @@ static void* video_handler(void *param)
     wl_display_disconnect(myvideo.wl.display);
 #endif
 
-#if !defined(MINI) && !defined(TRIMUI_SMART)
+#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
     free_lcd_virtual_mem();
 #endif
 
@@ -3091,7 +3084,7 @@ TEST(sdl2_video, free_lang_res)
 }
 #endif
 
-#if defined(MINI) || defined(UT)
+#if defined(MIYOO_MINI) || defined(UT)
 static int load_mask_file(const char *name)
 {
     trace("call %s(name=%p)\n", __func__, name);
@@ -3113,7 +3106,7 @@ TEST(sdl2_video, load_mask_file)
 #endif
 #endif
 
-#if !defined(TRIMUI_SMART) && !defined(MINI) && !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
+#if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI) && !defined(TRIMUI_BRICK) && !defined(GKD2) && !defined(GKDMINI)
 static int load_shader_file(const char *name)
 {
     long size = 0;
@@ -3127,11 +3120,6 @@ static int load_shader_file(const char *name)
     GLint vert_shader = 0;
 
     trace("call %s(name=%p)\n", __func__, name);
-
-    if (!name) {
-        error("invalid parameter\n");
-        return -1;
-    }
 
 #if defined(UT)
     return 0;
@@ -3422,7 +3410,7 @@ static int get_mask_cnt(void)
     return get_file_cnt(buf);
 }
 
-#if !defined(MINI)
+#if !defined(MIYOO_MINI)
 static int get_shader_cnt(void)
 {
     char buf[MAX_PATH + 32] = { 0 };
@@ -4007,7 +3995,7 @@ int resize_disp(void)
 }
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
 static int init_lcd(void)
 {
     MI_U32 r = 0;
@@ -4235,7 +4223,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     uint32_t *src = (uint32_t *)pixels;
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     int copy_mem = 1;
     MI_U16 fence = 0;
     int rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
@@ -5092,7 +5080,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     myvideo.gfx.src.surf.phyAddr = NULL;
     if (pixels == myvideo.lcd.virt_addr[0][0]) {
         myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[0][0];
@@ -5786,7 +5774,7 @@ static int flip_lcd(void)
     }
 #endif
 
-#if defined(MINI)
+#if defined(MIYOO_MINI)
     ioctl(myvideo.fb.fd, FBIOPAN_DISPLAY, &myvideo.fb.var_info);
     myvideo.fb.var_info.yoffset ^= SCREEN_H;
 #endif
@@ -6374,7 +6362,7 @@ static int load_bg_image(void)
 
 #endif
 
-#if defined(MINI) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(FLIP)
+#if defined(MIYOO_MINI) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(FLIP)
         flush_lcd(
             TEXTURE_BG,
             myvideo.layout.bg->pixels,
@@ -6911,7 +6899,7 @@ static int init_device(void)
     //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL, 0, 0);
     //load_mask_file();
 
-#if defined(MINI) || defined(TRIMUI_SMART) || defined(PANDORA)
+#if defined(MIYOO_MINI) || defined(TRIMUI_SMART) || defined(PANDORA)
     //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
 #endif
 
@@ -6935,36 +6923,36 @@ static int init_device(void)
     r = 0;
 
 #if !defined(NDS_ARM64)
-    trace("hook prehook_cb_malloc\n");
-    r |= add_prehook(myhook.fun.malloc,  prehook_cb_malloc);
-    trace("hook prehook_cb_realloc\n");
-    r |= add_prehook(myhook.fun.realloc, prehook_cb_realloc);
-    trace("hook prehook_cb_free\n");
-    r |= add_prehook(myhook.fun.free,    prehook_cb_free);
+    trace("hook prehook_malloc\n");
+    r |= add_prehook(myhook.fun.malloc,  prehook_malloc);
+    trace("hook prehook_realloc\n");
+    r |= add_prehook(myhook.fun.realloc, prehook_realloc);
+    trace("hook prehook_free\n");
+    r |= add_prehook(myhook.fun.free,    prehook_free);
 #endif
 
-    trace("hook prehook_cb_select_quit\n");
-    r |= add_prehook(myhook.fun.select_quit, prehook_cb_select_quit);
-    trace("hook prehook_cb_print_string\n");
-    r |= add_prehook(myhook.fun.print_string, prehook_cb_print_string);
+    trace("hook prehook_select_quit\n");
+    r |= add_prehook(myhook.fun.select_quit, prehook_select_quit);
+    trace("hook prehook_print_string\n");
+    r |= add_prehook(myhook.fun.print_string, prehook_print_string);
 
 #if defined(NDS_ARM64)
-    trace("hook prehook_cb_print_string_ext\n");
-    r |= add_prehook(myhook.fun.print_string_ext, prehook_cb_print_string_ext);
+    trace("hook prehook_print_string_ext\n");
+    r |= add_prehook(myhook.fun.print_string_ext, prehook_print_string_ext);
 #endif
 
-    trace("hook prehook_cb_update_screen\n");
-    r |= add_prehook(myhook.fun.update_screen, prehook_cb_update_screen);
-    trace("hook prehook_cb_blit_screen_menu\n");
-    r |= add_prehook(myhook.fun.blit_screen_menu, prehook_cb_blit_screen_menu);
-    trace("hook prehook_cb_platform_get_input\n");
+    trace("hook prehook_update_screen\n");
+    r |= add_prehook(myhook.fun.update_screen, prehook_update_screen);
+    trace("hook prehook_blit_screen_menu\n");
+    r |= add_prehook(myhook.fun.blit_screen_menu, prehook_blit_screen_menu);
+    trace("hook prehook_platform_get_input\n");
     r |= add_prehook(myhook.fun.platform_get_input, prehook_platform_get_input);
 
 #if !defined(NDS_ARM64)
-    trace("hook prehook_cb_savestate_pre\n");
-    r |= add_prehook(myhook.fun.savestate_pre, prehook_cb_savestate_pre);
-    trace("hook prehook_cb_savestate_post\n");
-    r |= add_prehook(myhook.fun.savestate_post, prehook_cb_savestate_post);
+    trace("hook prehook_savestate_pre\n");
+    r |= add_prehook(myhook.fun.savestate_pre, prehook_savestate_pre);
+    trace("hook prehook_savestate_post\n");
+    r |= add_prehook(myhook.fun.savestate_post, prehook_savestate_post);
 #endif
 
 #if defined(NDS_ARM64)
@@ -7332,7 +7320,7 @@ typedef enum {
     MENU_CPU,
 #endif
 
-#if 0 // defined(MINI)
+#if 0 // defined(MIYOO_MINI)
     MENU_MASK,
 #endif
 
@@ -7392,7 +7380,7 @@ static const char *MENU_LIST_STR[] = {
     "CPU CORE",
 #endif
 
-#if 0 //defined(MINI)
+#if 0 //defined(MIYOO_MINI)
     "MASK",
 #endif
 
@@ -7949,7 +7937,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
     int max_mask_count = get_mask_cnt();
 
-#if !defined(MINI)
+#if !defined(MIYOO_MINI)
     //int add = is_lr ? 50 : 1;
     int max_shader_count = get_shader_cnt();
 #endif
@@ -7960,7 +7948,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         myvideo.mask = 0;
     }
 
-#if !defined(MINI)
+#if !defined(MIYOO_MINI)
     if (myvideo.shader >= max_shader_count) {
         myvideo.shader = 0;
     }
@@ -8062,7 +8050,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-#if 0 // defined(MINI)
+#if 0 // defined(MIYOO_MINI)
     case MENU_MASK:
         if (right_key) {
             myconfig.layout.overlay.enable = 1;
@@ -8156,7 +8144,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
 #endif
 
-#if 0 //defined(MINI)
+#if 0 //defined(MIYOO_MINI)
     case MENU_MASK:
         if (right_key) {
             if (max_mask_count && (myvideo.mask < (max_mask_count - 1))) {
@@ -8368,7 +8356,7 @@ static int draw_sdl2_menu_setting(
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
 
-#if !defined(MINI) && !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
+#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
     char tmp[MAX_PATH] = { 0 };
 #endif
 
@@ -8391,7 +8379,7 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
 
-#if 0 //defined(MINI)
+#if 0 //defined(MIYOO_MINI)
     case MENU_MASK:
         if (get_filename_by_index(MASK_PATH, myvideo.mask, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
@@ -8466,7 +8454,7 @@ static int draw_sdl2_menu_setting(
         );
         break;
 
-#if 0 // defined(MINI)
+#if 0 // defined(MIYOO_MINI)
     case MENU_MASK:
         sx = 0;
         sprintf(buf, "%s", l10n((myconfig.layout.overlay.enable > 0 )? "Yes" : "No"));
