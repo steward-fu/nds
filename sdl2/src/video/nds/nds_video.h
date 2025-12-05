@@ -98,21 +98,11 @@ typedef enum {
 #define SCREEN_H        480
 #define INIT_CPU_CORE   2
 #define MAX_CPU_CORE    4
-#define DAC_BASE        0x1c22000
-#define CCU_BASE        0x01c20000
-#define BAT_CHK_CNT     300
-#define BAT_CUR_CMD     "cat /sys/class/power_supply/battery/capacity"
 #endif
 
 #if defined(MIYOO_MINI)
 #define SCREEN_W        640
 #define SCREEN_H        480
-#define BAT_CHK_CNT     90
-#define BAT_MAX_VAL     630
-#define BAT_MIN_VAL     420
-#define PLL_SIZE        0x1000
-#define REG_RIU_PA      0x1f000000
-#define REG_MPLL_PA     (REG_RIU_PA + 0x103000 * 2)
 #endif
 
 #if defined(TRIMUI_SMART)
@@ -274,7 +264,6 @@ typedef struct {
         char *trans[MAX_LANG_LINE];
     } lang;
 
-    int mask;
     int shader;
 
 #if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
@@ -422,7 +411,15 @@ typedef struct {
         struct {
             MI_GFX_Rect_t rt;
             MI_GFX_Surface_t surf;
-        } src, dst, mask;
+        } src, dst;
+
+        struct {
+            MI_GFX_Rect_t rt;
+            MI_GFX_Surface_t surf;
+
+            void *virt_addr;
+            MI_PHY phy_addr;
+        } mask;
 #endif
     } gfx;
 
@@ -461,6 +458,14 @@ typedef struct {
         int pre_mode;
         int restore;
 #endif
+
+#if defined(MIYOO_MINI)
+        struct {
+            int sel;
+            int max_cnt;
+        } mask;
+#endif
+
     } layout;
 
     struct {

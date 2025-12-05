@@ -248,11 +248,11 @@ int get_debug_level(int local_var)
         else if(!strcmp(level, DEBUG_LEVEL_STR[DEBUG_LEVEL])) {
             r = DEBUG_LEVEL;
         }
-        else if(!strcmp(level, DEBUG_LEVEL_STR[ERROR_LEVEL])) {
-            r = ERROR_LEVEL;
-        }
         else if(!strcmp(level, DEBUG_LEVEL_STR[FATAL_LEVEL])) {
             r = FATAL_LEVEL;
+        }
+        else {
+            r = ERROR_LEVEL;
         }
     }
 
@@ -324,7 +324,6 @@ int load_config(const char *path)
         JSON_GET_INT(JSON_LAYOUT_MODE_ALT, myconfig.layout.mode.alt);
         JSON_GET_INT(JSON_LAYOUT_MODE_SEL, myconfig.layout.mode.sel);
         JSON_GET_INT(JSON_LAYOUT_BG_SEL, myconfig.layout.bg.sel);
-        JSON_GET_INT(JSON_LAYOUT_MASK_SEL, myconfig.layout.mask.sel);
         JSON_GET_INT(JSON_LAYOUT_SWIN_POS, myconfig.layout.swin.pos);
         JSON_GET_INT(JSON_LAYOUT_SWIN_ALPHA, myconfig.layout.swin.alpha);
         JSON_GET_INT(JSON_LAYOUT_SWIN_BORDER, myconfig.layout.swin.border);
@@ -436,7 +435,6 @@ int update_config(const char *path)
         JSON_SET_INT(JSON_LAYOUT_MODE_ALT, myconfig.layout.mode.alt);
         JSON_SET_INT(JSON_LAYOUT_MODE_SEL, myconfig.layout.mode.sel);
         JSON_SET_INT(JSON_LAYOUT_BG_SEL, myconfig.layout.bg.sel);
-        JSON_SET_INT(JSON_LAYOUT_MASK_SEL, myconfig.layout.mask.sel);
         JSON_SET_INT(JSON_LAYOUT_SWIN_POS, myconfig.layout.swin.pos);
         JSON_SET_INT(JSON_LAYOUT_SWIN_ALPHA, myconfig.layout.swin.alpha);
         JSON_SET_INT(JSON_LAYOUT_SWIN_BORDER, myconfig.layout.swin.border);

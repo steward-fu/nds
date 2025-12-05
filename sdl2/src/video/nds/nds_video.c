@@ -76,6 +76,7 @@ static int init_video(_THIS);
 static int free_menu_res(void);
 static int load_lang_file(void);
 static int load_bg_image(void);
+static int load_mask_file(void);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
@@ -83,16 +84,8 @@ static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
 static int get_filename_by_index(const char *, int, char *, int);
 
-#if defined(MIYOO_MINI)
-static int load_mask_image(const char *);
-#endif
-
-#if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI) && !defined(TRIMUI_BRICK) && !defined(GKD_PIXEL2) && !defined(GKD_MINIPLUS)
+#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
 static int load_shader_file(const char *);
-#endif
-
-#if defined(MIYOO_MINI) || defined(UT)
-static int load_mask_file(const char *);
 #endif
 
 static const char *DRASTIC_MENU_LAYER_P0 = "Change Options";
@@ -1977,7 +1970,17 @@ static int process_screen(void)
     }
         
     if (myvideo.layout.redraw_bg) {
+#if defined(MIYOO_MINI)
+        if (myvideo.layout.mask.max_cnt && (myvideo.layout.mask.sel >= 0)) {
+        }
+        else {
+#endif
+
         load_bg_image();
+
+#if defined(MIYOO_MINI)
+        }
+#endif
         myvideo.layout.redraw_bg -= 1;
     }
 
@@ -2729,7 +2732,7 @@ TEST(sdl2_video, strip_newline_char)
 
 static void* video_handler(void *param)
 {
-#if !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
+#if !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK) && !defined(MIYOO_MINI)
     int cur_shader = -1;
     char tmp[MAX_PATH] = { 0 };
 #endif
@@ -3085,13 +3088,23 @@ TEST(sdl2_video, free_lang_res)
 #endif
 
 #if defined(MIYOO_MINI) || defined(UT)
-static int load_mask_file(const char *name)
+static int load_mask_file(void)
 {
-    trace("call %s(name=%p)\n", __func__, name);
+    char tmp[255] = { 0 };
 
-    if (!name) {
-        error("invalid parameter\n");
+    trace("call %s()\n", __func__);
+
+    if (myvideo.layout.mask.sel < 0) {
+        error("invalid mask index (%d)\n", myvideo.layout.mask.sel);
         return -1;
+    }
+
+    if (get_filename_by_index(MASK_PATH, myvideo.layout.mask.sel, tmp, 1) >= 0) {
+        SDL_Surface *s = IMG_Load(tmp);
+
+        trace("mask file = \"%s\", s=%p\n", tmp, s);
+        memcpy(myvideo.gfx.mask.virt_addr, s->pixels, s->h * s->pitch);
+        SDL_FreeSurface(s);
     }
 
     return 0;
@@ -4030,6 +4043,13 @@ static int init_lcd(void)
     }
     MI_SYS_Mmap(myvideo.tmp.phy_addr, size, &myvideo.tmp.virt_addr, TRUE);
 
+    size = SCREEN_BUF_SIZE;
+    r = MI_SYS_MMA_Alloc(NULL, size, &myvideo.gfx.mask.phy_addr);
+    if (r) {
+        fatal("failed to allocate memory for mask.phy_addr (size=%d)\n", size);
+    }
+    MI_SYS_Mmap(myvideo.gfx.mask.phy_addr, size, &myvideo.gfx.mask.virt_addr, TRUE);
+
     alloc_lcd_virtual_mem();
 
     myvideo.sar_fd = open("/dev/sar", O_RDWR);
@@ -4048,11 +4068,19 @@ static int quit_lcd(void)
     }
 
     if (myvideo.tmp.virt_addr) {
-        MI_SYS_Munmap(myvideo.tmp.virt_addr, SCREEN_BUF_SIZEx2);
+        MI_SYS_Munmap(myvideo.tmp.virt_addr, SCREEN_BUF_SIZE);
         MI_SYS_MMA_Free(myvideo.tmp.phy_addr);
 
         myvideo.tmp.virt_addr = NULL;
         myvideo.tmp.phy_addr = NULL;
+    }
+
+    if (myvideo.gfx.mask.virt_addr) {
+        MI_SYS_Munmap(myvideo.gfx.mask.virt_addr, SCREEN_BUF_SIZE);
+        MI_SYS_MMA_Free(myvideo.gfx.mask.phy_addr);
+
+        myvideo.gfx.mask.virt_addr = NULL;
+        myvideo.gfx.mask.phy_addr = NULL;
     }
 
     free_lcd_virtual_mem();
@@ -5094,7 +5122,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     if (pixels == myvideo.lcd.virt_addr[1][1]) {
         myvideo.gfx.src.surf.phyAddr = myvideo.lcd.phy_addr[1][1];
     }
-    trace("GFX PhyAddr=%p\n", myvideo.gfx.src.surf.phyAddr);
+    trace("src.surf.phyAddr=0x%llx\n", myvideo.gfx.src.surf.phyAddr);
 
     if ((id == TEXTURE_LCD0) &&
         ((cur_mode_sel == LAYOUT_MODE_N0) ||
@@ -5245,10 +5273,14 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
             break;
         }
     }
+    trace("draw small window complete\n");
 
     if (copy_mem && (cur_filter == FILTER_PIXEL)) {
+        trace("start copying pixels...\n");
+
         do {
-            if (*myhook.var.sdl.screen[0].hires_mode != 0) {
+            trace("hires_mode pinter = 0x%x\n", (uintptr_t)myhook.var.sdl.screen[0].hires_mode);
+            if (myhook.var.sdl.screen[0].hires_mode && (*myhook.var.sdl.screen[0].hires_mode != 0)) {
                 break;
             }
 
@@ -5584,7 +5616,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                 uint16_t *s1 = (uint16_t*)pixels;
                 uint16_t *d = (uint16_t*)myvideo.tmp.virt_addr;
 
-                trace("Copy pixels from %p to %p\n", s1, d);
+                trace("copy pixels from %p to %p\n", s1, d);
                 for (y = 0; y < srt.h; y++) {
                     s0 = d;
                     for (x = 0; x < srt.w; x++) {
@@ -5603,18 +5635,20 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
                 pitch = srt.w * 2;
             }
         } while(0);
+        trace("start copying pixels complete\n");
     }
+    trace("pixels copied\n");
 
     if (copy_mem) {
         if (myvideo.gfx.src.surf.phyAddr == NULL) {
-            trace("Copy pixles to temp buffer @%p\n", myvideo.tmp.virt_addr);
+            trace("tmp.virt_addr %p\n", myvideo.tmp.virt_addr);
             neon_memcpy(myvideo.tmp.virt_addr, pixels, srt.h * pitch);
             myvideo.gfx.src.surf.phyAddr = myvideo.tmp.phy_addr;
             MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srt.h);
         }
     }
     else {
-        trace("Pointer TempAddr@%p to PhyAddr\n", myvideo.tmp.phy_addr);
+        trace("tmp.phy_addr 0x%llx\n", myvideo.tmp.phy_addr);
         myvideo.gfx.src.surf.phyAddr = myvideo.tmp.phy_addr;
         MI_SYS_FlushInvCache(myvideo.tmp.virt_addr, pitch * srt.h);
     }
@@ -5663,35 +5697,38 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     trace("do GFX Blit\n");
     MI_GFX_BitBlit(&myvideo.gfx.src.surf, &myvideo.gfx.src.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &fence);
 
+    if (!myvideo.menu.sdl2.enable &&
+        !myvideo.menu.drastic.enable &&
+        myvideo.layout.mask.max_cnt &&
+        (myvideo.layout.mask.sel >= 0))
+    {
+        myvideo.gfx.mask.surf.phyAddr = myvideo.gfx.mask.phy_addr;
+        myvideo.gfx.mask.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
+        myvideo.gfx.mask.surf.u32Width = SCREEN_W;
+        myvideo.gfx.mask.surf.u32Height = SCREEN_H;
+        myvideo.gfx.mask.surf.u32Stride = SCREEN_W * 4;
+        myvideo.gfx.mask.rt.s32Xpos = 0;
+        myvideo.gfx.mask.rt.s32Ypos = 0;
+        myvideo.gfx.mask.rt.u32Width = SCREEN_W;
+        myvideo.gfx.mask.rt.u32Height = SCREEN_H;
+
+        myvideo.gfx.dst.rt.s32Xpos = 0;
+        myvideo.gfx.dst.rt.s32Ypos = 0;
+        myvideo.gfx.dst.rt.u32Width = SCREEN_W;
+        myvideo.gfx.dst.rt.u32Height = SCREEN_H;
+        myvideo.gfx.dst.surf.phyAddr = myvideo.fb.phy_addr + (SCREEN_W * myvideo.fb.var_info.yoffset * 4);
+
+        myvideo.gfx.opt.u32GlobalSrcConstColor = 0xff000000;
+        myvideo.gfx.opt.eRotate = E_MI_GFX_ROTATE_180;
+        myvideo.gfx.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
+        myvideo.gfx.opt.eDstDfbBldOp = E_MI_GFX_DFB_BLD_INVSRCALPHA;
+        myvideo.gfx.opt.eDFBBlendFlag = E_MI_GFX_DFB_BLEND_SRC_PREMULTIPLY | E_MI_GFX_DFB_BLEND_COLORALPHA | E_MI_GFX_DFB_BLEND_ALPHACHANNEL;
+        MI_GFX_BitBlit(&myvideo.gfx.mask.surf, &myvideo.gfx.mask.rt, &myvideo.gfx.dst.surf, &myvideo.gfx.dst.rt, &myvideo.gfx.opt, &fence);
+    }
+
     trace("wait for all done...\n");
     MI_GFX_WaitAllDone(TRUE, fence);
-    trace("finished flush LCD\n");
-
-#if 0
-    gfx.hw.overlay.surf.phyAddr = gfx.overlay.phyAddr;
-    gfx.hw.overlay.surf.eColorFmt = E_MI_GFX_FMT_ARGB8888;
-    gfx.hw.overlay.surf.u32Width = FB_W;
-    gfx.hw.overlay.surf.u32Height = FB_H;
-    gfx.hw.overlay.surf.u32Stride = FB_W * FB_BPP;
-    gfx.hw.overlay.rt.s32Xpos = 0;
-    gfx.hw.overlay.rt.s32Ypos = 0;
-    gfx.hw.overlay.rt.u32Width = FB_W;
-    gfx.hw.overlay.rt.u32Height = FB_H;
-
-    gfx.hw.dst.rt.s32Xpos = 0;
-    gfx.hw.dst.rt.s32Ypos = 0;
-    gfx.hw.dst.rt.u32Width = FB_W;
-    gfx.hw.dst.rt.u32Height = FB_H;
-    gfx.hw.dst.surf.phyAddr = gfx.fb.phyAddr + (FB_W * gfx.vinfo.yoffset * FB_BPP);
-
-    gfx.hw.opt.u32GlobalSrcConstColor = 0xff000000;
-    gfx.hw.opt.eRotate = E_MI_GFX_ROTATE_180;
-    gfx.hw.opt.eSrcDfbBldOp = E_MI_GFX_DFB_BLD_ONE;
-    gfx.hw.opt.eDstDfbBldOp = E_MI_GFX_DFB_BLD_INVSRCALPHA;
-    gfx.hw.opt.eDFBBlendFlag = E_MI_GFX_DFB_BLEND_SRC_PREMULTIPLY | E_MI_GFX_DFB_BLEND_COLORALPHA | E_MI_GFX_DFB_BLEND_ALPHACHANNEL;
-    MI_GFX_BitBlit(&gfx.hw.overlay.surf, &gfx.hw.overlay.rt, &gfx.hw.dst.surf, &gfx.hw.dst.rt, &gfx.hw.opt, &u16Fence);
-    MI_GFX_WaitAllDone(FALSE, u16Fence);
-#endif
+    trace("flush LCD complete\n");
 #endif
 
     return 0;
@@ -5908,8 +5945,7 @@ static int draw_info(
 
     len = strlen(info);
     if ((len == 0) || (len >= MAX_PATH)) {
-        error("invalid len(%d)\n", len);
-        return -1;
+        return 0;
     }
 
     fg.r = (fgcolor >> 16) & 0xff;
@@ -6222,6 +6258,7 @@ static int load_bg_image(void)
 
     cur_bg_sel = myconfig.layout.bg.sel;
     cur_mode_sel = myconfig.layout.mode.sel;
+    trace("cur_bg_sel=%d, cur_mode_sel=%d\n", cur_bg_sel, cur_mode_sel);
 
     if ((pre_bg != cur_bg_sel) || (pre_mode != cur_mode_sel)) {
         pre_bg = cur_bg_sel;
@@ -6240,13 +6277,14 @@ static int load_bg_image(void)
             w = LAYOUT_BG_W;
             h = LAYOUT_BG_H;
         }
+        trace("bg size, w=%d, h=%d\n", w, h);
 
         myvideo.layout.bg = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 0, 0, 0, 0);
         if (!myvideo.layout.bg) {
             error("failed to create bg surface\n");
             return -1;
         }
-        trace("created background surface, size=%dx%d\n", w, h);
+        trace("bg surface, w=%d, h=%d\n", w, h);
 
         SDL_FillRect(
             myvideo.layout.bg,
@@ -6284,13 +6322,13 @@ static int load_bg_image(void)
                 cur_bg_sel,
                 myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path
             );
+            trace("bg file=\"%s\"\n", buf);
 
             t = IMG_Load(buf);
             if (!t) {
                 error("failed to load bg image from \"%s\"\n", buf);
                 return -1;
             }
-            trace("loaded background image from \"%s\"\n", buf);
 
             SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
             SDL_FreeSurface(t);
@@ -6704,10 +6742,10 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
         myvideo.layout.mode[mode].bg[cur_bg].w = LAYOUT_BG_W;
         myvideo.layout.mode[mode].bg[cur_bg].h = LAYOUT_BG_H;
         trace(
-            "added bg img=\"%s\"(%dx%d)\n",
-            fname,
+            "added bg img (w=%d, h=%d, %s)\n",
             myvideo.layout.mode[mode].bg[cur_bg].w,
-            myvideo.layout.mode[mode].bg[cur_bg].h
+            myvideo.layout.mode[mode].bg[cur_bg].h,
+            myvideo.layout.mode[mode].bg[cur_bg].path
         );
     }
     else {
@@ -6878,7 +6916,6 @@ static int init_device(void)
         0
     );
 
-    myvideo.mask = -1;
     myvideo.shader = -1;
 
     load_config(myvideo.home);
@@ -6896,8 +6933,10 @@ static int init_device(void)
     load_menu_res();
     load_touch_pen();
 
-    //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL, 0, 0);
-    //load_mask_file();
+#if defined(MIYOO_MINI)
+    myvideo.layout.mask.sel = -1;
+    myvideo.layout.mask.max_cnt = get_mask_cnt();
+#endif
 
 #if defined(MIYOO_MINI) || defined(TRIMUI_SMART) || defined(PANDORA)
     //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
@@ -7320,7 +7359,7 @@ typedef enum {
     MENU_CPU,
 #endif
 
-#if 0 // defined(MIYOO_MINI)
+#if defined(MIYOO_MINI)
     MENU_MASK,
 #endif
 
@@ -7380,7 +7419,7 @@ static const char *MENU_LIST_STR[] = {
     "CPU CORE",
 #endif
 
-#if 0 //defined(MIYOO_MINI)
+#if defined(MIYOO_MINI)
     "MASK",
 #endif
 
@@ -7935,18 +7974,11 @@ TEST(sdl2_video, draw_small_win)
 
 static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
-    int max_mask_count = get_mask_cnt();
-
 #if !defined(MIYOO_MINI)
-    //int add = is_lr ? 50 : 1;
     int max_shader_count = get_shader_cnt();
 #endif
 
     trace("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
-
-    if (myvideo.mask >= max_mask_count) {
-        myvideo.mask = 0;
-    }
 
 #if !defined(MIYOO_MINI)
     if (myvideo.shader >= max_shader_count) {
@@ -8050,110 +8082,18 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-#if 0 // defined(MIYOO_MINI)
+#if defined(MIYOO_MINI)
     case MENU_MASK:
         if (right_key) {
-            myconfig.layout.overlay.enable = 1;
-        }
-        else {
-            myconfig.layout.overlay.enable = 0;
-        }
-        break;
-#endif
-
-#if 0
-    case MENU_CUST_LCD:
-        if (right_key) {
-            myvideo.layout.overlay.idx = 1;
-        }
-        else {
-            myvideo.layout.overlay.idx = 0;
-        }
-        break;
-    case MENU_CUST_LCD_X:
-        if (right_key) {
-            if (myconfig.layout.overlay.lcd[ov_idx].x < (SCREEN_W - add)) {
-                myconfig.layout.overlay.lcd[ov_idx].x += add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].x = SCREEN_W - 1;
+            if (myvideo.layout.mask.max_cnt && (myvideo.layout.mask.sel < (myvideo.layout.mask.max_cnt - 1))) {
+                myvideo.layout.mask.sel += 1;
+                load_mask_file();
             }
         }
         else {
-            if (myconfig.layout.overlay.lcd[ov_idx].x >= add) {
-                myconfig.layout.overlay.lcd[ov_idx].x -= add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].x = 0;
-            }
-        }
-        break;
-    case MENU_CUST_LCD_Y:
-        if (right_key) {
-            if (myconfig.layout.overlay.lcd[ov_idx].y < (SCREEN_H - add)) {
-                myconfig.layout.overlay.lcd[ov_idx].y += add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].y  = SCREEN_H - 1;
-            }
-        }
-        else {
-            if (myconfig.layout.overlay.lcd[ov_idx].y >= add) {
-                myconfig.layout.overlay.lcd[ov_idx].y -= add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].y = 0;
-            }
-        }
-        break;
-    case MENU_CUST_LCD_W:
-        if (right_key) {
-            if (myconfig.layout.overlay.lcd[ov_idx].w <= (SCREEN_W - add)) {
-                myconfig.layout.overlay.lcd[ov_idx].w += add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].w = SCREEN_W;
-            }
-        }
-        else {
-            if (myconfig.layout.overlay.lcd[ov_idx].w > add) {
-                myconfig.layout.overlay.lcd[ov_idx].w -= add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].w = 1;
-            }
-        }
-        break;
-    case MENU_CUST_LCD_H:
-        if (right_key) {
-            if (myconfig.layout.overlay.lcd[ov_idx].h <= (SCREEN_H - add)) {
-                myconfig.layout.overlay.lcd[ov_idx].h += add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].h = SCREEN_H;
-            }
-        }
-        else {
-            if (myconfig.layout.overlay.lcd[ov_idx].h > add) {
-                myconfig.layout.overlay.lcd[ov_idx].h -= add;
-            }
-            else {
-                myconfig.layout.overlay.lcd[ov_idx].h = 1;
-            }
-        }
-        break;
-#endif
-
-#if 0 //defined(MIYOO_MINI)
-    case MENU_MASK:
-        if (right_key) {
-            if (max_mask_count && (myvideo.mask < (max_mask_count - 1))) {
-                myvideo.mask += 1;
-            }
-        }
-        else {
-            if (myvideo.mask >= 0) {
-                myvideo.mask -= 1;
+            if (myvideo.layout.mask.sel >= 0) {
+                myvideo.layout.mask.sel -= 1;
+                load_mask_file();
             }
         }
         break;
@@ -8356,7 +8296,7 @@ static int draw_sdl2_menu_setting(
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
 
-#if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
+#if !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
     char tmp[MAX_PATH] = { 0 };
 #endif
 
@@ -8379,9 +8319,9 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%s", l10n(lang_file_name[myconfig.lang]));
         break;
 
-#if 0 //defined(MIYOO_MINI)
+#if defined(MIYOO_MINI)
     case MENU_MASK:
-        if (get_filename_by_index(MASK_PATH, myvideo.mask, tmp, 0) >= 0) {
+        if (get_filename_by_index(MASK_PATH, myvideo.layout.mask.sel, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
         }
         else {
@@ -8453,31 +8393,6 @@ static int draw_sdl2_menu_setting(
             LAYOUT_MODE_STR0[myconfig.layout.mode.alt]
         );
         break;
-
-#if 0 // defined(MIYOO_MINI)
-    case MENU_MASK:
-        sx = 0;
-        sprintf(buf, "%s", l10n((myconfig.layout.overlay.enable > 0 )? "Yes" : "No"));
-        break;
-#endif
-
-#if 0
-    case MENU_CUST_LCD:
-        sprintf(buf, "%d", myvideo.layout.overlay.idx);
-        break;
-    case MENU_CUST_LCD_X:
-        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].x);
-        break;
-    case MENU_CUST_LCD_Y:
-        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].y);
-        break;
-    case MENU_CUST_LCD_W:
-        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].w);
-        break;
-    case MENU_CUST_LCD_H:
-        sprintf(buf, "%d", myconfig.layout.overlay.lcd[myvideo.layout.overlay.idx].h);
-        break;
-#endif
 
     case MENU_ROTATE_KEY:
         sprintf(buf, "%s    ", LAYOUT_NAME_STR[myconfig.layout.mode.alt]);
@@ -8621,10 +8536,6 @@ static int process_sdl2_setting(int key)
             pre_cpu_core = myconfig.cpu_core;
         }
 #endif
-
-        //add_layout_mode(LAYOUT_MODE_CUST, 0, NULL, 0, 0);
-        //load_mask_file();
-
         myvideo.menu.sdl2.enable = 0;
 
 #if defined(PANDORA)

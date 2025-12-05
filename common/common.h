@@ -292,10 +292,6 @@ typedef struct {
         } bg;
 
         struct {
-            int sel;
-        } mask;
-
-        struct {
             int pos;
             int alpha;
             int border;
