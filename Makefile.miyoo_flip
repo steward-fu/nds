@@ -1,9 +1,9 @@
-export MOD=flip
+export MOD=miyoo_flip
 export NDS_GCC=1
 export NDS_ALSA=0
 
 CFLAGS += -O3
-CFLAGS += -DFLIP
+CFLAGS += -DMIYOO_FLIP
 CFLAGS  += -Wl,--no-undefined
 
 CFLAGS  += -mfpu=neon

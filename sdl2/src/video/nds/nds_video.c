@@ -188,7 +188,7 @@ static const char* LAYOUT_NAME_STR[] = {
 #endif
 };
 
-#if defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
 GLfloat bg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
@@ -227,7 +227,7 @@ const char *def_vert_src =
 "       frag_tex_coord = vert_tex_coord;                                    \n"
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
 "       gl_Position = vert_tex_pos;                                         \n"
 "       frag_tex_coord = vert_tex_coord;                                    \n"
 #endif
@@ -380,7 +380,7 @@ TEST(sdl2_video, free_lcd_virtual_mem)
 }
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(UT)
 static int get_cpu_core_state(int idx)
 {
     FILE *fd = NULL;
@@ -1815,7 +1815,7 @@ int handle_drastic_menu(void)
         return 0;
     }
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(
@@ -2028,7 +2028,7 @@ static int process_screen(void)
         }
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         if ((cur_mode_sel == LAYOUT_MODE_B0) ||
             (cur_mode_sel == LAYOUT_MODE_B1) ||
             (cur_mode_sel == LAYOUT_MODE_B2) ||
@@ -2041,7 +2041,7 @@ static int process_screen(void)
             drt.x = (SCREEN_W - drt.x) - drt.w;
         }
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         if (show_pen && 
             ((myevent.mode == NDS_TOUCH_MODE) || 
             (myconfig.joy.show_cnt &&
@@ -2055,7 +2055,7 @@ static int process_screen(void)
 #endif
             draw_touch_pen(pixels, srt.w, pitch);
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
             if (myconfig.joy.show_cnt && (myconfig.joy.mode == MYJOY_MODE_TOUCH)) {
                 myconfig.joy.show_cnt -= 1;
             }
@@ -2734,7 +2734,7 @@ static void* video_handler(void *param)
     char tmp[MAX_PATH] = { 0 };
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     EGLint surf_cfg[] = {
         EGL_SURFACE_TYPE,
         EGL_WINDOW_BIT,
@@ -2999,7 +2999,7 @@ static void* video_handler(void *param)
         usleep(0);
     }
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     glDeleteTextures(TEXTURE_MAX, myvideo.egl.texture);
     eglMakeCurrent(myvideo.egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroySurface(myvideo.egl.display, myvideo.egl.surface);
@@ -3564,7 +3564,7 @@ static int quit_lcd(void)
 }
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
 static int init_lcd(void)
 {
     trace("call %s()\n", __func__);
@@ -4229,11 +4229,11 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     int rgb565 = (pitch / srt.w) == 2 ? 1 : 0;
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     int tex = (id >= 0) ? id : TEXTURE_TMP;
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     float w = SCREEN_W;
     float h = SCREEN_H;
 #endif
@@ -4336,7 +4336,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     if ((id != -1) &&
         ((cur_mode_sel == LAYOUT_MODE_B1) ||
         (cur_mode_sel == LAYOUT_MODE_B3)))
@@ -5732,10 +5732,10 @@ static int flip_lcd(void)
     myvideo.fb.var_info.yoffset ^= myvideo.fb.var_info.yres;
 #endif
 
-#if defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
 
-#if defined(FLIP) 
+#if defined(MIYOO_FLIP) 
     myvideo.drm.bo = gbm_surface_lock_front_buffer(myvideo.drm.gs);
     drmModeAddFB(myvideo.drm.fd, SCREEN_W, SCREEN_H, 24, 32, gbm_bo_get_stride(myvideo.drm.bo), gbm_bo_get_handle(myvideo.drm.bo).u32, (uint32_t *)&myvideo.drm.fb);
     drmModeSetCrtc(myvideo.drm.fd, myvideo.drm.crtc->crtc_id, myvideo.drm.fb, 0, 0, (uint32_t *)myvideo.drm.conn, 1, &myvideo.drm.crtc->mode);
@@ -6003,7 +6003,7 @@ int load_touch_pen(void)
         return r;
     }
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_PEN]);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -6345,7 +6345,7 @@ static int load_bg_image(void)
 #endif
 
     if (myvideo.layout.bg) {
-#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(FLIP)
+#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(MIYOO_FLIP)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(
@@ -6362,7 +6362,7 @@ static int load_bg_image(void)
 
 #endif
 
-#if defined(MIYOO_MINI) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(FLIP)
+#if defined(MIYOO_MINI) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(PANDORA) || defined(MIYOO_FLIP)
         flush_lcd(
             TEXTURE_BG,
             myvideo.layout.bg->pixels,
@@ -6903,7 +6903,7 @@ static int init_device(void)
     //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     if (myconfig.cpu_core <= 0) {
         myconfig.cpu_core = INIT_CPU_CORE;
     }
@@ -7232,7 +7232,7 @@ static const char *BIND_HOTKEY_STR[] = {
     "SELECT"
 };
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
 static const char *JOY_MODE_STR[] = {
     "DISABLE",
     "D-PAD",
@@ -7240,7 +7240,7 @@ static const char *JOY_MODE_STR[] = {
     "CUSTOM KEY"
 };
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
 static const char *RJOY_MODE_STR[] = {
     "DISABLE",
     "4-BTN",
@@ -7316,7 +7316,7 @@ TEST(sdl2_video, lang_prev)
 typedef enum {
     MENU_LANG = 0,
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     MENU_CPU,
 #endif
 
@@ -7351,7 +7351,7 @@ typedef enum {
     MENU_SHOW_CURSOR,
     MENU_FAST_FORWARD,
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     MENU_JOY_MODE,
     MENU_JOY_CUST_KEY0,
     MENU_JOY_CUST_KEY1,
@@ -7360,7 +7360,7 @@ typedef enum {
     MENU_JOY_DZONE,
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     MENU_RJOY_MODE,
     MENU_RJOY_CUST_KEY0,
     MENU_RJOY_CUST_KEY1,
@@ -7376,7 +7376,7 @@ typedef enum {
 static const char *MENU_LIST_STR[] = {
     "LANGUAGE",
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     "CPU CORE",
 #endif
 
@@ -7411,7 +7411,7 @@ static const char *MENU_LIST_STR[] = {
     "PEN SPEED",
     "SHOW CURSOR",
     "FAST FORWARD",
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     "L JOY MODE",
     "  JOY UP",
     "  JOY DOWN",
@@ -7419,7 +7419,7 @@ static const char *MENU_LIST_STR[] = {
     "  JOY RIGHT",
     "L JOY DEAD ZONE",
 #endif
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     "R JOY MODE",
     "  JOY UP",
     "  JOY DOWN",
@@ -7963,7 +7963,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             lang_prev();
         }
         break;
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     case MENU_CPU:
         if (right_key) {
             if (myconfig.cpu_core < MAX_CPU_CORE) {
@@ -8213,7 +8213,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     case MENU_JOY_MODE:
         if (right_key) {
             if (myconfig.joy.mode < MYJOY_MODE_LAST) {
@@ -8262,7 +8262,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         }
         break;
 #endif
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     case MENU_RJOY_MODE:
         if (right_key) {
             if (myconfig.rjoy.mode < MYJOY_MODE_LAST) {
@@ -8401,7 +8401,7 @@ static int draw_sdl2_menu_setting(
         break;
 #endif
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     case MENU_CPU:
         sprintf(buf, "%d", myconfig.cpu_core);
         break;
@@ -8504,7 +8504,7 @@ static int draw_sdl2_menu_setting(
     case MENU_FAST_FORWARD:
         sprintf(buf, "%d", myconfig.fast_forward);
         break;
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     case MENU_JOY_MODE:
         sprintf(buf, "%s", l10n(JOY_MODE_STR[myconfig.joy.mode]));
         break;
@@ -8524,7 +8524,7 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%d", myconfig.joy.dzone);
         break;
 #endif
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     case MENU_RJOY_MODE:
         sprintf(buf, "%s", l10n(RJOY_MODE_STR[myconfig.rjoy.mode]));
         break;
@@ -8565,7 +8565,7 @@ static int process_sdl2_setting(int key)
     static int cur_sel = 0;
     static int pre_fast = 0;
     static int pre_lang = 0;
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     static int pre_cpu_core = 0;
 #endif
 
@@ -8615,7 +8615,7 @@ static int process_sdl2_setting(int key)
             pre_fast = myconfig.fast_forward;
         }
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         if (pre_cpu_core != myconfig.cpu_core) {
             set_cpu_core(myconfig.cpu_core);
             pre_cpu_core = myconfig.cpu_core;
@@ -8728,7 +8728,7 @@ static int process_sdl2_setting(int key)
             }
             sx += get_font_width("XX");
             break;
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         case MENU_JOY_CUST_KEY0:
         case MENU_JOY_CUST_KEY1:
         case MENU_JOY_CUST_KEY2:
@@ -8741,7 +8741,7 @@ static int process_sdl2_setting(int key)
             }
             break;
 #endif
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         case MENU_RJOY_CUST_KEY0:
         case MENU_RJOY_CUST_KEY1:
         case MENU_RJOY_CUST_KEY2:
@@ -8833,7 +8833,7 @@ static int process_sdl2_setting(int key)
     }
     draw_small_win(450, 360, mode, myvideo.cvt);
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(

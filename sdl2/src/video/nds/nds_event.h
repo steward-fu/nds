@@ -10,7 +10,7 @@
 
 #if defined(MIYOO_MINI)
 #define INPUT_DEV   "/dev/input/event0"
-#elif defined(FLIP)
+#elif defined(MIYOO_FLIP)
 #define INPUT_DEV   "/dev/miyooio"
 #elif defined(PANDORA)
 #define INPUT_DEV   "/dev/input/event4"
@@ -41,7 +41,7 @@
 
 #define CHECK_ONION_FILE "/mnt/SDCARD/.tmp_update"
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
 #define DEV_KEY_BUF_MAX         32
 #define DEV_KEY_IDX_MAX         19
 

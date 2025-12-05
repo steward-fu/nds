@@ -257,7 +257,7 @@ TEST(sdl2_event, set_key_bit)
 }
 #endif
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
 static int remap_keypad(jval_t *j, int idx)
 {
     int r = 0;
@@ -695,7 +695,7 @@ static int update_joy_state(void)
         r |= remap_custkey(&myjoy.left.last, 0);
     }
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     if (myconfig.rjoy.mode == MYJOY_MODE_KEY) {
         r |= remap_keypad(&myjoy.right.last, 1);
     }
@@ -855,7 +855,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MIYOO_MINI) || defined(FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
+#if defined(MIYOO_MINI) || defined(MIYOO_FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
         //enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
@@ -970,7 +970,7 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_L2, 0);
     }
     else if (myevent.keypad.cur_bits & (1 << KEY_BIT_L2)) {
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         if (myconfig.joy.mode != MYJOY_MODE_TOUCH) {
 #endif
             if ((myvideo.menu.sdl2.enable == 0) && (myvideo.menu.drastic.enable == 0)) {
@@ -982,7 +982,7 @@ static int handle_hotkey(void)
                 }
                 myevent.touch.slow_down = 0;
             }
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         }
 #endif
     }
@@ -1042,7 +1042,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_R1, v);
     }
     if (c == myevent.keypad.l2) {
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         if (myconfig.joy.mode == MYJOY_MODE_TOUCH) {
             myconfig.joy.show_cnt = MYJOY_SHOW_CNT;
             myevent.input.touch_status = !!v;
@@ -1107,7 +1107,7 @@ TEST(sdl2_event, update_key_bit)
 }
 #endif
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
 static int get_flip_key_code(struct input_event *e)
 {
     static uint32_t pre_bits = 0;
@@ -1742,7 +1742,7 @@ int input_handler(void *data)
 
         memset(&ev, 0, sizeof(ev));
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
         rk = get_flip_key_code(&ev);
 #elif defined(TRIMUI_BRICK) || defined(UT)
         rk = get_brick_key_code(&ev);
@@ -1757,7 +1757,7 @@ int input_handler(void *data)
             update_key_bit(ev.code, ev.value);
         }
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         rj = update_joy_state();
 #endif
 

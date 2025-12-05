@@ -36,7 +36,7 @@
 #include "common.h"
 #include "nds_joy.h"
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
 nds_joy myjoy = { 0 };
 #endif
 
@@ -81,7 +81,7 @@ TEST_TEAR_DOWN(sdl2_joystick)
 }
 #endif
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
 static int open_uart(const char *port)
 {
     int fd = -1;
@@ -507,7 +507,7 @@ static int parse_serial_buf(const char *cmd, int len)
         }
     }
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     myjoy.cur_axis[0] = frame_to_axis(&myjoy.left.cali.x, myjoy.cur_frame.left_x);
     myjoy.cur_axis[1] = frame_to_axis(&myjoy.left.cali.y, myjoy.cur_frame.left_y);
     myjoy.cur_axis[2] = frame_to_axis(&myjoy.right.cali.x, myjoy.cur_frame.right_x);
@@ -692,10 +692,10 @@ int JoystickInit(void)
 {
     trace("call %s()\n", __func__);
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
     read_joy_cfg(JOY_CFG_FILE, &myjoy.left.cali.x, &myjoy.left.cali.y);
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
     read_joy_cfg(JOY_RIGHT_CFG_FILE, &myjoy.right.cali.x, &myjoy.right.cali.y);
 #endif
 
@@ -722,7 +722,7 @@ void JoystickQuit(void)
 {
     trace("call %s()\n", __func__);
 
-#if defined(FLIP) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(UT)
     myjoy.running = 0;
 
     if (myjoy.thread) {
@@ -991,7 +991,7 @@ TEST(sdl2_joystick, JoystickSetSensorsEnabled)
 
 void JoystickUpdate(SDL_Joystick *j)
 {
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     static int pre_lx = -1;
     static int pre_ly = -1;
     static int pre_rx = -1;
@@ -1006,7 +1006,7 @@ void JoystickUpdate(SDL_Joystick *j)
             break;
         }
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
         if (myjoy.left.last.x != pre_lx) {
             pre_lx = myjoy.left.last.x;
             SDL_PrivateJoystickAxis(j, 0, pre_lx);

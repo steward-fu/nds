@@ -2441,8 +2441,8 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_common"
     fi
 
-    if test x$MOD = xflip; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFLIP"
+    if test x$MOD = xmiyoo_flip; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMIYOO_FLIP"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I/opt/mini/arm-buildroot-linux-gnueabihf/sysroot/usr/include/libdrm"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -ldrm -lgbm"
@@ -3824,7 +3824,6 @@ case "$host" in
 
         case "$MOD" in
             *ut*)       CheckNDSVideo ;;
-            *flip*)     CheckNDSVideo ;;
             *qx1000*)   CheckNDSVideo ;;
             *qx1050*)   CheckNDSVideo ;;
             *gkd2*)     CheckNDSVideo ;;
@@ -3832,6 +3831,7 @@ case "$host" in
             *xt897*)    CheckNDSVideo ;;
             *xt894*)    CheckNDSVideo ;;
             *miyoo_mini*)       CheckNDSVideo ;;
+            *miyoo_flip*)       CheckNDSVideo ;;
             *trimui_smart*)     CheckNDSVideo ;;
             *trimui_brick*)     CheckNDSVideo ;;
             *)

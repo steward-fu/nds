@@ -20,7 +20,7 @@
 #include <wayland-egl.h>
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
 #include <gbm.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -93,7 +93,7 @@ typedef enum {
 #define MAX_CPU_CORE    2
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
 #define SCREEN_W        640
 #define SCREEN_H        480
 #define INIT_CPU_CORE   2
@@ -297,7 +297,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
     struct {
         EGLConfig config;
         EGLDisplay display;
@@ -328,7 +328,7 @@ typedef struct {
     } egl;
 #endif
 
-#if defined(FLIP)
+#if defined(MIYOO_FLIP)
     struct {
         int fd;
         int fb;
@@ -391,7 +391,7 @@ typedef struct {
         struct fb_var_screeninfo var_info;
         struct fb_fix_screeninfo fix_info;
 
-#if defined(FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         void *virt_addr;
 #endif
 
