@@ -2457,13 +2457,6 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/trimui"
     fi
 
-    if test x$MOD = xpandora; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DPANDORA"
-
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../lib/pandora"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lpng"
-    fi
-
     if test x$MOD = xqx1000; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000"
 
@@ -2500,8 +2493,8 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
     fi
 
-    if test x$MOD = xgkdmini; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKDMINI"
+    if test x$MOD = xgkd_miniplus; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKD_MINIPLUS"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
@@ -3826,7 +3819,6 @@ case "$host" in
             *ut*)       CheckNDSVideo ;;
             *qx1000*)   CheckNDSVideo ;;
             *qx1050*)   CheckNDSVideo ;;
-            *gkdmini*)  CheckNDSVideo ;;
             *xt897*)    CheckNDSVideo ;;
             *xt894*)    CheckNDSVideo ;;
             *miyoo_mini*)       CheckNDSVideo ;;
@@ -3834,6 +3826,7 @@ case "$host" in
             *trimui_smart*)     CheckNDSVideo ;;
             *trimui_brick*)     CheckNDSVideo ;;
             *gkd_pixel2*)       CheckNDSVideo ;;
+            *gkd_miniplus*)     CheckNDSVideo ;;
             *)
                 CheckVisibilityHidden
                 ;;

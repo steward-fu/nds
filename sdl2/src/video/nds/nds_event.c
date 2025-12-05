@@ -855,7 +855,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MIYOO_MINI) || defined(MIYOO_FLIP) || defined(TRIMUI_BRICK) || defined(GKD_PIXEL2) || defined(GKDMINI) || defined(TRIMUI_SMART)
+#if defined(MIYOO_MINI) || defined(MIYOO_FLIP) || defined(TRIMUI_BRICK) || defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_SMART)
         //enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
@@ -1828,10 +1828,10 @@ void init_event(void)
     myevent.keypad.fast = -1;
     myevent.keypad.exit = -1;
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(TRIMUI_BRICK) || defined(PANDORA) || defined(UT)
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(TRIMUI_BRICK) || defined(GKD_MINIPLUS) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(PANDORA) || defined(UT)
+#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(GKD_MINIPLUS) || defined(UT)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
 #endif

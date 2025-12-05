@@ -6,10 +6,10 @@ CFLAGS  += -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/SDL2
 LDFLAGS += -ljson-c
 endif
 
-ifeq ($(MOD),gkdmini)
+ifeq ($(MOD),gkd_miniplus)
 export CROSS=aarch64-linux-
 export PATH=/opt/flip/bin:$(shell echo $$PATH)
-CFLAGS  += -DGKDMINI
+CFLAGS  += -DGKD_MINIPLUS
 CFLAGS  += -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/SDL2
 LDFLAGS += -ljson-c
 endif

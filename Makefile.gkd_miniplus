@@ -1,10 +1,10 @@
-export MOD=gkdmini
+export MOD=gkd_miniplus
 export NDS_GCC=1
 export NDS_ALSA=0
 export NDS_RUNNER=1
 
 CFLAGS += -O3
-CFLAGS += -DGKDMINI
+CFLAGS += -DGKD_MINIPLUS
 CFLAGS += -Wl,--no-undefined
 
 CFLAGS  += -mfpu=neon

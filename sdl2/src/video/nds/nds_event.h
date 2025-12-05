@@ -31,7 +31,7 @@
 #define POWER_DEV   "/dev/input/event2"
 #elif defined(GKD_PIXEL2)
 #define INPUT_DEV   "/dev/input/event2"
-#elif defined(GKDMINI)
+#elif defined(GKD_MINIPLUS)
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(TRIMUI_BRICK)
 #define INPUT_DEV   "/dev/input/event3"
@@ -105,32 +105,6 @@
 #define DEV_KEY_CODE_POWER      -1
 #define DEV_KEY_CODE_VOL_UP     -1
 #define DEV_KEY_CODE_VOL_DOWN   -1
-#endif
-
-#if defined(PANDORA)
-#define DEV_KEY_CODE_UP         103
-#define DEV_KEY_CODE_DOWN       108
-#define DEV_KEY_CODE_LEFT       105
-#define DEV_KEY_CODE_RIGHT      106
-#define DEV_KEY_CODE_A          107
-#define DEV_KEY_CODE_B          109
-#define DEV_KEY_CODE_X          104
-#define DEV_KEY_CODE_Y          102
-#define DEV_KEY_CODE_L1         54
-#define DEV_KEY_CODE_R1         97
-#define DEV_KEY_CODE_L2         25
-#define DEV_KEY_CODE_R2         14
-#define DEV_KEY_CODE_START      56
-#define DEV_KEY_CODE_SELECT     29
-#define DEV_KEY_CODE_MENU       57
-#define DEV_KEY_CODE_POWER      -1
-#define DEV_KEY_CODE_VOL_UP     -1
-#define DEV_KEY_CODE_VOL_DOWN   -1
-
-#define DEV_KEY_CODE_SAVE       1
-#define DEV_KEY_CODE_LOAD       11
-#define DEV_KEY_CODE_FAST       3
-#define DEV_KEY_CODE_EXIT       16
 #endif
 
 #if defined(XT897)
@@ -311,7 +285,7 @@
 #define DEV_KEY_CODE_VOL_DOWN   -1
 #endif
 
-#if defined(GKDMINI)
+#if defined(GKD_MINIPLUS)
 #define DEV_KEY_CODE_UP         544
 #define DEV_KEY_CODE_DOWN       545
 #define DEV_KEY_CODE_LEFT       546
@@ -330,6 +304,11 @@
 #define DEV_KEY_CODE_POWER      -1
 #define DEV_KEY_CODE_VOL_UP     -1
 #define DEV_KEY_CODE_VOL_DOWN   -1
+
+#define DEV_KEY_CODE_SAVE       318
+#define DEV_KEY_CODE_LOAD       317
+#define DEV_KEY_CODE_FAST       704
+#define DEV_KEY_CODE_EXIT       -1
 #endif
 
 #define KEY_BIT_UP              0
