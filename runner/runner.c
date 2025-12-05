@@ -377,8 +377,15 @@ int main(int argc, char **argv)
         running = 0;
         error("no receive any frame from emulator\n");
 
+#if defined(TRIMUI_BRICK)
         system("kill -9 `pidof ld-linux-armhf.so.3`");
-        error("killed emulator");
+#endif
+
+#if defined(GKD_PIXEL2) || defined(GKD_MINIPLUS)
+        system("kill -9 `pidof drastic`");
+#endif
+
+        error("killed emulator\n");
     }
     pthread_join(id, NULL);
 
