@@ -105,6 +105,7 @@ enum layout_mode_t {
 #define DEF_SWIN_ALPHA      6
 #define DEF_SWIN_BORDER     1
 #define DEF_JOY_DZONE       25
+#define DEF_AUTO_STATE      -1
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
 #define DEF_LAYOUT_MODE     LAYOUT_MODE_C0
@@ -201,9 +202,8 @@ typedef enum {
 #define JSON_CPU_CORE           "cpu_core"
 #define JSON_FAST_FORWARD       "fast_forward"
 #define JSON_FILTER             "screen_filter"
+#define JSON_AUTO_STATE         "auto_savestate"
 #define JSON_STATE_PATH         "state_path"
-#define JSON_AUTOSTATE_SLOT     "autostate_slot"
-#define JSON_AUTOSTATE_ENABLE   "autostate_enable"
 #define JSON_MENU_SEL           "menu_sel_bg"
 #define JSON_MENU_MAX           "menu_max_bg_cnt"
 #define JSON_MENU_SHOW_CURSOR   "menu_show_cursor"
@@ -268,12 +268,9 @@ typedef struct {
     int cpu_core;
     int fast_forward;
     filter_type_t filter;
-    char state_path[MAX_PATH];
 
-    struct {
-        int slot;
-        int enable;
-    } autostate;
+    int auto_state;
+    char state_path[MAX_PATH];
 
     struct {
         int sel;

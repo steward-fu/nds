@@ -195,6 +195,7 @@ int reset_config(void)
     myconfig.layout.swin.alpha = DEF_SWIN_ALPHA;
     myconfig.layout.swin.border = DEF_SWIN_BORDER;
     myconfig.pen.speed = DEF_PEN_SPEED;
+    myconfig.auto_state = DEF_AUTO_STATE;
     myconfig.fast_forward = DEF_FAST_FORWARD;
 
 #if defined(MIYOO_FLIP) || defined(UT)
@@ -315,9 +316,8 @@ int load_config(const char *path)
         JSON_GET_INT(JSON_CPU_CORE, myconfig.cpu_core);
         JSON_GET_INT(JSON_FAST_FORWARD, myconfig.fast_forward);
         JSON_GET_INT(JSON_FILTER, myconfig.filter);
+        JSON_GET_INT(JSON_AUTO_STATE, myconfig.auto_state);
         JSON_GET_STR(JSON_STATE_PATH, myconfig.state_path);
-        JSON_GET_INT(JSON_AUTOSTATE_SLOT, myconfig.autostate.slot);
-        JSON_GET_INT(JSON_AUTOSTATE_ENABLE, myconfig.autostate.enable);
         JSON_GET_INT(JSON_MENU_SEL, myconfig.menu.sel);
         JSON_GET_INT(JSON_MENU_MAX, myconfig.menu.max);
         JSON_GET_INT(JSON_MENU_SHOW_CURSOR, myconfig.menu.show_cursor);
@@ -426,9 +426,8 @@ int update_config(const char *path)
         JSON_SET_INT(JSON_CPU_CORE, myconfig.cpu_core);
         JSON_SET_INT(JSON_FAST_FORWARD, myconfig.fast_forward);
         JSON_SET_INT(JSON_FILTER, myconfig.filter);
+        JSON_SET_INT(JSON_AUTO_STATE, myconfig.auto_state);
         JSON_SET_STR(JSON_STATE_PATH, myconfig.state_path);
-        JSON_SET_INT(JSON_AUTOSTATE_SLOT, myconfig.autostate.slot);
-        JSON_SET_INT(JSON_AUTOSTATE_ENABLE, myconfig.autostate.enable);
         JSON_SET_INT(JSON_MENU_SEL, myconfig.menu.sel);
         JSON_SET_INT(JSON_MENU_MAX, myconfig.menu.max);
         JSON_SET_INT(JSON_MENU_SHOW_CURSOR, myconfig.menu.show_cursor);

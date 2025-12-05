@@ -47,6 +47,7 @@
 #include "SDL_video.h"
 #include "SDL_mouse.h"
 
+#include "snd.h"
 #include "hook.h"
 #include "common.h"
 #include "hex_pen.h"
@@ -1851,13 +1852,13 @@ static int process_screen(void)
     static int cur_ff = -1;
     static int cur_mic = -1;
     static int cur_hinge = -1;
-    static int autostate = 15;
     static int show_info = -1;
     static int cur_filter = -1;
     static int cur_layout_bg = -1;
     static int cur_layout_mode = -1;
     static int col_fg = 0xe0e000;
     static int col_bg = 0x000000;
+    static int autostate_cnt = 15;
     static char buf[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
@@ -1870,11 +1871,11 @@ static int process_screen(void)
     cur_bg_sel = myconfig.layout.bg.sel;
     cur_mode_sel = myconfig.layout.mode.sel;
 
-    if (myconfig.autostate.enable > 0) {
-        if (autostate > 0) {
-            autostate -= 1;
-            if (autostate == 0) {
-                load_state(myconfig.autostate.slot);
+    if (myconfig.auto_state >= 0) {
+        if (autostate_cnt > 0) {
+            autostate_cnt -= 1;
+            if (autostate_cnt == 0) {
+                load_state(myconfig.auto_state);
             }
         }
     }
@@ -6938,8 +6939,8 @@ static int init_device(void)
     myvideo.layout.mask.max_cnt = get_mask_cnt();
 #endif
 
-#if defined(MIYOO_MINI) || defined(TRIMUI_SMART) || defined(PANDORA)
-    //set_autostate(myconfig.autostate.enable, myconfig.autostate.slot);
+#if defined(MIYOO_MINI) || defined(TRIMUI_SMART)
+    set_autostate(myconfig.auto_state);
 #endif
 
 #if defined(MIYOO_FLIP) || defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK)
@@ -7387,6 +7388,11 @@ typedef enum {
     MENU_SWAP_L1L2,
     MENU_SWAP_R1R2,
     MENU_PEN_SPEED,
+
+#if defined(MIYOO_MINI)
+    MENU_AUTO_STATE,
+#endif
+
     MENU_SHOW_CURSOR,
     MENU_FAST_FORWARD,
 
@@ -7448,8 +7454,14 @@ static const char *MENU_LIST_STR[] = {
     "SWAP L1-L2",
     "SWAP R1-R2",
     "PEN SPEED",
+
+#if defined(MIYOO_MINI)
+    "AUTO SAVESTATE",
+#endif
+
     "SHOW CURSOR",
     "FAST FORWARD",
+
 #if defined(MIYOO_FLIP)
     "L JOY MODE",
     "  JOY UP",
@@ -8138,6 +8150,22 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
+
+#if defined(MIYOO_MINI)
+    case MENU_AUTO_STATE:
+        if (right_key) {
+            if (myconfig.auto_state < 20) {
+                myconfig.auto_state += 1;
+            }
+        }
+        else {
+            if (myconfig.auto_state >= 0) {
+                myconfig.auto_state -= 1;
+            }
+        }
+        break;
+#endif
+
     case MENU_SHOW_CURSOR:
         myconfig.menu.show_cursor = right_key;
         break;
@@ -8412,6 +8440,10 @@ static int draw_sdl2_menu_setting(
         break;
     case MENU_PEN_SPEED:
         sprintf(buf, "%.1fx", ((float)myconfig.pen.speed) / 10);
+        break;
+    case MENU_AUTO_STATE:
+        sprintf(tmp, "%d", myconfig.auto_state);
+        sprintf(buf, "%s", (myconfig.auto_state >= 0) ? tmp : l10n("NONE"));
         break;
     case MENU_SHOW_CURSOR:
         sprintf(buf, "%s", l10n(myconfig.menu.show_cursor ? "Show" : "Hide"));

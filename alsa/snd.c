@@ -397,19 +397,25 @@ TEST(alsa, open_dsp)
 }
 #endif
 
-int set_autostate(int enable, int slot)
+int set_autostate(int slot)
 {
-    trace("call %s(enable=%d, slot=%d)\n", __func__, enable, slot);
+    trace("call %s(slot=%d)\n", __func__, slot);
 
-    autostate.slot = slot;
-    autostate.enable = enable;
+    if (slot >= 0) {
+        autostate.slot = slot;
+        autostate.enable = 1;
+    }
+    else {
+        autostate.enable = 0;
+    }
+
     return 0;
 }
 
 #if defined(UT)
 TEST(alsa, set_autostate)
 {
-    TEST_ASSERT_EQUAL_INT(0, set_autostate(0, 0));
+    TEST_ASSERT_EQUAL_INT(0, set_autostate(-1));
     TEST_ASSERT_EQUAL_INT(0, autostate.enable);
     TEST_ASSERT_EQUAL_INT(0, autostate.slot);
     TEST_ASSERT_EQUAL_INT(0, set_autostate(1, 10));

@@ -43,6 +43,7 @@ CLOSE=關閉
 ON=打開
 OFF=關閉
 DEBUG LOG=除錯日誌
+AUTO SAVESTATE=自動保存
 
 Version=版本
 Change Options=修改選項
