@@ -77,6 +77,8 @@ static GLushort vert_indices[] = {
     0, 1, 2, 0, 2, 3
 };
 
+static int running = 0;
+static int frame_cnt = 0;
 static runner_t myrunner = { 0 };
 
 static int init_shm(void)
@@ -175,7 +177,6 @@ static void* runner_handler(void *param)
 {
     int r = 0;
     int cc = 0;
-    int running = 0;
     SDL_Rect rt = { 0 };
     char cur_bg_path[MAX_PATH] = { 0 };
 
@@ -305,6 +306,7 @@ static void* runner_handler(void *param)
             }
             break;
         case SHM_CMD_FLIP:
+            frame_cnt += 1;
             trace("recv SHM_CMD_FLIP\n");
             SDL_GL_SwapWindow(myrunner.sdl2.win);
 
@@ -364,10 +366,20 @@ int main(int argc, char **argv)
 {
     pthread_t id = 0;
 
-    nds_debug_level = get_debug_level(0);
+    nds_debug_level = TRACE_LEVEL;//get_debug_level(0);
     trace("log level \"%s\"\n", DEBUG_LEVEL_STR[nds_debug_level]);
 
     pthread_create(&id, NULL, runner_handler, NULL);
+
+    usleep(1500000);
+
+    if (frame_cnt == 0) {
+        running = 0;
+        error("no receive any frame from emulator\n");
+
+        system("kill -9 `pidof ld-linux-armhf.so.3`");
+        error("killed emulator");
+    }
     pthread_join(id, NULL);
 
     return 0;

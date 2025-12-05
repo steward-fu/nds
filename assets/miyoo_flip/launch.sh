@@ -18,7 +18,7 @@ if [ ! -d /usr/lib32 ]; then
 fi
 
 cd $MYDIR
-./drastic "$1" > debug.log 2>&1
+./drastic "$1" > debug_drastic.log 2>&1
 sync
 
 echo $sv > /proc/sys/vm/swappiness

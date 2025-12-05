@@ -18,19 +18,11 @@ echo 10 > /proc/sys/vm/swappiness
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 kill_runner
-sleep 0.3
 
-LD_LIBRARY_PATH=/usr/trimui/lib ./runner&
-sleep 1
-
-PID=`pidof runner`
-if [ "$PID" == "" ]; then
-    exit
-fi
+LD_LIBRARY_PATH=/usr/trimui/lib ./runner > debug_runner.log 2>&1 &
 
 export SDL_VIDEODRIVER=NDS
-
-./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > debug.log 2>&1
+./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > debug_drastic.log 2>&1
 sync
 
 kill_runner
