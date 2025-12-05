@@ -27,7 +27,7 @@ kill -STOP `pidof keymon`
 cd $MYDIR
 ./vol&
 ./cpuclock 1500
-./drastic "$1" > std.log 2>&1
+./drastic "$1" > debug.log 2>&1
 sync
 killall vol
 

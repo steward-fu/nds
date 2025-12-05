@@ -2493,8 +2493,8 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
-    if test x$MOD = xgkd2; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKD2"
+    if test x$MOD = xgkd_pixel2; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DGKD_PIXEL2"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../runner"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS"
@@ -3826,7 +3826,6 @@ case "$host" in
             *ut*)       CheckNDSVideo ;;
             *qx1000*)   CheckNDSVideo ;;
             *qx1050*)   CheckNDSVideo ;;
-            *gkd2*)     CheckNDSVideo ;;
             *gkdmini*)  CheckNDSVideo ;;
             *xt897*)    CheckNDSVideo ;;
             *xt894*)    CheckNDSVideo ;;
@@ -3834,6 +3833,7 @@ case "$host" in
             *miyoo_flip*)       CheckNDSVideo ;;
             *trimui_smart*)     CheckNDSVideo ;;
             *trimui_brick*)     CheckNDSVideo ;;
+            *gkd_pixel2*)       CheckNDSVideo ;;
             *)
                 CheckVisibilityHidden
                 ;;

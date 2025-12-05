@@ -1,23 +1,25 @@
-ifeq ($(MOD),gkd2)
+ifeq ($(MOD),gkd_pixel2)
 export CROSS=aarch64-linux-
 export PATH=/opt/flip/bin:$(shell echo $$PATH)
-LDFLAGS += -DGKD2
+CFLAGS  += -DGKD_PIXEL2
 CFLAGS  += -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/SDL2
+LDFLAGS += -ljson-c
 endif
 
 ifeq ($(MOD),gkdmini)
 export CROSS=aarch64-linux-
 export PATH=/opt/flip/bin:$(shell echo $$PATH)
-LDFLAGS += -DGKDMINI
+CFLAGS  += -DGKDMINI
 CFLAGS  += -I/opt/flip/aarch64-flip-linux-gnu/sysroot/usr/include/SDL2
+LDFLAGS += -ljson-c
 endif
 
 ifeq ($(MOD),trimui_brick)
 export CROSS=aarch64-linux-gnu-
 export PATH=/opt/brick/bin:$(shell echo $$PATH)
+CFLAGS  += -DTRIMUI_BRICK
 CFLAGS  += -I/opt/brick/usr/include
 CFLAGS  += -I/opt/brick/usr/include/SDL2
-LDFLAGS += -DTRIMUI_BRICK
 LDFLAGS += -lrt
 LDFLAGS += -lusc
 LDFLAGS += -lIMGegl

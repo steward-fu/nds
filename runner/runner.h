@@ -4,7 +4,7 @@
 #ifndef __RUNNER_H__
 #define __RUNNER_H__
 
-#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(GKD_PIXEL2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #endif
@@ -16,7 +16,7 @@
 #define R_LCD_H 480
 #endif
 
-#if defined(GKD2)
+#if defined(GKD_PIXEL2)
 #define R_LCD_W 640
 #define R_LCD_H 480
 #endif

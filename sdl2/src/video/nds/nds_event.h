@@ -29,7 +29,7 @@
 #define INPUT_DEV   "/dev/input/event3"
 #define TOUCH_DEV   "/dev/input/event4"
 #define POWER_DEV   "/dev/input/event2"
-#elif defined(GKD2)
+#elif defined(GKD_PIXEL2)
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(GKDMINI)
 #define INPUT_DEV   "/dev/input/event2"
@@ -290,7 +290,7 @@
 #define DEV_KEY_CODE_LOAD       318
 #endif
 
-#if defined(GKD2)
+#if defined(GKD_PIXEL2)
 #define DEV_KEY_CODE_UP         544
 #define DEV_KEY_CODE_DOWN       545
 #define DEV_KEY_CODE_LEFT       546

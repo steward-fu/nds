@@ -1,10 +1,10 @@
-export MOD=gkd2
+export MOD=gkd_pixel2
 export NDS_GCC=1
 export NDS_ALSA=0
 export NDS_RUNNER=1
 
 CFLAGS += -O3
-CFLAGS += -DGKD2
+CFLAGS += -DGKD_PIXEL2
 CFLAGS += -Wl,--no-undefined
 
 CFLAGS  += -mfpu=neon

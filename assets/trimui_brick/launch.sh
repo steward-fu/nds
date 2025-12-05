@@ -30,7 +30,7 @@ fi
 
 export SDL_VIDEODRIVER=NDS
 
-./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > std.log 2>&1
+./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > debug.log 2>&1
 sync
 
 kill_runner

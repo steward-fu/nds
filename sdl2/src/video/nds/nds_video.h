@@ -58,7 +58,7 @@
 #include "smart.h"
 #endif
 
-#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(UT)
+#if defined(GKD_PIXEL2) || defined(GKDMINI) || defined(TRIMUI_BRICK) || defined(UT)
 #include "runner.h"
 #endif
 
@@ -169,7 +169,7 @@ typedef enum {
 #define MAX_CPU_CORE    4
 #endif
 
-#if defined(GKD2)
+#if defined(GKD_PIXEL2)
 #define SCREEN_W        640
 #define SCREEN_H        480
 #define INIT_CPU_CORE   2
@@ -352,7 +352,7 @@ typedef struct {
     int sar_fd;
 #endif
 
-#if defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(GKD_PIXEL2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
     struct {
         int fd;
         shm_buf_t *buf;
@@ -391,7 +391,7 @@ typedef struct {
         struct fb_var_screeninfo var_info;
         struct fb_fix_screeninfo fix_info;
 
-#if defined(MIYOO_FLIP) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
+#if defined(MIYOO_FLIP) || defined(GKD_PIXEL2) || defined(GKDMINI) || defined(TRIMUI_BRICK)
         void *virt_addr;
 #endif
 

@@ -12,7 +12,7 @@ echo 0 > /sys/module/gpio_keys_polled/parameters/l2r2combokey
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 cd $MYDIR
-./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > std.log 2>&1
+./lib/ld-linux-armhf.so.3 --library-path lib ./drastic "$1" > debug.log 2>&1
 sync
 
 echo $sv > /proc/sys/vm/swappiness

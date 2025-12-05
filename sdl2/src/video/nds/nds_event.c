@@ -855,7 +855,7 @@ static int handle_hotkey(void)
     }
 
     if (check_hotkey && hit_hotkey(KEY_BIT_X)) {
-#if defined(MIYOO_MINI) || defined(MIYOO_FLIP) || defined(TRIMUI_BRICK) || defined(GKD2) || defined(GKDMINI) || defined(TRIMUI_SMART)
+#if defined(MIYOO_MINI) || defined(MIYOO_FLIP) || defined(TRIMUI_BRICK) || defined(GKD_PIXEL2) || defined(GKDMINI) || defined(TRIMUI_SMART)
         //enter_sdl2_menu(MENU_TYPE_SHOW_HOTKEY);
 #endif
 
