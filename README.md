@@ -100,7 +100,7 @@ $ make -f Makefile.miyoo_flip clean
 $ make -f Makefile.miyoo_flip
 ```
 
-Installation:
+Installation
 ```
 Copy the "drastic" folder to "Emu/"
 ```
@@ -142,9 +142,30 @@ P.S. The HOTKEY is user-configurable and can be rebound to the MENU or SELECT ke
 
 ## Trimui Smart
 ![image](image/trimui_smart.jpg)  
+
+Device
+```
 Model: TG2040  
 Operating System: 1.0.0 UI_20240510 Kernel_3.4.39  
-Installation:
+```
+
+Building Source
+```
+# Debian 12
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz
+$ tar xvf mini_toolchain-v1.0.tar.gz
+$ sudo mv mini /opt
+$ sudo mv prebuilt /opt
+
+$ git clone https://github.com/steward-fu/nds
+$ cd nds
+$ make -f Makefile.trimui_smart clean
+$ make -f Makefile.trimui_smart
+```
+
+Installation
 ```
 Copy the "drastic" folder to "Emus/"
 ```
@@ -155,8 +176,7 @@ Layout N0
 Layout N1  
 ![image](image/layout/n3.bmp)  
 
-&nbsp;
-
+Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | MENU + UP             | Toggle Microphone                   |
@@ -181,9 +201,30 @@ Layout N1
 
 ## Trimui Brick
 ![image](image/trimui_brick.jpg)  
+
+Device
+```
 Model: TG3040  
 Operating System: 1.1.0 UI_20250610 Kernel_4.9.191  
-Installation:
+```
+
+Building Source
+```
+# Debian 12
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz
+$ tar xvf mini_toolchain-v1.0.tar.gz
+$ sudo mv mini /opt
+$ sudo mv prebuilt /opt
+
+$ git clone https://github.com/steward-fu/nds
+$ cd nds
+$ make -f Makefile.trimui_brick clean
+$ make -f Makefile.trimui_brick
+```
+
+Installation
 ```
 Copy the "drastic" folder to "Emus/"
 ```
@@ -191,10 +232,7 @@ Copy the "drastic" folder to "Emus/"
 Layout  
 ![image](image/layout/base.bmp)  
 
-&nbsp;
-
-The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
-
+Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | F1                    | Save State                          |
@@ -224,13 +262,36 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 | ( DraStic Menu )      |                                     |
 | HOTKEY + Y            | Change Background Image             |
 
+P.S. The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
+
 &nbsp;
 
 ## GKD Pixel 2
 ![image](image/gkd_pixel_2.jpg)  
+
+Device
+```
 Model: GKD Pixel 2  
 Operating System: IUX UI_v2.5_Jan_15_2025 Kernel_5.10.198  
-Installation:
+```
+
+Building Source
+```
+# Debian 12
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz
+$ tar xvf mini_toolchain-v1.0.tar.gz
+$ sudo mv mini /opt
+$ sudo mv prebuilt /opt
+
+$ git clone https://github.com/steward-fu/nds
+$ cd nds
+$ make -f Makefile.gkd_pixel2 clean
+$ make -f Makefile.gkd_pixel2
+```
+
+Installation
 ```
 1. Copy the "drastic" folder to "STORAGE/"
 2. Copy the "14nds" file to "STORAGE/iux/sections/handheld/14nds"
@@ -239,10 +300,7 @@ Installation:
 Layout  
 ![image](image/layout/base.bmp)  
 
-&nbsp;
-
-The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
-
+Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | R2                    | Swap Screen                         |
@@ -269,26 +327,46 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 | HOTKEY + Y            | Change Background Image             |  
 | ( DraStic Menu )      |                                     |
 | HOTKEY + Y            | Change Background Image             |
+
+P.S. The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
 
 &nbsp;
 
 ## GKD Mini Plus
 ![image](image/gkd_mini_plus.jpg)  
+
+Device
+```
 Model: GKD Mini Plus   
 Operating System: IUX Jul_14_2025  
-Installation:
+```
+
+Building Source
+```
+# Debian 12
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz
+$ tar xvf mini_toolchain-v1.0.tar.gz
+$ sudo mv mini /opt
+$ sudo mv prebuilt /opt
+
+$ git clone https://github.com/steward-fu/nds
+$ cd nds
+$ make -f Makefile.gkd_pixel2 clean
+$ make -f Makefile.gkd_pixel2
+```
+
+Installation
 ```
 1. Copy the "drastic" folder to "STORAGE/"
 2. Copy the "14nds" file to "STORAGE/miniplus/sections/02handheld/14nds"
 ```
-  
+
 Layout  
 ![image](image/layout/base.bmp)  
 
-&nbsp;
-
-The HOTKEY is user-configurable and can be rebound to the F1 or SELECT key via the SDL2 menu.  
-
+Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | R2                    | Swap Screen                         |
@@ -315,6 +393,8 @@ The HOTKEY is user-configurable and can be rebound to the F1 or SELECT key via t
 | HOTKEY + Y            | Change Background Image             |  
 | ( DraStic Menu )      |                                     |
 | HOTKEY + Y            | Change Background Image             |
+
+P.S. The HOTKEY is user-configurable and can be rebound to the F1 or SELECT key via the SDL2 menu.  
 
 &nbsp;
 
