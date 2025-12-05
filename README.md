@@ -370,7 +370,7 @@ Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | F1                    | Fast Forward                        |
-| F2                    | MENU                                |
+| F2                    | HOTKEY                              |
 | R2                    | Swap Screen                         |
 | L2                    | Switch Keypad or Touch Mode         |
 | R3                    | Save State                          |
