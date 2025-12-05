@@ -4,6 +4,7 @@ MYFS=$MYDIR/tmp
 
 export HOME=$MYDIR
 export SDL_VIDEODRIVER=NDS
+export NDS_DEBUG_LEVEL=ERROR
 export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH
 
 sv=`cat /proc/sys/vm/swappiness`

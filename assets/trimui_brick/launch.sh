@@ -2,6 +2,7 @@
 MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
+export NDS_DEBUG_LEVEL=ERROR
 
 function kill_runner() {
     PID=`pidof runner`

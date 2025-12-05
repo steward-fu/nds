@@ -4,6 +4,7 @@ RESTORE_RES=0
 
 export HOME=$MYDIR
 export SDL_VIDEODRIVER=NDS
+export NDS_DEBUG_LEVEL=ERROR
 export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH
 
 if [ -f /mnt/SDCARD/.tmp_update/script/stop_audioserver.sh ]; then

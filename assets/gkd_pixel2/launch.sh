@@ -2,6 +2,7 @@
 MYDIR=`dirname "$0"`
 
 export HOME=$MYDIR
+export NDS_DEBUG_LEVEL=ERROR
 export LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH
 
 function kill_runner() {

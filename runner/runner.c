@@ -366,7 +366,7 @@ int main(int argc, char **argv)
 {
     pthread_t id = 0;
 
-    nds_debug_level = TRACE_LEVEL;//get_debug_level(0);
+    nds_debug_level = get_debug_level(0);
     trace("log level \"%s\"\n", DEBUG_LEVEL_STR[nds_debug_level]);
 
     pthread_create(&id, NULL, runner_handler, NULL);
