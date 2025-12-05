@@ -369,8 +369,12 @@ Layout
 Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
+| F1                    | Fast Forward                        |
+| F2                    | MENU                                |
 | R2                    | Swap Screen                         |
 | L2                    | Switch Keypad or Touch Mode         |
+| R3                    | Save State                          |
+| L3                    | Load State                          |
 | HOTKEY + UP           | Toggle Microphone                   |
 | HOTKEY + DOWN         | Toggle LCD Hinge                    |
 | HOTKEY + LEFT         | Change Layout Mode                  |
@@ -394,7 +398,7 @@ Button
 | ( DraStic Menu )      |                                     |
 | HOTKEY + Y            | Change Background Image             |
 
-P.S. The HOTKEY is user-configurable and can be rebound to the F1 or SELECT key via the SDL2 menu.  
+P.S. The HOTKEY is user-configurable and can be rebound to the F2 or SELECT key via the SDL2 menu.  
 
 &nbsp;
 
