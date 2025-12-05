@@ -78,8 +78,28 @@ P.S. The HOTKEY is user-configurable and can be rebound to the MENU or SELECT ke
 
 ## Miyoo Flip
 ![image](image/miyoo_flip.jpg)  
+
+Device
+```
 Model: MY355  
-Operating System: 20250526143414  
+Operating System: 20250526143414
+```
+
+Building Source
+```
+# Debian 12
+
+$ cd
+$ wget https://github.com/steward-fu/website/releases/download/miyoo-flip/flip-toolchain-v1.0.tar.gz
+$ tar xvf flip-toolchain-v1.0.tar.gz
+$ sudo mv flip /opt
+
+$ git clone https://github.com/steward-fu/nds
+$ cd nds
+$ make -f Makefile.miyoo_flip clean
+$ make -f Makefile.miyoo_flip
+```
+
 Installation:
 ```
 Copy the "drastic" folder to "Emu/"
@@ -88,10 +108,7 @@ Copy the "drastic" folder to "Emu/"
 Layout  
 ![image](image/layout/base.bmp)  
 
-&nbsp;
-
-The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
-
+Button  
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
 | R2                    | Swap Screen                         |
@@ -118,6 +135,8 @@ The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via
 | HOTKEY + Y            | Change Background Image             |  
 | ( DraStic Menu )      |                                     |
 | HOTKEY + Y            | Change Background Image             |
+
+P.S. The HOTKEY is user-configurable and can be rebound to the MENU or SELECT key via the SDL2 menu.  
 
 &nbsp;
 
