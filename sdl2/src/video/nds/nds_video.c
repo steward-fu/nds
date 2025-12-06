@@ -1858,7 +1858,6 @@ static int process_screen(void)
     static int cur_layout_mode = -1;
     static int col_fg = 0xe0e000;
     static int col_bg = 0x000000;
-    static int autostate_cnt = 15;
     static char buf[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
@@ -1870,15 +1869,6 @@ static int process_screen(void)
     cur_ff_sel = (myvideo.lcd.status & NDS_STATE_FAST);
     cur_bg_sel = myconfig.layout.bg.sel;
     cur_mode_sel = myconfig.layout.mode.sel;
-
-    if (myconfig.auto_state >= 0) {
-        if (autostate_cnt > 0) {
-            autostate_cnt -= 1;
-            if (autostate_cnt == 0) {
-                load_state(myconfig.auto_state);
-            }
-        }
-    }
 
     if (myvideo.menu.sdl2.enable) {
         myvideo.layout.redraw_bg = REDRAW_BG_CNT;
@@ -2487,6 +2477,12 @@ static void prehook_update_screen(void)
     if (prepare_time) {
         prepare_time -= 1;
         myvideo.lcd.update = 0;
+
+        if (prepare_time == 0) {
+            if (myconfig.auto_state) {
+                load_state(DEF_AUTO_SLOT);
+            }
+        }
     }
     else if (myvideo.lcd.update == 0) {
         myvideo.lcd.cur_sel ^= 1;
@@ -6939,10 +6935,6 @@ static int init_device(void)
     myvideo.layout.mask.max_cnt = get_mask_cnt();
 #endif
 
-#if defined(MIYOO_MINI) || defined(TRIMUI_SMART)
-    set_autostate(myconfig.auto_state);
-#endif
-
 #if defined(MIYOO_FLIP) || defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK)
     if (myconfig.cpu_core <= 0) {
         myconfig.cpu_core = INIT_CPU_CORE;
@@ -6964,35 +6956,35 @@ static int init_device(void)
 
 #if !defined(NDS_ARM64)
     trace("hook prehook_malloc\n");
-    r |= add_prehook(myhook.fun.malloc,  prehook_malloc);
+    r |= add_prehook(myhook.fun.malloc, prehook_malloc, NULL);
     trace("hook prehook_realloc\n");
-    r |= add_prehook(myhook.fun.realloc, prehook_realloc);
+    r |= add_prehook(myhook.fun.realloc, prehook_realloc, NULL);
     trace("hook prehook_free\n");
-    r |= add_prehook(myhook.fun.free,    prehook_free);
+    r |= add_prehook(myhook.fun.free, prehook_free, NULL);
 #endif
 
     trace("hook prehook_select_quit\n");
-    r |= add_prehook(myhook.fun.select_quit, prehook_select_quit);
+    r |= add_prehook(myhook.fun.select_quit, prehook_select_quit, NULL);
     trace("hook prehook_print_string\n");
-    r |= add_prehook(myhook.fun.print_string, prehook_print_string);
+    r |= add_prehook(myhook.fun.print_string, prehook_print_string, NULL);
 
 #if defined(NDS_ARM64)
     trace("hook prehook_print_string_ext\n");
-    r |= add_prehook(myhook.fun.print_string_ext, prehook_print_string_ext);
+    r |= add_prehook(myhook.fun.print_string_ext, prehook_print_string_ext, NULL);
 #endif
 
     trace("hook prehook_update_screen\n");
-    r |= add_prehook(myhook.fun.update_screen, prehook_update_screen);
+    r |= add_prehook(myhook.fun.update_screen, prehook_update_screen, NULL);
     trace("hook prehook_blit_screen_menu\n");
-    r |= add_prehook(myhook.fun.blit_screen_menu, prehook_blit_screen_menu);
+    r |= add_prehook(myhook.fun.blit_screen_menu, prehook_blit_screen_menu, NULL);
     trace("hook prehook_platform_get_input\n");
-    r |= add_prehook(myhook.fun.platform_get_input, prehook_platform_get_input);
+    r |= add_prehook(myhook.fun.platform_get_input, prehook_platform_get_input, NULL);
 
 #if !defined(NDS_ARM64)
     trace("hook prehook_savestate_pre\n");
-    r |= add_prehook(myhook.fun.savestate_pre, prehook_savestate_pre);
+    r |= add_prehook(myhook.fun.savestate_pre, prehook_savestate_pre, NULL);
     trace("hook prehook_savestate_post\n");
-    r |= add_prehook(myhook.fun.savestate_post, prehook_savestate_post);
+    r |= add_prehook(myhook.fun.savestate_post, prehook_savestate_post, NULL);
 #endif
 
 #if defined(NDS_ARM64)
@@ -7140,7 +7132,7 @@ static int quit_device(void)
     pthread_join(myvideo.thread.id, &r);
     trace("completed\n");
 
-    trace("wait for savestate complete\n");
+    trace("wait for savestate...\n");
     while (myvideo.state_busy) {
         usleep(1000000);
     }
@@ -7373,26 +7365,12 @@ typedef enum {
     MENU_SWIN_BORDER,
     MENU_SWIN_POS,
     MENU_LAYOUT_ATL,
-
-#if 0
-    MENU_CUST_IMG,
-    MENU_CUST_LCD,
-    MENU_CUST_LCD_X,
-    MENU_CUST_LCD_Y,
-    MENU_CUST_LCD_W,
-    MENU_CUST_LCD_H,
-#endif
-
     MENU_ROTATE_KEY,
     MENU_BIND_HOTKEY,
     MENU_SWAP_L1L2,
     MENU_SWAP_R1R2,
     MENU_PEN_SPEED,
-
-#if defined(MIYOO_MINI)
     MENU_AUTO_STATE,
-#endif
-
     MENU_SHOW_CURSOR,
     MENU_FAST_FORWARD,
 
@@ -7438,27 +7416,12 @@ static const char *MENU_LIST_STR[] = {
     "BORDER",
     "POSITION",
     "ALTERNATIVE",
-
-#if 0
-    "CUST. LAYOUT",
-    "  IMAGE",
-    "  LCD",
-    "    X",
-    "    Y",
-    "    WIDTH",
-    "    HEIGHT",
-#endif
-
     "ROTATE KEY",
     "BIND HOTKEY",
     "SWAP L1-L2",
     "SWAP R1-R2",
     "PEN SPEED",
-
-#if defined(MIYOO_MINI)
     "AUTO SAVESTATE",
-#endif
-
     "SHOW CURSOR",
     "FAST FORWARD",
 
@@ -8150,22 +8113,14 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-
-#if defined(MIYOO_MINI)
     case MENU_AUTO_STATE:
         if (right_key) {
-            if (myconfig.auto_state < 20) {
-                myconfig.auto_state += 1;
-            }
+            myconfig.auto_state = 1;
         }
         else {
-            if (myconfig.auto_state >= 0) {
-                myconfig.auto_state -= 1;
-            }
+            myconfig.auto_state = 0;
         }
         break;
-#endif
-
     case MENU_SHOW_CURSOR:
         myconfig.menu.show_cursor = right_key;
         break;
@@ -8442,11 +8397,10 @@ static int draw_sdl2_menu_setting(
         sprintf(buf, "%.1fx", ((float)myconfig.pen.speed) / 10);
         break;
     case MENU_AUTO_STATE:
-        sprintf(tmp, "%d", myconfig.auto_state);
-        sprintf(buf, "%s", (myconfig.auto_state >= 0) ? tmp : l10n("NONE"));
+        sprintf(buf, "%s", myconfig.auto_state ? l10n("ON") : l10n("OFF"));
         break;
     case MENU_SHOW_CURSOR:
-        sprintf(buf, "%s", l10n(myconfig.menu.show_cursor ? "Show" : "Hide"));
+        sprintf(buf, "%s", l10n(myconfig.menu.show_cursor ? "SHOW" : "HIDE"));
         break;
     case MENU_FAST_FORWARD:
         sprintf(buf, "%d", myconfig.fast_forward);

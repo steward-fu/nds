@@ -84,9 +84,11 @@ typedef struct  {
 
 typedef struct {
     uintptr_t *base;
+    uint32_t *user_root_path;
     uint32_t *gamecard_name;
     uint32_t *savestate_num;
     uint8_t *micphone_status;
+
     struct {
         uintptr_t *base;
         uint32_t *frameskip_type;
@@ -120,6 +122,9 @@ typedef struct {
         uint32_t *enable_cheats;
         uint32_t *batch_threads_3d_count;
         uint32_t *bypass_3d;
+        uint32_t *file_list_display_type;
+        uint32_t *rom_directory;
+ 
         struct {
             wchar_t *username;
             uint32_t *language;
@@ -192,6 +197,8 @@ typedef struct {
     savestate_thread_data_struct *savestate_thread;
 } var_t;
 
+#define RESTORE_BUF_SIZE 16
+
 typedef struct {
     void *menu;
     void *free;
@@ -229,6 +236,8 @@ typedef struct {
     void *audio_capture_flush;
     void *audio_synchronous_update;
     void *audio_buffer_force_feed;
+    void *save_directory_config_file;
+    uint8_t org_save_directory_config_file[RESTORE_BUF_SIZE];
 } fun_t;
 
 typedef struct {
@@ -324,16 +333,17 @@ typedef int (*nds_puts)(const char *);
 typedef void (*nds_select_quit)(void *, void *);
 typedef void (*nds_config_setup_input_map)(void *);
 typedef int32_t (*nds_file_get_icon_data)(char *, nds_icon_struct *);
+typedef int32_t (*nds_save_directory_config_file)(void *, char *);
 
 int init_hook(const char *, size_t, const char *);
 int quit_hook(void);
-int add_prehook(void *, void *);
 int quit_drastic(void);
 int load_state(int slot);
 int save_state(int slot);
 int set_fast_forward(uint8_t v);
 int unlock_area(const void *);
 int toggle_micphone(void);
+int add_prehook(void *, void *, uint8_t *);
 void render_polygon_setup_perspective_steps(void);
 
 #endif

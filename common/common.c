@@ -29,7 +29,7 @@
 #include "drastic_bios_arm9.h"
 
 nds_config myconfig = { 0 };
-int nds_debug_level = ERROR_LEVEL;
+int nds_debug_level = FATAL_LEVEL;
 static const char *DEBUG_LEVEL_STR[] = { "FATAL", "ERROR", "DEBUG", "TRACE" };
 
 #if defined(UT)

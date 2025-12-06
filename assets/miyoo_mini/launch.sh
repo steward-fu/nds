@@ -26,7 +26,6 @@ echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 kill -STOP `pidof keymon`
 
 cd $MYDIR
-./vol&
 ./cpuclock 1500
 ./drastic "$1" > debug_drastic.log 2>&1
 sync

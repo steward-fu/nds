@@ -22,6 +22,7 @@
 #include "common.h"
 
 nds_hook myhook = { 0 };
+extern nds_config myconfig;
 
 static int is_state_hooked = 0;
 static size_t page_size = 4096;
@@ -640,7 +641,7 @@ TEST(detour, patch_drastic64)
 }
 #endif
 
-int add_prehook(void *org, void *cb)
+int add_prehook(void *org, void *cb, uint8_t *restore)
 {
     int r = -1;
 
@@ -661,6 +662,11 @@ int add_prehook(void *org, void *cb)
     if (unlock_area(org) >= 0) {
         uintptr_t c = (uintptr_t)cb;
         volatile uint8_t *m = (uint8_t *)(intptr_t)org;
+
+        if (restore) {
+            trace("backup prehook data\n");
+            memcpy(restore, org, RESTORE_BUF_SIZE);
+        }
 
         r = 0;
         m[0] = 0x04;
@@ -685,6 +691,35 @@ TEST(detour, add_prehook)
 }
 #endif
 
+int restore_prehook(void *pfn, uint8_t *org)
+{
+    int r = -1;
+
+    trace("call %s(pfn=%p, org=%p)\n", __func__, pfn, org);
+
+    if (!pfn || !org) {
+        error("invalid parameter\n");
+        return r;
+    }
+
+#if defined(UT)
+    return 0;
+#endif
+
+    r = 0;
+    memcpy(pfn, org, RESTORE_BUF_SIZE);
+
+    return r;
+}
+
+#if defined(UT)
+TEST(detour, restore_prehook)
+{
+    TEST_ASSERT_EQUAL_INT(-1, restore_prehook(0, 0));
+    TEST_ASSERT_EQUAL_INT(0, restore_prehook((void *)0xdead, (void *)0xdead));
+}
+#endif
+
 static int init_table(void)
 {
     trace("call %s()\n", __func__);
@@ -696,10 +731,13 @@ static int init_table(void)
     myhook.var.system.config.hires_3d = (uint32_t *)0x084797c4;
     myhook.var.system.config.controls_a = (uint16_t *)0x084797dc;
     myhook.var.system.config.controls_b = (uint16_t *)0x0847982c;
+    myhook.var.system.config.rom_directory = (uint32_t *)0x08479364;
+    myhook.var.system.config.file_list_display_type = (uint32_t *)0x08479764;
     myhook.var.system.video.realtime_speed_percentage = (float *)0x0aedec08;
     myhook.var.system.video.rendered_frames_percentage = (float *)0x0aedec0c;
     myhook.var.system.micphone_status = (uint8_t *)0xaedee69;
     myhook.var.system.spu.audio = (audio_struct *)0x995a000;
+    myhook.var.system.user_root_path = (uint32_t *)0x0847e0e8;
 
     myhook.var.sdl.swap_screens = (uint32_t *)0x0aee9598;
     myhook.var.sdl.bytes_per_pixel = (uint32_t *)0x0aee957c;
@@ -789,6 +827,7 @@ static int init_table(void)
     myhook.fun.audio_capture_flush = (void *)0x080aa894;
     myhook.fun.audio_synchronous_update = (void *)0x080aa7c0;
     myhook.fun.audio_buffer_force_feed = (void *)0x080aa760;
+    myhook.fun.save_directory_config_file = (void *)0x0809a4b0;
 #endif
 
     srand(time(NULL));
@@ -816,6 +855,54 @@ TEST(detour, prehook_audio_capture_flush)
 }
 #endif
 
+int32_t prehook_save_directory_config_file(void* system, char* file_name)
+{
+    FILE *f = NULL;
+    uint32_t *ptr = NULL;
+    char buf[1024] = { 0 };
+
+    if (myconfig.auto_state) {
+        printf("save state...\n");
+        save_state(DEF_AUTO_SLOT);
+        usleep(1000000);
+        printf("save state complete\n");
+    }
+
+    snprintf(buf, sizeof(buf), "%s/config/%s", myhook.var.system.user_root_path, file_name);
+    printf("Saving directory config to file named %s\n", buf);
+
+    ptr = (uint32_t *)malloc(0x414);
+    if (!ptr) {
+        error("failed to allocate buffer to file path\n");
+        return -1;
+    }
+
+    f = fopen(buf, "wb");
+    if (!f) {
+        free(ptr);
+        error("failed to create config file (\"%s\")\n", buf);
+        return -1;
+    }
+
+    ptr[0] = 0x32435344;
+    ptr[1] = 0x00000002;
+    ptr[2] = 0x0b0600f0;
+    ptr[3] = 0x08162008;
+    memcpy(&ptr[4], (void *)myhook.var.system.config.rom_directory, 0x400);
+    ptr[0x104] = *myhook.var.system.config.file_list_display_type;
+    fwrite(ptr, 0x414, 1, f);
+    fclose(f);
+
+    free(ptr);
+    return 0;
+}
+
+#if defined(UT)
+TEST(detour, prehook_save_directory_config_file)
+{
+}
+#endif
+
 int init_hook(const char *home, size_t page, const char *path)
 {
     page_size = page;
@@ -838,29 +925,40 @@ int init_hook(const char *home, size_t page, const char *path)
 
         add_prehook(
             (void *)myhook.fun.load_state_index,
-            (void *)prehook_load_state_index
+            (void *)prehook_load_state_index,
+            NULL
         );
 
         add_prehook(
             (void *)myhook.fun.save_state_index,
-            (void *)prehook_save_state_index
+            (void *)prehook_save_state_index,
+            NULL
         );
 
         add_prehook(
             (void *)myhook.fun.initialize_backup,
-            (void *)prehook_initialize_backup
+            (void *)prehook_initialize_backup,
+            NULL
         );
     }
 
     add_prehook(
         (void *)myhook.fun.audio_capture_flush,
-        (void *)prehook_audio_capture_flush
+        (void *)prehook_audio_capture_flush,
+        NULL
     );
 
 #if !defined(NDS_ARM64)
     add_prehook(
         (void *)myhook.fun.render_polygon_setup_perspective_steps,
-        render_polygon_setup_perspective_steps
+        render_polygon_setup_perspective_steps,
+        NULL
+    );
+
+    add_prehook(
+        (void *)myhook.fun.save_directory_config_file,
+        prehook_save_directory_config_file,
+        myhook.fun.org_save_directory_config_file
     );
 #endif
 

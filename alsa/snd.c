@@ -84,11 +84,6 @@ static int dsp_fd = -1;
 
 extern nds_hook myhook;
 
-struct autostate {
-    int slot;
-    int enable;
-} autostate = { 10, 0 };
-
 static int cur_vol = 0;
 static pthread_t thread = { 0 };
 
@@ -394,33 +389,6 @@ static int open_dsp(void)
 TEST(alsa, open_dsp)
 {
     TEST_ASSERT_EQUAL_INT(-1, open_dsp());
-}
-#endif
-
-int set_autostate(int slot)
-{
-    trace("call %s(slot=%d)\n", __func__, slot);
-
-    if (slot >= 0) {
-        autostate.slot = slot;
-        autostate.enable = 1;
-    }
-    else {
-        autostate.enable = 0;
-    }
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(alsa, set_autostate)
-{
-    TEST_ASSERT_EQUAL_INT(0, set_autostate(-1));
-    TEST_ASSERT_EQUAL_INT(0, autostate.enable);
-    TEST_ASSERT_EQUAL_INT(0, autostate.slot);
-    TEST_ASSERT_EQUAL_INT(0, set_autostate(1, 10));
-    TEST_ASSERT_EQUAL_INT(1, autostate.enable);
-    TEST_ASSERT_EQUAL_INT(10, autostate.slot);
 }
 #endif
 
@@ -1154,6 +1122,8 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stAoChn0OutputPort0.u32ChnId = myao.ch;
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
+
+    system("/mnt/SDCARD/Emu/drastic/vol&");
 #endif
 
 #if defined(TRIMUI_BRICK) || defined(TRIMUI_SMART) || defined(PANDORA)
@@ -1206,9 +1176,9 @@ int snd_pcm_start(snd_pcm_t *pcm)
     pa_threaded_mainloop_unlock(mypulse.mainloop);
 #endif
 
-    add_prehook((void *)myhook.fun.spu_adpcm_decode_block, prehook_adpcm_decode_block);
-    add_prehook((void *)myhook.fun.audio_synchronous_update, prehook_audio_synchronous_update);
-    add_prehook((void *)myhook.fun.audio_buffer_force_feed, prehook_audio_buffer_force_feed);
+    add_prehook((void *)myhook.fun.spu_adpcm_decode_block, prehook_adpcm_decode_block, NULL);
+    add_prehook((void *)myhook.fun.audio_synchronous_update, prehook_audio_synchronous_update, NULL);
+    add_prehook((void *)myhook.fun.audio_buffer_force_feed, prehook_audio_buffer_force_feed, NULL);
 
 #if USE_CIRCLE_QUEUE
     trace("use circle queue\n");
@@ -1233,10 +1203,6 @@ int snd_pcm_close(snd_pcm_t *pcm)
     void *r = NULL;
 
     trace("call %s(pcm=%p)\n", __func__, pcm);
-
-    if (autostate.enable > 0) {
-        save_state(autostate.slot);
-    }
 
 #if USE_CIRCLE_QUEUE
     mypcm.ready = 0;

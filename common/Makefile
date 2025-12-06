@@ -12,9 +12,6 @@ ifneq ($(MOD),qx1050)
 endif
 endif
 
-REL_VER = $(shell git rev-parse HEAD | cut -c 1-8)
-CFLAGS += -DREL_VER=0x$(REL_VER)
-
 .PHONY: all
 all:
 	$(CC) $(SOURCES) -o $(TARGET) $(CFLAGS) $(LDFLAGS)

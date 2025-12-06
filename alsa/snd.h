@@ -12,7 +12,5 @@
 #define DEF_QUEUE_SIZE      (SND_SAMPLES * 10)
 #define USE_CIRCLE_QUEUE    0
 
-int set_autostate(int);
-
 #endif
 

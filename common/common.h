@@ -105,7 +105,8 @@ enum layout_mode_t {
 #define DEF_SWIN_ALPHA      6
 #define DEF_SWIN_BORDER     1
 #define DEF_JOY_DZONE       25
-#define DEF_AUTO_STATE      -1
+#define DEF_AUTO_STATE      0
+#define DEF_AUTO_SLOT       10
 
 #if defined(XT894) || defined(XT897) || defined(QX1000)
 #define DEF_LAYOUT_MODE     LAYOUT_MODE_C0
