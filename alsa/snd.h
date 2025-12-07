@@ -10,7 +10,7 @@
 #define SND_CHANNELS        2
 #define SND_SAMPLES         8192
 #define DEF_QUEUE_SIZE      (SND_SAMPLES * 10)
-#define USE_CIRCLE_QUEUE    0
+#define USE_CIRCLE_QUEUE    1
 
 #endif
 
