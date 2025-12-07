@@ -1,9 +1,9 @@
-export MOD=xt894
+export MOD=moto_xt894
 export NDS_GCC=0
 export NDS_ALSA=1
 
 CFLAGS  += -O3
-CFLAGS  += -DXT894
+CFLAGS  += -DMOTO_XT894
 CFLAGS  += -Wl,--no-undefined
 
 CFLAGS  += -mfpu=neon

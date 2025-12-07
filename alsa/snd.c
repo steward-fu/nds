@@ -26,7 +26,7 @@
 #include <sys/time.h>
 #include <syslog.h>
 
-#if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
 #include <pulse/pulseaudio.h>
 #endif
 
@@ -52,7 +52,7 @@ typedef struct {
     pthread_mutex_t lock;
 } queue_t;
 
-#if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
 struct mypulse_t {
     pa_threaded_mainloop *mainloop;
     pa_context *context;
@@ -265,7 +265,7 @@ TEST(alsa, prehook_adpcm_decode_block)
 }
 #endif
 
-#if defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
 static void pulse_context_state(pa_context *context, void *userdata)
 {
     trace("call %s()\n", __func__);
@@ -697,7 +697,7 @@ static void* audio_handler(void *id)
                 write(dsp_fd, mypcm.buf, mypcm.len);
 #endif
 
-#if defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
                 if (mypulse.mainloop) {
                     pa_threaded_mainloop_lock(mypulse.mainloop);
                     pa_stream_write(mypulse.stream, mypcm.buf, mypcm.len, NULL, 0, PA_SEEK_RELATIVE);
@@ -1022,7 +1022,7 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
     put_queue(&queue, (uint8_t *)audio, audio->buffer_index * SND_CHANNELS);
 #else
 
-#if defined(XT897)
+#if defined(MOTO_XT897)
     pa_threaded_mainloop_lock(mypulse.mainloop);
     pa_stream_write(mypulse.stream, audio, audio->buffer_index * SND_CHANNELS, NULL, 0, PA_SEEK_RELATIVE);
     pa_threaded_mainloop_unlock(mypulse.mainloop);
@@ -1130,7 +1130,7 @@ int snd_pcm_start(snd_pcm_t *pcm)
     open_dsp();
 #endif
 
-#if defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     mypulse.mainloop = pa_threaded_mainloop_new();
     if (mypulse.mainloop == NULL) {
         error("failed to open PulseAudio device\n");
@@ -1228,7 +1228,7 @@ int snd_pcm_close(snd_pcm_t *pcm)
     }
 #endif
 
-#if defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     if (mypulse.mainloop) {
         pa_threaded_mainloop_stop(mypulse.mainloop);
     }

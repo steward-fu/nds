@@ -1,9 +1,9 @@
-export MOD=xt897
+export MOD=moto_xt897
 export NDS_GCC=0
 export NDS_ALSA=1
 
 CFLAGS  += -O3
-CFLAGS  += -DXT897
+CFLAGS  += -DMOTO_XT897
 CFLAGS  += -Wl,--no-undefined
 
 CFLAGS  += -mfpu=neon

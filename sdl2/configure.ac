@@ -2457,30 +2457,30 @@ CheckNDSVideo()
         EXTRA_CFLAGS="$EXTRA_CFLAGS -I../inc/trimui"
     fi
 
-    if test x$MOD = xqx1000; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1000"
+    if test x$MOD = xfxtec_qx1000; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFXTEC_QX1000"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
-    if test x$MOD = xqx1050; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DQX1050"
+    if test x$MOD = xfxtec_qx1050; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFXTEC_QX1050"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM64"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
-    if test x$MOD = xxt897; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DXT897"
+    if test x$MOD = xmoto_xt897; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMOTO_XT897"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
-    if test x$MOD = xxt894; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DXT894"
+    if test x$MOD = xmoto_xt894; then
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMOTO_XT894"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
@@ -3817,16 +3817,16 @@ case "$host" in
 
         case "$MOD" in
             *ut*)       CheckNDSVideo ;;
-            *qx1000*)   CheckNDSVideo ;;
-            *qx1050*)   CheckNDSVideo ;;
-            *xt897*)    CheckNDSVideo ;;
-            *xt894*)    CheckNDSVideo ;;
             *miyoo_mini*)       CheckNDSVideo ;;
             *miyoo_flip*)       CheckNDSVideo ;;
             *trimui_smart*)     CheckNDSVideo ;;
             *trimui_brick*)     CheckNDSVideo ;;
             *gkd_pixel2*)       CheckNDSVideo ;;
             *gkd_miniplus*)     CheckNDSVideo ;;
+            *moto_xt894*)       CheckNDSVideo ;;
+            *moto_xt897*)       CheckNDSVideo ;;
+            *fxtec_qx1000*)     CheckNDSVideo ;;
+            *fxtec_qx1050*)     CheckNDSVideo ;;
             *)
                 CheckVisibilityHidden
                 ;;

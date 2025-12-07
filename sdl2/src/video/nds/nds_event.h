@@ -15,17 +15,17 @@
 #elif defined(PANDORA)
 #define INPUT_DEV   "/dev/input/event4"
 #define KEYPAD_DEV  "/dev/input/event0"
-#elif defined(QX1000)
+#elif defined(FXTEC_QX1000)
 #define INPUT_DEV   "/dev/input/event3"
 #define TOUCH_DEV   "/dev/input/event1"
 #define POWER_DEV   "/dev/input/event0"
-#elif defined(QX1050)
+#elif defined(FXTEC_QX1050)
 #define INPUT_DEV   "/dev/input/event3"
-#elif defined(XT897)
+#elif defined(MOTO_XT897)
 #define INPUT_DEV   "/dev/input/event1"
 #define TOUCH_DEV   "/dev/input/event7"
 #define POWER_DEV   "/dev/input/event3"
-#elif defined(XT894)
+#elif defined(MOTO_XT894)
 #define INPUT_DEV   "/dev/input/event3"
 #define TOUCH_DEV   "/dev/input/event4"
 #define POWER_DEV   "/dev/input/event2"
@@ -107,7 +107,7 @@
 #define DEV_KEY_CODE_VOL_DOWN   -1
 #endif
 
-#if defined(XT897)
+#if defined(MOTO_XT897)
 #define DEV_KEY_CODE_UP         17
 #define DEV_KEY_CODE_DOWN       31
 #define DEV_KEY_CODE_LEFT       30
@@ -133,7 +133,7 @@
 #define DEV_KEY_CODE_EXIT       28
 #endif
 
-#if defined(XT894)
+#if defined(MOTO_XT894)
 #define DEV_KEY_CODE_UP         17
 #define DEV_KEY_CODE_DOWN       31
 #define DEV_KEY_CODE_LEFT       30
@@ -159,7 +159,7 @@
 #define DEV_KEY_CODE_EXIT       28
 #endif
 
-#if defined(QX1050)
+#if defined(FXTEC_QX1050)
 #define DEV_KEY_CODE_UP         17
 #define DEV_KEY_CODE_DOWN       44
 #define DEV_KEY_CODE_LEFT       30
@@ -185,7 +185,7 @@
 #define DEV_KEY_CODE_EXIT       28
 #endif
 
-#if defined(QX1000)
+#if defined(FXTEC_QX1000)
 #define DEV_KEY_CODE_UP         16
 #define DEV_KEY_CODE_DOWN       27
 #define DEV_KEY_CODE_LEFT       43
@@ -383,7 +383,7 @@ typedef struct {
 typedef struct {
     int fd;
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     int tp_fd;
     int pwr_fd;
 #endif

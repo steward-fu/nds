@@ -41,11 +41,11 @@
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
 
-#if defined(XT894) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(FXTEC_QX1000)
 #define DEF_STATE_PATH              "/home/defaultuser/Game/state/nds"
 #endif
 
-#if defined(XT897)
+#if defined(MOTO_XT897)
 #define DEF_STATE_PATH              "/home/nemo/Game/state/nds"
 #endif
 
@@ -77,13 +77,13 @@ enum layout_mode_t {
 
     //LAYOUT_MODE_D0,      // 20 (Draw Mode)
 
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     LAYOUT_MODE_C0,      // (Custom Mode)
     LAYOUT_MODE_C1,      //
     LAYOUT_MODE_C2,      //
 #endif
 
-#if defined(QX1000)
+#if defined(FXTEC_QX1000)
     LAYOUT_MODE_C0,      // (Custom Mode)
     LAYOUT_MODE_C1,      //
     LAYOUT_MODE_C2,      //
@@ -108,7 +108,7 @@ enum layout_mode_t {
 #define DEF_AUTO_STATE      0
 #define DEF_AUTO_SLOT       10
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
 #define DEF_LAYOUT_MODE     LAYOUT_MODE_C0
 #define DEF_LAYOUT_ALT      LAYOUT_MODE_C1
 #else
@@ -322,7 +322,7 @@ typedef struct {
 #endif
 } nds_config;
 
-#if defined(UT) || defined(QX1050)
+#if defined(UT) || defined(FXTEC_QX1050)
 #define neon_memcpy memcpy
 #endif
 

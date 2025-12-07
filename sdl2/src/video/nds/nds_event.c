@@ -26,7 +26,7 @@
 
 nds_event myevent = { 0 };
 
-#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050) || defined(UT)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(FXTEC_QX1050) || defined(UT)
 static touch_data_t tp[10] = { 0 };
 #endif
 
@@ -865,7 +865,7 @@ static int handle_hotkey(void)
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
-#if !defined(XT894) && !defined(XT897)
+#if !defined(MOTO_XT894) && !defined(MOTO_XT897)
                 if ((myconfig.layout.mode.sel != LAYOUT_MODE_N0) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_N1) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_N3))
@@ -1085,7 +1085,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_QUIT, v);
     }
 
-#if defined(MIYOO_MINI) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(MIYOO_MINI) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
     if (c == myevent.keypad.power) {
         trace("set KEY_BIT_QUIT\n");
         set_key_bit(KEY_BIT_QUIT, v);
@@ -1508,7 +1508,7 @@ TEST(sdl2_event, send_touch_axis)
 }
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050) || defined(UT)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(FXTEC_QX1050) || defined(UT)
 int handle_touch_event(int fd)
 {
     static int tp_id = 0;
@@ -1518,12 +1518,12 @@ int handle_touch_event(int fd)
     const int screen_w = WL_WIN_H;
     const int screen_h = WL_WIN_W;
 
-#if defined(XT894) || defined(XT897) || defined(UT)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
     float tp_max_x = 1000.0;
     float tp_max_y = 1000.0;
 #endif
 
-#if defined(QX1000)
+#if defined(FXTEC_QX1000)
     float tp_max_x = 2160.0;
     float tp_max_y = 1080.0;
 #endif
@@ -1542,12 +1542,12 @@ int handle_touch_event(int fd)
     trace("touch, type:%d, code:0x%x, value:%d\n", ev.type, ev.code, ev.value);
     if (ev.type == EV_ABS) {
         if (ev.code == ABS_MT_TRACKING_ID) {
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
             tp_valid = 1;
             tp_id = ev.value;
 #endif
 
-#if defined(QX1000)
+#if defined(FXTEC_QX1000)
             if (ev.value >= 0) {
                 tp_valid = 1;
                 tp_id = 0;
@@ -1571,11 +1571,11 @@ int handle_touch_event(int fd)
         }
     }
     else if (ev.type == EV_SYN) {
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
         if ((ev.code == ABS_Z) && (ev.value == 0)) {
 #endif
 
-#if defined(QX1000) || defined(QX1050)
+#if defined(FXTEC_QX1000) || defined(FXTEC_QX1050)
         if ((ev.code == 0) && (ev.value == 0)) {
 #endif
             if (tp_valid) {
@@ -1673,7 +1673,7 @@ int handle_touch_event(int fd)
             else {
                 myevent.input.touch_status = 0;
             }
-#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(QX1050)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(FXTEC_QX1050)
         }
 #endif
     }
@@ -1705,8 +1705,8 @@ int input_handler(void *data)
     }
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     sleep_us = 100;
 #else
     sleep_us = 1000;
@@ -1769,7 +1769,7 @@ int input_handler(void *data)
         handle_trimui_special_key();
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
         rk = get_input_key_code(myevent.pwr_fd, &ev);
         if (rk > 0) {
             trace("code=%d, value=%d\n", ev.code, ev.value);
@@ -1828,10 +1828,10 @@ void init_event(void)
     myevent.keypad.fast = -1;
     myevent.keypad.exit = -1;
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(TRIMUI_BRICK) || defined(GKD_MINIPLUS) || defined(UT)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(TRIMUI_BRICK) || defined(GKD_MINIPLUS) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(GKD_MINIPLUS) || defined(UT)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(GKD_MINIPLUS) || defined(UT)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
 #endif
@@ -1902,7 +1902,7 @@ void quit_event(void)
         myevent.fd = -1;
     }
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     if (myevent.tp_fd > 0) {
         close(myevent.tp_fd);
         myevent.tp_fd = -1;

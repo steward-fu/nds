@@ -143,7 +143,7 @@ static SDL_Rect def_layout_pos[][2] = {
     // LAYOUT_MODE_D0
     //{{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     // LAYOUT_MODE_C0
     {{ 0, 0, 160, 120 }, { 0, 0, 640, 480 }},
     // LAYOUT_MODE_C1
@@ -175,14 +175,14 @@ static const char* LAYOUT_NAME_STR[] = {
     "B02",
     "B03",
 
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     "C00",
     "C01",
     "C02",
 #endif
 };
 
-#if defined(MIYOO_FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
 GLfloat bg_vertices[] = {
    -1.0f,  1.0f,  0.0f,  0.0f,  0.0f,
    -1.0f, -1.0f,  0.0f,  0.0f,  1.0f,
@@ -210,7 +210,7 @@ const char *def_vert_src =
 
 "   void main()                                                             \n"
 "   {                                                                       \n"
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
 "       const float angle = 270.0 * (3.1415 * 2.0) / 360.0;                 \n"
 "       mat4 rot = mat4(                                                    \n"
 "           cos(angle), -sin(angle), 0.0, 0.0,                              \n"
@@ -239,7 +239,7 @@ const char *def_frag_src =
 "       gl_FragColor = vec4(tex, frag_alpha);                               \n"
 "   }                                                                       \n";
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
 EGLint egl_cfg[] = {
     EGL_SURFACE_TYPE,
     EGL_WINDOW_BIT,
@@ -261,7 +261,7 @@ EGLint ctx_attribs[] = {
 };
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
 static void cb_remove(void *, struct wl_registry *, uint32_t);
 static void cb_handle(void *, struct wl_registry *, uint32_t, const char *, uint32_t);
 
@@ -461,7 +461,7 @@ TEST(sdl2_video, set_cpu_core)
 }
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
 static void* wl_disp_handler(void* pParam)
 {
     trace("call %s()++\n", __func__);
@@ -1809,7 +1809,7 @@ int handle_drastic_menu(void)
         return 0;
     }
 
-#if defined(MIYOO_FLIP) || defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK) || defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(
@@ -2014,7 +2014,7 @@ static int process_screen(void)
         case LAYOUT_MODE_N1:
         case LAYOUT_MODE_N2:
         case LAYOUT_MODE_N3:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
         case LAYOUT_MODE_C0:
 #endif
             need_update = !!idx;
@@ -2106,7 +2106,7 @@ static int process_screen(void)
             int screen_h = SCREEN_H;
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
             screen_w = WL_WIN_H;
             screen_h = WL_WIN_W;
 #endif
@@ -2115,7 +2115,7 @@ static int process_screen(void)
             MI_SYS_FlushInvCache(pixels, pitch * srt.h);
 #endif
 
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
             switch (cur_mode_sel) {
             case LAYOUT_MODE_N0:
             case LAYOUT_MODE_N1:
@@ -2146,7 +2146,7 @@ static int process_screen(void)
             switch (cur_mode_sel) {
             case LAYOUT_MODE_N0:
             case LAYOUT_MODE_N1:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
             case LAYOUT_MODE_C0:
 #endif
                 drt.x = myvideo.layout.mode[cur_mode_sel].screen[0].x;
@@ -2156,7 +2156,7 @@ static int process_screen(void)
 #if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI)
                 switch (myconfig.layout.swin.pos) {
                 case 0:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
                     drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
                     drt.x = (screen_w - drt.x) - drt.w;
                     drt.y = 0;
@@ -2166,7 +2166,7 @@ static int process_screen(void)
 #endif
                     break;
                 case 1:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
                     drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
                     drt.y = 0;
 #else
@@ -2175,7 +2175,7 @@ static int process_screen(void)
 #endif
                     break;
                 case 2:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
                     drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
                     drt.y = screen_h - drt.h;
 #else
@@ -2184,7 +2184,7 @@ static int process_screen(void)
 #endif
                     break;
                 case 3:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
                     drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
                     drt.x = (screen_w - drt.x) - drt.w;
                     drt.y = screen_h - drt.h;
@@ -2196,7 +2196,7 @@ static int process_screen(void)
                 }
 #endif
 
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
                 if (cur_mode_sel == LAYOUT_MODE_C0) {
                     drt.x = screen_w - drt.w;
                     drt.y = screen_h - drt.h;
@@ -2238,7 +2238,7 @@ static int process_screen(void)
             );
             break;
         default:
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
             draw_info(NULL, buf, 0, 0, col_fg, col_bg);
 #else
             draw_info(NULL, buf, SCREEN_W - get_font_width(buf), 0, col_fg, col_bg);
@@ -2832,7 +2832,7 @@ static void* video_handler(void *param)
     );
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     EGLint cnt = 0;
     EGLint major = 0;
     EGLint minor = 0;
@@ -2919,7 +2919,7 @@ static void* video_handler(void *param)
     myvideo.thread.running = 1;
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     myvideo.wl.ready = 1;
 #endif
 
@@ -3016,7 +3016,7 @@ static void* video_handler(void *param)
     close(myvideo.drm.fd);
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     myvideo.wl.ready = 0;
 
     eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
@@ -3590,7 +3590,7 @@ static int quit_lcd(void)
 }
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
 static int init_lcd(void)
 {
     trace("call %s()\n", __func__);
@@ -4169,13 +4169,13 @@ static int draw_touch_pen(void *pixels, int width, int pitch)
         break;
     }
 
-#if !defined(UT) && !defined(QX1050)
+#if !defined(UT) && !defined(FXTEC_QX1050)
     asm volatile ("PLD [%0, #128]"::"r" (s));
 #endif
 
     for (c1 = 0; c1 < h; c1++) {
 
-#if !defined(UT) && !defined(QX1050)
+#if !defined(UT) && !defined(FXTEC_QX1050)
         asm volatile ("PLD [%0, #128]"::"r" (d_565));
         asm volatile ("PLD [%0, #128]"::"r" (d_888));
 #endif
@@ -4263,10 +4263,10 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     float h = SCREEN_H;
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     const float max_w = WL_WIN_H;
     const float max_h = WL_WIN_W;
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     const int scale_w = 720;
     const int scale_h = 540;
 #else
@@ -4483,8 +4483,8 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
-#if defined(XT894)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#if defined(MOTO_XT894)
     if (id == TEXTURE_TMP) {
         int cc = 0;
         uint32_t *p = (uint32_t *)pixels;
@@ -4569,7 +4569,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     if ((!myvideo.menu.sdl2.enable && !myvideo.menu.drastic.enable) &&
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
         ((cur_mode_sel == LAYOUT_MODE_N0) || (cur_mode_sel == LAYOUT_MODE_N1)) &&
 #endif
         (id == TEXTURE_LCD0))
@@ -5766,7 +5766,7 @@ static int flip_lcd(void)
     myvideo.fb.var_info.yoffset ^= myvideo.fb.var_info.yres;
 #endif
 
-#if defined(MIYOO_FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     eglSwapBuffers(myvideo.egl.display, myvideo.egl.surface);
 
 #if defined(MIYOO_FLIP) 
@@ -6265,7 +6265,7 @@ static int load_bg_image(void)
         w = myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].w;
         h = myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].h;
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
         w = WL_WIN_H;
         h = WL_WIN_W;
 #endif
@@ -6297,11 +6297,11 @@ static int load_bg_image(void)
         );
 
         if (myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path[0]) {
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
             SDL_Rect srt = { 0, 0, LAYOUT_BG_W, LAYOUT_BG_H };
             SDL_Rect drt = { 0 };
             SDL_Surface *scale = NULL;
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
             const int scale_w = 720;
             const int scale_h = 540;
 #else
@@ -6330,7 +6330,7 @@ static int load_bg_image(void)
             SDL_BlitSurface(t, NULL, myvideo.layout.bg, NULL);
             SDL_FreeSurface(t);
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
             if (myconfig.layout.mode.sel <= LAYOUT_MODE_B3) {
                 scale = SDL_CreateRGBSurface(SDL_SWSURFACE, scale_w, scale_h, 32, 0, 0, 0, 0);
                 if (scale) {
@@ -6375,12 +6375,12 @@ static int load_bg_image(void)
     }
 #endif
 
-#if defined(QX1050) || defined(PANDORA)
+#if defined(FXTEC_QX1050) || defined(PANDORA)
     return 0;
 #endif
 
     if (myvideo.layout.bg) {
-#if defined(XT894) || defined(XT897) || defined(QX1000) || defined(MIYOO_FLIP)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(MIYOO_FLIP)
         glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(
@@ -6529,7 +6529,7 @@ VideoBootStrap NDS_bootstrap = {
 
 static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h)
 {
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     const float scale = 1.125;
     const int max_w = WL_WIN_H;
     const int max_h = WL_WIN_W;
@@ -6537,7 +6537,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
     const int scale_h = 540;
     const int margin_w = (max_w - scale_w) >> 1;
     const int bm_h = 480;
-#elif defined(QX1000)
+#elif defined(FXTEC_QX1000)
     const float scale = 2.25;
     const int max_w = WL_WIN_H;
     const int max_h = WL_WIN_W;
@@ -6582,7 +6582,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
     }
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     myvideo.layout.mode[mode].screen[0].x *= scale;
     myvideo.layout.mode[mode].screen[0].y *= scale;
     myvideo.layout.mode[mode].screen[0].w *= scale;
@@ -6639,7 +6639,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
         myvideo.layout.mode[mode].screen[1].h = max_w >> 1;
         break;
     case LAYOUT_MODE_C0:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].w = 240;
         myvideo.layout.mode[mode].screen[0].h = 180;
@@ -6652,7 +6652,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
 #endif
         break;
     case LAYOUT_MODE_C1:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 90;
         myvideo.layout.mode[mode].screen[0].w = 480;
@@ -6664,7 +6664,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
         myvideo.layout.mode[mode].screen[1].h = 360;
 #endif
 
-#if defined(QX1000)
+#if defined(FXTEC_QX1000)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 135;
         myvideo.layout.mode[mode].screen[0].w = 1080;
@@ -6677,7 +6677,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
 #endif
         break;
     case LAYOUT_MODE_C2:
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
         myvideo.layout.mode[mode].screen[0].y = 78;
         myvideo.layout.mode[mode].screen[0].w = 512;
@@ -6689,7 +6689,7 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
         myvideo.layout.mode[mode].screen[1].h = 336;
 #endif
 
-#if defined(QX1000)
+#if defined(FXTEC_QX1000)
         myvideo.layout.mode[mode].screen[0].x = 56;
         myvideo.layout.mode[mode].screen[0].y = 156;
         myvideo.layout.mode[mode].screen[0].w = 256 << 2;
@@ -6795,7 +6795,7 @@ static int free_layout_mode(void)
     add_layout_mode(LAYOUT_MODE_B3, 0, NULL, 0, 0);
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     add_layout_mode(LAYOUT_MODE_C0, 0, NULL, 0, 0);
     add_layout_mode(LAYOUT_MODE_C1, 0, NULL, 0, 0);
     add_layout_mode(LAYOUT_MODE_C2, 0, NULL, 0, 0);
@@ -6856,14 +6856,14 @@ static int enum_bg_file(void)
                 mode = atoi(&dir->d_name[1]) + LAYOUT_MODE_B0;
             }
             else {
-#if defined(XT894)
+#if defined(MOTO_XT894)
                 int len = strlen(CUSTOME_LAYOUT_XT894_C);
                 if (!memcmp(dir->d_name, CUSTOME_LAYOUT_XT894_C, len)) {
                     w = WL_WIN_H;
                     h = WL_WIN_W;
                     mode = atoi(&dir->d_name[len]) + LAYOUT_MODE_C0;
                 }
-#elif defined(XT897)
+#elif defined(MOTO_XT897)
                 int len = strlen(CUSTOME_LAYOUT_XT897_C);
                 if (!memcmp(dir->d_name, CUSTOME_LAYOUT_XT897_C, len)) {
                     w = WL_WIN_H;
@@ -6997,7 +6997,7 @@ static int init_device(void)
 
     pthread_create(&myvideo.thread.id, NULL, video_handler, NULL);
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     pthread_create(&myvideo.wl.thread.id, NULL, wl_disp_handler, NULL);
 #endif
 
@@ -7210,7 +7210,7 @@ static const char* LAYOUT_MODE_STR0[] = {
     "480x320", // B2
     "480x320", // B3
 
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     "640x480", // C1
     "480x360", // C2
     "512x384", // C3
@@ -7239,7 +7239,7 @@ static const char *LAYOUT_MODE_STR1[] = {
     "480x320", // B2
     "480x320", // B3
 
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     "240x180", // C0
     "480x360", // C1
     "448x336", // C2
@@ -7356,7 +7356,7 @@ typedef enum {
     MENU_MASK,
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     MENU_SHADER,
 #endif
 
@@ -7407,7 +7407,7 @@ static const char *MENU_LIST_STR[] = {
     "MASK",
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     "SHADER",
 #endif
 
@@ -7857,7 +7857,7 @@ static int draw_small_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
         rt.y = sy;
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
         break;
-#if defined(XT894) || defined(XT897)
+#if defined(MOTO_XT894) || defined(MOTO_XT897)
     case LAYOUT_MODE_C0:
         rt.x = sx;
         rt.y = sy;
@@ -8074,7 +8074,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
         break;
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     case MENU_SHADER:
         if (right_key) {
             if (max_shader_count && (myvideo.shader < (max_shader_count - 1))) {
@@ -8313,7 +8313,7 @@ static int draw_sdl2_menu_setting(
         break;
 #endif
 
-#if defined(XT894) || defined(XT897) || defined(QX1000)
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     case MENU_SHADER:
         if (get_filename_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
@@ -8730,7 +8730,7 @@ static int process_sdl2_setting(int key)
     }
     draw_small_win(450, 360, mode, myvideo.cvt);
 
-#if defined(MIYOO_FLIP) || defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897)
+#if defined(MIYOO_FLIP) || defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK) || defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
     myvideo.menu.update = 1;
 #else
     flush_lcd(

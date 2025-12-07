@@ -15,7 +15,7 @@
 #include <linux/omapfb.h>
 #endif
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
 #include <wayland-client.h>
 #include <wayland-egl.h>
 #endif
@@ -120,21 +120,21 @@ typedef enum {
 #define FB_MENU         1
 #endif
 
-#if defined(QX1050)
+#if defined(FXTEC_QX1050)
 #define WL_WIN_W        1080
 #define WL_WIN_H        2160
 #define SCREEN_W        640
 #define SCREEN_H        480
 #endif
 
-#if defined(QX1000)
+#if defined(FXTEC_QX1000)
 #define WL_WIN_W        1080
 #define WL_WIN_H        2160
 #define SCREEN_W        640
 #define SCREEN_H        480
 #endif
 
-#if defined(XT897)
+#if defined(MOTO_XT897)
 #define WL_WIN_W        540
 #define WL_WIN_H        960
 #define SCREEN_W        640
@@ -143,7 +143,7 @@ typedef enum {
 #define MAX_CPU_CORE    2
 #endif
 
-#if defined(XT894)
+#if defined(MOTO_XT894)
 #define WL_WIN_W        540
 #define WL_WIN_H        960
 #define SCREEN_W        640
@@ -266,7 +266,7 @@ typedef struct {
 
     int shader;
 
-#if defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
     struct {
         struct wl_shell *shell;
         struct wl_region *region;
@@ -286,7 +286,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(MIYOO_FLIP) || defined(QX1050) || defined(QX1000) || defined(XT894) || defined(XT897) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
     struct {
         EGLConfig config;
         EGLDisplay display;
@@ -307,7 +307,7 @@ typedef struct {
             GLint tex_sample;
         } frag;
 
-#if !defined(QX1050) && !defined(QX1000) && !defined(XT894) && !defined(XT897)
+#if !defined(FXTEC_QX1050) && !defined(FXTEC_QX1000) && !defined(MOTO_XT894) && !defined(MOTO_XT897)
         int mem_fd;
         uint8_t* ccu_mem;
         uint8_t* dac_mem;
