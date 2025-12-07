@@ -430,8 +430,8 @@ Layout
 Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
-| BACKSPACE             | Swap Screen                         |
-| TAB                   | Switch Keypad or Touch Mode         |
+| APOSTROPHE            | Swap Screen                         |
+| BACKSPACE             | Switch Keypad or Touch Mode         |
 | 1                     | Save State                          |
 | 0                     | Load State                          |
 | W                     | UP                                  |
@@ -494,8 +494,8 @@ Layout
 Button
 | ( Keypad Mode )       | (Function)                          |
 | --------------------- | ----------------------------------- |
-| BACKSPACE             | Swap Screen                         |
-| TAB                   | Switch Keypad or Touch Mode         |
+| APOSTROPHE            | Swap Screen                         |
+| BACKSPACE             | Switch Keypad or Touch Mode         |
 | 1                     | Save State                          |
 | 0                     | Load State                          |
 | W                     | UP                                  |
