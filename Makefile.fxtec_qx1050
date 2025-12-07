@@ -1,10 +1,10 @@
-export MOD=qx1050
+export MOD=fxtec_qx1050
 export NDS_GCC=0
 export NDS_ALSA=1
 export NDS_ARM64=1
 
 CFLAGS  += -O3
-CFLAGS  += -DQX1050
+CFLAGS  += -DFXTEC_QX1050
 CFLAGS  += -DNDS_ARM64
 CFLAGS  += -Wl,--no-undefined
 
