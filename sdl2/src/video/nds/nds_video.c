@@ -62,7 +62,7 @@ extern nds_config myconfig;
         
 static char lang_file_name[MAX_LANG_FILE][MAX_LANG_NAME] = { 0 };
 
-#if defined(TRIMUI_SMART)
+#if defined(TRIMUI_SMART) || defined(UT)
 static uint32_t LUT_256x192_N20[NDS_W * NDS_H] = { 0 };
 static uint32_t LUT_256x192_N21[NDS_W * NDS_H] = { 0 };
 static uint32_t LUT_256x192_N30[NDS_W * NDS_H] = { 0 };
@@ -83,7 +83,6 @@ static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
 static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
-static int get_filename_by_index(const char *, int, char *, int);
 
 #if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
 static int load_shader_file(const char *);
@@ -276,6 +275,8 @@ TEST_GROUP(sdl2_video);
 
 TEST_SETUP(sdl2_video)
 {
+    getcwd(myconfig.home, sizeof(myconfig.home));
+    strcat(myconfig.home, "/");
 }
 
 TEST_TEAR_DOWN(sdl2_video)
@@ -534,11 +535,13 @@ TEST(sdl2_video, cb_popup_done)
 }
 #endif
 
+#if !defined(UT)
 static const struct wl_shell_surface_listener cb_shell_surf = {
     cb_ping,
     cb_config,
     cb_popup_done
 };
+#endif
 
 static void cb_handle(void *dat, struct wl_registry *reg, uint32_t id, const char *intf, uint32_t ver)
 {
@@ -2324,7 +2327,7 @@ static void prehook_select_quit(void *menu_state, void *menu_option)
 
     trace("call %s(menu_state=%p, menu_option=%p)\n", __func__, menu_state, menu_option);
 
-    update_config(myvideo.home);
+    update_config(myconfig.home);
     pthread_create(&id, NULL, kill_handler, (void *)(uintptr_t)getpid());
     quit_drastic();
 }
@@ -2361,8 +2364,6 @@ TEST(sdl2_video, prehook_malloc)
     uint32_t bpp = 32;
     void *r = NULL;
 
-    TEST_ASSERT_NOT_NULL(rprehook_malloc(0));
-
     myhook.var.sdl.bytes_per_pixel = &bpp;
     myvideo.lcd.virt_addr[0][0] = (void *)0x12345678;
     TEST_ASSERT_EQUAL_INT(0x12345678, prehook_malloc(NDS_W * NDS_H * bpp));
@@ -2391,7 +2392,7 @@ static void prehook_free(void *ptr)
         }
     }
 
-    if ((found == 0) && (!ptr)) {
+    if ((found == 0) && ptr) {
         free(ptr);
     }
 }
@@ -2936,7 +2937,7 @@ static void* video_handler(void *param)
 #if !defined(TRIMUI_BRICK) && !defined(GKD_PIXEL2) && !defined(GKD_MINIPLUS)
         else if ((myvideo.shader >= 0) && (myvideo.shader != cur_shader)) {
             cur_shader = myvideo.shader;
-            if (get_filename_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
+            if (get_path_by_idx(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
                 load_shader_file(tmp);
             }
         }
@@ -3096,12 +3097,23 @@ static int load_mask_file(void)
         return -1;
     }
 
-    if (get_filename_by_index(MASK_PATH, myvideo.layout.mask.sel, tmp, 1) >= 0) {
+    if (get_path_by_idx(MASK_PATH, myvideo.layout.mask.sel, tmp, 1) >= 0) {
+#if !defined(UT)
         SDL_Surface *s = IMG_Load(tmp);
 
         trace("mask file = \"%s\", s=%p\n", tmp, s);
+        if (!s) {
+            error("failed to load mask file from \"%s\"\n", tmp);
+            return -1;
+        }
+
         memcpy(myvideo.gfx.mask.virt_addr, s->pixels, s->h * s->pitch);
         SDL_FreeSurface(s);
+#endif
+    }
+    else {
+        error("failed to get file name by index(%d)\n", myvideo.layout.mask.sel);
+        return -1;
     }
 
     return 0;
@@ -3110,8 +3122,14 @@ static int load_mask_file(void)
 #if defined(UT)
 TEST(sdl2_video, load_mask_file)
 {
-    TEST_ASSERT_EQUAL_INT(-1, load_mask_file(NULL));
-    TEST_ASSERT_EQUAL_INT(0, load_mask_file("test"));
+    myvideo.layout.mask.sel = -1;
+    TEST_ASSERT_EQUAL_INT(-1, load_mask_file());
+
+    myvideo.layout.mask.sel = 0;
+    TEST_ASSERT_EQUAL_INT(0, load_mask_file());
+
+    myvideo.layout.mask.sel = 10000;
+    TEST_ASSERT_EQUAL_INT(-1, load_mask_file());
 }
 #endif
 #endif
@@ -3119,24 +3137,24 @@ TEST(sdl2_video, load_mask_file)
 #if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI) && !defined(TRIMUI_BRICK) && !defined(GKD_PIXEL2) && !defined(GKD_MINIPLUS)
 static int load_shader_file(const char *name)
 {
+    int r = 0;
     long size = 0;
     FILE *f = NULL;
     char *content = NULL;
-    const char *frag_src = def_frag_src;
-    const char *vert_src = def_vert_src;
     char buf[MAX_PATH + 32] = { 0 };
+
+#if !defined(UT)
     GLint success = 0;
     GLint frag_shader = 0;
     GLint vert_shader = 0;
+    const char *vert_src = def_vert_src;
+    const char *frag_src = def_frag_src;
+#endif
 
     trace("call %s(name=%p)\n", __func__, name);
 
-#if defined(UT)
-    return 0;
-#endif
-
     if (name && name[0]) {
-        sprintf(buf, "%s%s/%s", myvideo.home, SHADER_PATH, name);
+        sprintf(buf, "%s%s/%s", myconfig.home, SHADER_PATH, name);
         trace("shader path=\"%s\"\n", buf);
 
         f = fopen(buf, "r");
@@ -3151,19 +3169,27 @@ static int load_shader_file(const char *name)
                 fread(content, 1, size, f);
                 content[size] = '\0';
 
+#if !defined(UT)
                 frag_src = content;
+#endif
                 trace("apply new shader\n");
             }
             else {
+                r = -1;
                 error("failed to allocate buffer for shader, fallback to default\n");
             }
             fclose(f);
         }
         else {
+            r = -1;
             error("failed to open shader file \"%s\"\n", buf);
         }
     }
+    else {
+        trace("fallback to default shader\n");
+    }
 
+#if !defined(UT)
     do {
         vert_shader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vert_shader, 1, (const char * const *)&vert_src, NULL);
@@ -3173,6 +3199,8 @@ static int load_shader_file(const char *name)
         glGetShaderiv(vert_shader, GL_COMPILE_STATUS, &success);
         trace("vert_shader compile status (%s)\n", success ? "success" : "fail");
         if (!success) {
+            r = -1;
+            error("failed to compile vertex shader\n");
             break;
         }
 
@@ -3184,6 +3212,8 @@ static int load_shader_file(const char *name)
         glGetShaderiv(frag_shader, GL_COMPILE_STATUS, &success);
         trace("frag_shader compile status (%s)\n", success ? "success" : "fail");
         if (!success) {
+            r = -1;
+            error("failed to compile fragment shader\n");
             break;
         }
 
@@ -3208,6 +3238,8 @@ static int load_shader_file(const char *name)
         glGetProgramiv(myvideo.egl.program, GL_LINK_STATUS, &success);
         trace("opengl es program link status (%s)\n", success ? "success" : "fail");
         if (!success) {
+            r = -1;
+            error("failed to link program\n");
             break;
         }
 
@@ -3219,19 +3251,21 @@ static int load_shader_file(const char *name)
         myvideo.egl.frag.screen = glGetUniformLocation(myvideo.egl.program, "frag_screen");
         myvideo.egl.frag.tex_sample = glGetUniformLocation(myvideo.egl.program, "frag_tex_sample");
     } while(0);
+#endif
 
     if (content) {
         free(content);
     }
 
-    return 0;
+    return r;
 }   
 
 #if defined(UT)
 TEST(sdl2_video, load_shader_file)
 {
-    TEST_ASSERT_EQUAL_INT(-1, load_shader_file(NULL));
-    TEST_ASSERT_EQUAL_INT(0, load_shader_file("test"));
+    TEST_ASSERT_EQUAL_INT(0, load_shader_file(NULL));
+    TEST_ASSERT_EQUAL_INT(-1, load_shader_file("test"));
+    TEST_ASSERT_EQUAL_INT(0, load_shader_file("lcd1x"));
 }
 #endif
 #endif
@@ -3245,17 +3279,19 @@ static int load_lang_file(void)
 
     trace("call %s(lang=%d)\n", __func__, myconfig.lang);
 
-#if defined(UT)
-    return 0;
-#endif
+    if ((myconfig.lang < 0) || (myconfig.lang >= MAX_LANG_FILE)) {
+        error("invalid language index\n");
+        return -1;
+    }
 
     if (myconfig.lang == 0) {
+        trace("use default english language\n");
         return 0;
     }
 
     free_lang_res();
 
-    sprintf(buf, "%s%s/%s", myvideo.home, LANG_PATH, lang_file_name[myconfig.lang]);
+    sprintf(buf, "%s%s/%s", myconfig.home, LANG_PATH, lang_file_name[myconfig.lang]);
     f = fopen(buf, "r");
     if (!f) {
         error("failed to open lang file \"%s\"\n", buf);
@@ -3288,68 +3324,17 @@ static int load_lang_file(void)
 #if defined(UT)
 TEST(sdl2_video, load_lang_file)
 {
+    myconfig.lang = -1;
+    TEST_ASSERT_EQUAL_INT(-1, load_lang_file());
+
+    myconfig.lang = 0;
     TEST_ASSERT_EQUAL_INT(0, load_lang_file());
-}
-#endif
 
-static int get_filename_by_index(const char *folder, int idx, char *buf, int full)
-{
-    int r = -1;
-    int cnt = 0;
-    DIR *d = NULL;
-    char tmp[MAX_PATH + 32] = { 0 };
-    struct dirent *dir = NULL;
+    myconfig.lang = 1;
+    TEST_ASSERT_EQUAL_INT(0, load_lang_file());
 
-    trace("call %s()\n", __func__);
-
-#if defined(UT)
-    return 0;
-#endif
-
-    buf[0] = 0;
-    sprintf(tmp, "%s%s", myvideo.home, folder);
-    trace("enum folder=\"%s\"\n", tmp);
-
-    d = opendir(tmp);
-    if (!d) {
-        error("failed to open dir \"%s\"\n", tmp);
-        return r;
-    }
-
-    cnt = 0;
-    while ((dir = readdir(d)) != NULL) {
-        if (dir->d_type == DT_DIR) {
-            continue;
-        }
-        if (strcmp(dir->d_name, ".") == 0) {
-            continue;
-        }
-        if (strcmp(dir->d_name, "..") == 0) {
-            continue;
-        }
-
-        if (cnt == idx) {
-            r = 0;
-            if (full) {
-                sprintf(buf, "%s/%s/%s", myvideo.home, folder, dir->d_name);
-            }
-            else {
-                strcpy(buf, dir->d_name);
-            }
-            trace("found file \"%s\" by index (%d)\n", buf, idx);
-            break;
-        }
-        cnt += 1;
-    }
-    closedir(d);
-
-    return r;
-}
-
-#if defined(UT)
-TEST(sdl2_video, get_filename_by_index)
-{
-    TEST_ASSERT_EQUAL_INT(0, get_filename_by_index(NULL, 0, NULL, 0));
+    myconfig.lang = 10000;
+    TEST_ASSERT_EQUAL_INT(-1, load_lang_file());
 }
 #endif
 
@@ -3362,7 +3347,7 @@ static int enum_lang_file(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, LANG_PATH);
+    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, LANG_PATH);
     trace("lang folder=\"%s\"\n", buf);
 
     memset(lang_file_name, 0, sizeof(lang_file_name));
@@ -3402,9 +3387,7 @@ static int enum_lang_file(void)
 #if defined(UT)
 TEST(sdl2_video, enum_lang_file)
 {
-    TEST_ASSERT_EQUAL_INT(0, init_device());
-    //TEST_ASSERT_EQUAL_INT(3, enum_lang_file());
-    TEST_ASSERT_EQUAL_INT(0, quit_device());
+    TEST_ASSERT_EQUAL_INT(2, enum_lang_file());
 }
 #endif
 
@@ -3414,11 +3397,18 @@ static int get_mask_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, MASK_PATH);
+    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, MASK_PATH);
     trace("mask folder=\"%s\"\n", buf);
 
     return get_file_cnt(buf);
 }
+
+#if defined(UT)
+TEST(sdl2_video, get_mask_cnt)
+{
+    TEST_ASSERT_EQUAL_INT(1, get_mask_cnt());
+}
+#endif
 
 #if !defined(MIYOO_MINI)
 static int get_shader_cnt(void)
@@ -3427,7 +3417,7 @@ static int get_shader_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, SHADER_PATH);
+    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, SHADER_PATH);
     trace("shader folder=\"%s\"\n", buf);
 
     return get_file_cnt(buf);
@@ -3436,6 +3426,7 @@ static int get_shader_cnt(void)
 #if defined(UT)
 TEST(sdl2_video, get_shader_cnt)
 {
+    TEST_ASSERT_EQUAL_INT(2, get_shader_cnt());
 }
 #endif
 #endif
@@ -3446,7 +3437,7 @@ static int get_bg_dir_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, BG_PATH);
+    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, BG_PATH);
     trace("bg folder=\"%s\"\n", buf);
 
     return get_dir_cnt(buf);
@@ -3455,9 +3446,7 @@ static int get_bg_dir_cnt(void)
 #if defined(UT)
 TEST(sdl2_video, get_bg_dir_cnt)
 {
-    //TEST_ASSERT_EQUAL_INT(0, init_device());
-    //TEST_ASSERT_EQUAL_INT(9, get_bg_dir_cnt());
-    //TEST_ASSERT_EQUAL_INT(0, quit_device());
+    TEST_ASSERT_EQUAL_INT(22, get_bg_dir_cnt());
 }
 #endif
 
@@ -3467,7 +3456,7 @@ static int get_menu_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, MENU_PATH);
+    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, MENU_PATH);
     trace("menu folder=\"%s\"\n", buf);
 
     return get_dir_cnt(buf);
@@ -3476,9 +3465,7 @@ static int get_menu_cnt(void)
 #if defined(UT)
 TEST(sdl2_video, get_menu_cnt)
 {
-    //TEST_ASSERT_EQUAL_INT(0, init_device());
-    //TEST_ASSERT_EQUAL_INT(3, get_menu_cnt());
-    //TEST_ASSERT_EQUAL_INT(0, quit_device());
+    TEST_ASSERT_EQUAL_INT(4, get_menu_cnt());
 }
 #endif
 
@@ -3488,7 +3475,7 @@ static int get_pen_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
+    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, PEN_PATH);
     trace("pen folder=\"%s\"\n", buf);
 
     return get_file_cnt(buf);
@@ -3497,101 +3484,150 @@ static int get_pen_cnt(void)
 #if defined(UT)
 TEST(sdl2_video, get_pen_cnt)
 {
-    //TEST_ASSERT_EQUAL_INT(0, init_device());
-    //TEST_ASSERT_EQUAL_INT(6, get_pen_cnt());
-    //TEST_ASSERT_EQUAL_INT(0, quit_device());
+    TEST_ASSERT_EQUAL_INT(1, get_pen_cnt());
 }
 #endif
 
+#if defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK) || defined(UT)
 #if defined(UT)
+static int init_lcd_pixel2(void)
+#else
 static int init_lcd(void)
-{
-    trace("call %s()\n", __func__);
-
-    return 0;
-}
-
-TEST(sdl2_video, init_lcd)
-{
-    TEST_ASSERT_EQUAL_INT(0, init_lcd());
-}
-
-static int quit_lcd(void)
-{
-    trace("call %s()\n", __func__);
-
-    return 0;
-}
-
-TEST(sdl2_video, quit_lcd)
-{
-    TEST_ASSERT_EQUAL_INT(0, quit_lcd());
-}
-
-int resize_disp(void)
-{
-    trace("call %s()\n", __func__);
-
-    return 0;
-}
-
-TEST(sdl2_video, resize_disp)
-{
-    TEST_ASSERT_EQUAL_INT(0, resize_disp());
-}
 #endif
-
-#if defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK)
-static int init_lcd(void)
 {
     trace("call %s()\n", __func__);
 
+    myvideo.shm.buf = MAP_FAILED;
     myvideo.shm.fd = shm_open(SHM_NAME, O_RDWR, 0777);
     trace("shm fd=%d\n", myvideo.shm.fd);
+
+    if (myvideo.shm.fd < 0) {
+        error("failed to open shared memory\n");
+        return -1;
+    }
 
     myvideo.shm.buf = (shm_buf_t *) mmap(NULL, sizeof(shm_buf_t), PROT_READ | PROT_WRITE, MAP_SHARED, myvideo.shm.fd, 0);
     trace("shm buf=%p\n", myvideo.shm.buf);
 
+    if (myvideo.shm.buf == MAP_FAILED) {
+        error("failed to map shared memory\n");
+        return -1;
+    }
+
     return 0;
 }
 
-static int quit_lcd(void)
+#if defined(UT)
+TEST(sdl2_video, init_lcd_pixel2)
 {
-    trace("call %s()\n", __func__);
+#if 1
+    init_lcd_pixel2();
+    TEST_PASS();
+#else
+    myvideo.shm.fd = -1;
+    myvideo.shm.buf = NULL;
 
-    myvideo.shm.buf->valid = 1;
-    myvideo.shm.buf->cmd = SHM_CMD_QUIT;
-    trace("send SHM_CMD_QUIT\n");
-
-    while (myvideo.shm.buf->valid) {
-        usleep(10);
-    }
+    TEST_ASSERT_EQUAL_INT(0, init_lcd_pixel2());
+    TEST_ASSERT_EQUAL_INT(1, !!myvideo.shm.fd);
 
     munmap(myvideo.shm.buf, sizeof(shm_buf_t));
     shm_unlink(SHM_NAME);
-
-    return 0;
+#endif
 }
 #endif
 
-#if defined(MIYOO_FLIP)
-static int init_lcd(void)
-{
-    trace("call %s()\n", __func__);
-
-    return 0;
-}
-
+#if defined(UT)
+static int quit_lcd_pixel2(void)
+#else
 static int quit_lcd(void)
+#endif
+{
+    trace("call %s(myvideo.shm.buf=%p)\n", __func__, myvideo.shm.buf);
+
+    if (myvideo.shm.buf == MAP_FAILED) {
+        trace("shared memory needs to be allocated firstly\n");
+    }
+    else {
+        myvideo.shm.buf->valid = 1;
+        myvideo.shm.buf->cmd = SHM_CMD_QUIT;
+        trace("send SHM_CMD_QUIT\n");
+
+#if !defined(UT)
+        while (myvideo.shm.buf->valid) {
+            usleep(10);
+        }
+#endif
+
+        munmap(myvideo.shm.buf, sizeof(shm_buf_t));
+    }
+
+    if (myvideo.shm.fd > 0) {
+        shm_unlink(SHM_NAME);
+    }
+
+    myvideo.shm.buf = NULL;
+    myvideo.shm.fd = -1;
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, quit_lcd_pixel2)
+{
+    myvideo.shm.buf = MAP_FAILED;
+    TEST_ASSERT_EQUAL_INT(0, quit_lcd_pixel2());
+    TEST_ASSERT_NULL(myvideo.shm.buf);
+    TEST_ASSERT_EQUAL_INT(-1, myvideo.shm.fd);
+}
+#endif
+#endif
+
+#if defined(MIYOO_FLIP) || defined(UT)
+#if defined(UT)
+static int init_lcd_flip(void)
+#else
+static int init_lcd(void)
+#endif
 {
     trace("call %s()\n", __func__);
 
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, init_lcd_flip)
+{
+    init_lcd_flip();
+    TEST_PASS();
+}
 #endif
 
-#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
+#if defined(UT)
+static int quit_lcd_flip(void)
+#else
+static int quit_lcd(void)
+#endif
+{
+    trace("call %s()\n", __func__);
+
+    return 0;
+}
+
+#if defined(UT)
+TEST(sdl2_video, quit_lcd_flip)
+{
+    quit_lcd_flip();
+    TEST_PASS();
+}
+#endif
+#endif
+
+#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(UT)
+static int init_lcd_sfos(void)
+#else
 static int init_lcd(void)
+#endif
 {
     trace("call %s()\n", __func__);
 
@@ -3599,207 +3635,60 @@ static int init_lcd(void)
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, init_lcd_sfos)
+{
+    myvideo.wl.ready = 1;
+    TEST_ASSERT_EQUAL_INT(0, init_lcd_sfos());
+    TEST_ASSERT_EQUAL_INT(0, myvideo.wl.ready);
+}
+#endif
+
+#if defined(UT)
+static int quit_lcd_sfos(void)
+#else
 static int quit_lcd(void)
+#endif
 {
     trace("call %s()\n", __func__);
 
     myvideo.wl.thread.running = 0;
+
+#if !defined(UT)
     pthread_join(myvideo.wl.thread.id, NULL);
-
-    return 0;
-}
 #endif
 
-#if defined(PANDORA)
-int enable_fb_plane(int n)
-{
-    int cc = 0;
-    struct omapfb_plane_info pi = { 0 };
-
-    trace("call %s(n=%d)\n", __func__, n);
-
-    for (cc = 0; cc < FB_NUM; cc++) {
-        if (myvideo.fb.fd[cc] < 0) {
-            continue;
-        }
-
-        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
-
-        pi.enabled = (cc == n) ? 1 : 0;
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
-       trace("%s fb plane for /dev/fb%d\n", (cc == n) ? "enabled" : "disabled", cc + 1);
-    }
-
-    myvideo.fb.cur_idx = n;
-    trace("set cur_idx=%d\n", n);
-
     return 0;
 }
 
-static int init_lcd(void)
+#if defined(UT)
+TEST(sdl2_video, quit_lcd_sfos)
 {
-    int w = 320;
-    int h = 480;
-    int op_w = 800;
-    int op_h = 480;
-    int cc = 0;
-    struct omapfb_mem_info mi = { 0 };
-    struct omapfb_plane_info pi = { 0 };
-    const char *FB_PATH[] = {
-        "/dev/fb1",
-        "/dev/fb2",
-    };
-
-    trace("call %s()\n", __func__);
-
-    myvideo.fb.cur_idx = FB_GAME;
-    for (cc = 0; cc < FB_NUM; cc++) {
-        myvideo.fb.fd[cc] = open(FB_PATH[cc], O_RDWR);
-        if (myvideo.fb.fd[cc] < 0) {
-            error("failed to open %s\n", FB_PATH[cc]);
-            continue;
-        }
-
-        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
-        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
-        ioctl(myvideo.fb.fd[cc], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
-        ioctl(myvideo.fb.fd[cc], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-
-        pi.enabled = 0;
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
-
-        if (cc == FB_GAME) {
-            mi.size = NDS_W * NDS_Hx2 * 4 * 2;
-            pi.out_width = w;
-            pi.out_height = h;
-        }
-        else {
-            mi.size = MENU_W * MENU_H * 4 * 2;
-            pi.out_width = MENU_W;
-            pi.out_height = MENU_H;
-        }
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
-
-        pi.enabled = (cc == FB_GAME) ? 1 : 0;
-        pi.pos_x = (op_w - pi.out_width) >> 1;
-        pi.pos_y = (op_h - pi.out_height) >> 1;
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
-
-        myvideo.fb.var_info.xoffset = 0;
-        myvideo.fb.var_info.yoffset = 0;
-        if (cc == FB_GAME) {
-            myvideo.fb.var_info.xres = NDS_W;
-            myvideo.fb.var_info.yres = NDS_Hx2;
-        }
-        else {
-            myvideo.fb.var_info.xres = MENU_W;
-            myvideo.fb.var_info.yres = MENU_H;
-        }
-        myvideo.fb.var_info.xres_virtual = myvideo.fb.var_info.xres;
-        myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
-        ioctl(myvideo.fb.fd[cc], FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
-
-        close(myvideo.fb.fd[cc]);
-    }
-
-    for (cc = 0; cc < FB_NUM; cc++) {
-        myvideo.fb.fd[cc] = open(FB_PATH[cc], O_RDWR);
-        if (myvideo.fb.fd[cc] < 0) {
-            error("failed to open %s\n", FB_PATH[cc]);
-            continue;
-        }
-
-        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
-        ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
-        ioctl(myvideo.fb.fd[cc], FBIOGET_VSCREENINFO, &myvideo.fb.var_info);
-        ioctl(myvideo.fb.fd[cc], FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
-
-        pi.enabled = 0;
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
-
-        if (cc == FB_GAME) {
-            mi.size = NDS_W * NDS_Hx2 * 4 * 2;
-            pi.out_width = w;
-            pi.out_height = h;
-        }
-        else {
-            mi.size = w * h * 4 * 2;
-            pi.out_width = MENU_W;
-            pi.out_height = MENU_H;
-        }
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
-
-        pi.enabled = (cc == FB_GAME) ? 1 : 0;
-        pi.pos_x = (op_w - pi.out_width) >> 1;
-        pi.pos_y = (op_h - pi.out_height) >> 1;
-        ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
-
-        myvideo.fb.mem[cc] = mmap(0, mi.size, PROT_WRITE | PROT_READ, MAP_SHARED, myvideo.fb.fd[cc], 0);
-        myvideo.fb.pixels[cc][0] = myvideo.fb.mem[cc];
-        myvideo.fb.pixels[cc][1] = myvideo.fb.mem[cc] + (NDS_W * NDS_H);
-        memset(myvideo.fb.mem[cc], 0, mi.size);
-
-        myvideo.fb.var_info.xoffset = 0;
-        myvideo.fb.var_info.yoffset = 0;
-        if (cc == FB_GAME) {
-            myvideo.fb.var_info.xres = NDS_W;
-            myvideo.fb.var_info.yres = NDS_Hx2;
-        }
-        else {
-            myvideo.fb.var_info.xres = MENU_W;
-            myvideo.fb.var_info.yres = MENU_H;
-        }
-        myvideo.fb.var_info.xres_virtual = myvideo.fb.var_info.xres;
-        myvideo.fb.var_info.yres_virtual = myvideo.fb.var_info.yres * 2;
-        ioctl(myvideo.fb.fd[cc], FBIOPUT_VSCREENINFO, &myvideo.fb.var_info);
-    }
-
-    return 0;
-}
-
-static int quit_lcd(void)
-{
-    int cc = 0;
-    struct omapfb_mem_info mi = { 0 };
-    struct omapfb_plane_info pi = { 0 };
-
-    trace("call %s()\n", __func__);
-
-    for (cc = 0; cc < FB_NUM; cc++) {
-        if (myvideo.fb.fd[cc] > 0) {
-            ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_MEM, &mi);
-            ioctl(myvideo.fb.fd[cc], OMAPFB_QUERY_PLANE, &pi);
-
-            pi.enabled = 0;
-            ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_PLANE, &pi);
-            trace("disabled fb plane\n");
-
-            munmap(myvideo.fb.mem[cc], mi.size);
-            myvideo.fb.mem[cc] = NULL;
-
-            mi.size = 0;
-            ioctl(myvideo.fb.fd[cc], OMAPFB_SETUP_MEM, &mi);
-            trace("freed fb mem\n");
-
-            close(myvideo.fb.fd[cc]);
-            myvideo.fb.fd[cc] = -1;
-        }
-    }
-
-    return 0;
+    myvideo.wl.thread.running = 1;
+    TEST_ASSERT_EQUAL_INT(0, quit_lcd_sfos());
+    TEST_ASSERT_EQUAL_INT(0, myvideo.wl.thread.running);
 }
 #endif
+#endif
 
-#if defined(TRIMUI_SMART)
+#if defined(TRIMUI_SMART) || defined(UT)
 static int ion_alloc(int ion_fd, ion_alloc_info_t* info)
 {
+#if !defined(UT)
     sunxi_phys_data spd = { 0 };
     struct ion_fd_data ifd = { 0 };
     struct ion_custom_data icd = { 0 };
     struct ion_allocation_data iad = { 0 };
+#endif
 
     trace("call %s(ion_fd=%d, info=%p)\n", __func__, ion_fd, info);
 
+    if ((ion_fd < 0) || (info == NULL)) {
+        error("invalid parameters\n");
+        return -1;
+    }
+
+#if !defined(UT)
     iad.len = info->size;
     iad.align = sysconf(_SC_PAGESIZE);
     iad.heap_id_mask = ION_HEAP_TYPE_DMA_MASK;
@@ -3819,42 +3708,81 @@ static int ion_alloc(int ion_fd, ion_alloc_info_t* info)
     info->padd = (void*)spd.phys_addr;
     info->vadd = mmap(0, info->size, PROT_READ | PROT_WRITE, MAP_SHARED, info->fd, 0);
     trace("mmap padd=%p, vadd=%p, size=%d\n", info->padd, info->vadd, info->size);
+#endif
 
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, ion_alloc)
+{
+    TEST_ASSERT_EQUAL_INT(-1, ion_alloc(-1, NULL));
+    TEST_ASSERT_EQUAL_INT(0, ion_alloc(0xdead, (void *)0xdead));
+}
+#endif
 
 static int ion_free(int ion_fd, ion_alloc_info_t* info)
 {
+#if !defined(UT)
     struct ion_handle_data ihd = { 0 };
+#endif
 
     trace("call %s()\n", __func__);
 
-    munmap(info->vadd, info->size);
-    close(info->fd);
+    if ((ion_fd < 0) || (info = NULL)) {
+        error("invalid paramaters\n");
+        return -1;
+    }
 
-    info->vadd = NULL;
-    info->fd = -1;
+#if !defined(UT)
+    if (info->vadd !=  MAP_FAILED) {
+        munmap(info->vadd, info->size);
+    }
+
+    if (info->fd > 0) {
+        close(info->fd);
+    }
 
     ihd.handle = info->handle;
     ioctl(ion_fd, ION_IOC_FREE, &ihd);
+
+    info->vadd = MAP_FAILED;
+    info->fd = -1;
     ion_fd = -1;
+#endif
 
     return 0;
 }
 
-static int init_lcd(void)
+#if defined(UT)
+TEST(sdl2_video, ion_free)
 {
-    int r = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ion_free(-1, NULL));
+    TEST_ASSERT_EQUAL_INT(0, ion_free(0xdead, (void *)0xdead));
+}
+#endif
+
+#if defined(UT)
+static int init_lcd_ion(void)
+#else
+static int init_lcd(void)
+#endif
+{
     int x = 0;
     int y = 0;
     int cc = 0;
     int ox = 32;
     int oy = 24;
     uint32_t *dst = NULL;
+
+#if !defined(UT)
+    int r = 0;
     uint32_t args[4] = { 0, (uintptr_t)&myvideo.gfx.disp, 1, 0 };
+#endif
 
     trace("call %s()\n", __func__);
 
+#if !defined(UT)
     myvideo.fb.fd = open("/dev/fb0", O_RDWR);
     if (myvideo.fb.fd < 0) {
         error("failed to open /dev/fb0\n");
@@ -3926,17 +3854,18 @@ static int init_lcd(void)
     }
 
     alloc_lcd_virtual_mem();
+#endif
 
     cc = 0;
     for (y = 0; y < NDS_H; y++) {
         for (x = 0; x < NDS_W; x++) {
             dst = (uint32_t *)myvideo.gfx.ion.vadd;
-            LUT_256x192_N20[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
-            LUT_256x192_N30[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
+            LUT_256x192_N20[cc] = (uintptr_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
+            LUT_256x192_N30[cc] = (uintptr_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
 
             dst = ((uint32_t *)myvideo.gfx.ion.vadd) + (SCREEN_W * SCREEN_H);
-            LUT_256x192_N21[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
-            LUT_256x192_N31[cc] = (uint32_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
+            LUT_256x192_N21[cc] = (uintptr_t)(dst + ((((NDS_W - 1) - x) + ox) * SCREEN_H) + y + oy);
+            LUT_256x192_N31[cc] = (uintptr_t)(dst + ((((NDS_W - 1) - x)) * SCREEN_H) + y);
             cc+= 1;
         }
     }
@@ -3945,12 +3874,36 @@ static int init_lcd(void)
     return 0;
 }
 
-static int quit_lcd(void)
+#if defined(UT)
+TEST(sdl2_video, init_lcd_ion)
 {
+    myvideo.gfx.ion.vadd = 0;
+    memset(LUT_256x192_N20, 0, sizeof(LUT_256x192_N20));
+    memset(LUT_256x192_N30, 0, sizeof(LUT_256x192_N30));
+    memset(LUT_256x192_N21, 0, sizeof(LUT_256x192_N21));
+    memset(LUT_256x192_N31, 0, sizeof(LUT_256x192_N31));
+
+    TEST_ASSERT_EQUAL_INT(0, init_lcd_ion());
+    TEST_ASSERT_EQUAL_INT(1, !!LUT_256x192_N20[0]);
+    TEST_ASSERT_EQUAL_INT(1, !!LUT_256x192_N30[0]);
+    TEST_ASSERT_EQUAL_INT(1, !!LUT_256x192_N21[0]);
+    TEST_ASSERT_EQUAL_INT(1, !!LUT_256x192_N31[0]);
+}
+#endif
+
+#if defined(UT)
+static int quit_lcd_ion(void)
+#else
+static int quit_lcd(void)
+#endif
+{
+#if !defined(UT)
     uint32_t args[4] = { 0, (uintptr_t)&myvideo.gfx.disp, 1, 0 };
+#endif
 
     trace("call %s()\n", __func__);
 
+#if !defined(UT)
     myvideo.gfx.buf.enable = 0;
     myvideo.gfx.disp.enable = 0;
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
@@ -3979,16 +3932,28 @@ static int quit_lcd(void)
     myvideo.gfx.disp_fd = -1;
 
     free_lcd_virtual_mem();
+#endif
+
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, quit_lcd_ion)
+{
+    TEST_ASSERT_EQUAL_INT(0, quit_lcd_ion());
+}
+#endif
+
 int resize_disp(void)
 {
+#if !defined(UT)
     int r = 0;
     uint32_t args[4] = { 0, (uintptr_t)&myvideo.gfx.buf, 1, 0 };
+#endif
 
     trace("call %s()\n", __func__);
 
+#if !defined(UT)
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
     if (myconfig.layout.mode.sel == LAYOUT_MODE_N2) {
         myvideo.gfx.buf.info.fb.crop.width  = ((uint64_t)SCREEN_H) << 32;
@@ -4000,25 +3965,41 @@ int resize_disp(void)
     }
     ioctl(myvideo.gfx.disp_fd, DISP_LAYER_SET_CONFIG, args);
     ioctl(myvideo.fb.fd, FBIO_WAITFORVSYNC, &r);
+#endif
 
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, resize_disp)
+{
+    TEST_ASSERT_EQUAL_INT(0, resize_disp());
+}
+#endif
 #endif
 
-#if defined(MIYOO_MINI)
+#if defined(MIYOO_MINI) || defined(UT)
+#if defined(UT)
+static int init_lcd_gfx(void)
+#else
 static int init_lcd(void)
+#endif
 {
+#if !defined(UT)
     MI_U32 r = 0;
-    uint32_t size = 819200;
+    uint32_t size = 0;
+#endif
 
     trace("call %s()\n", __func__);
 
+#if !defined(UT)
     MI_SYS_Init();
     MI_GFX_Open();
 
     myvideo.fb.fd = open("/dev/fb0", O_RDWR);
     if (myvideo.fb.fd < 0) {
         fatal("failed to open /dev/fb0\n");
+        return -1;
     }
 
     ioctl(myvideo.fb.fd, FBIOGET_FSCREENINFO, &myvideo.fb.fix_info);
@@ -4051,14 +4032,27 @@ static int init_lcd(void)
 
     myvideo.sar_fd = open("/dev/sar", O_RDWR);
     trace("sar handle=%d\n", myvideo.sar_fd);
+#endif
 
     return 0;
 }
 
+#if defined(UT)
+TEST(sdl2_video, init_lcd_gfx)
+{
+    TEST_ASSERT_EQUAL_INT(0, init_lcd_gfx());
+}
+#endif
+
+#if defined(UT)
+static int quit_lcd_gfx(void)
+#else
 static int quit_lcd(void)
+#endif
 {
     trace("call %s()\n", __func__);
 
+#if !defined(UT)
     if (myvideo.fb.virt_addr) {
         MI_SYS_Munmap(myvideo.fb.virt_addr, SCREEN_BUF_SIZEx2);
         myvideo.fb.virt_addr = NULL;
@@ -4095,9 +4089,17 @@ static int quit_lcd(void)
         close(myvideo.sar_fd);
         myvideo.sar_fd = -1;
     }
+#endif
 
     return 0;
 }
+
+#if defined(UT)
+TEST(sdl2_video, quit_lcd_gfx)
+{
+    TEST_ASSERT_EQUAL_INT(0, quit_lcd_gfx());
+}
+#endif
 #endif
 
 static int draw_touch_pen(void *pixels, int width, int pitch)
@@ -4126,8 +4128,8 @@ static int draw_touch_pen(void *pixels, int width, int pitch)
 
     trace("call %s(pixel=%p, width=%d, pitch=%d)\n", __func__, pixels, width, pitch);
 
-    if (!pixels) {
-        error("pixels is null\n");
+    if (!pixels || !width || !pitch) {
+        error("invalid parameter\n");
         return -1;
     }
 
@@ -4225,7 +4227,7 @@ TEST(sdl2_video, draw_touch_pen)
 
     p = malloc(NDS_W * NDS_H * 4);
     TEST_ASSERT_NOT_NULL(p);
-    TEST_ASSERT_EQUAL_INT(-1, draw_touch_pen(0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, draw_touch_pen(NULL, 0, 0));
     TEST_ASSERT_EQUAL_INT(0, draw_touch_pen(p, NDS_W, NDS_W * 4));
     free(p);
 }
@@ -4233,7 +4235,7 @@ TEST(sdl2_video, draw_touch_pen)
 
 int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
 {
-#if !defined(TRIMUI_SMART)
+#if !defined(TRIMUI_SMART) && !defined(UT)
     int cur_filter = myconfig.filter;
 #endif
 
@@ -4304,7 +4306,7 @@ int flush_lcd(int id, const void *pixels, SDL_Rect srt, SDL_Rect drt, int pitch)
     }
 
     if (myvideo.menu.sdl2.enable || myvideo.menu.drastic.enable) {
-#if !defined(TRIMUI_SMART)
+#if !defined(TRIMUI_SMART) && !defined(UT)
         cur_filter = FILTER_BLUR;
         cur_mode_sel = LAYOUT_MODE_N3;
 #endif
@@ -5837,17 +5839,23 @@ static int get_font_width(const char *info)
 
     trace("call %s(info=%p)\n", __func__, info);
 
-    if (myvideo.menu.font && info) {
-        TTF_SizeUTF8(myvideo.menu.font, info, &w, &h);
+    if (!info) {
+        error("invalid parameter\n");
+        return 0;
     }
 
-    return w;
+    if (myvideo.menu.font && info) {
+        TTF_SizeUTF8(myvideo.menu.font, info, &w, &h);
+        return w;
+    }
+
+    return 0;
 }
 
 #if defined(UT)
 TEST(sdl2_video, get_font_width)
 {
-    TEST_ASSERT_EQUAL_INT(0, get_font_width(0));
+    TEST_ASSERT_EQUAL_INT(0, get_font_width(NULL));
 }
 #endif
 
@@ -5858,17 +5866,23 @@ static int get_font_height(const char *info)
 
     trace("call %s(info=%p)\n", __func__, info);
 
-    if (myvideo.menu.font && info) {
-        TTF_SizeUTF8(myvideo.menu.font, info, &w, &h);
+    if (!info) {
+        error("invalid parameter\n");
+        return 0;
     }
 
-    return h;
+    if (myvideo.menu.font && info) {
+        TTF_SizeUTF8(myvideo.menu.font, info, &w, &h);
+        return h;
+    }
+
+    return 0;
 }
 
 #if defined(UT)
 TEST(sdl2_video, get_font_height)
 {
-    TEST_ASSERT_EQUAL_INT(0, get_font_height(0));
+    TEST_ASSERT_EQUAL_INT(0, get_font_height(NULL));
 }
 #endif
 
@@ -5907,7 +5921,14 @@ const char* l10n(const char *p)
 #if defined(UT)
 TEST(sdl2_video, l10n)
 {
-    TEST_ASSERT_EQUAL_INT(0, l10n(0));
+    char *p = "123";
+    const char *r = NULL;
+
+    myconfig.lang = 0;
+    TEST_ASSERT_EQUAL_INT(0, l10n(NULL));
+
+    r = l10n(p);
+    TEST_ASSERT_EQUAL_INT(p, r);
 }
 #endif
 
@@ -5931,18 +5952,18 @@ static int draw_info(
     trace("call %s(info=%p, x=%d, y=%d)\n", __func__, info, x, y);
 
     if (!info) {
-        error("info is null\n");
-        return 0;
+        error("invalid parameter\n");
+        return -1;
     }
 
     if (!myvideo.menu.font) {
-        error("font is null\n");
+        error("invalid font\n");
         return -1;
     }
 
     len = strlen(info);
     if ((len == 0) || (len >= MAX_PATH)) {
-        return 0;
+        return -1;
     }
 
     fg.r = (fgcolor >> 16) & 0xff;
@@ -5987,7 +6008,7 @@ static int draw_info(
 #if defined(UT)
 TEST(sdl2_video, draw_info)
 {
-    TEST_ASSERT_EQUAL_INT(0, draw_info(0, 0, 0, 0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, draw_info(NULL, NULL, 0, 0, 0, 0));
 }
 #endif
 
@@ -6017,14 +6038,11 @@ int load_touch_pen(void)
     int r = -1;
     SDL_Surface *t = NULL;
     char path[MAX_PATH] = { 0 };
-    char buf[MAX_PATH + 8] = { 0 };
 
     trace("call %s()\n", __func__);
 
     free_touch_pen();
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, PEN_PATH);
-
-    if (get_path_by_idx(buf, myconfig.pen.sel, path) != 0) {
+    if (get_path_by_idx(PEN_PATH, myconfig.pen.sel, path, 1) != 0) {
         error("failed to get file path\n");
         return r;
     }
@@ -6046,8 +6064,10 @@ int load_touch_pen(void)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, t->pixels);
 #endif
 
-    myvideo.touch.pen = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
-    SDL_FreeSurface(t);
+    if (myvideo.cvt) {
+        myvideo.touch.pen = SDL_ConvertSurface(t, myvideo.cvt->format, 0);
+        SDL_FreeSurface(t);
+    }
 
     if (strstr(path, "left_top_")) {
         myconfig.pen.type = PEN_LT;
@@ -6071,12 +6091,23 @@ int load_touch_pen(void)
 #if defined(UT)
 TEST(sdl2_video, load_touch_pen)
 {
-    TEST_ASSERT_EQUAL_INT(0, init_device());
     myconfig.pen.sel = 0;
+    myvideo.cvt = SDL_CreateRGBSurface(
+        SDL_SWSURFACE,
+        LAYOUT_BG_W,
+        LAYOUT_BG_H,
+        32,
+        0,
+        0,
+        0,
+        0
+    );
+
     TEST_ASSERT_EQUAL_INT(0, load_touch_pen());
     TEST_ASSERT_NOT_NULL(myvideo.touch.pen);
     TEST_ASSERT_EQUAL_INT(0, free_touch_pen());
-    TEST_ASSERT_EQUAL_INT(0, quit_device());
+
+    SDL_FreeSurface(myvideo.cvt);
 }
 #endif
 
@@ -6086,9 +6117,14 @@ static SDL_Surface* load_menu_img(const char *name, int raw_img)
     SDL_Surface *t1 = NULL;
     char buf[MAX_PATH + 32] = { 0 };
 
-    trace("call %s(name=\"%s\")\n", __func__, name);
+    trace("call %s(name=%p)\n", __func__, name);
 
-    snprintf(buf, sizeof(buf), "%s%s/%d/%s", myvideo.home, MENU_PATH, myconfig.menu.sel, name);
+    if (!name) {
+        error("invalid parameter\n");
+        return NULL;
+    }
+
+    snprintf(buf, sizeof(buf), "%s%s/%d/%s", myconfig.home, MENU_PATH, myconfig.menu.sel, name);
     t0 = IMG_Load(buf);
     if (!t0) {
         error("failed to load image from \"%s\"\n", buf);
@@ -6112,11 +6148,9 @@ TEST(sdl2_video, load_menu_img)
 {
     SDL_Surface *r = NULL;
 
-    TEST_ASSERT_EQUAL_INT(0, init_device());
-    r = load_menu_img(SDL2_MENU_BG_FILE, 0);
+    r = load_menu_img(SDL2_MENU_BG_FILE, 1);
     TEST_ASSERT_NOT_NULL(r);
     SDL_FreeSurface(r);
-    TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
 #endif
 
@@ -6182,7 +6216,7 @@ int load_menu_res(void)
     free_menu_res();
 
 #if !defined(UT)
-    snprintf(buf, sizeof(buf), "%s%s", myvideo.home, FONT_FILE);
+    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, FONT_FILE);
     myvideo.menu.font = TTF_OpenFont(buf, FONT_SIZE);
     myvideo.menu.line_h = (float)get_font_height("X") * 1.25;
 #endif
@@ -6211,11 +6245,22 @@ int load_menu_res(void)
 #if defined(UT)
 TEST(sdl2_video, load_menu_res)
 {
-    TEST_ASSERT_EQUAL_INT(0, init_device());
+    myvideo.cvt = SDL_CreateRGBSurface(
+        SDL_SWSURFACE,
+        LAYOUT_BG_W,
+        LAYOUT_BG_H,
+        32,
+        0,
+        0,
+        0,
+        0
+    );
+
     TEST_ASSERT_EQUAL_INT(0, load_menu_res());
     TEST_ASSERT_NOT_NULL(myvideo.menu.sdl2.bg);
     TEST_ASSERT_EQUAL_INT(0, free_menu_res());
-    TEST_ASSERT_EQUAL_INT(0, quit_device());
+
+    SDL_FreeSurface(myvideo.cvt);
 }
 #endif
 
@@ -6314,7 +6359,7 @@ static int load_bg_image(void)
                 buf,
                 sizeof(buf),
                 "%s%s/%d/%s",
-                myvideo.home,
+                myconfig.home,
                 BG_PATH,
                 cur_bg_sel,
                 myvideo.layout.mode[cur_mode_sel].bg[cur_bg_sel].path
@@ -6437,6 +6482,7 @@ static int load_bg_image(void)
 TEST(sdl2_video, load_bg_image)
 {
     TEST_ASSERT_EQUAL_INT(0, load_bg_image());
+    TEST_ASSERT_NOT_NULL(myvideo.layout.bg);
 }
 #endif
 
@@ -6444,13 +6490,15 @@ static void free_device(SDL_VideoDevice *d)
 {
     trace("call %s(d=%p)\n", __func__, d);
 
-    SDL_free(d);
+    if (d) {
+        SDL_free(d);
+    }
 }
 
 #if defined(UT)
 TEST(sdl2_video, free_device)
 {
-    free_device(0);
+    free_device(NULL);
     TEST_PASS();
 }
 #endif
@@ -6462,13 +6510,14 @@ static int create_window(_THIS, SDL_Window *w)
     myvideo.win = w;
     SDL_SetMouseFocus(w);
     SDL_SetKeyboardFocus(w);
+
     return 0;
 }
 
 #if defined(UT)
 TEST(sdl2_video, create_window)
 {
-    TEST_ASSERT_EQUAL_INT(0, create_window(0, 0));
+    TEST_ASSERT_EQUAL_INT(0, create_window(NULL, NULL));
 }
 #endif
 
@@ -6482,7 +6531,7 @@ static int create_window_from(_THIS, SDL_Window *w, const void *d)
 #if defined(UT)
 TEST(sdl2_video, create_window_from)
 {
-    TEST_ASSERT_EQUAL_INT(-1, create_window_from(0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(-1, create_window_from(NULL, NULL, NULL));
 }
 #endif
 
@@ -6517,6 +6566,7 @@ TEST(sdl2_video, create_device)
 
     d = create_device(0);
     TEST_ASSERT_NOT_NULL(d);
+    TEST_ASSERT_EQUAL_INT(init_video, d->VideoInit);
     SDL_free(d);
 }
 #endif
@@ -6773,6 +6823,20 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
 TEST(sdl2_video, add_layout_mode)
 {
     TEST_ASSERT_EQUAL_INT(0, add_layout_mode(LAYOUT_MODE_N0, 0, NULL, 0, 0));
+    TEST_ASSERT_EQUAL_INT(0, myvideo.layout.mode[LAYOUT_MODE_N0].bg[0].w);
+    TEST_ASSERT_EQUAL_INT(0, myvideo.layout.mode[LAYOUT_MODE_N0].bg[0].h);
+
+    TEST_ASSERT_EQUAL_INT(0, add_layout_mode(LAYOUT_MODE_N0, 0, NULL, 640, 480));
+    TEST_ASSERT_EQUAL_INT(640, myvideo.layout.mode[LAYOUT_MODE_N0].bg[0].w);
+    TEST_ASSERT_EQUAL_INT(480, myvideo.layout.mode[LAYOUT_MODE_N0].bg[0].h);
+    TEST_ASSERT_EQUAL_INT(160, myvideo.layout.mode[LAYOUT_MODE_N0].screen[0].w);
+    TEST_ASSERT_EQUAL_INT(120, myvideo.layout.mode[LAYOUT_MODE_N0].screen[0].h);
+
+    TEST_ASSERT_EQUAL_INT(0, add_layout_mode(LAYOUT_MODE_N3, 0, NULL, 640, 480));
+    TEST_ASSERT_EQUAL_INT(0, myvideo.layout.mode[LAYOUT_MODE_N3].screen[0].w);
+    TEST_ASSERT_EQUAL_INT(0, myvideo.layout.mode[LAYOUT_MODE_N3].screen[0].h);
+    TEST_ASSERT_EQUAL_INT(640, myvideo.layout.mode[LAYOUT_MODE_N3].screen[1].w);
+    TEST_ASSERT_EQUAL_INT(480, myvideo.layout.mode[LAYOUT_MODE_N3].screen[1].h);
 }
 #endif
 
@@ -6787,7 +6851,7 @@ static int free_layout_mode(void)
     add_layout_mode(LAYOUT_MODE_N3, 0, NULL, 0, 0);
 #endif
 
-#if !defined(TRIMUI_SMART) && !defined(PANDORA)
+#if !defined(TRIMUI_SMART)
     add_layout_mode(LAYOUT_MODE_N0, 0, NULL, 0, 0);
     add_layout_mode(LAYOUT_MODE_N1, 0, NULL, 0, 0);
     add_layout_mode(LAYOUT_MODE_N3, 0, NULL, 0, 0);
@@ -6807,6 +6871,14 @@ static int free_layout_mode(void)
 #if defined(UT)
 TEST(sdl2_video, free_layout_mode)
 {
+    TEST_ASSERT_EQUAL_INT(0, free_layout_mode());
+    TEST_ASSERT_EQUAL_INT(19, myvideo.layout.max_mode);
+    TEST_ASSERT_EQUAL_INT(160, myvideo.layout.mode[LAYOUT_MODE_N0].screen[0].w);
+    TEST_ASSERT_EQUAL_INT(120, myvideo.layout.mode[LAYOUT_MODE_N0].screen[0].h);
+    TEST_ASSERT_EQUAL_INT(0, myvideo.layout.mode[LAYOUT_MODE_N3].screen[0].w);
+    TEST_ASSERT_EQUAL_INT(0, myvideo.layout.mode[LAYOUT_MODE_N3].screen[0].h);
+    TEST_ASSERT_EQUAL_INT(640, myvideo.layout.mode[LAYOUT_MODE_N3].screen[1].w);
+    TEST_ASSERT_EQUAL_INT(480, myvideo.layout.mode[LAYOUT_MODE_N3].screen[1].h);
 }
 #endif
 
@@ -6827,7 +6899,7 @@ static int enum_bg_file(void)
 
     total = get_bg_dir_cnt();
     for (cc = 0; cc < total; cc++) {
-        snprintf(buf, sizeof(buf), "%s%s/%d", myvideo.home, BG_PATH, cc);
+        snprintf(buf, sizeof(buf), "%s%s/%d", myconfig.home, BG_PATH, cc);
         trace("enum folder=\"%s\"\n", buf);
 
         d = opendir(buf);
@@ -6887,7 +6959,7 @@ static int enum_bg_file(void)
 #if defined(UT)
 TEST(sdl2_video, enum_bg_file)
 {
-    TEST_ASSERT_EQUAL_INT(0, enum_bg_file());
+    TEST_ASSERT_EQUAL_INT(19, enum_bg_file());
 }
 #endif
 
@@ -6898,9 +6970,9 @@ static int init_device(void)
 
     trace("call %s()\n", __func__);
 
-    getcwd(myvideo.home, sizeof(myvideo.home));
-    strcat(myvideo.home, "/");
-    trace("home=\"%s\"\n", myvideo.home);
+    getcwd(myconfig.home, sizeof(myconfig.home));
+    strcat(myconfig.home, "/");
+    trace("home=\"%s\"\n", myconfig.home);
 
     myvideo.cvt = SDL_CreateRGBSurface(
         SDL_SWSURFACE,
@@ -6914,8 +6986,9 @@ static int init_device(void)
     );
 
     myvideo.shader = -1;
+    myvideo.max_shader = get_shader_cnt();
 
-    load_config(myvideo.home);
+    load_config(myconfig.home);
 
     myconfig.pen.max = get_pen_cnt();
     trace("total pen images=%d\n", myconfig.pen.max);
@@ -6947,10 +7020,13 @@ static int init_device(void)
     set_cpu_core(myconfig.cpu_core);
 #endif
 
+#if !defined(UT)
     init_lcd();
+#endif
+
     init_event();
     load_bg_image();
-    init_hook(myvideo.home, sysconf(_SC_PAGESIZE), myconfig.state_path);
+    init_hook(myconfig.home, sysconf(_SC_PAGESIZE), myconfig.state_path);
 
     r = 0;
 
@@ -7001,7 +7077,7 @@ static int init_device(void)
     pthread_create(&myvideo.wl.thread.id, NULL, wl_disp_handler, NULL);
 #endif
 
-    strncpy(buf, myvideo.home, sizeof(buf));
+    strncpy(buf, myconfig.home, sizeof(buf));
     strcat(buf, BIOS_PATH);
     trace("drop bios files to \"%s\"\n", buf);
     if (drop_bios_files(buf) < 0) {
@@ -7111,13 +7187,14 @@ TEST(sdl2_video, init_video)
 static int set_disp_mode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
     trace("call %s()\n", __func__);
+
     return 0;
 }
 
 #if defined(UT)
 TEST(sdl2_video, set_disp_mode)
 {
-    TEST_ASSERT_EQUAL_INT(0, set_disp_mode(0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(0, set_disp_mode(NULL, NULL, NULL));
 }
 #endif
 
@@ -7140,9 +7217,12 @@ static int quit_device(void)
 
     quit_event();
     quit_hook();
-    quit_lcd();
 
-    update_config(myvideo.home);
+#if !defined(UT)
+    quit_lcd();
+#endif
+
+    update_config(myconfig.home);
     system("sync");
 
     free_lang_res();
@@ -7364,7 +7444,7 @@ typedef enum {
     MENU_SWIN_ALPHA,
     MENU_SWIN_BORDER,
     MENU_SWIN_POS,
-    MENU_LAYOUT_ATL,
+    MENU_LAYOUT_ALT,
     MENU_ROTATE_KEY,
     MENU_BIND_HOTKEY,
     MENU_SWAP_L1L2,
@@ -7452,7 +7532,7 @@ static int draw_small_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
     trace("call %s(sx=%d, sy=%d, mode=%d, surf=%p)\n", __func__, sx, sy, mode, surf);
 
     if (!surf) {
-        error("d is null\n");
+        error("invalid parameter\n");
         return -1;
     }
 
@@ -7943,20 +8023,20 @@ static int draw_small_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
 #if defined(UT)
 TEST(sdl2_video, draw_small_win)
 {
-    TEST_ASSERT_EQUAL_INT(-1, draw_small_win(0, 0, 0, 0));
+    SDL_Surface *p = SDL_CreateRGBSurface(0, LAYOUT_BG_W, LAYOUT_BG_H, 32, 0, 0, 0, 0);
+
+    TEST_ASSERT_NOT_NULL(p);
+    TEST_ASSERT_EQUAL_INT(-1, draw_small_win(0, 0, 0, NULL));
+    SDL_FreeSurface(p);
 }
 #endif
 
 static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 {
-#if !defined(MIYOO_MINI)
-    int max_shader_count = get_shader_cnt();
-#endif
-
     trace("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
 
 #if !defined(MIYOO_MINI)
-    if (myvideo.shader >= max_shader_count) {
+    if (myvideo.shader >= myvideo.max_shader) {
         myvideo.shader = 0;
     }
 #endif
@@ -8045,7 +8125,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
             }
         }
         break;
-    case MENU_LAYOUT_ATL:
+    case MENU_LAYOUT_ALT:
         if (right_key) {
             if (myconfig.layout.mode.alt < myvideo.layout.max_mode) {
                 myconfig.layout.mode.alt += 1;
@@ -8258,9 +8338,9 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 TEST(sdl2_video, apply_sdl2_menu_setting)
 {
     myconfig.layout.mode.alt = 0;
-    TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(0, MENU_LAYOUT_ATL, 1));
+    TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(MENU_LAYOUT_ALT, 1, 0));
     TEST_ASSERT_EQUAL_INT(1, myconfig.layout.mode.alt);
-    TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(0, MENU_LAYOUT_ATL, 0));
+    TEST_ASSERT_EQUAL_INT(0, apply_sdl2_menu_setting(MENU_LAYOUT_ALT, 0, 0));
     TEST_ASSERT_EQUAL_INT(0, myconfig.layout.mode.alt);
 }
 #endif
@@ -8279,7 +8359,7 @@ static int draw_sdl2_menu_setting(
     const int SSX = 385;
     char buf[MAX_PATH] = { 0 };
 
-#if !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK)
+#if !defined(TRIMUI_SMART) && !defined(TRIMUI_BRICK) && !defined(UT)
     char tmp[MAX_PATH] = { 0 };
 #endif
 
@@ -8304,7 +8384,7 @@ static int draw_sdl2_menu_setting(
 
 #if defined(MIYOO_MINI)
     case MENU_MASK:
-        if (get_filename_by_index(MASK_PATH, myvideo.layout.mask.sel, tmp, 0) >= 0) {
+        if (get_path_by_idx(MASK_PATH, myvideo.layout.mask.sel, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
         }
         else {
@@ -8315,7 +8395,7 @@ static int draw_sdl2_menu_setting(
 
 #if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     case MENU_SHADER:
-        if (get_filename_by_index(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
+        if (get_path_by_idx(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
         }
         else {
@@ -8368,7 +8448,7 @@ static int draw_sdl2_menu_setting(
     case MENU_SWIN_POS:
         sprintf(buf, "%s", l10n(SWIN_POS_STR[myconfig.layout.swin.pos]));
         break;
-    case MENU_LAYOUT_ATL:
+    case MENU_LAYOUT_ALT:
         sprintf(
             buf,
             "%s    %s",
@@ -8386,7 +8466,7 @@ static int draw_sdl2_menu_setting(
             buf,
             SSX + sx,
             SY + (myvideo.menu.line_h * idx),
-            (cur_sel == MENU_LAYOUT_ATL) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL,
+            (cur_sel == MENU_LAYOUT_ALT) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL,
             0
         );
 
@@ -8616,13 +8696,15 @@ static int process_sdl2_setting(int key)
             }
             sx += get_font_width("XX");
             break;
-        case MENU_LAYOUT_ATL:
-            if (*myhook.var.sdl.screen[0].hires_mode == 0) {
+        case MENU_LAYOUT_ALT:
+#if !defined(UT)
+            if (myhook.var.sdl.screen[0].hires_mode && (*myhook.var.sdl.screen[0].hires_mode == 0)) {
                 col1 = (cur_sel == cc) ? MENU_COLOR_SEL : MENU_COLOR_UNSEL;
             }
             else {
                 col1 = MENU_COLOR_UNSEL;
             }
+#endif
             sx += get_font_width("XX");
             break;
 #if defined(MIYOO_FLIP)
@@ -8701,7 +8783,7 @@ static int process_sdl2_setting(int key)
                 SDL_BlitSurface(myvideo.menu.sdl2.cursor, NULL, myvideo.cvt, &rt);
             }
 
-            if ((cc == MENU_LAYOUT_MODE) || (cc == MENU_LAYOUT_ATL)) {
+            if ((cc == MENU_LAYOUT_MODE) || (cc == MENU_LAYOUT_ALT)) {
                 rt.x = 440;
                 rt.y = SY + (myvideo.menu.line_h * (idx + 1)) - 7;
                 rt.w = 121;
@@ -8725,7 +8807,7 @@ static int process_sdl2_setting(int key)
     if (cur_sel == MENU_LAYOUT_MODE) {
         mode = myconfig.layout.mode.sel;
     }
-    else if (cur_sel == MENU_LAYOUT_ATL) {
+    else if (cur_sel == MENU_LAYOUT_ALT) {
         mode = myconfig.layout.mode.alt;
     }
     draw_small_win(450, 360, mode, myvideo.cvt);
@@ -8751,7 +8833,9 @@ static int process_sdl2_setting(int key)
 #if defined(UT)
 TEST(sdl2_video, process_sdl2_setting)
 {
-    //TEST_ASSERT_EQUAL_INT(0, process_sdl2_setting(0));
+    TEST_ASSERT_EQUAL_INT(0, init_device());
+    TEST_ASSERT_EQUAL_INT(0, process_sdl2_setting(0));
+    TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
 #endif
 
@@ -8772,11 +8856,15 @@ int handle_sdl2_menu(int key)
 #if defined(UT)
 TEST(sdl2_video, handle_sdl2_menu)
 {
-    //myvideo.menu.sdl2.type = MENU_TYPE_SDL2;
-    //TEST_ASSERT_EQUAL_INT(0, handle_sdl2_menu(MENU_TYPE_SDL2));
+    TEST_ASSERT_EQUAL_INT(0, init_device());
 
-    //myvideo.menu.sdl2.type = -1;
-    //TEST_ASSERT_EQUAL_INT(-1, handle_sdl2_menu(0));
+    myvideo.menu.sdl2.type = MENU_TYPE_SDL2;
+    TEST_ASSERT_EQUAL_INT(0, handle_sdl2_menu(MENU_TYPE_SDL2));
+
+    myvideo.menu.sdl2.type = -1;
+    TEST_ASSERT_EQUAL_INT(-1, handle_sdl2_menu(0));
+
+    TEST_ASSERT_EQUAL_INT(0, quit_device());
 }
 #endif
 

@@ -686,8 +686,8 @@ int add_prehook(void *org, void *cb, uint8_t *restore)
 #if defined(UT)
 TEST(detour, add_prehook)
 {
-    TEST_ASSERT_EQUAL_INT(-1, add_prehook(0, 0));
-    TEST_ASSERT_EQUAL_INT(0, add_prehook((void *)0xdead, (void *)0xdead));
+    TEST_ASSERT_EQUAL_INT(-1, add_prehook(0, 0, 0));
+    TEST_ASSERT_EQUAL_INT(0, add_prehook((void *)0xdead, (void *)0xdead, (uint8_t *)0xdead));
 }
 #endif
 

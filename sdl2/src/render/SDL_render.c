@@ -2742,6 +2742,7 @@ RenderDrawPointsWithRects(SDL_Renderer *renderer,
         return SDL_OutOfMemory();
     }
 
+    memset(frects, 0, sizeof(SDL_FRect) * count);
     for(i = 0; i < count; ++i) {
         frects[i].x = points[i].x * renderer->scale.x;
         frects[i].y = points[i].y * renderer->scale.y;
@@ -2816,6 +2817,7 @@ RenderDrawPointsWithRectsF(SDL_Renderer *renderer,
         return SDL_OutOfMemory();
     }
 
+    memset(frects, 0, sizeof(SDL_FRect) * count);
     for(i = 0; i < count; ++i) {
         frects[i].x = fpoints[i].x * renderer->scale.x;
         frects[i].y = fpoints[i].y * renderer->scale.y;

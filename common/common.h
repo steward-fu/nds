@@ -259,6 +259,7 @@ typedef enum {
 
 typedef struct {
     uint32_t magic;
+    char home[MAX_PATH];
 
     int swap_l1_l2;
     int swap_r1_r2;
@@ -339,7 +340,7 @@ void* neon_memcpy(void *, const void *, size_t);
 int drop_bios_files(const char *);
 int get_dir_cnt(const char *);
 int get_file_cnt(const char *);
-int get_path_by_idx(const char *, int, char *);
+int get_path_by_idx(const char *, int, char *, int);
 int get_debug_level(int);
 int update_debug_level(int);
 char* upper_string(char *);

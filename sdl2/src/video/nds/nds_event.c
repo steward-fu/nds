@@ -1349,6 +1349,8 @@ static int get_input_key_code(int fd, struct input_event *e)
 #if defined(UT)
 TEST(sdl2_event, get_input_key_code)
 {
+    TEST_ASSERT_EQUAL_INT(-1, get_input_key_code(-1, NULL));
+    TEST_ASSERT_EQUAL_INT(0, get_input_key_code(0xdead, (void *)0xdead));
 }
 #endif
 
@@ -1425,6 +1427,8 @@ TEST(sdl2_event, update_latest_keypad_value)
     TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_L2, myevent.keypad.l1);
 
     myconfig.key_rotate = 1;
+    myvideo.menu.sdl2.enable = 0;
+    myvideo.menu.drastic.enable = 0;
     TEST_ASSERT_EQUAL_INT(0, update_latest_keypad_value());
     TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_LEFT, myevent.keypad.up);
 }
@@ -2184,16 +2188,12 @@ static int send_touch_key(int raw_event)
 {
     uint32_t cc = 0;
     uint32_t bit = 0;
-    uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
-
-#if !defined(UT)
     uint32_t pressed = 0;
-#endif
+    uint32_t changed = myevent.keypad.pre_bits ^ myevent.keypad.cur_bits;
 
     trace("call %s(changed=0x%x)\n", __func__, changed);
 
     if (changed & (1 << KEY_BIT_A)) {
-#if !defined(UT)
         pressed = !!(myevent.keypad.cur_bits & (1 << KEY_BIT_A));
         trace("send touch key (pressed=%d)\n", pressed);
 
@@ -2201,14 +2201,15 @@ static int send_touch_key(int raw_event)
             myevent.input.touch_status = pressed;
         }
         else {
+#if !defined(UT)
             SDL_SendMouseButton(
                 myvideo.win,
                 0,
                 pressed ? SDL_PRESSED : SDL_RELEASED,
                 SDL_BUTTON_LEFT
             );
-        }
 #endif
+        }
     }
 
     for (cc = 0; cc <= KEY_BIT_LAST; cc++) {
@@ -2221,9 +2222,9 @@ static int send_touch_key(int raw_event)
             (cc == KEY_BIT_HINGE))
         {
             if (changed & bit) {
-#if !defined(UT)
                 pressed = myevent.keypad.cur_bits & bit;
 
+#if !defined(UT)
                 SDL_SendKeyboardKey(
                     pressed ? SDL_PRESSED : SDL_RELEASED,
                     SDL_GetScancodeFromKey(nds_key_code[cc])
@@ -2244,11 +2245,11 @@ static int send_touch_key(int raw_event)
 #if defined(UT)
 TEST(sdl2_event, send_touch_key)
 {
-    myevent.touch.slow_down = 0;
+    myevent.input.touch_status = 0;
     myevent.keypad.pre_bits = 0;
-    myevent.keypad.cur_bits = (1 << KEY_BIT_R1);
-    //TEST_ASSERT_EQUAL_INT(0, send_touch_key());
-    TEST_ASSERT_EQUAL_INT(1, myevent.touch.slow_down);
+    myevent.keypad.cur_bits = (1 << KEY_BIT_A);
+    TEST_ASSERT_EQUAL_INT(0, send_touch_key(1));
+    TEST_ASSERT_EQUAL_INT(1, myevent.input.touch_status);
 }
 #endif
 
@@ -2301,7 +2302,7 @@ TEST(sdl2_event, send_touch_event)
 {
     myevent.keypad.cur_bits = 0;
     myevent.keypad.pre_bits = (1 << KEY_BIT_QUIT);
-    //TEST_ASSERT_EQUAL_INT(0, send_touch_event());
+    TEST_ASSERT_EQUAL_INT(0, send_touch_event(1));
     TEST_ASSERT_EQUAL_INT(0, myevent.keypad.pre_bits);
     TEST_ASSERT_EQUAL_INT(0, myevent.keypad.cur_bits);
 }

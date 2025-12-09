@@ -253,18 +253,24 @@ typedef struct _CUST_MENU {
     cust_menu_sub_t idx[MAX_MENU_LINE];
 } cust_menu_t;
 
+#if defined(UT)
+typedef struct _ion_alloc_info_t {
+    uint32_t *vadd;
+} ion_alloc_info_t;
+#endif
+
 typedef struct {
     SDL_Window *win;
     int state_busy;
     SDL_Surface *fps;
     SDL_Surface *cvt;
-    char home[MAX_PATH];
 
     struct {
         char *trans[MAX_LANG_LINE];
     } lang;
 
     int shader;
+    int max_shader;
 
 #if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
     struct {
@@ -341,7 +347,7 @@ typedef struct {
     int sar_fd;
 #endif
 
-#if defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK)
+#if defined(GKD_PIXEL2) || defined(GKD_MINIPLUS) || defined(TRIMUI_BRICK) || defined(UT)
     struct {
         int fd;
         shm_buf_t *buf;
@@ -395,7 +401,10 @@ typedef struct {
     } fb;
 
     struct {
-#if defined(TRIMUI_SMART)
+#if defined(TRIMUI_SMART) || defined(UT)
+#if defined(UT)
+        ion_alloc_info_t ion;
+#else
         int ion_fd;
         int mem_fd;
         int disp_fd;
@@ -403,6 +412,7 @@ typedef struct {
         ion_alloc_info_t ion;
         disp_layer_config buf;
         disp_layer_config disp;
+#endif
 #endif
 
 #if defined(MIYOO_MINI)
@@ -459,7 +469,7 @@ typedef struct {
         int restore;
 #endif
 
-#if defined(MIYOO_MINI)
+#if defined(MIYOO_MINI) || defined(UT)
         struct {
             int sel;
             int max_cnt;

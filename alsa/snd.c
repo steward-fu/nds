@@ -926,7 +926,9 @@ int snd_pcm_open(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int
         return -1;
     }
 
-    *pcm = (struct _snd_pcm *)stream;
+    if (pcm && *pcm) {
+        *pcm = (struct _snd_pcm *)stream;
+    }
     return SND_PCM_STREAM_PLAYBACK;
 }
 
@@ -1123,7 +1125,9 @@ int snd_pcm_start(snd_pcm_t *pcm)
     stAoChn0OutputPort0.u32PortId = 0;
     MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
 
+#if !defined(UT)
     system("/mnt/SDCARD/Emu/drastic/vol&");
+#endif
 #endif
 
 #if defined(TRIMUI_BRICK) || defined(TRIMUI_SMART) || defined(PANDORA)

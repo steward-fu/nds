@@ -131,7 +131,7 @@ static int lock_texture(
 TEST(sdl2_render, lock_texture)
 {
     int pitch = 0;
-    uint32_t pixels[1] = { 0 };
+    uint32_t pixels[32] = { 0 };
     SDL_Rect rt = { 0 };
     SDL_Texture t = { 0 };
     SDL_Renderer r = { 0 };

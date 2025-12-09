@@ -485,6 +485,8 @@ int update_config(const char *path)
     else {
         error("failed to allocate json buffer for config file\n");
     }
+
+    ret = sizeof(myconfig);
 #else
     ret = write_file(buf, &myconfig, sizeof(myconfig));
     if (ret != sizeof(myconfig)) {
@@ -575,62 +577,70 @@ TEST(common, drop_bios_files)
 }
 #endif
 
-int get_path_by_idx(const char *path, int idx, char *buf)
+int get_path_by_idx(const char *folder, int idx, char *buf, int fullpath)
 {
-    int cc = 0;
-    int ret = -1;
+    int r = -1;
+    int cnt = 0;
     DIR *d = NULL;
+    char tmp[MAX_PATH + 32] = { 0 };
     struct dirent *dir = NULL;
 
-    trace("call %s(path=%p, idx=%d, buf=%p)\n", __func__, path, idx, buf);
+    trace("call %s(folder=%p, idx=%d, buf=%p, fullpath=%d)\n", __func__, folder, idx, buf, fullpath);
 
-    if (!path) {
-        error("invalid input\n");
-        return ret;
-    }
-
-    d = opendir(path);
-    if (!d) {
-        error("failed to open dir \"%s\"\n", path);
-        return ret;
+    if (!folder || !buf) {
+        error("invalid buffer\n");
+        return r;
     }
 
     buf[0] = 0;
+    sprintf(tmp, "%s%s", myconfig.home, folder);
+    trace("enum folder=\"%s\"\n", tmp);
+
+    d = opendir(tmp);
+    if (!d) {
+        error("failed to open dir \"%s\"\n", tmp);
+        return r;
+    }
+
+    cnt = 0;
     while ((dir = readdir(d)) != NULL) {
+        if (dir->d_type == DT_DIR) {
+            continue;
+        }
         if (strcmp(dir->d_name, ".") == 0) {
             continue;
         }
-
         if (strcmp(dir->d_name, "..") == 0) {
             continue;
         }
 
-        if (dir->d_type == DT_DIR) {
-            continue;
-        }
-
-        if (cc == idx) {
-            ret = 0;
-            snprintf(buf, MAX_PATH, "%s/%s", path, dir->d_name);
+        if (cnt == idx) {
+            r = 0;
+            if (fullpath) {
+                sprintf(buf, "%s/%s/%s", myconfig.home, folder, dir->d_name);
+            }
+            else {
+                strcpy(buf, dir->d_name);
+            }
+            trace("found file \"%s\" by index (%d)\n", buf, idx);
             break;
         }
-        cc += 1;
+        cnt += 1;
     }
     closedir(d);
 
-    trace("path=\"%s\"\n", buf);
-
-    return ret;
+    return r;
 }
 
 #if defined(UT)
-TEST(common, get_path_by_idx)
+TEST(common, get_path_by_index)
 {
-    char buf[MAX_PATH] = { 0 };
+    char buf[255] = { 0 };
 
-    TEST_ASSERT_EQUAL_INT(-1, get_path_by_idx(NULL, 0, 0));
-    TEST_ASSERT_EQUAL_INT(0, get_path_by_idx(".", 0, buf));
-    TEST_ASSERT_EQUAL_INT(1, !!buf[0]);
+    TEST_ASSERT_EQUAL_INT(-1, get_path_by_idx(NULL, 0, NULL, 0));
+    TEST_ASSERT_EQUAL_INT(0, get_path_by_idx(MASK_PATH, 0, buf, 1));
+    TEST_ASSERT_EQUAL_INT(0, get_path_by_idx(MASK_PATH, 0, buf, 0));
+    TEST_ASSERT_EQUAL_STRING("grid.png", buf);
 }
 #endif
 
