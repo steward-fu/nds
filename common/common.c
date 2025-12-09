@@ -285,7 +285,7 @@ TEST(common, update_debug_level)
 }
 #endif
 
-int load_config(const char *path)
+int load_config(const char *home_path)
 {
     int err = 0;
     struct stat st = { 0 };
@@ -293,7 +293,8 @@ int load_config(const char *path)
 
     trace("call %s()\n", __func__);
 
-    strncpy(buf, path, sizeof(buf));
+    strncpy(buf, home_path, sizeof(buf));
+    strcat(buf, "/");
     strcat(buf, CFG_FILE);
     trace("config=\"%s\"\n", buf);
 
@@ -384,6 +385,7 @@ int load_config(const char *path)
         mkdir(myconfig.state_path, 0755);
         trace("created \"%s\" folder\n", myconfig.state_path);
     }
+    strcpy(myconfig.home, home_path);
 
     return err;
 }
@@ -410,6 +412,7 @@ int update_config(const char *path)
     trace("call %s()\n", __func__);
 
     strncpy(buf, path, sizeof(buf));
+    strcat(buf, "/");
     strcat(buf, CFG_FILE);
     trace("config=\"%s\"\n", buf);
 
@@ -588,12 +591,12 @@ int get_path_by_idx(const char *folder, int idx, char *buf, int fullpath)
     trace("call %s(folder=%p, idx=%d, buf=%p, fullpath=%d)\n", __func__, folder, idx, buf, fullpath);
 
     if (!folder || !buf) {
-        error("invalid buffer\n");
+        error("invalid parameters\n");
         return r;
     }
 
     buf[0] = 0;
-    sprintf(tmp, "%s%s", myconfig.home, folder);
+    sprintf(tmp, "%s/%s", myconfig.home, folder);
     trace("enum folder=\"%s\"\n", tmp);
 
     d = opendir(tmp);
@@ -622,7 +625,7 @@ int get_path_by_idx(const char *folder, int idx, char *buf, int fullpath)
             else {
                 strcpy(buf, dir->d_name);
             }
-            trace("found file \"%s\" by index (%d)\n", buf, idx);
+            trace("found file \"%s\" at index (%d)\n", buf, idx);
             break;
         }
         cnt += 1;
@@ -633,7 +636,7 @@ int get_path_by_idx(const char *folder, int idx, char *buf, int fullpath)
 }
 
 #if defined(UT)
-TEST(common, get_path_by_index)
+TEST(common, get_path_by_idx)
 {
     char buf[255] = { 0 };
 

@@ -276,7 +276,6 @@ TEST_GROUP(sdl2_video);
 TEST_SETUP(sdl2_video)
 {
     getcwd(myconfig.home, sizeof(myconfig.home));
-    strcat(myconfig.home, "/");
 }
 
 TEST_TEAR_DOWN(sdl2_video)
@@ -2937,7 +2936,7 @@ static void* video_handler(void *param)
 #if !defined(TRIMUI_BRICK) && !defined(GKD_PIXEL2) && !defined(GKD_MINIPLUS)
         else if ((myvideo.shader >= 0) && (myvideo.shader != cur_shader)) {
             cur_shader = myvideo.shader;
-            if (get_path_by_idx(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
+            if (get_path_by_idx(SHADER_PATH, myvideo.shader, tmp, 1) >= 0) {
                 load_shader_file(tmp);
             }
         }
@@ -3088,7 +3087,7 @@ TEST(sdl2_video, free_lang_res)
 #if defined(MIYOO_MINI) || defined(UT)
 static int load_mask_file(void)
 {
-    char tmp[255] = { 0 };
+    char tmp[MAX_PATH] = { 0 };
 
     trace("call %s()\n", __func__);
 
@@ -3103,6 +3102,7 @@ static int load_mask_file(void)
 
         trace("mask file = \"%s\", s=%p\n", tmp, s);
         if (!s) {
+            myvideo.layout.mask.sel = -1;
             error("failed to load mask file from \"%s\"\n", tmp);
             return -1;
         }
@@ -3112,6 +3112,7 @@ static int load_mask_file(void)
 #endif
     }
     else {
+        myvideo.layout.mask.sel = -1;
         error("failed to get file name by index(%d)\n", myvideo.layout.mask.sel);
         return -1;
     }
@@ -3154,7 +3155,7 @@ static int load_shader_file(const char *name)
     trace("call %s(name=%p)\n", __func__, name);
 
     if (name && name[0]) {
-        sprintf(buf, "%s%s/%s", myconfig.home, SHADER_PATH, name);
+        sprintf(buf, "%s/%s/%s", myconfig.home, SHADER_PATH, name);
         trace("shader path=\"%s\"\n", buf);
 
         f = fopen(buf, "r");
@@ -3291,7 +3292,7 @@ static int load_lang_file(void)
 
     free_lang_res();
 
-    sprintf(buf, "%s%s/%s", myconfig.home, LANG_PATH, lang_file_name[myconfig.lang]);
+    sprintf(buf, "%s/%s/%s", myconfig.home, LANG_PATH, lang_file_name[myconfig.lang]);
     f = fopen(buf, "r");
     if (!f) {
         error("failed to open lang file \"%s\"\n", buf);
@@ -3347,7 +3348,7 @@ static int enum_lang_file(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, LANG_PATH);
+    snprintf(buf, sizeof(buf), "%s/%s", myconfig.home, LANG_PATH);
     trace("lang folder=\"%s\"\n", buf);
 
     memset(lang_file_name, 0, sizeof(lang_file_name));
@@ -3397,7 +3398,7 @@ static int get_mask_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, MASK_PATH);
+    snprintf(buf, sizeof(buf), "%s/%s", myconfig.home, MASK_PATH);
     trace("mask folder=\"%s\"\n", buf);
 
     return get_file_cnt(buf);
@@ -3417,7 +3418,7 @@ static int get_shader_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, SHADER_PATH);
+    snprintf(buf, sizeof(buf), "%s/%s", myconfig.home, SHADER_PATH);
     trace("shader folder=\"%s\"\n", buf);
 
     return get_file_cnt(buf);
@@ -3437,7 +3438,7 @@ static int get_bg_dir_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, BG_PATH);
+    snprintf(buf, sizeof(buf), "%s/%s", myconfig.home, BG_PATH);
     trace("bg folder=\"%s\"\n", buf);
 
     return get_dir_cnt(buf);
@@ -3456,7 +3457,7 @@ static int get_menu_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, MENU_PATH);
+    snprintf(buf, sizeof(buf), "%s/%s", myconfig.home, MENU_PATH);
     trace("menu folder=\"%s\"\n", buf);
 
     return get_dir_cnt(buf);
@@ -3475,7 +3476,7 @@ static int get_pen_cnt(void)
 
     trace("call %s()\n", __func__);
 
-    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, PEN_PATH);
+    snprintf(buf, sizeof(buf), "%s/%s", myconfig.home, PEN_PATH);
     trace("pen folder=\"%s\"\n", buf);
 
     return get_file_cnt(buf);
@@ -6042,7 +6043,7 @@ int load_touch_pen(void)
     trace("call %s()\n", __func__);
 
     free_touch_pen();
-    if (get_path_by_idx(PEN_PATH, myconfig.pen.sel, path, 1) != 0) {
+    if (get_path_by_idx(PEN_PATH, myconfig.pen.sel, path, 1) < 0) {
         error("failed to get file path\n");
         return r;
     }
@@ -6124,7 +6125,7 @@ static SDL_Surface* load_menu_img(const char *name, int raw_img)
         return NULL;
     }
 
-    snprintf(buf, sizeof(buf), "%s%s/%d/%s", myconfig.home, MENU_PATH, myconfig.menu.sel, name);
+    snprintf(buf, sizeof(buf), "%s/%s/%d/%s", myconfig.home, MENU_PATH, myconfig.menu.sel, name);
     t0 = IMG_Load(buf);
     if (!t0) {
         error("failed to load image from \"%s\"\n", buf);
@@ -6216,7 +6217,7 @@ int load_menu_res(void)
     free_menu_res();
 
 #if !defined(UT)
-    snprintf(buf, sizeof(buf), "%s%s", myconfig.home, FONT_FILE);
+    snprintf(buf, sizeof(buf), "%s/%s", myconfig.home, FONT_FILE);
     myvideo.menu.font = TTF_OpenFont(buf, FONT_SIZE);
     myvideo.menu.line_h = (float)get_font_height("X") * 1.25;
 #endif
@@ -6358,7 +6359,7 @@ static int load_bg_image(void)
             snprintf(
                 buf,
                 sizeof(buf),
-                "%s%s/%d/%s",
+                "%s/%s/%d/%s",
                 myconfig.home,
                 BG_PATH,
                 cur_bg_sel,
@@ -6899,7 +6900,7 @@ static int enum_bg_file(void)
 
     total = get_bg_dir_cnt();
     for (cc = 0; cc < total; cc++) {
-        snprintf(buf, sizeof(buf), "%s%s/%d", myconfig.home, BG_PATH, cc);
+        snprintf(buf, sizeof(buf), "%s/%s/%d", myconfig.home, BG_PATH, cc);
         trace("enum folder=\"%s\"\n", buf);
 
         d = opendir(buf);
@@ -6970,9 +6971,10 @@ static int init_device(void)
 
     trace("call %s()\n", __func__);
 
-    getcwd(myconfig.home, sizeof(myconfig.home));
-    strcat(myconfig.home, "/");
-    trace("home=\"%s\"\n", myconfig.home);
+    getcwd(buf, sizeof(buf));
+    trace("home=\"%s\"\n", buf);
+
+    load_config(buf);
 
     myvideo.cvt = SDL_CreateRGBSurface(
         SDL_SWSURFACE,
@@ -6986,9 +6988,9 @@ static int init_device(void)
     );
 
     myvideo.shader = -1;
+#if !defined(MIYOO_MINI)
     myvideo.max_shader = get_shader_cnt();
-
-    load_config(myconfig.home);
+#endif
 
     myconfig.pen.max = get_pen_cnt();
     trace("total pen images=%d\n", myconfig.pen.max);
