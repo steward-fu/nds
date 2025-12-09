@@ -8159,7 +8159,7 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 #if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     case MENU_SHADER:
         if (right_key) {
-            if (max_shader_count && (myvideo.shader < (max_shader_count - 1))) {
+            if (myvideo.max_shader && (myvideo.shader < (myvideo.max_shader - 1))) {
                 myvideo.shader += 1;
             }
         }
