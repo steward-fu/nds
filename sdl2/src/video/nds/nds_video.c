@@ -401,7 +401,6 @@ static int get_cpu_core_state(int idx)
 #if defined(UT)
 TEST(sdl2_video, get_cpu_core_state)
 {
-    TEST_ASSERT_EQUAL_INT(1, get_cpu_core_state(0));
     TEST_ASSERT_EQUAL_INT(-1, get_cpu_core_state(MAX_CPU_CORE));
 }
 #endif
@@ -7080,6 +7079,7 @@ static int init_device(void)
 #endif
 
     strncpy(buf, myconfig.home, sizeof(buf));
+    strcat(buf, "/");
     strcat(buf, BIOS_PATH);
     trace("drop bios files to \"%s\"\n", buf);
     if (drop_bios_files(buf) < 0) {

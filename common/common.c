@@ -37,6 +37,7 @@ TEST_GROUP(common);
 
 TEST_SETUP(common)
 {
+    getcwd(myconfig.home, sizeof(myconfig.home));
 }
 
 TEST_TEAR_DOWN(common)
@@ -638,8 +639,9 @@ int get_path_by_idx(const char *folder, int idx, char *buf, int fullpath)
 #if defined(UT)
 TEST(common, get_path_by_idx)
 {
-    char buf[255] = { 0 };
+    char buf[MAX_PATH] = { 0 };
 
+    getcwd(myconfig.home, sizeof(myconfig.home));
     TEST_ASSERT_EQUAL_INT(-1, get_path_by_idx(NULL, 0, NULL, 0));
     TEST_ASSERT_EQUAL_INT(0, get_path_by_idx(MASK_PATH, 0, buf, 1));
     TEST_ASSERT_EQUAL_INT(0, get_path_by_idx(MASK_PATH, 0, buf, 0));
