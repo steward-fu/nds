@@ -37,7 +37,9 @@ TEST_GROUP(common);
 
 TEST_SETUP(common)
 {
-    getcwd(myconfig.home, sizeof(myconfig.home));
+    if (getcwd(myconfig.home, sizeof(myconfig.home)) == NULL) {
+        printf("failed to get home folder in setup()\n");
+    }
 }
 
 TEST_TEAR_DOWN(common)

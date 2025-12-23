@@ -271,11 +271,13 @@ static void prehook_initialize_backup(
     trace("call %s()\n", __func__);
 
     if (path && path[0]) {
-        data_file_name = malloc(MAX_PATH);
-        memset(data_file_name, 0, MAX_PATH);
+        const int filename_size = MAX_PATH + 32;
+
+        data_file_name = malloc(filename_size);
+        memset(data_file_name, 0, filename_size);
         snprintf(
             data_file_name,
-            MAX_PATH,
+            filename_size,
             "%s/%s.dsv",
             state_path,
             (const char *)myhook.var.system.gamecard_name
@@ -868,7 +870,7 @@ int32_t prehook_save_directory_config_file(void* system, char* file_name)
         printf("save state complete\n");
     }
 
-    snprintf(buf, sizeof(buf), "%s/config/%s", myhook.var.system.user_root_path, file_name);
+    snprintf(buf, sizeof(buf), "%s/config/%s", (const char *)myhook.var.system.user_root_path, file_name);
     printf("Saving directory config to file named %s\n", buf);
 
     ptr = (uint32_t *)malloc(0x414);
