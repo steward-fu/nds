@@ -9,6 +9,7 @@ This repository contains all necessary resources - including the customized SDL2
  - [GKD Mini Plus](#gkd-mini-plus)
  - [Motorola Droid 4](#motorola-droid-4)  
  - [Motorola Photon Q](#motorola-photon-q)
+ - [Unit Test](#unit-test)
  - [Credits](#credits)
 
 &nbsp;
@@ -529,6 +530,14 @@ Button
 | SPACE + I             | Change Background Image             |  
 | ( DraStic Menu )      |                                     |
 | SPACE + I             | Change Background Image             |
+
+&nbsp;
+
+## Unit Test
+Run Unit Test
+```
+$ make -f Makefile.ut
+```
 
 &nbsp;
 
