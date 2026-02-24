@@ -77,12 +77,15 @@ static int init_video(_THIS);
 static int free_menu_res(void);
 static int load_lang_file(void);
 static int load_bg_image(void);
-static int load_mask_file(void);
 static int get_font_width(const char *);
 static int get_font_height(const char *);
 static int draw_touch_pen(void *, int, int);
 static int draw_info(SDL_Surface *, const char *, int, int, uint32_t, uint32_t);
 static int set_disp_mode(_THIS, SDL_VideoDisplay *, SDL_DisplayMode *);
+
+#if defined(MIYOO_MINI) || defined(UT)
+static int load_mask_file(void);
+#endif
 
 #if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
 static int load_shader_file(const char *);
@@ -3172,7 +3175,7 @@ static int load_shader_file(const char *name)
             if (content) {
                 size_t fr = fread(content, 1, size, f);
                 if (fr == 0) {
-                    error("failed to read file content: %ld\n", fr);
+                    error("failed to read file content: %d\n", fr);
                 }
                 content[size] = '\0';
 
@@ -3398,6 +3401,7 @@ TEST(sdl2_video, enum_lang_file)
 }
 #endif
 
+#if defined(MIYOO_MINI) || defined(UT)
 static int get_mask_cnt(void)
 {
     char buf[MAX_PATH + 32] = { 0 };
@@ -3415,6 +3419,7 @@ TEST(sdl2_video, get_mask_cnt)
 {
     TEST_ASSERT_EQUAL_INT(1, get_mask_cnt());
 }
+#endif
 #endif
 
 #if !defined(MIYOO_MINI)
@@ -5791,29 +5796,39 @@ static int flip_lcd(void)
 #endif
 
     if (myvideo.layout.bg) {
-        trace("draw bg image\n");
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+        if (myconfig.layout.mode.sel < LAYOUT_MODE_C0) {
+#endif
+            trace("draw bg image\n");
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
-        glVertexAttribPointer(
-            myvideo.egl.vert.tex_pos,
-            3,
-            GL_FLOAT,
-            GL_FALSE,
-            5 * sizeof(GLfloat),
-            bg_vertices
-        );
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, myvideo.egl.texture[TEXTURE_BG]);
+            glVertexAttribPointer(
+                myvideo.egl.vert.tex_pos,
+                3,
+                GL_FLOAT,
+                GL_FALSE,
+                5 * sizeof(GLfloat),
+                bg_vertices
+            );
 
-        glVertexAttribPointer(
-            myvideo.egl.vert.tex_coord,
-            2,
-            GL_FLOAT,
-            GL_FALSE,
-            5 * sizeof(GLfloat),
-            &bg_vertices[3]
-        );
+            glVertexAttribPointer(
+                myvideo.egl.vert.tex_coord,
+                2,
+                GL_FLOAT,
+                GL_FALSE,
+                5 * sizeof(GLfloat),
+                &bg_vertices[3]
+            );
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, vert_indices);
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+        }
+        else {
+            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
+#endif
     }
 #endif
 
