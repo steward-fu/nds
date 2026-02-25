@@ -13,175 +13,173 @@
 
 using namespace std;
 
-std::string dump_section(const Elf32_Shdr& s, const char* SST)
-{
-    std::ostringstream oss;
+const char* dump_section(Elf32_Shdr& s, const char* SST) {
+    static char buff[512] = { 0 };
 
-    switch(s.sh_type) {
-        case SHT_NULL:
-            return "SHT_NULL";
-
-        case SHT_PROGBITS:
-        case SHT_SYMTAB:
-        case SHT_STRTAB:
-        case SHT_RELA:
-        case SHT_HASH:
-        case SHT_DYNAMIC:
-        case SHT_NOTE:
-        case SHT_NOBITS:
-        case SHT_REL:
-        case SHT_SHLIB:
-        case SHT_DYNSYM:
-        case SHT_INIT_ARRAY:
-        case SHT_FINI_ARRAY:
-        case SHT_PREINIT_ARRAY:
-        case SHT_GROUP:
-        case SHT_SYMTAB_SHNDX:
-        case SHT_NUM:
-        case SHT_LOPROC:
-        case SHT_HIPROC:
-        case SHT_LOUSER:
-        case SHT_HIUSER:
-        #if defined(SHT_GNU_versym) && defined(SHT_GNU_ATTRIBUTES)
-        case SHT_GNU_versym:
-        case SHT_GNU_ATTRIBUTES:
-        case SHT_GNU_HASH:
-        case SHT_GNU_LIBLIST:
-        #ifndef TERMUX
-        case SHT_CHECKSUM:
-        #endif
-        case SHT_LOSUNW:
-        //case SHT_SUNW_move:
-        case SHT_SUNW_COMDAT:
-        case SHT_SUNW_syminfo:
-        case SHT_GNU_verdef:
-        case SHT_GNU_verneed:
-        #endif
-        {
-            const char* type_str = "";
-
-            switch(s.sh_type) {
-                case SHT_PROGBITS: type_str = "SHT_PROGBITS"; break;
-                case SHT_SYMTAB: type_str = "SHT_SYMTAB"; break;
-                case SHT_STRTAB: type_str = "SHT_STRTAB"; break;
-                case SHT_RELA: type_str = "SHT_RELA"; break;
-                case SHT_HASH: type_str = "SHT_HASH"; break;
-                case SHT_DYNAMIC: type_str = "SHT_DYNAMIC"; break;
-                case SHT_NOTE: type_str = "SHT_NOTE"; break;
-                case SHT_NOBITS: type_str = "SHT_NOBITS"; break;
-                case SHT_REL: type_str = "SHT_REL"; break;
-                case SHT_SHLIB: type_str = "SHT_SHLIB"; break;
-                case SHT_DYNSYM: type_str = "SHT_DYNSYM"; break;
-                case SHT_INIT_ARRAY: type_str = "SHT_INIT_ARRAY"; break;
-                case SHT_FINI_ARRAY: type_str = "SHT_FINI_ARRAY"; break;
-                case SHT_PREINIT_ARRAY: type_str = "SHT_PREINIT_ARRAY"; break;
-                case SHT_GROUP: type_str = "SHT_GROUP"; break;
-                case SHT_SYMTAB_SHNDX: type_str = "SHT_SYMTAB_SHNDX"; break;
-                case SHT_NUM: type_str = "SHT_NUM"; break;
-                case SHT_LOPROC: type_str = "SHT_LOPROC"; break;
-                case SHT_HIPROC: type_str = "SHT_HIPROC"; break;
-                case SHT_LOUSER: type_str = "SHT_LOUSER"; break;
-                case SHT_HIUSER: type_str = "SHT_HIUSER"; break;
-                #if defined(SHT_GNU_versym) && defined(SHT_GNU_ATTRIBUTES)
-                case SHT_GNU_versym: type_str = "SHT_GNU_versym"; break;
-                case SHT_GNU_ATTRIBUTES: type_str = "SHT_GNU_ATTRIBUTES"; break;
-                case SHT_GNU_HASH: type_str = "SHT_GNU_HASH"; break;
-                case SHT_GNU_LIBLIST: type_str = "SHT_GNU_LIBLIST"; break;
-                #ifndef TERMUX
-                case SHT_CHECKSUM: type_str = "SHT_CHECKSUM"; break;
-                #endif
-                case SHT_LOSUNW: type_str = "SHT_LOSUNW"; break;
-                //case SHT_SUNW_move: type_str = "SHT_SUNW_move"; break;
-                case SHT_SUNW_COMDAT: type_str = "SHT_SUNW_COMDAT"; break;
-                case SHT_SUNW_syminfo: type_str = "SHT_SUNW_syminfo"; break;
-                case SHT_GNU_verdef: type_str = "SHT_GNU_verdef"; break;
-                case SHT_GNU_verneed: type_str = "SHT_GNU_verneed"; break;
-                #endif
-            }
-
-            oss << type_str
-                << " Name=\"" << (SST + s.sh_name) << "\"(" << s.sh_name << ")"
-                << " off=0x" << std::hex << s.sh_offset
-                << " size=" << std::dec << s.sh_size
-                << " attr=0x" << std::hex << s.sh_flags
-                << " addr=" << std::dec << reinterpret_cast<void*>(s.sh_addr)
-                << "(" << std::hex << s.sh_addralign << ")"
-                << " link/info=" << std::dec << s.sh_link << "/" << s.sh_info;
-
-            break;
-        }
-
-        default:
-            oss << "0x" << std::hex << s.sh_type << " unknown type";
-            break;
+    switch (s.sh_type) {
+    case SHT_NULL:
+        return "SHT_NULL";
+    #define GO(A) \
+    case A:     \
+        sprintf(buff, #A " Name=\"%s\"(%d) off=0x%X, size=%d, attr=0x%04X, addr=%p(%02X), link/info=%d/%d", \
+            SST+s.sh_name, s.sh_name, s.sh_offset, s.sh_size, s.sh_flags, (void *)s.sh_addr, s.sh_addralign, s.sh_link, s.sh_info); \
+        break
+    GO(SHT_PROGBITS);
+    GO(SHT_SYMTAB);
+    GO(SHT_STRTAB);
+    GO(SHT_RELA);
+    GO(SHT_HASH);
+    GO(SHT_DYNAMIC);
+    GO(SHT_NOTE);
+    GO(SHT_NOBITS);
+    GO(SHT_REL);
+    GO(SHT_SHLIB);
+    GO(SHT_DYNSYM);
+    GO(SHT_INIT_ARRAY);
+    GO(SHT_FINI_ARRAY);
+    GO(SHT_PREINIT_ARRAY);
+    GO(SHT_GROUP);
+    GO(SHT_SYMTAB_SHNDX);
+    GO(SHT_NUM);
+    GO(SHT_LOPROC);
+    GO(SHT_HIPROC);
+    GO(SHT_LOUSER);
+    GO(SHT_HIUSER);
+    #if defined(SHT_GNU_versym) && defined(SHT_GNU_ATTRIBUTES)
+    GO(SHT_GNU_versym);
+    GO(SHT_GNU_ATTRIBUTES);
+    GO(SHT_GNU_HASH);
+    GO(SHT_GNU_LIBLIST);
+    #ifndef TERMUX
+      GO(SHT_CHECKSUM);
+    #endif
+    GO(SHT_LOSUNW);
+    //GO(SHT_SUNW_move);
+    GO(SHT_SUNW_COMDAT);
+    GO(SHT_SUNW_syminfo);
+    GO(SHT_GNU_verdef);
+    GO(SHT_GNU_verneed);
+    #endif
+    #undef GO
+    default:
+        sprintf(buff, "0x%X unknown type", s.sh_type);
     }
-
-    return oss.str();
+    return buff;
 }
 
-std::string dump_ph_entry(const Elf32_Phdr& e)
-{
-    std::ostringstream oss;
+const char* dump_dynamic(Elf32_Dyn& s) {
+    static char buff[512] = { 0 };
 
-    switch(e.p_type) {
-        case PT_NULL:
-            oss << "type: PT_NULL";
-            break;
-        case PT_LOAD:
-        case PT_DYNAMIC:
-        case PT_INTERP:
-        case PT_NOTE:
-        case PT_SHLIB:
-        case PT_PHDR:
-        case PT_TLS:
-        #ifdef PT_NUM
-        case PT_NUM:
-        case PT_LOOS:
-        case PT_GNU_EH_FRAME:
-        case PT_GNU_STACK:
-        case PT_GNU_RELRO:
+    switch (s.d_tag) {
+    case DT_NULL:
+        return "DT_NULL: End Dynamic Section";
+    #define GO(A, Add) \
+    case A:     \
+        sprintf(buff, #A " %s=0x%X", (Add)?"Addr":"Val", (Add) ? s.d_un.d_ptr : s.d_un.d_val); \
+        break
+        GO(DT_NEEDED, 0);
+        GO(DT_PLTRELSZ, 0);
+        GO(DT_PLTGOT, 1);
+        GO(DT_HASH, 1);
+        GO(DT_STRTAB, 1);
+        GO(DT_SYMTAB, 1);
+        GO(DT_RELA, 1);
+        GO(DT_RELASZ, 0);
+        GO(DT_RELAENT, 0);
+        GO(DT_STRSZ, 0);
+        GO(DT_SYMENT, 0);
+        GO(DT_INIT, 1);
+        GO(DT_FINI, 1);
+        GO(DT_SONAME, 0);
+        GO(DT_RPATH, 0);
+        GO(DT_SYMBOLIC, 0);
+        GO(DT_REL, 1);
+        GO(DT_RELSZ, 0);
+        GO(DT_RELENT, 0);
+        GO(DT_PLTREL, 0);
+        GO(DT_DEBUG, 0);
+        GO(DT_TEXTREL, 0);
+        GO(DT_JMPREL, 1);
+        GO(DT_BIND_NOW, 1);
+        GO(DT_INIT_ARRAY, 1);
+        GO(DT_FINI_ARRAY, 1);
+        GO(DT_INIT_ARRAYSZ, 0);
+        GO(DT_FINI_ARRAYSZ, 0);
+        GO(DT_RUNPATH, 0);
+        GO(DT_FLAGS, 0);
+        GO(DT_ENCODING, 0);
+        #if defined(DT_NUM) && defined(DT_TLSDESC_PLT)
+        GO(DT_NUM, 0);
+        GO(DT_VALRNGLO, 0);
+        GO(DT_GNU_PRELINKED, 0);
+        GO(DT_GNU_CONFLICTSZ, 0);
+        GO(DT_GNU_LIBLISTSZ, 0);
+        GO(DT_CHECKSUM, 0);
+        GO(DT_PLTPADSZ, 0);
+        GO(DT_MOVEENT, 0);
+        GO(DT_MOVESZ, 0);
+        GO(DT_FEATURE_1, 0);
+        GO(DT_POSFLAG_1, 0);
+        GO(DT_SYMINSZ, 0);
+        GO(DT_SYMINENT, 0);
+        GO(DT_ADDRRNGLO, 0);
+        GO(DT_GNU_HASH, 0);
+        GO(DT_TLSDESC_PLT, 0);
+        GO(DT_TLSDESC_GOT, 0);
+        GO(DT_GNU_CONFLICT, 0);
+        GO(DT_GNU_LIBLIST, 0);
+        GO(DT_CONFIG, 0);
+        GO(DT_DEPAUDIT, 0);
+        GO(DT_AUDIT, 0);
+        GO(DT_PLTPAD, 0);
+        GO(DT_MOVETAB, 0);
+        GO(DT_SYMINFO, 0);
+        GO(DT_VERSYM, 0);
+        GO(DT_RELACOUNT, 0);
+        GO(DT_RELCOUNT, 0);
+        GO(DT_FLAGS_1, 0);
+        GO(DT_VERDEF, 0);
+        GO(DT_VERDEFNUM, 0);
+        GO(DT_VERNEED, 0);
+        GO(DT_VERNEEDNUM, 0);
+        GO(DT_AUXILIARY, 0);
+        GO(DT_FILTER, 0);
         #endif
-        {
-            const char* type_str = "";
-            switch(e.p_type) {
-                case PT_LOAD: type_str = "PT_LOAD"; break;
-                case PT_DYNAMIC: type_str = "PT_DYNAMIC"; break;
-                case PT_INTERP: type_str = "PT_INTERP"; break;
-                case PT_NOTE: type_str = "PT_NOTE"; break;
-                case PT_SHLIB: type_str = "PT_SHLIB"; break;
-                case PT_PHDR: type_str = "PT_PHDR"; break;
-                case PT_TLS: type_str = "PT_TLS"; break;
-                #ifdef PT_NUM
-                case PT_NUM: type_str = "PT_NUM"; break;
-                case PT_LOOS: type_str = "PT_LOOS"; break;
-                case PT_GNU_EH_FRAME: type_str = "PT_GNU_EH_FRAME"; break;
-                case PT_GNU_STACK: type_str = "PT_GNU_STACK"; break;
-                case PT_GNU_RELRO: type_str = "PT_GNU_RELRO"; break;
-                #endif
-            }
-            oss << "type: " << type_str
-                << ", Off=0x" << std::hex << e.p_offset
-                << " vaddr=" << reinterpret_cast<void*>(e.p_vaddr)
-                << " paddr=" << reinterpret_cast<void*>(e.p_paddr)
-                << " filesz=" << std::dec << e.p_filesz
-                << " memsz=" << e.p_memsz
-                << " flags=0x" << std::hex << e.p_flags
-                << " align=" << std::dec << e.p_align;
-            break;
-        }
-        default:
-            oss << "type=0x" << std::hex << e.p_type
-                << ", Off=0x" << e.p_offset
-                << " vaddr=" << reinterpret_cast<void*>(e.p_vaddr)
-                << " paddr=" << reinterpret_cast<void*>(e.p_paddr)
-                << " filesz=" << std::dec << e.p_filesz
-                << " memsz=" << e.p_memsz
-                << " flags=0x" << std::hex << e.p_flags
-                << " align=" << std::dec << e.p_align;
-            break;
+    #undef GO
+    default:
+        sprintf(buff, "0x%X unknown type", s.d_tag);
     }
+    return buff;
+}
 
-    return oss.str();
+const char* dump_ph_entry(Elf32_Phdr& e)
+{
+    static char buff[512] = { 0 };
+
+    memset(buff, 0, sizeof(buff));
+    switch(e.p_type) {
+    case PT_NULL: sprintf(buff, "type: %s", "PT_NULL"); break;
+    #define GO(T) case T: sprintf(buff, "type: %s, Off=%x vaddr=%p paddr=%p filesz=%u memsz=%u flags=%x align=%u", \
+        #T, e.p_offset, (void *)e.p_vaddr, (void *)e.p_paddr, e.p_filesz, e.p_memsz, e.p_flags, e.p_align); break
+    GO(PT_LOAD);
+    GO(PT_DYNAMIC);
+    GO(PT_INTERP);
+    GO(PT_NOTE);
+    GO(PT_SHLIB);
+    GO(PT_PHDR);
+    GO(PT_TLS);
+    #ifdef PT_NUM
+    GO(PT_NUM);
+    GO(PT_LOOS);
+    GO(PT_GNU_EH_FRAME);
+    GO(PT_GNU_STACK);
+    GO(PT_GNU_RELRO);
+    #endif
+    #undef GO
+    default: sprintf(buff, "type: %x, Off=%x vaddr=%p paddr=%p filesz=%u memsz=%u flags=%x align=%u",
+        e.p_type, e.p_offset, (void *)e.p_vaddr, (void *)e.p_paddr, e.p_filesz, e.p_memsz, e.p_flags, e.p_align); break;
+    }
+    return buff;
 }
 
 void dump_main_header(Elf32_Ehdr *h, vector<Elf32_Shdr> sh_entries, vector<Elf32_Phdr> ph_entries, string shstrtab) {
@@ -293,7 +291,7 @@ int main(int argc, char *argv[]) {
         }
 
         vector<Elf32_Phdr> ph_entries(header.e_phnum);
-        f.seekg(header.e_phoff, std::ios::beg);
+        f.seekg(header.e_phoff, ios::beg);
         f.read(reinterpret_cast<char*>(ph_entries.data()), sizeof(Elf32_Phdr) * header.e_phnum);
         if (!f) {
             cout << "failed to read all Program Header" << endl;
@@ -304,7 +302,7 @@ int main(int argc, char *argv[]) {
             Elf32_Shdr &s = sh_entries[header.e_shstrndx];
             vector<char> shstrtab(s.sh_size);
 
-            f.seekg(s.sh_offset, std::ios::beg);
+            f.seekg(s.sh_offset, ios::beg);
             f.read(shstrtab.data(), s.sh_size);
             if (!f) {
                 cout << "failed to read Section Table String" << endl;
