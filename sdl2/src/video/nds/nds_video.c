@@ -150,8 +150,6 @@ static SDL_Rect def_layout_pos[][2] = {
     {{ 0, 0, 160, 120 }, { 0, 0, 640, 480 }},
     // LAYOUT_MODE_C1
     {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
-    // LAYOUT_MODE_C2
-    {{ 0, 0, 0, 0 }, { 0, 0, 640, 480 }},
 #endif
 };
 
@@ -6725,15 +6723,15 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
         break;
     case LAYOUT_MODE_C1:
 #if defined(MOTO_XT894) || defined(MOTO_XT897)
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 90;
-        myvideo.layout.mode[mode].screen[0].w = 480;
-        myvideo.layout.mode[mode].screen[0].h = 360;
-
-        myvideo.layout.mode[mode].screen[1].x = 480;
+        myvideo.layout.mode[mode].screen[1].x = 0;
         myvideo.layout.mode[mode].screen[1].y = 90;
         myvideo.layout.mode[mode].screen[1].w = 480;
         myvideo.layout.mode[mode].screen[1].h = 360;
+
+        myvideo.layout.mode[mode].screen[0].x = 480;
+        myvideo.layout.mode[mode].screen[0].y = 90;
+        myvideo.layout.mode[mode].screen[0].w = 480;
+        myvideo.layout.mode[mode].screen[0].h = 360;
 #endif
 
 #if defined(FXTEC_QX1000)
@@ -6746,31 +6744,6 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
         myvideo.layout.mode[mode].screen[1].y = 135;
         myvideo.layout.mode[mode].screen[1].w = 1080;
         myvideo.layout.mode[mode].screen[1].h = 810;
-#endif
-        break;
-    case LAYOUT_MODE_C2:
-#if defined(MOTO_XT894) || defined(MOTO_XT897)
-        myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].y = 78;
-        myvideo.layout.mode[mode].screen[0].w = 512;
-        myvideo.layout.mode[mode].screen[0].h = 384;
-
-        myvideo.layout.mode[mode].screen[1].x = 512;
-        myvideo.layout.mode[mode].screen[1].y = (540 - 336) >> 1;
-        myvideo.layout.mode[mode].screen[1].w = 448;
-        myvideo.layout.mode[mode].screen[1].h = 336;
-#endif
-
-#if defined(FXTEC_QX1000)
-        myvideo.layout.mode[mode].screen[0].x = 56;
-        myvideo.layout.mode[mode].screen[0].y = 156;
-        myvideo.layout.mode[mode].screen[0].w = 256 << 2;
-        myvideo.layout.mode[mode].screen[0].h = 192 << 2;
-
-        myvideo.layout.mode[mode].screen[1].x = 56 + 1024;
-        myvideo.layout.mode[mode].screen[1].y = 156;
-        myvideo.layout.mode[mode].screen[1].w = 256 << 2;
-        myvideo.layout.mode[mode].screen[1].h = 192 << 2;
 #endif
         break;
     default:
@@ -6884,7 +6857,6 @@ static int free_layout_mode(void)
 #if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
     add_layout_mode(LAYOUT_MODE_C0, 0, NULL, 0, 0);
     add_layout_mode(LAYOUT_MODE_C1, 0, NULL, 0, 0);
-    add_layout_mode(LAYOUT_MODE_C2, 0, NULL, 0, 0);
 #endif
 
     return 0;
@@ -7320,7 +7292,6 @@ static const char* LAYOUT_MODE_STR0[] = {
 
 #if defined(MOTO_XT894) || defined(MOTO_XT897)
     "640x480", // C1
-    "480x360", // C2
     "512x384", // C3
 #endif
 };
@@ -7350,7 +7321,6 @@ static const char *LAYOUT_MODE_STR1[] = {
 #if defined(MOTO_XT894) || defined(MOTO_XT897)
     "240x180", // C0
     "480x360", // C1
-    "448x336", // C2
 #endif
 };
 
@@ -8020,25 +7990,6 @@ static int draw_small_win(int sx, int sy, uint32_t mode, SDL_Surface *surf)
         rt.w = 64;
         rt.h = 64;
         rt.x = sx + ((128 - (rt.w * 2)) / 2) + rt.w;
-        rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
-        break;
-    case LAYOUT_MODE_C2:
-        rt.x = sx;
-        rt.y = sy;
-        rt.w = 128;
-        rt.h = 96;
-        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x80, 0x00));
-        
-        rt.w = 68;
-        rt.h = 68;
-        rt.x = sx;
-        rt.y = sy + ((96 - rt.h) / 2);
-        SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x80, 0x00, 0x00));
-        
-        rt.w = 60;
-        rt.h = 60;
-        rt.x = sx + (128 - rt.w);
         rt.y = sy + ((96 - rt.h) / 2);
         SDL_FillRect(surf, &rt, SDL_MapRGB(surf->format, 0x00, 0x00, 0x80));
         break;

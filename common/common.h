@@ -41,12 +41,8 @@
 #define DRASTIC_MENU_NO_FILE        "drastic_no.png"
 #define DRASTIC_MENU_CURSOR_FILE    "drastic_cursor.png"
 
-#if defined(MOTO_XT894) || defined(FXTEC_QX1000)
-#define DEF_STATE_PATH              "/home/defaultuser/Game/state/nds"
-#endif
-
-#if defined(MOTO_XT897)
-#define DEF_STATE_PATH              "/home/nemo/Game/state/nds"
+#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#define DEF_STATE_PATH              "/opt/state/nds"
 #endif
 
 #define CUSTOME_LAYOUT_XT894_C      "c_moto_xt894_c"
@@ -80,13 +76,11 @@ enum layout_mode_t {
 #if defined(MOTO_XT894) || defined(MOTO_XT897)
     LAYOUT_MODE_C0,      // (Custom Mode)
     LAYOUT_MODE_C1,      //
-    LAYOUT_MODE_C2,      //
 #endif
 
 #if defined(FXTEC_QX1000)
     LAYOUT_MODE_C0,      // (Custom Mode)
     LAYOUT_MODE_C1,      //
-    LAYOUT_MODE_C2,      //
 #endif
 
     LAYOUT_MODE_MAX,
