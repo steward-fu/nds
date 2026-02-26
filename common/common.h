@@ -189,6 +189,7 @@ typedef enum {
 
 #define CFG_USING_JSON_FORMAT   1
 #define JSON_MAGIC              "magic"
+#define JSON_SWAP_SCREEN        "swap_screen"
 #define JSON_SWAP_L1_L2         "l1_l2_swap"
 #define JSON_SWAP_R1_R2         "r1_r2_swap"
 #define JSON_KEY_ROTATE         "key_rotation"
@@ -255,6 +256,7 @@ typedef struct {
     uint32_t magic;
     char home[MAX_PATH];
 
+    int swap_screen;
     int swap_l1_l2;
     int swap_r1_r2;
     int key_rotate;

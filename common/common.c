@@ -312,6 +312,7 @@ int load_config(const char *home_path)
     }
     else {
         JSON_GET_INT(JSON_MAGIC, myconfig.magic);
+        JSON_GET_INT(JSON_SWAP_SCREEN, myconfig.swap_screen);
         JSON_GET_INT(JSON_SWAP_L1_L2, myconfig.swap_l1_l2);
         JSON_GET_INT(JSON_SWAP_R1_R2, myconfig.swap_r1_r2);
         JSON_GET_INT(JSON_KEY_ROTATE, myconfig.key_rotate);
@@ -424,6 +425,7 @@ int update_config(const char *path)
 
     if (root) {
         JSON_SET_INT(JSON_MAGIC, myconfig.magic);
+        JSON_SET_INT(JSON_SWAP_SCREEN, myconfig.swap_screen);
         JSON_SET_INT(JSON_SWAP_L1_L2, myconfig.swap_l1_l2);
         JSON_SET_INT(JSON_SWAP_R1_R2, myconfig.swap_r1_r2);
         JSON_SET_INT(JSON_KEY_ROTATE, myconfig.key_rotate);

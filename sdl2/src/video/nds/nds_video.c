@@ -2475,6 +2475,7 @@ TEST(sdl2_video, prehook_blit_screen_menu)
 static void prehook_update_screen(void)
 {
     static int prepare_time = 30;
+    nds_set_screen_swap _func = (nds_set_screen_swap)myhook.fun.set_screen_swap;
 
     trace("call %s(%d)\n", __func__, prepare_time);
 
@@ -2486,6 +2487,7 @@ static void prehook_update_screen(void)
             if (myconfig.auto_state) {
                 load_state(DEF_AUTO_SLOT);
             }
+            _func(myconfig.swap_screen);
         }
     }
     else if (myvideo.lcd.update == 0) {
@@ -7221,6 +7223,7 @@ static int quit_device(void)
     quit_lcd();
 #endif
 
+    myconfig.swap_screen = *myhook.var.sdl.swap_screens;
     update_config(myconfig.home);
     sr = system("sync");
     debug("return value from system()=%d\n", sr);
