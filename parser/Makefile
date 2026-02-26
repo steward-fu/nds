@@ -1,6 +1,7 @@
 TARGET    = parser
 CFLAGS   += $(MORE_CFLAGS)
 CXXFLAGS += $(MORE_CXXFLAGS)
+CXXFLAGS += -ggdb
 CXXFLAGS += -I/usr/local/include/fmt
 CXXFLAGS += -std=c++17
 LDFLAGS  += $(MORE_LDFLAGS)
