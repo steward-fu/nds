@@ -79,6 +79,14 @@ P.S. The HOTKEY is user-configurable and can be rebound to the MENU or SELECT ke
 
 &nbsp;
 
+Known Issues
+```
+No sound in MinUI
+   https://github.com/steward-fu/nds/issues/36#issuecomment-1890998225
+```
+
+&nbsp;
+
 ## Miyoo Flip
 ![image](image/miyoo_flip.jpg)  
 
