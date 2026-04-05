@@ -1,0 +1,20 @@
+precision highp float;
+
+uniform float frag_alpha;
+uniform vec4 frag_screen;
+varying vec2 frag_tex_coord;
+uniform sampler2D frag_tex_sample;
+
+void main()
+{
+    vec2 precalc_texel = frag_tex_coord * vec2(360.0, 480.0);
+	vec2 precalc_scale = floor(vec2(192.0, 256.0) / vec2(360.0, 480.0)) + 1.0;
+    vec2 texel_floored = floor(precalc_texel);
+	vec2 s = fract(precalc_texel);
+	vec2 region_range = 0.5 - 0.5 / precalc_scale;
+	vec2 center_dist = s - 0.5;
+	vec2 f = (center_dist - clamp(center_dist, -region_range, region_range)) * precalc_scale + 0.5;
+	vec2 mod_texel = texel_floored + f;
+	vec3 colour = texture2D(frag_tex_sample, mod_texel / vec2(360.0, 480.0)).rgb;
+	gl_FragColor = vec4(colour.bgr, 1.0);
+}

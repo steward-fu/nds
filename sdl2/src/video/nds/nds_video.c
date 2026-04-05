@@ -3135,7 +3135,6 @@ static int load_shader_file(const char *name)
     long size = 0;
     FILE *f = NULL;
     char *content = NULL;
-    char buf[MAX_PATH + 32] = { 0 };
 
 #if !defined(UT)
     GLint success = 0;
@@ -3145,13 +3144,12 @@ static int load_shader_file(const char *name)
     const char *frag_src = def_frag_src;
 #endif
 
-    trace("call %s(name=%p)\n", __func__, name);
+    printf("call %s(name=%p)\n", __func__, name);
 
     if (name && name[0]) {
-        sprintf(buf, "%s/%s/%s", myconfig.home, SHADER_PATH, name);
-        trace("shader path=\"%s\"\n", buf);
+        printf("shader path=\"%s\"\n", name);
 
-        f = fopen(buf, "r");
+        f = fopen(name, "r");
         if (f) {
             fseek(f, 0, SEEK_END);
             size = ftell(f);
@@ -3179,7 +3177,7 @@ static int load_shader_file(const char *name)
         }
         else {
             r = -1;
-            error("failed to open shader file \"%s\"\n", buf);
+            error("failed to open shader file \"%s\"\n", name);
         }
     }
     else {
