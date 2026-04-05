@@ -26,7 +26,7 @@
 #include <sys/time.h>
 #include <syslog.h>
 
-#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(UT)
 #include <pulse/pulseaudio.h>
 #endif
 
@@ -52,7 +52,7 @@ typedef struct {
     pthread_mutex_t lock;
 } queue_t;
 
-#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(UT)
 struct mypulse_t {
     pa_threaded_mainloop *mainloop;
     pa_context *context;
@@ -78,7 +78,7 @@ struct mypcm_t {
     uint8_t *buf;
 } mypcm = { 0 };
 
-#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(UT) || defined(TRIMUI_BRICK)
+#if defined(TRIMUI_SMART) || defined(UT) || defined(TRIMUI_BRICK)
 static int dsp_fd = -1;
 #endif
 
@@ -265,7 +265,7 @@ TEST(alsa, prehook_adpcm_decode_block)
 }
 #endif
 
-#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(UT)
 static void pulse_context_state(pa_context *context, void *userdata)
 {
     trace("call %s()\n", __func__);
@@ -355,7 +355,7 @@ TEST(alsa, pulse_stream_request)
 #endif
 #endif
 
-#if defined(UT) || defined(TRIMUI_SMART) || defined(PANDORA) || defined(TRIMUI_BRICK)
+#if defined(UT) || defined(TRIMUI_SMART) || defined(TRIMUI_BRICK)
 static int open_dsp(void)
 {
     int arg = 0;
@@ -693,11 +693,11 @@ static void* audio_handler(void *id)
                 MI_AO_SendFrame(myao.id, myao.ch, &frame, 1);
 #endif
 
-#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(TRIMUI_BRICK)
+#if defined(TRIMUI_SMART) || defined(TRIMUI_BRICK)
                 write(dsp_fd, mypcm.buf, mypcm.len);
 #endif
 
-#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897)
                 if (mypulse.mainloop) {
                     pa_threaded_mainloop_lock(mypulse.mainloop);
                     pa_stream_write(mypulse.stream, mypcm.buf, mypcm.len, NULL, 0, PA_SEEK_RELATIVE);
@@ -1030,7 +1030,7 @@ static void prehook_audio_synchronous_update(audio_struct *audio, uint32_t non_b
     pa_threaded_mainloop_unlock(mypulse.mainloop);
 #endif
 
-#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(TRIMUI_BRICK)
+#if defined(TRIMUI_SMART) || defined(TRIMUI_BRICK)
     write(dsp_fd, audio, audio->buffer_index * SND_CHANNELS);
 #endif
 
@@ -1130,11 +1130,11 @@ int snd_pcm_start(snd_pcm_t *pcm)
 #endif
 #endif
 
-#if defined(TRIMUI_BRICK) || defined(TRIMUI_SMART) || defined(PANDORA)
+#if defined(TRIMUI_BRICK) || defined(TRIMUI_SMART)
     open_dsp();
 #endif
 
-#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897)
     mypulse.mainloop = pa_threaded_mainloop_new();
     if (mypulse.mainloop == NULL) {
         error("failed to open PulseAudio device\n");
@@ -1225,14 +1225,14 @@ int snd_pcm_close(snd_pcm_t *pcm)
     MI_AO_Disable(myao.id);
 #endif
 
-#if defined(TRIMUI_SMART) || defined(PANDORA) || defined(TRIMUI_BRICK)
+#if defined(TRIMUI_SMART) || defined(TRIMUI_BRICK)
     if (dsp_fd > 0) {
         close(dsp_fd);
         dsp_fd = -1;
     }
 #endif
 
-#if defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897)
     if (mypulse.mainloop) {
         pa_threaded_mainloop_stop(mypulse.mainloop);
     }

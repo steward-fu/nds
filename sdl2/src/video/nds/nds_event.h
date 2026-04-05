@@ -12,23 +12,14 @@
 #define INPUT_DEV   "/dev/input/event0"
 #elif defined(MIYOO_FLIP)
 #define INPUT_DEV   "/dev/miyooio"
-#elif defined(PANDORA)
-#define INPUT_DEV   "/dev/input/event4"
-#define KEYPAD_DEV  "/dev/input/event0"
 #elif defined(FXTEC_QX1000)
 #define INPUT_DEV   "/dev/input/event3"
 #define TOUCH_DEV   "/dev/input/event1"
 #define POWER_DEV   "/dev/input/event0"
-#elif defined(FXTEC_QX1050)
-#define INPUT_DEV   "/dev/input/event3"
 #elif defined(MOTO_XT897)
 #define INPUT_DEV   "/dev/input/event1"
 #define TOUCH_DEV   "/dev/input/event7"
 #define POWER_DEV   "/dev/input/event3"
-#elif defined(MOTO_XT894)
-#define INPUT_DEV   "/dev/input/event3"
-#define TOUCH_DEV   "/dev/input/event4"
-#define POWER_DEV   "/dev/input/event2"
 #elif defined(GKD_PIXEL2)
 #define INPUT_DEV   "/dev/input/event2"
 #elif defined(GKD_MINIPLUS)
@@ -129,58 +120,6 @@
 
 #define DEV_KEY_CODE_SAVE       2
 #define DEV_KEY_CODE_LOAD       11
-#define DEV_KEY_CODE_FAST       -1
-#define DEV_KEY_CODE_EXIT       28
-#endif
-
-#if defined(MOTO_XT894)
-#define DEV_KEY_CODE_UP         17
-#define DEV_KEY_CODE_DOWN       31
-#define DEV_KEY_CODE_LEFT       30
-#define DEV_KEY_CODE_RIGHT      32
-#define DEV_KEY_CODE_A          38
-#define DEV_KEY_CODE_B          37
-#define DEV_KEY_CODE_X          24
-#define DEV_KEY_CODE_Y          23
-#define DEV_KEY_CODE_L1         16
-#define DEV_KEY_CODE_R1         18
-#define DEV_KEY_CODE_L2         14
-#define DEV_KEY_CODE_R2         40
-#define DEV_KEY_CODE_SELECT     51
-#define DEV_KEY_CODE_START      52
-#define DEV_KEY_CODE_MENU       57
-#define DEV_KEY_CODE_POWER      116
-#define DEV_KEY_CODE_VOL_UP     -1
-#define DEV_KEY_CODE_VOL_DOWN   -1
-
-#define DEV_KEY_CODE_SAVE       2
-#define DEV_KEY_CODE_LOAD       11
-#define DEV_KEY_CODE_FAST       -1
-#define DEV_KEY_CODE_EXIT       28
-#endif
-
-#if defined(FXTEC_QX1050)
-#define DEV_KEY_CODE_UP         17
-#define DEV_KEY_CODE_DOWN       44
-#define DEV_KEY_CODE_LEFT       30
-#define DEV_KEY_CODE_RIGHT      31
-#define DEV_KEY_CODE_A          40
-#define DEV_KEY_CODE_B          53
-#define DEV_KEY_CODE_X          26
-#define DEV_KEY_CODE_Y          39
-#define DEV_KEY_CODE_L1         16
-#define DEV_KEY_CODE_R1         17
-#define DEV_KEY_CODE_L2         100
-#define DEV_KEY_CODE_R2         15
-#define DEV_KEY_CODE_SELECT     52
-#define DEV_KEY_CODE_START      103
-#define DEV_KEY_CODE_MENU       57
-#define DEV_KEY_CODE_POWER      -1
-#define DEV_KEY_CODE_VOL_UP     -1
-#define DEV_KEY_CODE_VOL_DOWN   -1
-
-#define DEV_KEY_CODE_SAVE       1
-#define DEV_KEY_CODE_LOAD       14
 #define DEV_KEY_CODE_FAST       -1
 #define DEV_KEY_CODE_EXIT       28
 #endif
@@ -383,13 +322,9 @@ typedef struct {
 typedef struct {
     int fd;
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
     int tp_fd;
     int pwr_fd;
-#endif
-
-#if defined(PANDORA) || defined(UT)
-    int kb_fd;
 #endif
 
     struct _keypad{

@@ -26,7 +26,7 @@
 
 nds_event myevent = { 0 };
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(FXTEC_QX1050) || defined(UT)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(UT)
 static touch_data_t tp[10] = { 0 };
 #endif
 
@@ -865,7 +865,7 @@ static int handle_hotkey(void)
     if (hit_hotkey(KEY_BIT_Y)) {
         if (check_hotkey) {
             if (myevent.mode == NDS_KEY_MODE) {
-#if !defined(MOTO_XT894) && !defined(MOTO_XT897)
+#if !defined(MOTO_XT897)
                 if ((myconfig.layout.mode.sel != LAYOUT_MODE_N0) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_N1) &&
                     (myconfig.layout.mode.sel != LAYOUT_MODE_N3))
@@ -906,11 +906,6 @@ static int handle_hotkey(void)
         set_key_bit(KEY_BIT_QUIT, 1);
 #else
         if (myvideo.menu.sdl2.enable == 0) {
-
-#if defined(PANDORA)
-            enable_fb_plane(FB_MENU);
-#endif
-
             enter_sdl2_menu(MENU_TYPE_SDL2);
         }
 #endif
@@ -1085,7 +1080,7 @@ static int update_key_bit(uint32_t c, uint32_t v)
         set_key_bit(KEY_BIT_QUIT, v);
     }
 
-#if defined(MIYOO_MINI) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(MIYOO_MINI) || defined(MOTO_XT897) || defined(UT)
     if (c == myevent.keypad.power) {
         trace("set KEY_BIT_QUIT\n");
         set_key_bit(KEY_BIT_QUIT, v);
@@ -1273,48 +1268,6 @@ TEST(sdl2_event, get_brick_key_code)
     TEST_ASSERT_EQUAL_INT(1, get_brick_key_code(&e));
     TEST_ASSERT_EQUAL_INT(DEV_KEY_CODE_DOWN, e.code);
 }
-#endif
-
-#if defined(PANDORA) || defined(UT)
-static int get_pandora_key_code(struct input_event *e)
-{
-    trace("call %s(e=%p)\n", __func__, e);
-
-    if ((myevent.fd < 0) || (myevent.kb_fd < 0)) {
-        error("invalid input handle\n");
-        return -1;
-    }
-
-    if (!e) {
-        error("e is null\n");
-        return -1;
-    }
-
-#if !defined(UT)
-    if (read(myevent.fd, e, sizeof(struct input_event))) {
-        if ((e->type == EV_KEY) && (e->value != 2)) {
-            return 1;
-        }
-    }
-
-    if (read(myevent.kb_fd, e, sizeof(struct input_event))) {
-        if ((e->type == EV_KEY) && (e->value != 2)) {
-            return 1;
-        }
-    }
-#endif
-
-    return 0;
-}
-
-#if defined(UT)
-TEST(sdl2_event, get_pandora_key_code)
-{
-    struct input_event e = {{ 0 }};
-
-    TEST_ASSERT_EQUAL_INT(0, get_pandora_key_code(&e));
-}
-#endif
 #endif
 
 static int get_input_key_code(int fd, struct input_event *e)
@@ -1512,7 +1465,7 @@ TEST(sdl2_event, send_touch_axis)
 }
 #endif
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(FXTEC_QX1050) || defined(UT)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(UT)
 int handle_touch_event(int fd)
 {
     static int tp_id = 0;
@@ -1522,7 +1475,7 @@ int handle_touch_event(int fd)
     const int screen_w = WL_WIN_H;
     const int screen_h = WL_WIN_W;
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(MOTO_XT897) || defined(UT)
     float tp_max_x = 1000.0;
     float tp_max_y = 1000.0;
 #endif
@@ -1546,7 +1499,7 @@ int handle_touch_event(int fd)
     trace("touch, type:%d, code:0x%x, value:%d\n", ev.type, ev.code, ev.value);
     if (ev.type == EV_ABS) {
         if (ev.code == ABS_MT_TRACKING_ID) {
-#if defined(MOTO_XT894) || defined(MOTO_XT897)
+#if defined(MOTO_XT897)
             tp_valid = 1;
             tp_id = ev.value;
 #endif
@@ -1575,11 +1528,11 @@ int handle_touch_event(int fd)
         }
     }
     else if (ev.type == EV_SYN) {
-#if defined(MOTO_XT894) || defined(MOTO_XT897)
+#if defined(MOTO_XT897)
         if ((ev.code == ABS_Z) && (ev.value == 0)) {
 #endif
 
-#if defined(FXTEC_QX1000) || defined(FXTEC_QX1050)
+#if defined(FXTEC_QX1000)
         if ((ev.code == 0) && (ev.value == 0)) {
 #endif
             if (tp_valid) {
@@ -1677,7 +1630,7 @@ int handle_touch_event(int fd)
             else {
                 myevent.input.touch_status = 0;
             }
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000) || defined(FXTEC_QX1050)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
         }
 #endif
     }
@@ -1709,22 +1662,14 @@ int input_handler(void *data)
     }
 #endif
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
-#if defined(MOTO_XT894) || defined(MOTO_XT897)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#if defined(MOTO_XT897)
     sleep_us = 100;
 #else
     sleep_us = 1000;
 #endif
     myevent.tp_fd = open(TOUCH_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
     myevent.pwr_fd = open(POWER_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-#endif
-
-#if defined(PANDORA)
-    myevent.kb_fd = open(KEYPAD_DEV, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-    if (myevent.kb_fd < 0) {
-        error("failed to open \"%s\"\n", KEYPAD_DEV);
-        exit(-1);
-    }
 #endif
 
 #if defined(UT)
@@ -1750,8 +1695,6 @@ int input_handler(void *data)
         rk = get_flip_key_code(&ev);
 #elif defined(TRIMUI_BRICK) || defined(UT)
         rk = get_brick_key_code(&ev);
-#elif defined(PANDORA) || defined(UT)
-        rk = get_pandora_key_code(&ev);
 #else
         rk = get_input_key_code(myevent.fd, &ev);
 #endif
@@ -1773,7 +1716,7 @@ int input_handler(void *data)
         handle_trimui_special_key();
 #endif
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
         rk = get_input_key_code(myevent.pwr_fd, &ev);
         if (rk > 0) {
             trace("code=%d, value=%d\n", ev.code, ev.value);
@@ -1832,10 +1775,10 @@ void init_event(void)
     myevent.keypad.fast = -1;
     myevent.keypad.exit = -1;
 
-#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(TRIMUI_BRICK) || defined(GKD_MINIPLUS) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(TRIMUI_BRICK) || defined(GKD_MINIPLUS) || defined(UT)
     myevent.keypad.save = DEV_KEY_CODE_SAVE;
     myevent.keypad.load = DEV_KEY_CODE_LOAD;
-#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(GKD_MINIPLUS) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(GKD_MINIPLUS) || defined(UT)
     myevent.keypad.fast = DEV_KEY_CODE_FAST;
     myevent.keypad.exit = DEV_KEY_CODE_EXIT;
 #endif
@@ -1906,7 +1849,7 @@ void quit_event(void)
         myevent.fd = -1;
     }
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
     if (myevent.tp_fd > 0) {
         close(myevent.tp_fd);
         myevent.tp_fd = -1;
@@ -1915,13 +1858,6 @@ void quit_event(void)
     if (myevent.pwr_fd > 0) {
         close(myevent.pwr_fd);
         myevent.pwr_fd = -1;
-    }
-#endif
-
-#if defined(PANDORA)
-    if(myevent.kb_fd > 0) {
-        close(myevent.kb_fd);
-        myevent.kb_fd = -1;
     }
 #endif
 

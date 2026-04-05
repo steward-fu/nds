@@ -215,7 +215,7 @@ int reset_config(void)
     myconfig.rjoy.cust_key[3] = 7;
 #endif
 
-#if defined(MOTO_XT894) || defined(MOTO_XT897) || defined(FXTEC_QX1000)
+#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
     strncpy(myconfig.state_path, DEF_STATE_PATH, sizeof(myconfig.state_path));
 #endif
 

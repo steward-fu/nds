@@ -2464,23 +2464,8 @@ CheckNDSVideo()
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
     fi
 
-    if test x$MOD = xfxtec_qx1050; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DFXTEC_QX1050"
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DNDS_ARM64"
-
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
-    fi
-
     if test x$MOD = xmoto_xt897; then
         EXTRA_CFLAGS="$EXTRA_CFLAGS -DMOTO_XT897"
-
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
-    fi
-
-    if test x$MOD = xmoto_xt894; then
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -DMOTO_XT894"
 
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-egl"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lwayland-client"
@@ -2521,14 +2506,9 @@ CheckNDSVideo()
     else
         EXTRA_CFLAGS="$EXTRA_CFLAGS -O3"
         EXTRA_CFLAGS="$EXTRA_CFLAGS -ffast-math"
-        if test x$MOD = xqx1050; then
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv8-a"
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a53"
-        else
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
-            EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a7"
-        fi
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mfpu=neon"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -mtune=cortex-a7"
     fi
 }
 
@@ -3816,20 +3796,16 @@ case "$host" in
         esac
 
         case "$MOD" in
-            *ut*)       CheckNDSVideo ;;
+            *ut*)               CheckNDSVideo ;;
             *miyoo_mini*)       CheckNDSVideo ;;
             *miyoo_flip*)       CheckNDSVideo ;;
             *trimui_smart*)     CheckNDSVideo ;;
             *trimui_brick*)     CheckNDSVideo ;;
             *gkd_pixel2*)       CheckNDSVideo ;;
             *gkd_miniplus*)     CheckNDSVideo ;;
-            *moto_xt894*)       CheckNDSVideo ;;
             *moto_xt897*)       CheckNDSVideo ;;
             *fxtec_qx1000*)     CheckNDSVideo ;;
-            *fxtec_qx1050*)     CheckNDSVideo ;;
-            *)
-                CheckVisibilityHidden
-                ;;
+            *)                  CheckVisibilityHidden ;;
         esac
 
         CheckDeclarationAfterStatement

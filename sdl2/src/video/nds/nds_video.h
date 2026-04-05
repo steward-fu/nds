@@ -11,11 +11,7 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
-#if defined(PANDORA)
-#include <linux/omapfb.h>
-#endif
-
-#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(UT)
 #include <wayland-client.h>
 #include <wayland-egl.h>
 #endif
@@ -112,21 +108,6 @@ typedef enum {
 #define ION_H           NDS_Hx2
 #endif
 
-#if defined(PANDORA)
-#define SCREEN_W        640
-#define SCREEN_H        480
-#define FB_NUM          2
-#define FB_GAME         0
-#define FB_MENU         1
-#endif
-
-#if defined(FXTEC_QX1050)
-#define WL_WIN_W        1080
-#define WL_WIN_H        2160
-#define SCREEN_W        640
-#define SCREEN_H        480
-#endif
-
 #if defined(FXTEC_QX1000)
 #define WL_WIN_W        1080
 #define WL_WIN_H        2160
@@ -135,15 +116,6 @@ typedef enum {
 #endif
 
 #if defined(MOTO_XT897)
-#define WL_WIN_W        540
-#define WL_WIN_H        960
-#define SCREEN_W        640
-#define SCREEN_H        480
-#define INIT_CPU_CORE   2
-#define MAX_CPU_CORE    2
-#endif
-
-#if defined(MOTO_XT894)
 #define WL_WIN_W        540
 #define WL_WIN_H        960
 #define SCREEN_W        640
@@ -272,7 +244,7 @@ typedef struct {
     int shader;
     int max_shader;
 
-#if defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(UT)
     struct {
         struct wl_shell *shell;
         struct wl_region *region;
@@ -292,7 +264,7 @@ typedef struct {
     } wl;
 #endif
 
-#if defined(MIYOO_FLIP) || defined(FXTEC_QX1050) || defined(FXTEC_QX1000) || defined(MOTO_XT894) || defined(MOTO_XT897) || defined(UT)
+#if defined(MIYOO_FLIP) || defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(UT)
     struct {
         EGLConfig config;
         EGLDisplay display;
@@ -313,7 +285,7 @@ typedef struct {
             GLint tex_sample;
         } frag;
 
-#if !defined(FXTEC_QX1050) && !defined(FXTEC_QX1000) && !defined(MOTO_XT894) && !defined(MOTO_XT897)
+#if !defined(FXTEC_QX1000) && !defined(MOTO_XT897)
         int mem_fd;
         uint8_t* ccu_mem;
         uint8_t* dac_mem;
@@ -375,14 +347,7 @@ typedef struct {
 #endif
 
     struct {
-#if defined(PANDORA)
-        int fd[FB_NUM];
-        int cur_idx;
-        uint32_t *mem[FB_NUM];
-        uint32_t *pixels[FB_NUM][2];
-#else
         int fd;
-#endif
         struct fb_var_screeninfo var_info;
         struct fb_fix_screeninfo fix_info;
 
