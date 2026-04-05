@@ -3144,10 +3144,10 @@ static int load_shader_file(const char *name)
     const char *frag_src = def_frag_src;
 #endif
 
-    printf("call %s(name=%p)\n", __func__, name);
+    trace("call %s(name=%p)\n", __func__, name);
 
     if (name && name[0]) {
-        printf("shader path=\"%s\"\n", name);
+        trace("shader path=\"%s\"\n", name);
 
         f = fopen(name, "r");
         if (f) {
