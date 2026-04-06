@@ -1,0 +1,41 @@
+precision highp float;
+
+uniform float frag_alpha;
+uniform vec4 frag_screen;
+varying vec2 frag_tex_coord;
+uniform sampler2D frag_tex_sample;
+
+#define target_gamma 1.91
+#define display_gamma 1.91
+#define lum 0.89
+#define r 0.87
+#define g 0.645
+#define b 0.73
+#define rg 0.10
+#define rb 0.10
+#define gr 0.255
+#define gb 0.17
+#define br -0.125
+#define bg 0.255
+
+#define u_texture_size_zw vec2(256.0, 192.0)
+
+void main()
+{
+    vec2 precalc_texel = frag_tex_coord * u_texture_size_zw;
+    vec2 precalc_scale = floor(frag_screen.xy / u_texture_size_zw) + 1.0;
+    vec2 texel_floored = floor(precalc_texel);
+    vec2 s = fract(precalc_texel);
+    vec2 region_range = 0.5 - 0.5 / precalc_scale;
+
+    vec2 center_dist = s - 0.5;
+    vec2 f = (center_dist - clamp(center_dist, -region_range, region_range)) * precalc_scale + 0.5;
+
+    vec2 mod_texel = texel_floored + f;
+
+    vec3 colour = pow(texture2D(frag_tex_sample, mod_texel / u_texture_size_zw).rgb, vec3(target_gamma));
+    colour = clamp(colour * lum, 0.0, 1.0);
+    colour = pow(mat3(r, rg, rb, gr, g, gb, br, bg, b) * colour, vec3(1.0 / display_gamma));
+    
+    gl_FragColor = vec4(colour.bgr, 1.0);
+}

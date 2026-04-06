@@ -5,8 +5,12 @@ uniform vec4 frag_screen;
 varying vec2 frag_tex_coord;
 uniform sampler2D frag_tex_sample;
 
+#ifndef BRIGHTEN_SCANLINES
 #define BRIGHTEN_SCANLINES 16.0
+#endif
+#ifndef BRIGHTEN_LCD
 #define BRIGHTEN_LCD 4.0
+#endif
 
 #define PI 3.141592654
 
@@ -16,7 +20,7 @@ const float INV_BRIGHTEN_LCD_INC = 1.0 / (BRIGHTEN_LCD + 1.0);
 
 void main()
 {
-	vec2 angle = 2.0 * PI * (((frag_tex_coord.xy * frag_screen.zw) * NDS_SCREEN_HEIGHT * frag_screen.y) - 0.25);
+	vec2 angle = 2.0 * PI * (((frag_tex_coord.xy * vec2(256.0, 192.0)) * NDS_SCREEN_HEIGHT * (1.0 / 192.0)) - 0.25);
 
 	float yfactor = (BRIGHTEN_SCANLINES + sin(angle.y)) * INV_BRIGHTEN_SCANLINES_INC;
 	float xfactor = (BRIGHTEN_LCD + sin(angle.x)) * INV_BRIGHTEN_LCD_INC;
@@ -24,5 +28,5 @@ void main()
 	vec3 colour = texture2D(frag_tex_sample, frag_tex_coord.xy).rgb;
 	colour.rgb = yfactor * xfactor * colour.rgb;
 
-	gl_FragColor = vec4(colour.bgr, frag_alpha);
+	gl_FragColor = vec4(colour.bgr, 1.0);
 }
