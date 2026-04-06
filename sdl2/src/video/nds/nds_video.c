@@ -2927,9 +2927,9 @@ static void* video_handler(void *param)
 #endif
         }
 #if !defined(TRIMUI_BRICK) && !defined(GKD_PIXEL2) && !defined(GKD_MINIPLUS)
-        else if ((myvideo.shader >= 0) && (myvideo.shader != cur_shader)) {
-            cur_shader = myvideo.shader;
-            if (get_path_by_idx(SHADER_PATH, myvideo.shader, tmp, 1) >= 0) {
+        else if ((myconfig.shader >= 0) && (myconfig.shader != cur_shader)) {
+            cur_shader = myconfig.shader;
+            if (get_path_by_idx(SHADER_PATH, myconfig.shader, tmp, 1) >= 0) {
                 load_shader_file(tmp);
             }
         }
@@ -6574,7 +6574,6 @@ static int init_device(void)
         0
     );
 
-    myvideo.shader = -1;
 #if !defined(MIYOO_MINI)
     myvideo.max_shader = get_shader_cnt();
 #endif
@@ -7618,8 +7617,8 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
     trace("call %s(cur_sel=%d, right_key=%d)\n", __func__, cur_sel, right_key);
 
 #if !defined(MIYOO_MINI)
-    if (myvideo.shader >= myvideo.max_shader) {
-        myvideo.shader = 0;
+    if (myconfig.shader >= myvideo.max_shader) {
+        myconfig.shader = 0;
     }
 #endif
 
@@ -7739,13 +7738,13 @@ static int apply_sdl2_menu_setting(int cur_sel, int right_key, int is_lr)
 #if defined(MOTO_XT897) || defined(FXTEC_QX1000)
     case MENU_SHADER:
         if (right_key) {
-            if (myvideo.max_shader && (myvideo.shader < (myvideo.max_shader - 1))) {
-                myvideo.shader += 1;
+            if (myvideo.max_shader && (myconfig.shader < (myvideo.max_shader - 1))) {
+                myconfig.shader += 1;
             }
         }
         else {
-            if (myvideo.shader >= 0) {
-                myvideo.shader -= 1;
+            if (myconfig.shader >= 0) {
+                myconfig.shader -= 1;
             }
         }
         break;
@@ -7977,7 +7976,7 @@ static int draw_sdl2_menu_setting(
 
 #if defined(MOTO_XT897) || defined(FXTEC_QX1000)
     case MENU_SHADER:
-        if (get_path_by_idx(SHADER_PATH, myvideo.shader, tmp, 0) >= 0) {
+        if (get_path_by_idx(SHADER_PATH, myconfig.shader, tmp, 0) >= 0) {
             sprintf(buf, "%s", upper_string(tmp));
         }
         else {

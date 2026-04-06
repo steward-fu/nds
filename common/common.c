@@ -318,6 +318,7 @@ int load_config(const char *home_path)
         JSON_GET_INT(JSON_KEY_ROTATE, myconfig.key_rotate);
         JSON_GET_INT(JSON_LANG, myconfig.lang);
         JSON_GET_INT(JSON_HOTKEY, myconfig.hotkey);
+        JSON_GET_INT(JSON_SHADER, myconfig.shader);
         JSON_GET_INT(JSON_CPU_CORE, myconfig.cpu_core);
         JSON_GET_INT(JSON_FAST_FORWARD, myconfig.fast_forward);
         JSON_GET_INT(JSON_FILTER, myconfig.filter);
@@ -431,6 +432,7 @@ int update_config(const char *path)
         JSON_SET_INT(JSON_KEY_ROTATE, myconfig.key_rotate);
         JSON_SET_INT(JSON_LANG, myconfig.lang);
         JSON_SET_INT(JSON_HOTKEY, myconfig.hotkey);
+        JSON_SET_INT(JSON_SHADER, myconfig.shader);
         JSON_SET_INT(JSON_CPU_CORE, myconfig.cpu_core);
         JSON_SET_INT(JSON_FAST_FORWARD, myconfig.fast_forward);
         JSON_SET_INT(JSON_FILTER, myconfig.filter);

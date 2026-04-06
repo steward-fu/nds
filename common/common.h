@@ -192,6 +192,7 @@ typedef enum {
 #define JSON_KEY_ROTATE         "key_rotation"
 #define JSON_LANG               "language"
 #define JSON_HOTKEY             "hotkey_binding"
+#define JSON_SHADER             "shader"
 #define JSON_CPU_CORE           "cpu_core"
 #define JSON_FAST_FORWARD       "fast_forward"
 #define JSON_FILTER             "screen_filter"
@@ -260,6 +261,7 @@ typedef struct {
 
     int lang;
     int hotkey;
+    int shader;
     int cpu_core;
     int fast_forward;
     filter_type_t filter;

@@ -241,7 +241,6 @@ typedef struct {
         char *trans[MAX_LANG_LINE];
     } lang;
 
-    int shader;
     int max_shader;
 
 #if defined(FXTEC_QX1000) || defined(MOTO_XT897) || defined(UT)
