@@ -28,5 +28,5 @@ void main()
 	vec3 colour = texture2D(frag_tex_sample, frag_tex_coord.xy).rgb;
 	colour.rgb = yfactor * xfactor * colour.rgb;
 
-	gl_FragColor = vec4(colour.bgr, 1.0);
+	gl_FragColor = vec4(colour.bgr, frag_alpha);
 }

@@ -48,5 +48,5 @@ void main()
     colour = YIQtoRGB * colour;
     colour = pow(colour, vec3(1.0 / NATVIS_GOUT));
     
-    gl_FragColor = vec4(colour.bgr, 1.0);
+    gl_FragColor = vec4(colour.bgr, frag_alpha);
 }
