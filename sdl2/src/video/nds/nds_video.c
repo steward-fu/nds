@@ -2104,12 +2104,10 @@ static int process_screen(void)
         if (need_update) {
 #if !defined(MIYOO_MINI) && !defined(TRIMUI_SMART)
             int screen_w = SCREEN_W;
-            int screen_h = SCREEN_H;
 #endif
 
 #if defined(MOTO_XT897) || defined(FXTEC_QX1000)
             screen_w = WL_WIN_H;
-            screen_h = WL_WIN_W;
 #endif
 
 #if defined(MIYOO_MINI)
@@ -2122,98 +2120,10 @@ static int process_screen(void)
             case LAYOUT_MODE_N1:
                 drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
                 break;
-            case LAYOUT_MODE_C0:
-                switch (myconfig.layout.swin.pos) {
-                case 0:
-                    drt.x = 0;
-                    break;
-                case 1:
-                    drt.x = 240;
-                    break;
-                case 2:
-                    drt.x = 240;
-                    break;
-                case 3:
-                    drt.x = 0;
-                    break;
-                }
-                break;
             }
 #endif
 
             flush_lcd(idx, pixels, srt, drt, pitch);
-
-#if !defined(TRIMUI_SMART)
-            switch (cur_mode_sel) {
-            case LAYOUT_MODE_N0:
-            case LAYOUT_MODE_N1:
-#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
-            case LAYOUT_MODE_C0:
-#endif
-                drt.x = myvideo.layout.mode[cur_mode_sel].screen[0].x;
-                drt.y = myvideo.layout.mode[cur_mode_sel].screen[0].y;
-                drt.w = myvideo.layout.mode[cur_mode_sel].screen[0].w;
-                drt.h = myvideo.layout.mode[cur_mode_sel].screen[0].h;
-#if !defined(TRIMUI_SMART) && !defined(MIYOO_MINI)
-                switch (myconfig.layout.swin.pos) {
-                case 0:
-#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
-                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
-                    drt.x = (screen_w - drt.x) - drt.w;
-                    drt.y = 0;
-#else
-                    drt.x = screen_w - drt.w;
-                    drt.y = 0;
-#endif
-                    break;
-                case 1:
-#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
-                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
-                    drt.y = 0;
-#else
-                    drt.x = 0;
-                    drt.y = 0;
-#endif
-                    break;
-                case 2:
-#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
-                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
-                    drt.y = screen_h - drt.h;
-#else
-                    drt.x = 0;
-                    drt.y = screen_h - drt.h;
-#endif
-                    break;
-                case 3:
-#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
-                    drt.x = (screen_w - myvideo.layout.mode[cur_mode_sel].screen[1].w) >> 1;
-                    drt.x = (screen_w - drt.x) - drt.w;
-                    drt.y = screen_h - drt.h;
-#else
-                    drt.x = screen_w - drt.w;
-                    drt.y = screen_h - drt.h;
-#endif
-                    break;
-                }
-#endif
-
-#if defined(MOTO_XT897) || defined(FXTEC_QX1000)
-                if (cur_mode_sel == LAYOUT_MODE_C0) {
-                    drt.x = screen_w - drt.w;
-                    drt.y = screen_h - drt.h;
-                }
-#endif
-                flush_lcd(
-                    TEXTURE_LCD0,
-                    (void *)(*((uintptr_t *)myhook.var.sdl.screen[0].pixels)),
-                    srt,
-                    drt,
-                    pitch
-                );
-
-                break;
-            }
-#endif
         }
 
 #if defined(TRIMUI_SMART)
@@ -6225,7 +6135,14 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
     const int bm_h = 960;
 #endif
 
-    trace("call %s(mode=%d, cur_bg=%d, fname=%p, w=%d, h=%d)\n", __func__, mode, cur_bg, fname, w, h);
+    trace("call %s(mode=%d, cur_bg=%d, fname=%p, w=%d, h=%d)\n",
+        __func__,
+        mode,
+        cur_bg,
+        fname,
+        w,
+        h
+    );
 
     memcpy(
         myvideo.layout.mode[mode].screen,
@@ -6319,10 +6236,14 @@ static int add_layout_mode(int mode, int cur_bg, const char *fname, int w, int h
     case LAYOUT_MODE_C0:
 #if defined(MOTO_XT897)
         myvideo.layout.mode[mode].screen[0].x = 0;
-        myvideo.layout.mode[mode].screen[0].w = 240;
-        myvideo.layout.mode[mode].screen[0].h = 180;
+        myvideo.layout.mode[mode].screen[0].y = (540 - 442) / 2;
+        myvideo.layout.mode[mode].screen[0].w = 588;
+        myvideo.layout.mode[mode].screen[0].h = 442;
 
-        myvideo.layout.mode[mode].screen[1].x = 0;
+        myvideo.layout.mode[mode].screen[1].x = 588;
+        myvideo.layout.mode[mode].screen[1].y = (540 - 278) / 2;
+        myvideo.layout.mode[mode].screen[1].w = 372;
+        myvideo.layout.mode[mode].screen[1].h = 278;
 #else
         myvideo.layout.mode[mode].screen[0].x = margin_w;
 
