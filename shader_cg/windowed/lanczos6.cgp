@@ -1,4 +1,0 @@
-shaders = 1
-
-shader0 = shaders/lanczos6.cg
-filter_linear0 = false

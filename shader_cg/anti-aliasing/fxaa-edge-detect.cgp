@@ -1,4 +1,0 @@
-shaders = 1
-
-shader0 = shaders/fxaa-edge-detect.cg
-filter_linear0 = false

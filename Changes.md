@@ -2,6 +2,9 @@
 A specialized NDS emulator for optimal performance on handheld devices.  
 https://github.com/steward-fu/nds  
 
+## final-china-devices (2026/05/14)
+- Dropped all of china devices support.
+
 ## v1.8 (2024/02/02)
 - Improved video performance by up to 18% (tested with *Final Fantasy III*).
 - Replaced OpenGL ES libraries with dummy versions to save ~25MB RAM.
