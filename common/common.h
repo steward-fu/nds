@@ -318,6 +318,10 @@ typedef struct {
 #endif
 } nds_config;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int load_config(const char *);
 int update_config(const char *);
 
@@ -326,6 +330,7 @@ int write_file(const char *, const void *, int);
 
 int write_log_to_file(const char *, const char *, ...);
 void render_scanline_tiled_4bpp(void);
+
 void* neon_memcpy(void *, const void *, size_t);
 
 int drop_bios_files(const char *);
@@ -337,6 +342,10 @@ int update_debug_level(int);
 char* upper_string(char *);
 uint64_t get_tick_count_ms(void);
 uint32_t rgb565_to_rgb888(uint16_t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -1,21 +1,8 @@
 # NDS Emulator Based on DraStic Reverse Engineering
 
- - [OpenPandora](#openpandora)
- - [Motorola XT897](#motorola-photon-q)
- - [F(x)tec Pro1](#fxtec-pro1)
+ - [Motorola Photon Q](#motorola-photon-q)
  - [Unit Test](#unit-test)
  - [Credits](#credits)
-
-&nbsp;
-
-## OpenPandora
-![image](image/pandora.jpg)  
-
-Device
-```
-Model: Rebirth and Classic
-Operating System: Angstrom 2010.4-test-20141019
-```
 
 &nbsp;
 
@@ -25,18 +12,14 @@ Operating System: Angstrom 2010.4-test-20141019
 Device
 ```
 Model: XT897
-Operating System: Sailfish OS 4.4.0.68
+Operating System: Sailfish OS 4.4.0.72
 ```
 
 &nbsp;
 
-## F(x)tec Pro1
-![image](image/qx1000.jpg)  
-
-Device
+Build Source Code
 ```
-Model: QX1000
-Operating System: Sailfish OS 4.4.0.72
+$ make -f Makefile.xt897
 ```
 
 &nbsp;

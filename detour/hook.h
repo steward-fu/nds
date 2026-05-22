@@ -335,6 +335,10 @@ typedef void (*nds_config_setup_input_map)(void *);
 typedef int32_t (*nds_file_get_icon_data)(char *, nds_icon_struct *);
 typedef int32_t (*nds_save_directory_config_file)(void *, char *);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int init_hook(const char *, size_t, const char *);
 int quit_hook(void);
 int quit_drastic(void);
@@ -345,6 +349,11 @@ int unlock_area(const void *);
 int toggle_micphone(void);
 int add_prehook(void *, void *, uint8_t *);
 void render_polygon_setup_perspective_steps(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
 
