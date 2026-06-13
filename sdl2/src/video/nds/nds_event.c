@@ -19,7 +19,6 @@
 #include "../../thread/SDL_systhread.h"
 #include "../../joystick/nds/nds_joy.h"
 
-#include "snd.h"
 #include "common.h"
 #include "nds_video.h"
 #include "nds_event.h"

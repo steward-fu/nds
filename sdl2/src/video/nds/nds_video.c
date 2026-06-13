@@ -43,7 +43,6 @@
 #include "SDL_video.h"
 #include "SDL_mouse.h"
 
-#include "snd.h"
 #include "hook.h"
 #include "common.h"
 #include "hex_pen.h"

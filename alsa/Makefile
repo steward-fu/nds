@@ -1,7 +1,8 @@
 TARGET   = libasound.so.2
-CFLAGS  += $(MORE_CFLAGS)
-CFLAGS  += -I../detour
-CFLAGS  += -I../common
+CXXFLAGS  += $(MORE_CFLAGS)
+CXXFLAGS  += -std=c++17
+CXXFLAGS  += -I../detour
+CXXFLAGS  += -I../common
 LDFLAGS += $(MORE_LDFLAGS)
 LDFLAGS += -fpic -shared
 LDFLAGS += -lpthread
@@ -10,11 +11,11 @@ LDFLAGS += -L../detour
 LDFLAGS += -ldtr
 LDFLAGS += -L../common
 LDFLAGS += -lcommon
-SOURCES  = snd.c
+SOURCES  = snd.cpp
 
 .PHONY: all
 all:
-	$(CC) $(SOURCES) -o $(TARGET) $(CFLAGS) $(LDFLAGS)
+	$(CXX) $(SOURCES) -o $(TARGET) $(CXXFLAGS) $(LDFLAGS)
 
 .PHONY: clean
 clean:

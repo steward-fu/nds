@@ -11,6 +11,8 @@
 #define LAYOUT_BG_W     640
 #define LAYOUT_BG_H     480
 
+#define PRE_SND         "|snd|"
+
 #define RES_PATH        "res"
 #define BG_PATH         RES_PATH"/bg"
 #define PEN_PATH        RES_PATH"/pen"
@@ -298,24 +300,6 @@ typedef struct {
         int speed;
         pen_type_t type;
     } pen;
-
-#if defined(MIYOO_FLIP) || defined(UT)
-    struct {
-        int max_x;
-        int zero_x;
-        int min_x;
-
-        int max_y;
-        int zero_y;
-        int min_y;
-
-        int mode;
-        int dzone;
-        int show_cnt;
-
-        int cust_key[4];
-    } joy, rjoy;
-#endif
 } nds_config;
 
 #ifdef __cplusplus

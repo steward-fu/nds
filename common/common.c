@@ -201,20 +201,6 @@ int reset_config(void)
     myconfig.auto_state = DEF_AUTO_STATE;
     myconfig.fast_forward = DEF_FAST_FORWARD;
 
-#if defined(MIYOO_FLIP) || defined(UT)
-    myconfig.joy.dzone = DEF_JOY_DZONE;
-    myconfig.joy.cust_key[0] = 0;
-    myconfig.joy.cust_key[1] = 1;
-    myconfig.joy.cust_key[2] = 2;
-    myconfig.joy.cust_key[3] = 3;
-
-    myconfig.rjoy.dzone = DEF_JOY_DZONE;
-    myconfig.rjoy.cust_key[0] = 4;
-    myconfig.rjoy.cust_key[1] = 5;
-    myconfig.rjoy.cust_key[2] = 6;
-    myconfig.rjoy.cust_key[3] = 7;
-#endif
-
 #if defined(MOTO_XT897) || defined(FXTEC_QX1000)
     strncpy(myconfig.state_path, DEF_STATE_PATH, sizeof(myconfig.state_path));
 #endif
