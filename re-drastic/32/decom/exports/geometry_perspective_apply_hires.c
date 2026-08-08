@@ -1,0 +1,312 @@
+/*
+ * Ghidra decompilation
+ *
+ * Function : geometry_perspective_apply_hires
+ * Address  : 080c187c
+ * Program  : drastic
+ */
+
+
+undefined8
+geometry_perspective_apply_hires(int param_1,undefined8 *param_2,undefined (*param_3) [16])
+
+{
+  bool bVar1;
+  undefined8 uVar2;
+  undefined8 uVar3;
+  undefined4 uVar4;
+  ushort uVar5;
+  undefined (*pauVar6) [16];
+  undefined (*pauVar7) [16];
+  uint uVar8;
+  undefined (*pauVar9) [16];
+  int iVar10;
+  undefined (*pauVar11) [16];
+  int iVar12;
+  undefined auVar13 [16];
+  undefined8 uVar14;
+  undefined8 uVar15;
+  undefined auVar16 [16];
+  undefined auVar17 [16];
+  undefined auVar18 [16];
+  ulonglong uVar19;
+  undefined auVar20 [16];
+  undefined auVar21 [16];
+  undefined auVar22 [16];
+  undefined auVar23 [16];
+  undefined auVar24 [16];
+  undefined auVar25 [16];
+  undefined auVar26 [16];
+  undefined auVar27 [16];
+  undefined auVar28 [16];
+  
+  uVar5 = *(ushort *)(param_1 + 0x9a80);
+  uVar8 = (uint)*(ushort *)(param_1 + 0x9a7e);
+  if ((uVar5 & 0x3f) == 0) {
+    iVar10 = (0xc0 - (uint)*(ushort *)(param_1 + 0x9a84)) - (uint)uVar5;
+    auVar20._8_8_ = 0;
+    auVar20._0_8_ =
+         (ulonglong)*(ushort *)(param_1 + 0x9a82) | (ulonglong)*(ushort *)(param_1 + 0x9a82) << 0x20
+    ;
+    uVar19 = (ulonglong)CONCAT24(uVar5 >> 6,uVar8);
+    auVar21._4_4_ = iVar10;
+    auVar21._0_4_ = iVar10;
+    auVar21._8_8_ = 0;
+    uVar2 = SIMDExpandImmediate(0,0,0x30);
+    pauVar11 = (undefined (*) [16])(param_1 + 0x17e0);
+    pauVar9 = (undefined (*) [16])(param_1 + 0x3060);
+    auVar20 = VectorShiftLeft(auVar20 & auVar20 << 0x40,1,0x20,0);
+    auVar21 = VectorShiftLeft(auVar21 & auVar21 << 0x40,1,0x20,0);
+    uVar3 = SIMDExpandImmediate(0,0xc,0x7f);
+    pauVar7 = (undefined (*) [16])(param_1 + 0x48e0);
+    pauVar6 = (undefined (*) [16])(param_1 + 0x6160);
+    iVar10 = *(int *)(param_1 + 0x63c);
+    if (uVar8 != 0x100) {
+      do {
+        auVar13 = *param_3;
+        param_3 = param_3 + 1;
+        uVar14 = *param_2;
+        uVar15 = param_2[1];
+        param_2 = param_2 + 2;
+        auVar17 = *pauVar6;
+        pauVar6 = pauVar6 + 1;
+        auVar25 = VectorSub(auVar13._0_8_,uVar2,4,1);
+        auVar13 = VectorSub(auVar13._8_8_,uVar2,4,1);
+        auVar22 = VectorAdd(*pauVar7,auVar17,4);
+        auVar16 = VectorAdd(*pauVar11,auVar17,4);
+        auVar18 = VectorSub(auVar17,*pauVar9,4);
+        auVar23 = VectorMultiply(auVar22._0_8_,uVar14,4,1);
+        auVar22 = VectorMultiply(auVar22._8_8_,uVar15,4,1);
+        uVar4 = VectorGetElement(uVar19,0,4,0);
+        auVar17 = VectorMultiply(auVar16,uVar4,4);
+        uVar4 = VectorGetElement(uVar19,1,4,0);
+        auVar16 = VectorMultiply(auVar18,uVar4,4);
+        auVar18 = VectorAdd(auVar23,uVar3,4,1);
+        auVar24 = VectorAdd(auVar22,uVar3,4,1);
+        auVar27 = VectorMultiply(auVar17._0_8_,uVar14,4,1);
+        auVar17 = VectorMultiply(auVar17._8_8_,uVar15,4,1);
+        auVar28 = VectorMultiply(auVar16._0_8_,uVar14,4,1);
+        auVar16 = VectorMultiply(auVar16._8_8_,uVar15,4,1);
+        auVar18 = VectorShiftRight(auVar18,0xf);
+        auVar26 = VectorShiftRight(auVar24,0xf);
+        auVar27 = VectorShiftLeft(auVar27,auVar25,8,1);
+        auVar17 = VectorShiftLeft(auVar17,auVar13,8,1);
+        auVar28 = VectorShiftLeft(auVar28,auVar25,8,1);
+        auVar16 = VectorShiftLeft(auVar16,auVar13,8,1);
+        auVar24 = VectorSub(auVar23,auVar18,8);
+        auVar23 = VectorSub(auVar22,auVar26,8);
+        auVar18._8_8_ = VectorShiftNarrowRight(auVar17,0xe);
+        auVar18._0_8_ = VectorShiftNarrowRight(auVar27,0xe);
+        auVar22._8_8_ = VectorShiftNarrowRight(auVar16,8);
+        auVar22._0_8_ = VectorShiftNarrowRight(auVar28,8);
+        auVar16 = VectorShiftLeft(auVar24,auVar25,8,1);
+        auVar17 = VectorShiftLeft(auVar23,auVar13,8,1);
+        uVar15 = VectorCopyNarrow(auVar17,8);
+        uVar14 = VectorCopyNarrow(auVar16,8);
+        auVar17 = VectorAdd(auVar18,auVar20,4);
+        auVar16 = VectorAdd(auVar22,auVar21,4);
+        *(undefined8 *)*pauVar7 = uVar14;
+        *(undefined8 *)(*pauVar7 + 8) = uVar15;
+        pauVar7 = pauVar7 + 1;
+        *(longlong *)*pauVar11 = auVar17._0_8_;
+        *(longlong *)(*pauVar11 + 8) = auVar17._8_8_;
+        pauVar11 = pauVar11 + 1;
+        *(longlong *)*pauVar9 = auVar16._0_8_;
+        *(longlong *)(*pauVar9 + 8) = auVar16._8_8_;
+        pauVar9 = pauVar9 + 1;
+        iVar12 = iVar10 + -4;
+        bVar1 = 3 < iVar10;
+        iVar10 = iVar12;
+      } while (iVar12 != 0 && bVar1);
+      return auVar13._0_8_;
+    }
+    do {
+      auVar13 = *param_3;
+      param_3 = param_3 + 1;
+      uVar14 = *param_2;
+      uVar15 = param_2[1];
+      param_2 = param_2 + 2;
+      auVar17 = *pauVar6;
+      pauVar6 = pauVar6 + 1;
+      auVar24 = VectorSub(auVar13._0_8_,uVar2,4,1);
+      auVar13 = VectorSub(auVar13._8_8_,uVar2,4,1);
+      auVar18 = VectorAdd(*pauVar7,auVar17,4);
+      auVar16 = VectorAdd(*pauVar11,auVar17,4);
+      auVar17 = VectorSub(auVar17,*pauVar9,4);
+      auVar23 = VectorMultiply(auVar18._0_8_,uVar14,4,1);
+      auVar22 = VectorMultiply(auVar18._8_8_,uVar15,4,1);
+      uVar4 = VectorGetElement(uVar19,1,4,0);
+      auVar18 = VectorMultiply(auVar17,uVar4,4);
+      auVar25 = VectorAdd(auVar23,uVar3,4,1);
+      auVar26 = VectorAdd(auVar22,uVar3,4,1);
+      auVar27 = VectorMultiply(auVar16._0_8_,uVar14,4,1);
+      auVar17 = VectorMultiply(auVar16._8_8_,uVar15,4,1);
+      auVar28 = VectorMultiply(auVar18._0_8_,uVar14,4,1);
+      auVar16 = VectorMultiply(auVar18._8_8_,uVar15,4,1);
+      auVar18 = VectorShiftRight(auVar25,0xf);
+      auVar25 = VectorShiftRight(auVar26,0xf);
+      auVar26 = VectorShiftLeft(auVar27,auVar24,8,1);
+      auVar17 = VectorShiftLeft(auVar17,auVar13,8,1);
+      auVar27 = VectorShiftLeft(auVar28,auVar24,8,1);
+      auVar16 = VectorShiftLeft(auVar16,auVar13,8,1);
+      auVar23 = VectorSub(auVar23,auVar18,8);
+      auVar18 = VectorSub(auVar22,auVar25,8);
+      auVar17._8_8_ = VectorShiftNarrowRight(auVar17,6);
+      auVar17._0_8_ = VectorShiftNarrowRight(auVar26,6);
+      auVar16._8_8_ = VectorShiftNarrowRight(auVar16,8);
+      auVar16._0_8_ = VectorShiftNarrowRight(auVar27,8);
+      auVar22 = VectorShiftLeft(auVar23,auVar24,8,1);
+      auVar18 = VectorShiftLeft(auVar18,auVar13,8,1);
+      uVar15 = VectorCopyNarrow(auVar18,8);
+      uVar14 = VectorCopyNarrow(auVar22,8);
+      auVar17 = VectorAdd(auVar17,auVar20,4);
+      auVar16 = VectorAdd(auVar16,auVar21,4);
+      *(undefined8 *)*pauVar7 = uVar14;
+      *(undefined8 *)(*pauVar7 + 8) = uVar15;
+      pauVar7 = pauVar7 + 1;
+      *(longlong *)*pauVar11 = auVar17._0_8_;
+      *(longlong *)(*pauVar11 + 8) = auVar17._8_8_;
+      pauVar11 = pauVar11 + 1;
+      *(longlong *)*pauVar9 = auVar16._0_8_;
+      *(longlong *)(*pauVar9 + 8) = auVar16._8_8_;
+      pauVar9 = pauVar9 + 1;
+      iVar12 = iVar10 + -4;
+      bVar1 = 3 < iVar10;
+      iVar10 = iVar12;
+    } while (iVar12 != 0 && bVar1);
+    return auVar13._0_8_;
+  }
+  iVar10 = (0xc0 - (uint)*(ushort *)(param_1 + 0x9a84)) - (uint)uVar5;
+  uVar19 = (ulonglong)CONCAT24(uVar5,uVar8);
+  auVar13._8_8_ = 0;
+  auVar13._0_8_ =
+       (ulonglong)*(ushort *)(param_1 + 0x9a82) | (ulonglong)*(ushort *)(param_1 + 0x9a82) << 0x20;
+  auVar23._4_4_ = iVar10;
+  auVar23._0_4_ = iVar10;
+  auVar23._8_8_ = 0;
+  auVar20 = VectorShiftLeft(auVar13 & auVar13 << 0x40,1,0x20,0);
+  auVar21 = VectorShiftLeft(auVar23 & auVar23 << 0x40,1,0x20,0);
+  uVar2 = SIMDExpandImmediate(0,0,0x30);
+  pauVar11 = (undefined (*) [16])(param_1 + 0x17e0);
+  pauVar9 = (undefined (*) [16])(param_1 + 0x3060);
+  uVar3 = SIMDExpandImmediate(0,0xc,0x7f);
+  pauVar7 = (undefined (*) [16])(param_1 + 0x48e0);
+  pauVar6 = (undefined (*) [16])(param_1 + 0x6160);
+  iVar10 = *(int *)(param_1 + 0x63c);
+  if (uVar8 != 0x100) {
+    do {
+      auVar13 = *param_3;
+      param_3 = param_3 + 1;
+      uVar14 = *param_2;
+      uVar15 = param_2[1];
+      param_2 = param_2 + 2;
+      auVar17 = *pauVar6;
+      pauVar6 = pauVar6 + 1;
+      auVar24 = VectorSub(auVar13._0_8_,uVar2,4,1);
+      auVar13 = VectorSub(auVar13._8_8_,uVar2,4,1);
+      auVar22 = VectorAdd(*pauVar7,auVar17,4);
+      auVar16 = VectorAdd(*pauVar11,auVar17,4);
+      auVar18 = VectorSub(auVar17,*pauVar9,4);
+      auVar23 = VectorMultiply(auVar22._0_8_,uVar14,4,1);
+      auVar22 = VectorMultiply(auVar22._8_8_,uVar15,4,1);
+      uVar4 = VectorGetElement(uVar19,0,4,0);
+      auVar17 = VectorMultiply(auVar16,uVar4,4);
+      uVar4 = VectorGetElement(uVar19,1,4,0);
+      auVar16 = VectorMultiply(auVar18,uVar4,4);
+      auVar18 = VectorAdd(auVar23,uVar3,4,1);
+      auVar25 = VectorAdd(auVar22,uVar3,4,1);
+      auVar26 = VectorMultiply(auVar17._0_8_,uVar14,4,1);
+      auVar17 = VectorMultiply(auVar17._8_8_,uVar15,4,1);
+      auVar28 = VectorMultiply(auVar16._0_8_,uVar14,4,1);
+      auVar16 = VectorMultiply(auVar16._8_8_,uVar15,4,1);
+      auVar18 = VectorShiftRight(auVar18,0xf);
+      auVar25 = VectorShiftRight(auVar25,0xf);
+      auVar27 = VectorShiftLeft(auVar26,auVar24,8,1);
+      auVar17 = VectorShiftLeft(auVar17,auVar13,8,1);
+      auVar28 = VectorShiftLeft(auVar28,auVar24,8,1);
+      auVar16 = VectorShiftLeft(auVar16,auVar13,8,1);
+      auVar23 = VectorSub(auVar23,auVar18,8);
+      auVar18 = VectorSub(auVar22,auVar25,8);
+      auVar26._8_8_ = VectorShiftNarrowRight(auVar17,0xe);
+      auVar26._0_8_ = VectorShiftNarrowRight(auVar27,0xe);
+      auVar27._8_8_ = VectorShiftNarrowRight(auVar16,0xe);
+      auVar27._0_8_ = VectorShiftNarrowRight(auVar28,0xe);
+      auVar16 = VectorShiftLeft(auVar23,auVar24,8,1);
+      auVar17 = VectorShiftLeft(auVar18,auVar13,8,1);
+      uVar15 = VectorCopyNarrow(auVar17,8);
+      uVar14 = VectorCopyNarrow(auVar16,8);
+      auVar17 = VectorAdd(auVar26,auVar20,4);
+      auVar16 = VectorAdd(auVar27,auVar21,4);
+      *(undefined8 *)*pauVar7 = uVar14;
+      *(undefined8 *)(*pauVar7 + 8) = uVar15;
+      pauVar7 = pauVar7 + 1;
+      *(longlong *)*pauVar11 = auVar17._0_8_;
+      *(longlong *)(*pauVar11 + 8) = auVar17._8_8_;
+      pauVar11 = pauVar11 + 1;
+      *(longlong *)*pauVar9 = auVar16._0_8_;
+      *(longlong *)(*pauVar9 + 8) = auVar16._8_8_;
+      pauVar9 = pauVar9 + 1;
+      iVar12 = iVar10 + -4;
+      bVar1 = 3 < iVar10;
+      iVar10 = iVar12;
+    } while (iVar12 != 0 && bVar1);
+    return auVar13._0_8_;
+  }
+  do {
+    auVar13 = *param_3;
+    param_3 = param_3 + 1;
+    uVar14 = *param_2;
+    uVar15 = param_2[1];
+    param_2 = param_2 + 2;
+    auVar17 = *pauVar6;
+    pauVar6 = pauVar6 + 1;
+    auVar26 = VectorSub(auVar13._0_8_,uVar2,4,1);
+    auVar13 = VectorSub(auVar13._8_8_,uVar2,4,1);
+    auVar18 = VectorAdd(*pauVar7,auVar17,4);
+    auVar16 = VectorAdd(*pauVar11,auVar17,4);
+    auVar17 = VectorSub(auVar17,*pauVar9,4);
+    auVar23 = VectorMultiply(auVar18._0_8_,uVar14,4,1);
+    auVar22 = VectorMultiply(auVar18._8_8_,uVar15,4,1);
+    uVar4 = VectorGetElement(uVar19,1,4,0);
+    auVar18 = VectorMultiply(auVar17,uVar4,4);
+    auVar24 = VectorAdd(auVar23,uVar3,4,1);
+    auVar25 = VectorAdd(auVar22,uVar3,4,1);
+    auVar27 = VectorMultiply(auVar16._0_8_,uVar14,4,1);
+    auVar17 = VectorMultiply(auVar16._8_8_,uVar15,4,1);
+    auVar28 = VectorMultiply(auVar18._0_8_,uVar14,4,1);
+    auVar16 = VectorMultiply(auVar18._8_8_,uVar15,4,1);
+    auVar18 = VectorShiftRight(auVar24,0xf);
+    auVar24 = VectorShiftRight(auVar25,0xf);
+    auVar25 = VectorShiftLeft(auVar27,auVar26,8,1);
+    auVar17 = VectorShiftLeft(auVar17,auVar13,8,1);
+    auVar27 = VectorShiftLeft(auVar28,auVar26,8,1);
+    auVar16 = VectorShiftLeft(auVar16,auVar13,8,1);
+    auVar23 = VectorSub(auVar23,auVar18,8);
+    auVar18 = VectorSub(auVar22,auVar24,8);
+    auVar24._8_8_ = VectorShiftNarrowRight(auVar17,6);
+    auVar24._0_8_ = VectorShiftNarrowRight(auVar25,6);
+    auVar25._8_8_ = VectorShiftNarrowRight(auVar16,0xe);
+    auVar25._0_8_ = VectorShiftNarrowRight(auVar27,0xe);
+    auVar16 = VectorShiftLeft(auVar23,auVar26,8,1);
+    auVar17 = VectorShiftLeft(auVar18,auVar13,8,1);
+    uVar15 = VectorCopyNarrow(auVar17,8);
+    uVar14 = VectorCopyNarrow(auVar16,8);
+    auVar17 = VectorAdd(auVar24,auVar20,4);
+    auVar16 = VectorAdd(auVar25,auVar21,4);
+    *(undefined8 *)*pauVar7 = uVar14;
+    *(undefined8 *)(*pauVar7 + 8) = uVar15;
+    pauVar7 = pauVar7 + 1;
+    *(longlong *)*pauVar11 = auVar17._0_8_;
+    *(longlong *)(*pauVar11 + 8) = auVar17._8_8_;
+    pauVar11 = pauVar11 + 1;
+    *(longlong *)*pauVar9 = auVar16._0_8_;
+    *(longlong *)(*pauVar9 + 8) = auVar16._8_8_;
+    pauVar9 = pauVar9 + 1;
+    iVar12 = iVar10 + -4;
+    bVar1 = 3 < iVar10;
+    iVar10 = iVar12;
+  } while (iVar12 != 0 && bVar1);
+  return auVar13._0_8_;
+}
+
+

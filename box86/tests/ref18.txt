@@ -1,2 +1,0 @@
-sig = 11
-got bad_ptr

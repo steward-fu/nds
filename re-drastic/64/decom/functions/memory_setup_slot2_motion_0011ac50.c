@@ -1,0 +1,20 @@
+/*
+ * Ghidra decompilation
+ *
+ * Function : memory_setup_slot2_motion
+ * Address  : 0011ac50
+ * Program  : drastic64
+ */
+
+
+undefined8 memory_setup_slot2_motion(long param_1)
+
+{
+  long extraout_x18;
+  
+  map_cartridge_region_motion(param_1,param_1 + 0xfba98);
+  map_cartridge_region_motion(extraout_x18,extraout_x18 + 0xfc698);
+  return 0;
+}
+
+

@@ -8,6 +8,7 @@ drastic/drastic64
 drastic/config/drastic.cf2
 drastic/launch.sh
 drastic/lib/
+drastic/input_capture_crash.ir
 
 sdl2/Makefile
 sdl2/Makefile.rules
@@ -28,11 +29,8 @@ alsa/libasound.so.2
 common/libcommon.so
 
 detour/libdtr.so
-drastic/res/nds.cfg
 
+drastic/res/nds.cfg
 drastic/config.json
 drastic/icon.png
 drastic/overlayfs.img
-
-box86/build
-parser/parser

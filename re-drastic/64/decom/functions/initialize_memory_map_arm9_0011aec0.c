@@ -1,0 +1,177 @@
+/*
+ * Ghidra decompilation
+ *
+ * Function : initialize_memory_map_arm9
+ * Address  : 0011aec0
+ * Program  : drastic64
+ */
+
+
+void initialize_memory_map_arm9(undefined8 *param_1)
+
+{
+  undefined8 uVar1;
+  
+  puts("  Initializing ARM9 bus-level memory map.");
+  *(undefined4 *)(param_1 + 0x1f753) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f75e) = 0x303;
+  param_1[0x1f75a] = 0;
+  param_1[0x1f75b] = 0;
+  param_1[0x1f75c] = memory_get_code_bitmap_null;
+  param_1[0x1f75d] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f75f) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f76a) = 0x303;
+  param_1[0x1f766] = 0;
+  param_1[0x1f767] = 0;
+  param_1[0x1f768] = memory_get_code_bitmap_null;
+  param_1[0x1f769] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f76b) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f776) = 0x303;
+  param_1[0x1f772] = 0;
+  param_1[0x1f773] = 0;
+  param_1[0x1f774] = memory_get_code_bitmap_null;
+  param_1[0x1f775] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f777) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f782) = 0x303;
+  uVar1 = *param_1;
+  param_1[0x1f77e] = 0;
+  param_1[0x1f77f] = 0;
+  param_1[0x1f780] = memory_get_code_bitmap_null;
+  param_1[0x1f781] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f783) = 0x3fffff;
+  param_1[0x1f784] = uVar1;
+  *(undefined2 *)(param_1 + 0x1f78e) = 0;
+  param_1[0x1f787] = uVar1;
+  param_1[0x1f78a] = param_1 + 0x15e0e;
+  param_1[0x1f78b] = param_1 + 0x15e36;
+  param_1[0x1f78c] = memory_get_code_bitmap_coarse_direct;
+  param_1[0x1f78d] = memory_get_code_bitmap_fine_direct;
+  *(undefined4 *)(param_1 + 0x1f78f) = 0x3fffff;
+  param_1[0x1f790] = uVar1;
+  *(undefined2 *)(param_1 + 0x1f79a) = 0;
+  param_1[0x1f793] = uVar1;
+  param_1[0x1f796] = param_1 + 0x15e0e;
+  param_1[0x1f797] = param_1 + 0x15e36;
+  param_1[0x1f798] = memory_get_code_bitmap_coarse_direct;
+  param_1[0x1f799] = memory_get_code_bitmap_fine_direct;
+  *(undefined4 *)(param_1 + 0x1f79b) = 0x3fff;
+  param_1[0x1f79c] = memory_wram_arm9_get_page_pointer;
+  *(undefined2 *)(param_1 + 0x1f7a6) = 0x101;
+  param_1[0x1f79f] = memory_wram_arm9_get_page_pointer;
+  param_1[0x1f7a2] = (long)param_1 + 0xaf17c;
+  param_1[0x1f7a3] = param_1 + 0x1df37;
+  param_1[0x1f7a4] = memory_wram_get_code_bitmap_coarse;
+  param_1[0x1f7a5] = memory_wram_get_code_bitmap_fine;
+  *(undefined4 *)(param_1 + 0x1f7a7) = 0x3fff;
+  param_1[0x1f7a8] = memory_wram_arm9_get_page_pointer;
+  *(undefined2 *)(param_1 + 0x1f7b2) = 0x101;
+  param_1[0x1f7ab] = memory_wram_arm9_get_page_pointer;
+  param_1[0x1f7ae] = (long)param_1 + 0xaf17c;
+  param_1[0x1f7af] = param_1 + 0x1df37;
+  param_1[0x1f7b0] = memory_wram_get_code_bitmap_coarse;
+  param_1[0x1f7b1] = memory_wram_get_code_bitmap_fine;
+  *(undefined4 *)(param_1 + 0x1f7b3) = 0x7fffff;
+  param_1[0x1f7b4] = load_io_register_arm9_8;
+  param_1[0x1f7b5] = load_io_register_arm9_16;
+  param_1[0x1f7b6] = load_io_register_arm9_32;
+  *(undefined2 *)(param_1 + 0x1f7be) = 0x202;
+  param_1[0x1f7b7] = store_io_register_arm9_8;
+  param_1[0x1f7b8] = store_io_register_arm9_16;
+  param_1[0x1f7b9] = store_io_register_arm9_32;
+  param_1[0x1f7ba] = 0;
+  param_1[0x1f7bb] = 0;
+  param_1[0x1f7bc] = memory_get_code_bitmap_null;
+  param_1[0x1f7bd] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f7bf) = 0x7fffff;
+  param_1[0x1f7c0] = load_io_register_arm9_8;
+  param_1[0x1f7c1] = load_io_register_arm9_16;
+  param_1[0x1f7c2] = load_io_register_arm9_32;
+  *(undefined2 *)(param_1 + 0x1f7ca) = 0x202;
+  param_1[0x1f7c3] = store_io_register_arm9_8;
+  param_1[0x1f7c4] = store_io_register_arm9_16;
+  param_1[0x1f7c5] = store_io_register_arm9_32;
+  param_1[0x1f7c6] = 0;
+  param_1[0x1f7c7] = 0;
+  param_1[0x1f7c8] = memory_get_code_bitmap_null;
+  param_1[0x1f7c9] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f7e3) = 0x3fff;
+  param_1[0x1f7e4] = memory_vram_arm9_get_page_pointer;
+  *(undefined2 *)(param_1 + 0x1f7ee) = 0x101;
+  param_1[0x1f7e7] = memory_vram_arm9_get_page_pointer_store;
+  param_1[0x1f7ea] = (long)param_1 + 0xaf184;
+  param_1[0x1f7eb] = param_1 + 0x1e237;
+  param_1[0x1f7ec] = memory_vram_get_code_bitmap_coarse;
+  param_1[0x1f7ed] = memory_vram_get_code_bitmap_fine;
+  *(undefined4 *)(param_1 + 0x1f7ef) = 0x3fff;
+  param_1[0x1f7f0] = memory_vram_arm9_get_page_pointer;
+  *(undefined2 *)(param_1 + 0x1f7fa) = 0x101;
+  param_1[0x1f7f3] = memory_vram_arm9_get_page_pointer_store;
+  param_1[0x1f7f6] = (long)param_1 + 0xaf184;
+  param_1[0x1f7f7] = param_1 + 0x1e237;
+  param_1[0x1f7f8] = memory_vram_get_code_bitmap_coarse;
+  param_1[0x1f7f9] = memory_vram_get_code_bitmap_fine;
+  *(undefined4 *)(param_1 + 0x1f85b) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f866) = 0x303;
+  param_1[0x1f862] = 0;
+  param_1[0x1f863] = 0;
+  param_1[0x1f864] = memory_get_code_bitmap_null;
+  param_1[0x1f865] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f867) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f872) = 0x303;
+  param_1[0x1f86e] = 0;
+  param_1[0x1f86f] = 0;
+  param_1[0x1f870] = memory_get_code_bitmap_null;
+  param_1[0x1f871] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f873) = 0x1ffff;
+  param_1[0x1f87a] = 0;
+  param_1[0x1f87b] = 0;
+  param_1[0x1f87c] = memory_get_code_bitmap_null;
+  param_1[0x1f87d] = memory_get_code_bitmap_null;
+  *(undefined *)(param_1 + 0x1f87e) = 3;
+  *(undefined *)((long)param_1 + 0xfc3f1) = 3;
+  *(undefined4 *)(param_1 + 0x1f87f) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f88a) = 0x303;
+  param_1[0x1f886] = 0;
+  param_1[0x1f887] = 0;
+  param_1[0x1f888] = memory_get_code_bitmap_null;
+  param_1[0x1f889] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f88b) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f896) = 0x303;
+  param_1[0x1f892] = 0;
+  param_1[0x1f893] = 0;
+  param_1[0x1f894] = memory_get_code_bitmap_null;
+  param_1[0x1f895] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f897) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f8a2) = 0x303;
+  param_1[0x1f89e] = 0;
+  param_1[0x1f89f] = 0;
+  param_1[0x1f8a0] = memory_get_code_bitmap_null;
+  param_1[0x1f8a1] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f8a3) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f8ae) = 0x303;
+  param_1[0x1f8aa] = 0;
+  param_1[0x1f8ab] = 0;
+  param_1[0x1f8ac] = memory_get_code_bitmap_null;
+  param_1[0x1f8ad] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f8af) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f8ba) = 0x303;
+  param_1[0x1f8b6] = 0;
+  param_1[0x1f8b7] = 0;
+  param_1[0x1f8b8] = memory_get_code_bitmap_null;
+  param_1[0x1f8b9] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f8bb) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f8c6) = 0x303;
+  param_1[0x1f8c2] = 0;
+  param_1[0x1f8c3] = 0;
+  param_1[0x1f8c4] = memory_get_code_bitmap_null;
+  param_1[0x1f8c5] = memory_get_code_bitmap_null;
+  *(undefined4 *)(param_1 + 0x1f8c7) = 0x1ffff;
+  *(undefined2 *)(param_1 + 0x1f8d2) = 0x303;
+  param_1[0x1f8ce] = 0;
+  param_1[0x1f8cf] = 0;
+  param_1[0x1f8d0] = memory_get_code_bitmap_null;
+  param_1[0x1f8d1] = memory_get_code_bitmap_null;
+  return;
+}
+
+

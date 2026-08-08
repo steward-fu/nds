@@ -1,0 +1,183 @@
+/*
+ * Ghidra decompilation
+ *
+ * Function : reset_spu
+ * Address  : 0808e130
+ * Program  : drastic
+ */
+
+
+/* WARNING: Unknown calling convention */
+
+void reset_spu(spu_struct *spu)
+
+{
+  spu->channels[0].sample_offset = 0;
+  spu->channels[0].adpcm_cache_block_offset = 0;
+  spu->channels[0].samples = (u8 *)0x0;
+  spu->channels[0].sample_address = 0;
+  spu->channels[0].volume_multiplier_left = 0;
+  spu->channels[0].volume_multiplier_right = 0;
+  spu->channels[0].adpcm_loop_sample = 0;
+  spu->channels[0].dirty_bits = '\x03';
+  spu->channels[0].active = '\0';
+  spu->channels[0].adpcm_current_index = '\0';
+  spu->channels[1].sample_offset = 0;
+  spu->channels[1].adpcm_cache_block_offset = 0;
+  spu->channels[1].samples = (u8 *)0x0;
+  spu->channels[1].sample_address = 0;
+  spu->channels[1].volume_multiplier_left = 0;
+  spu->channels[1].volume_multiplier_right = 0;
+  spu->channels[1].adpcm_loop_sample = 0;
+  spu->channels[1].dirty_bits = '\x03';
+  spu->channels[1].active = '\0';
+  spu->channels[1].adpcm_current_index = '\0';
+  spu->channels[2].sample_offset = 0;
+  spu->channels[2].adpcm_cache_block_offset = 0;
+  spu->channels[2].samples = (u8 *)0x0;
+  spu->channels[2].sample_address = 0;
+  spu->channels[2].volume_multiplier_left = 0;
+  spu->channels[2].volume_multiplier_right = 0;
+  spu->channels[2].adpcm_loop_sample = 0;
+  spu->channels[2].dirty_bits = '\x03';
+  spu->channels[2].active = '\0';
+  spu->channels[2].adpcm_current_index = '\0';
+  spu->channels[3].sample_offset = 0;
+  spu->channels[3].adpcm_cache_block_offset = 0;
+  spu->channels[3].samples = (u8 *)0x0;
+  spu->channels[3].sample_address = 0;
+  spu->channels[3].volume_multiplier_left = 0;
+  spu->channels[3].volume_multiplier_right = 0;
+  spu->channels[3].adpcm_loop_sample = 0;
+  spu->channels[3].dirty_bits = '\x03';
+  spu->channels[3].active = '\0';
+  spu->channels[3].adpcm_current_index = '\0';
+  spu->channels[4].sample_offset = 0;
+  spu->channels[4].adpcm_cache_block_offset = 0;
+  spu->channels[4].samples = (u8 *)0x0;
+  spu->channels[4].sample_address = 0;
+  spu->channels[4].volume_multiplier_left = 0;
+  spu->channels[4].volume_multiplier_right = 0;
+  spu->channels[4].adpcm_loop_sample = 0;
+  spu->channels[4].dirty_bits = '\x03';
+  spu->channels[4].active = '\0';
+  spu->channels[4].adpcm_current_index = '\0';
+  spu->channels[5].samples = (u8 *)0x0;
+  spu->channels[5].sample_address = 0;
+  spu->channels[5].sample_offset = 0;
+  spu->channels[5].volume_multiplier_left = 0;
+  spu->channels[5].volume_multiplier_right = 0;
+  spu->channels[5].adpcm_loop_sample = 0;
+  spu->channels[5].adpcm_cache_block_offset = 0;
+  spu->channels[5].dirty_bits = '\x03';
+  spu->channels[5].active = '\0';
+  spu->channels[5].adpcm_current_index = '\0';
+  spu->channels[6].samples = (u8 *)0x0;
+  spu->channels[6].sample_address = 0;
+  spu->channels[6].sample_offset = 0;
+  spu->channels[6].adpcm_cache_block_offset = 0;
+  spu->channels[6].volume_multiplier_left = 0;
+  spu->channels[6].volume_multiplier_right = 0;
+  spu->channels[6].adpcm_loop_sample = 0;
+  spu->channels[6].dirty_bits = '\x03';
+  spu->channels[6].active = '\0';
+  spu->channels[6].adpcm_current_index = '\0';
+  spu->channels[7].samples = (u8 *)0x0;
+  spu->channels[7].sample_address = 0;
+  spu->channels[7].sample_offset = 0;
+  spu->channels[7].volume_multiplier_left = 0;
+  spu->channels[7].volume_multiplier_right = 0;
+  spu->channels[7].adpcm_loop_sample = 0;
+  spu->channels[7].adpcm_cache_block_offset = 0;
+  spu->channels[7].dirty_bits = '\x03';
+  spu->channels[7].active = '\0';
+  spu->channels[7].adpcm_current_index = '\0';
+  spu->channels[8].samples = (u8 *)0x0;
+  spu->channels[8].sample_address = 0;
+  spu->channels[8].sample_offset = 0;
+  spu->channels[8].adpcm_cache_block_offset = 0;
+  spu->channels[8].volume_multiplier_left = 0;
+  spu->channels[8].volume_multiplier_right = 0;
+  spu->channels[8].adpcm_loop_sample = 0;
+  spu->channels[8].dirty_bits = '\x03';
+  spu->channels[8].active = '\0';
+  spu->channels[8].adpcm_current_index = '\0';
+  spu->channels[9].samples = (u8 *)0x0;
+  spu->channels[9].sample_address = 0;
+  spu->channels[9].sample_offset = 0;
+  spu->channels[9].volume_multiplier_left = 0;
+  spu->channels[9].volume_multiplier_right = 0;
+  spu->channels[9].adpcm_loop_sample = 0;
+  spu->channels[9].adpcm_cache_block_offset = 0;
+  spu->channels[9].dirty_bits = '\x03';
+  spu->channels[9].active = '\0';
+  spu->channels[9].adpcm_current_index = '\0';
+  spu->channels[10].samples = (u8 *)0x0;
+  spu->channels[10].sample_address = 0;
+  spu->channels[10].sample_offset = 0;
+  spu->channels[10].adpcm_cache_block_offset = 0;
+  spu->channels[10].volume_multiplier_left = 0;
+  spu->channels[10].volume_multiplier_right = 0;
+  spu->channels[10].adpcm_loop_sample = 0;
+  spu->channels[10].dirty_bits = '\x03';
+  spu->channels[10].active = '\0';
+  spu->channels[10].adpcm_current_index = '\0';
+  spu->channels[0xb].samples = (u8 *)0x0;
+  spu->channels[0xb].sample_address = 0;
+  spu->channels[0xb].sample_offset = 0;
+  spu->channels[0xb].volume_multiplier_left = 0;
+  spu->channels[0xb].volume_multiplier_right = 0;
+  spu->channels[0xb].adpcm_loop_sample = 0;
+  spu->channels[0xb].adpcm_cache_block_offset = 0;
+  spu->channels[0xb].dirty_bits = '\x03';
+  spu->channels[0xb].active = '\0';
+  spu->channels[0xb].adpcm_current_index = '\0';
+  spu->channels[0xc].samples = (u8 *)0x0;
+  spu->channels[0xc].sample_address = 0;
+  spu->channels[0xc].sample_offset = 0;
+  spu->channels[0xc].adpcm_cache_block_offset = 0;
+  spu->channels[0xc].volume_multiplier_left = 0;
+  spu->channels[0xc].volume_multiplier_right = 0;
+  spu->channels[0xc].adpcm_loop_sample = 0;
+  spu->channels[0xc].dirty_bits = '\x03';
+  spu->channels[0xc].active = '\0';
+  spu->channels[0xc].adpcm_current_index = '\0';
+  spu->channels[0xd].samples = (u8 *)0x0;
+  spu->channels[0xd].sample_address = 0;
+  spu->channels[0xd].sample_offset = 0;
+  spu->channels[0xd].volume_multiplier_left = 0;
+  spu->channels[0xd].volume_multiplier_right = 0;
+  spu->channels[0xd].adpcm_loop_sample = 0;
+  spu->channels[0xd].adpcm_cache_block_offset = 0;
+  spu->channels[0xd].dirty_bits = '\x03';
+  spu->channels[0xd].active = '\0';
+  spu->channels[0xd].adpcm_current_index = '\0';
+  spu->channels[0xe].samples = (u8 *)0x0;
+  spu->channels[0xe].sample_address = 0;
+  spu->channels[0xe].sample_offset = 0;
+  spu->channels[0xe].adpcm_cache_block_offset = 0;
+  spu->channels[0xe].volume_multiplier_left = 0;
+  spu->channels[0xe].volume_multiplier_right = 0;
+  spu->channels[0xe].adpcm_loop_sample = 0;
+  spu->channels[0xe].dirty_bits = '\x03';
+  spu->channels[0xe].active = '\0';
+  spu->channels[0xe].adpcm_current_index = '\0';
+  spu->channels[0xf].samples = (u8 *)0x0;
+  spu->channels[0xf].sample_address = 0;
+  spu->channels[0xf].sample_offset = 0;
+  spu->channels[0xf].volume_multiplier_left = 0;
+  spu->channels[0xf].volume_multiplier_right = 0;
+  spu->channels[0xf].adpcm_loop_sample = 0;
+  spu->channels[0xf].adpcm_cache_block_offset = 0;
+  spu->channels[0xf].dirty_bits = '\x03';
+  spu->channels[0xf].active = '\0';
+  spu->channels[0xf].adpcm_current_index = '\0';
+  audio_reset_buffer(&spu->audio);
+  spu->last_cycles = 0;
+  spu->capture[0].control = '\0';
+  spu->capture[1].control = '\0';
+  close_audio_capture(&spu->audio);
+  return;
+}
+
+

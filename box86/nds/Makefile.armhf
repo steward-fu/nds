@@ -1,9 +1,0 @@
-all: box86
-	gcc hello.c -o hello
-	gcc main.c libbox86.so -o test -I../src -I../src/include -lm && LD_LIBRARY_PATH=. ./test hello
-
-box86:
-	cd .. && ./build.sh armhf
-
-clean:
-	rm -rf test hello

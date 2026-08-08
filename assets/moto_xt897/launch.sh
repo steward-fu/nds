@@ -13,7 +13,7 @@ export LD_LIBRARY_PATH=lib:/usr/local/lib:$LD_LIBRARY_PATH
 #echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 
 cd $MYDIR
-./drastic
+./drastic32
 sync
 
 #echo $sv | sudo tee /proc/sys/vm/swappiness

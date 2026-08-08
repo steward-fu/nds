@@ -1,0 +1,193 @@
+/*
+ * Ghidra decompilation
+ *
+ * Function : render_polygon_combine_colors_asm
+ * Address  : 0019aa98
+ * Program  : drastic64
+ */
+
+
+void render_polygon_combine_colors_asm
+               (undefined *param_1,undefined *param_2,ulong param_3,int param_4,undefined param_5)
+
+{
+  bool bVar1;
+  int iVar2;
+  undefined *puVar3;
+  undefined *puVar4;
+  undefined uVar5;
+  undefined uVar6;
+  undefined uVar7;
+  undefined uVar8;
+  undefined uVar9;
+  undefined uVar10;
+  undefined uVar11;
+  undefined uVar12;
+  undefined uVar13;
+  undefined uVar14;
+  undefined uVar15;
+  undefined uVar16;
+  undefined uVar17;
+  undefined uVar18;
+  undefined uVar19;
+  undefined uVar20;
+  undefined uVar21;
+  undefined uVar22;
+  undefined uVar23;
+  undefined uVar24;
+  undefined uVar25;
+  undefined uVar26;
+  undefined uVar27;
+  undefined uVar28;
+  undefined uVar29;
+  undefined uVar30;
+  undefined uVar31;
+  undefined uVar32;
+  undefined uVar33;
+  undefined uVar34;
+  undefined uVar35;
+  undefined uVar36;
+  undefined uVar37;
+  undefined uVar38;
+  undefined uVar39;
+  undefined uVar40;
+  undefined uVar41;
+  undefined uVar42;
+  undefined uVar43;
+  undefined uVar44;
+  undefined uVar45;
+  undefined uVar46;
+  undefined uVar47;
+  undefined uVar48;
+  undefined uVar49;
+  undefined uVar50;
+  undefined uVar51;
+  undefined uVar52;
+  
+  puVar3 = param_2 + (param_3 & 0xffffffff);
+  puVar4 = param_2 + (param_3 & 0xffffffff) * 2;
+  do {
+    uVar5 = *param_2;
+    uVar6 = param_2[1];
+    uVar7 = param_2[2];
+    uVar8 = param_2[3];
+    uVar9 = param_2[4];
+    uVar10 = param_2[5];
+    uVar11 = param_2[6];
+    uVar12 = param_2[7];
+    uVar13 = param_2[8];
+    uVar14 = param_2[9];
+    uVar15 = param_2[10];
+    uVar16 = param_2[0xb];
+    uVar17 = param_2[0xc];
+    uVar18 = param_2[0xd];
+    uVar19 = param_2[0xe];
+    uVar20 = param_2[0xf];
+    param_2 = param_2 + 0x10;
+    uVar21 = *puVar3;
+    uVar22 = puVar3[1];
+    uVar23 = puVar3[2];
+    uVar24 = puVar3[3];
+    uVar25 = puVar3[4];
+    uVar26 = puVar3[5];
+    uVar27 = puVar3[6];
+    uVar28 = puVar3[7];
+    uVar29 = puVar3[8];
+    uVar30 = puVar3[9];
+    uVar31 = puVar3[10];
+    uVar32 = puVar3[0xb];
+    uVar33 = puVar3[0xc];
+    uVar34 = puVar3[0xd];
+    uVar35 = puVar3[0xe];
+    uVar36 = puVar3[0xf];
+    puVar3 = puVar3 + 0x10;
+    uVar37 = *puVar4;
+    uVar38 = puVar4[1];
+    uVar39 = puVar4[2];
+    uVar40 = puVar4[3];
+    uVar41 = puVar4[4];
+    uVar42 = puVar4[5];
+    uVar43 = puVar4[6];
+    uVar44 = puVar4[7];
+    uVar45 = puVar4[8];
+    uVar46 = puVar4[9];
+    uVar47 = puVar4[10];
+    uVar48 = puVar4[0xb];
+    uVar49 = puVar4[0xc];
+    uVar50 = puVar4[0xd];
+    uVar51 = puVar4[0xe];
+    uVar52 = puVar4[0xf];
+    puVar4 = puVar4 + 0x10;
+    *param_1 = uVar5;
+    param_1[1] = uVar21;
+    param_1[2] = uVar37;
+    param_1[3] = param_5;
+    param_1[4] = uVar6;
+    param_1[5] = uVar22;
+    param_1[6] = uVar38;
+    param_1[7] = param_5;
+    param_1[8] = uVar7;
+    param_1[9] = uVar23;
+    param_1[10] = uVar39;
+    param_1[0xb] = param_5;
+    param_1[0xc] = uVar8;
+    param_1[0xd] = uVar24;
+    param_1[0xe] = uVar40;
+    param_1[0xf] = param_5;
+    param_1[0x10] = uVar9;
+    param_1[0x11] = uVar25;
+    param_1[0x12] = uVar41;
+    param_1[0x13] = param_5;
+    param_1[0x14] = uVar10;
+    param_1[0x15] = uVar26;
+    param_1[0x16] = uVar42;
+    param_1[0x17] = param_5;
+    param_1[0x18] = uVar11;
+    param_1[0x19] = uVar27;
+    param_1[0x1a] = uVar43;
+    param_1[0x1b] = param_5;
+    param_1[0x1c] = uVar12;
+    param_1[0x1d] = uVar28;
+    param_1[0x1e] = uVar44;
+    param_1[0x1f] = param_5;
+    param_1[0x20] = uVar13;
+    param_1[0x21] = uVar29;
+    param_1[0x22] = uVar45;
+    param_1[0x23] = param_5;
+    param_1[0x24] = uVar14;
+    param_1[0x25] = uVar30;
+    param_1[0x26] = uVar46;
+    param_1[0x27] = param_5;
+    param_1[0x28] = uVar15;
+    param_1[0x29] = uVar31;
+    param_1[0x2a] = uVar47;
+    param_1[0x2b] = param_5;
+    param_1[0x2c] = uVar16;
+    param_1[0x2d] = uVar32;
+    param_1[0x2e] = uVar48;
+    param_1[0x2f] = param_5;
+    param_1[0x30] = uVar17;
+    param_1[0x31] = uVar33;
+    param_1[0x32] = uVar49;
+    param_1[0x33] = param_5;
+    param_1[0x34] = uVar18;
+    param_1[0x35] = uVar34;
+    param_1[0x36] = uVar50;
+    param_1[0x37] = param_5;
+    param_1[0x38] = uVar19;
+    param_1[0x39] = uVar35;
+    param_1[0x3a] = uVar51;
+    param_1[0x3b] = param_5;
+    param_1[0x3c] = uVar20;
+    param_1[0x3d] = uVar36;
+    param_1[0x3e] = uVar52;
+    param_1[0x3f] = param_5;
+    param_1 = param_1 + 0x40;
+    iVar2 = param_4 + -0x10;
+    bVar1 = 0xf < param_4;
+    param_4 = iVar2;
+  } while (iVar2 != 0 && bVar1);
+  return;
+}
+
+

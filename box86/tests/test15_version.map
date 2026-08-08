@@ -1,8 +1,0 @@
-LIBV2 {
-  global:
-    getVersion;
-    returnVersion;
-
-  local:
-    *;
-};

@@ -1,0 +1,62 @@
+/*
+ * Ghidra decompilation
+ *
+ * Function : arm_load_ext8_unsigned
+ * Address  : 080ab458
+ * Program  : drastic
+ */
+
+
+undefined8 arm_load_ext8_unsigned(uint param_1,undefined4 param_2,u32 param_3,u32 param_4)
+
+{
+  int iVar1;
+  byte bVar2;
+  u32 uVar3;
+  memory_struct *memory;
+  u32 unaff_r10;
+  memory_interface_struct *unaff_r11;
+  u32 in_r12;
+  u32 in_lr;
+  bool in_OV;
+  
+  if ((param_1 & 0xfb000000) == 0) {
+    if (in_OV) {
+      uVar3 = 0x10000000;
+    }
+    else {
+      uVar3 = 0;
+    }
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x4f] = uVar3;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x30] = param_3;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x31] = param_4;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x32] = in_r12;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x7b] = unaff_r10;
+    memory = (memory_struct *)unaff_r11[-1].page_allocation_bitmap_coarse[99];
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x4e] = in_lr;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x4c] = (u32)register0x00000054;
+    bVar2 = load_io_register_arm9_8(memory,param_1 & 0x7fffff);
+    return CONCAT44(unaff_r11[-1].page_allocation_bitmap_coarse[0x4f],(uint)bVar2);
+  }
+  iVar1 = unaff_r11->page_table[param_1 >> 0xb] * 4;
+  if (iVar1 == 0) {
+    if (in_OV) {
+      uVar3 = 0x10000000;
+    }
+    else {
+      uVar3 = 0;
+    }
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x4f] = uVar3;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x30] = param_3;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x31] = param_4;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x32] = in_r12;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x7b] = unaff_r10;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x4e] = in_lr;
+    unaff_r11[-1].page_allocation_bitmap_coarse[0x4c] = (u32)register0x00000054;
+    bVar2 = extended_load8(unaff_r11,param_1);
+    return CONCAT44(unaff_r11[-1].page_allocation_bitmap_coarse[0x4f],(uint)bVar2);
+  }
+  return CONCAT44(iVar1,(uint)*(byte *)(param_1 + iVar1));
+}
+
+
